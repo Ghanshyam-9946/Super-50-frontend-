@@ -6,6 +6,9 @@ import { store } from './app/store';
 
 import Layout from './components/Layout';
 
+// Landing Page
+import LandingPage from './pages/LandingPage';
+
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
@@ -98,9 +101,9 @@ function AppRoutes({ theme, toggleTheme }) {
         </div>
       } />
 
-      {/* Default redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Default route */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
