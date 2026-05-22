@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { login, clearError } from '../../features/auth/authSlice';
 import { GraduationCap, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -19,8 +19,15 @@ export default function LoginPage() {
       if (!user.passwordChanged && user.role === 'student') {
         navigate('/change-password');
       } else {
-        const paths = { student: '/dashboard', teacher: '/teacher/dashboard', admin: '/admin/dashboard' };
-        navigate(paths[user.role] || '/dashboard');
+        let path = '/dashboard';
+        if (user.role === 'student') {
+          path = user.isSuper50 ? '/dashboard' : '/placement';
+        } else if (user.role === 'teacher') {
+          path = '/teacher/dashboard';
+        } else if (user.role === 'admin') {
+          path = '/admin/dashboard';
+        }
+        navigate(path);
       }
     }
   }, [user, navigate]);
@@ -120,10 +127,15 @@ export default function LoginPage() {
             </div>
 
             {/* Password */}
-            <div style={{ marginBottom: 28 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-                Password
-              </label>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                  Password
+                </label>
+                <Link to="/forgot-password" style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
+                  Forgot password?
+                </Link>
+              </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
@@ -147,22 +159,30 @@ export default function LoginPage() {
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', padding: '12px 24px', fontSize: 15 }}
-              disabled={loading}
-              id="login-submit"
-            >
-              {loading ? (
-                <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Signing in...</>
-              ) : 'Sign In →'}
-            </button>
+            <div style={{ marginTop: 28 }}>
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ width: '100%', justifyContent: 'center', padding: '12px 24px', fontSize: 15 }}
+                disabled={loading}
+                id="login-submit"
+              >
+                {loading ? (
+                  <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Signing in...</>
+                ) : 'Sign In →'}
+              </button>
+            </div>
           </form>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text-muted)' }}>
-          Contact your admin if you don't have an account
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-muted)' }}>
+          Don't have an account?{' '}
+          <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
+            Register as Faculty
+          </Link>
+        </p>
+        <p style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+          Students should contact admin for account creation
         </p>
       </motion.div>
 

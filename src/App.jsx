@@ -11,7 +11,10 @@ import LandingPage from './pages/LandingPage';
 
 // Auth Pages
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // Student Pages
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -24,36 +27,80 @@ import StudentsPage from './pages/admin/StudentsPage';
 import VerifyCertificatesPage from './pages/admin/VerifyCertificatesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import BulkCreatePage from './pages/admin/BulkCreatePage';
+import Super50SelectionPage from './pages/admin/Super50SelectionPage';
+import DriveEligibilityPage from './pages/admin/DriveEligibilityPage';
+import DriveResultUpload from './pages/admin/DriveResultUpload';
+import FacultyPlacementDashboard from './pages/admin/FacultyPlacementDashboard';
+import ResumeReview from './pages/admin/ResumeReview';
+
+// New Features
+import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
+import ResumeBuilder from './pages/student/ResumeBuilder';
+import ProjectDashboard from './pages/student/ProjectDashboard';
+import ProjectDetails from './pages/student/ProjectDetails';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
 
 // Role guard component
-function RoleGuard({ allowed, children }) {
-  const { user } = useSelector((s) => s.auth);
-  if (!user) return <Navigate to="/login" replace />;
-  if (!allowed.includes(user.role)) return <Navigate to="/unauthorized" replace />;
+const RoleGuard = ({ children, allowed }) => {
+  const { user, token } = useSelector((state) => state.auth);
+  if (!token || !user) return <Navigate to="/login" replace />;
+  
+  if (!allowed.includes(user.role)) {
+    const fallback = user.role === 'student' ? '/placement' : 
+                   user.role === 'teacher' ? '/teacher/dashboard' : '/admin/dashboard';
+    return <Navigate to={fallback} replace />;
+  }
   return children;
-}
+};
+
+const Super50Guard = ({ children }) => {
+  const { user, token } = useSelector((state) => state.auth);
+  if (!token || !user) return <Navigate to="/login" replace />;
+  if (user.role === 'admin' || user.role === 'teacher') return children;
+  if (!user.isSuper50) return <Navigate to="/placement" replace />;
+  return children;
+};
 
 function AppRoutes({ theme, toggleTheme }) {
   return (
     <Routes>
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
 
       {/* Protected layout */}
       <Route element={<Layout theme={theme} toggleTheme={toggleTheme} />}>
-        {/* Student routes */}
+        {/* Student Routes - General */}
         <Route path="/dashboard" element={
           <RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>
         } />
-        <Route path="/certificates" element={
-          <RoleGuard allowed={['student']}><CertificatesPage /></RoleGuard>
+        <Route path="/leaderboard" element={
+          <RoleGuard allowed={['student', 'admin', 'teacher']}><LeaderboardPage /></RoleGuard>
+        } />
+        <Route path="/resume" element={
+          <RoleGuard allowed={['student']}><ResumeBuilder /></RoleGuard>
+        } />
+        <Route path="/placement" element={
+          <RoleGuard allowed={['student']}><StudentPlacementDashboard /></RoleGuard>
+        } />
+
+        {/* Student Routes - Super 50 Exclusive */}
+        <Route path="/projects" element={
+          <Super50Guard><ProjectDashboard /></Super50Guard>
+        } />
+        <Route path="/projects/:id" element={
+          <Super50Guard><ProjectDetails /></Super50Guard>
         } />
         <Route path="/activities" element={
-          <RoleGuard allowed={['student']}><ActivitiesPage /></RoleGuard>
+          <Super50Guard><ActivitiesPage /></Super50Guard>
+        } />
+        <Route path="/certificates" element={
+          <Super50Guard><CertificatesPage /></Super50Guard>
         } />
 
         {/* Admin routes */}
@@ -72,6 +119,21 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/bulk-create" element={
           <RoleGuard allowed={['admin']}><BulkCreatePage /></RoleGuard>
         } />
+        <Route path="/admin/super50-selection" element={
+          <RoleGuard allowed={['admin']}><Super50SelectionPage /></RoleGuard>
+        } />
+        <Route path="/admin/drive-eligibility" element={
+          <RoleGuard allowed={['admin']}><DriveEligibilityPage /></RoleGuard>
+        } />
+        <Route path="/admin/drive-results" element={
+          <RoleGuard allowed={['admin']}><DriveResultUpload /></RoleGuard>
+        } />
+        <Route path="/faculty/placement" element={
+          <RoleGuard allowed={['admin', 'teacher']}><FacultyPlacementDashboard /></RoleGuard>
+        } />
+        <Route path="/faculty/resumes" element={
+          <RoleGuard allowed={['admin', 'teacher']}><ResumeReview /></RoleGuard>
+        } />
 
         {/* Teacher routes (shared admin pages, read/write but no bulk-create) */}
         <Route path="/teacher/dashboard" element={
@@ -85,6 +147,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/teacher/attendance" element={
           <RoleGuard allowed={['teacher']}><AttendancePage /></RoleGuard>
+        } />
+        <Route path="/teacher/placement" element={
+          <RoleGuard allowed={['teacher']}><FacultyPlacementDashboard /></RoleGuard>
         } />
 
         {/* Shared */}

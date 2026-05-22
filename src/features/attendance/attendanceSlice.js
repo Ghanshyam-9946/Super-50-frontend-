@@ -3,9 +3,7 @@ import api from '../../services/api';
 
 export const uploadAttendance = createAsyncThunk('attendance/upload', async (formData, { rejectWithValue }) => {
   try {
-    const { data } = await api.post('/attendance/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const { data } = await api.post('/attendance/upload', formData);
     return data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Upload failed');
@@ -23,9 +21,7 @@ export const fetchAttendanceHistory = createAsyncThunk('attendance/fetchHistory'
 
 export const previewBulkStudents = createAsyncThunk('attendance/previewBulk', async (formData, { rejectWithValue }) => {
   try {
-    const { data } = await api.post('/admin/bulk-preview', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const { data } = await api.post('/admin/bulk-preview', formData);
     return data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Preview failed');

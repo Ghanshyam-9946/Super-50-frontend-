@@ -30,9 +30,7 @@ export const fetchAllCertificates = createAsyncThunk('certificates/fetchAll', as
 
 export const uploadCertificate = createAsyncThunk('certificates/upload', async (formData, { rejectWithValue }) => {
   try {
-    const { data } = await api.post('/certificates/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const { data } = await api.post('/certificates/upload', formData);
     return data.data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Upload failed');

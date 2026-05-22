@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchMyProfile } from '../../features/students/studentsSlice';
@@ -35,21 +35,21 @@ export default function StudentDashboard() {
   const certificates = myProfile?.certificates || [];
 
   const activityTypes = ['coding', 'internship', 'project', 'hackathon', 'workshop', 'other'];
-  const activityData = {
+  const activityData = useMemo(() => ({
     labels: activityTypes.map((t) => t.charAt(0).toUpperCase() + t.slice(1)),
     datasets: [{
       data: activityTypes.map((t) => stats.activityBreakdown?.[t] || 0),
       backgroundColor: ['#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#f97316', '#64748b'],
       borderRadius: 6,
     }],
-  };
+  }), [stats.activityBreakdown]);
 
-  const statCards = [
+  const statCards = useMemo(() => [
     { icon: TrendingUp, label: 'Performance Score', value: Math.round(student?.performanceScore || 0), unit: '/100', color: '#7c3aed', bg: 'rgba(124,58,237,0.1)' },
     { icon: Calendar, label: 'Attendance', value: Math.round(student?.attendancePercentage || 0), unit: '%', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
     { icon: Award, label: 'Certificates', value: stats.approvedCertificates || 0, unit: ' approved', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
     { icon: Zap, label: 'Activities', value: stats.totalActivities || 0, unit: ' total', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)' },
-  ];
+  ], [student, stats]);
 
   return (
     <div className="page-layout">

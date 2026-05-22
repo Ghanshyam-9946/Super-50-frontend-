@@ -3,44 +3,60 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
-  ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X
+  ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X,
+  Briefcase, FileText, Layout, Star
 } from 'lucide-react';
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const studentLinks = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/certificates', icon: Award, label: 'Certificates' },
-  { to: '/activities', icon: Zap, label: 'Activities' },
-  { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-];
-
-const teacherLinks = [
-  { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/teacher/students', icon: Users, label: 'All Students' },
-  { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-  { to: '/teacher/attendance', icon: ClipboardList, label: 'Attendance' },
-  { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-];
-
-const adminLinks = [
-  { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/admin/students', icon: Users, label: 'All Students' },
-  { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-  { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
-  { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
-  { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-];
-
-export default function Sidebar({ theme, toggleTheme }) {
+const Sidebar = ({ theme, toggleTheme }) => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const links =
-    user?.role === 'admin' ? adminLinks :
-    user?.role === 'teacher' ? teacherLinks :
-    studentLinks;
+  // Core Links (All Students)
+  const commonStudentLinks = [
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  ];
+
+  // Training & Placement Section (ALL students)
+  const tpLinks = [
+    { to: '/placement', icon: Briefcase, label: 'T&P Dashboard' },
+    { to: '/resume', icon: FileText, label: 'Resume Builder' },
+  ];
+
+  // Super 50 Exclusive Section
+  const super50Links = [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Super 50 Portal' },
+    { to: '/projects', icon: Layout, label: 'Projects' },
+    { to: '/activities', icon: Zap, label: 'Activities' },
+    { to: '/certificates', icon: Award, label: 'Certificates' },
+  ];
+
+  const teacherLinks = [
+    { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+    { to: '/faculty/resumes', icon: FileText, label: 'Resume Review' },
+    { to: '/teacher/students', icon: Users, label: 'All Students' },
+    { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/teacher/attendance', icon: ClipboardList, label: 'Attendance' },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  ];
+
+  const adminLinks = [
+    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+    { to: '/faculty/resumes', icon: FileText, label: 'Resume Review' },
+    { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
+    { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
+    { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+    { to: '/admin/drive-eligibility', icon: Briefcase, label: 'Drive Eligibility' },
+    { to: '/admin/drive-results', icon: ClipboardList, label: 'Drive Results' },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  ];
 
   const handleLogout = () => {
     dispatch(logout());
@@ -48,107 +64,146 @@ export default function Sidebar({ theme, toggleTheme }) {
   };
 
   const SidebarContent = () => (
-    <div className="sidebar" style={{ display: 'flex', flexDirection: 'column' }}>
-      {/* Logo */}
-      <div style={{ padding: '24px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <GraduationCap size={22} color="white" />
+    <div className="flex flex-col h-full bg-[#080808] border-r border-white/5 w-72">
+      {/* Brand */}
+      <div className="p-8">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <GraduationCap size={26} color="white" />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-primary)' }}>Super 50</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'capitalize' }}>
-              {user?.role} Panel
+            <div className="font-black text-xl text-white tracking-tighter">SUPER 50</div>
+            <div className="text-[10px] font-bold text-purple-500 uppercase tracking-widest leading-none mt-1">
+              {user?.role} Portal
             </div>
           </div>
         </div>
       </div>
 
-      {/* Nav Links */}
-      <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto' }}>
-        {links.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-            onClick={() => setMobileOpen(false)}
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Bottom Section */}
-      <div style={{ padding: '12px', borderTop: '1px solid var(--border)' }}>
-        {/* User info */}
-        <div style={{
-          padding: '10px 12px', borderRadius: 10,
-          background: 'var(--bg-card)', marginBottom: 8,
-          border: '1px solid var(--border)'
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 2 }}>
-            {user?.name}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user?.email}</div>
+      {/* Navigation */}
+      <nav className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar pb-8">
+        {/* Core Nav */}
+        <div className="space-y-1.5">
+          <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4">Core</p>
+          {(user?.role === 'admin' ? adminLinks : user?.role === 'teacher' ? teacherLinks : commonStudentLinks).map((link) => (
+            <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
+          ))}
         </div>
 
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          className="btn-secondary"
-          style={{ width: '100%', marginBottom: 8, justifyContent: 'center' }}
-        >
-          {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        </button>
+        {/* T&P Section (Students Only) */}
+        {user?.role === 'student' && (
+          <div className="space-y-1.5">
+            <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4">Training & Placement</p>
+            {tpLinks.map((link) => (
+              <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
+            ))}
+          </div>
+        )}
 
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="btn-danger"
-          style={{ width: '100%', justifyContent: 'center' }}
-        >
-          <LogOut size={15} />
-          Logout
-        </button>
+        {/* Super 50 Section (Students Only) */}
+        {user?.role === 'student' && (
+          <div className="space-y-1.5">
+            <div className="px-4 flex items-center justify-between mb-4">
+              <p className="text-[10px] font-black text-gray-600 uppercase tracking-[2px]">Super 50 Portal</p>
+              {!user?.isSuper50 && <ShieldCheck size={12} className="text-gray-700" />}
+            </div>
+            {user?.isSuper50 ? (
+              super50Links.map((link) => (
+                <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
+              ))
+            ) : (
+              <div className="px-4 py-6 rounded-3xl bg-gradient-to-b from-white/[0.03] to-transparent border border-white/5 relative overflow-hidden group">
+                <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 blur-2xl rounded-full" />
+                <Star className="text-purple-500/50 mb-3" size={20} />
+                <h4 className="text-xs font-bold text-gray-400 mb-1">Portal Locked</h4>
+                <p className="text-[10px] text-gray-600 leading-relaxed">
+                  Super 50 selection is required for access to activities and tracking.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </nav>
+
+      {/* Footer / User Profile */}
+      <div className="p-4 mt-auto">
+        <div className="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center text-sm font-bold text-white shadow-inner">
+              {user?.name?.[0]}
+            </div>
+            <div className="overflow-hidden">
+              <div className="font-bold text-sm text-white truncate">{user?.name}</div>
+              <div className="text-[10px] text-gray-500 truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : 'Student'}</div>
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <button
+              onClick={toggleTheme}
+              className="flex-1 flex items-center justify-center h-10 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 transition-colors"
+            >
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex-[2] flex items-center justify-center gap-2 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all font-bold text-xs uppercase tracking-widest"
+            >
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 
   return (
     <>
-      {/* Mobile toggle */}
-      <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        style={{
-          display: 'none', position: 'fixed', top: 16, left: 16,
-          zIndex: 200, background: 'var(--accent)', border: 'none',
-          borderRadius: 8, padding: '8px', cursor: 'pointer', color: 'white'
-        }}
-        className="mobile-menu-btn"
-      >
-        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden fixed top-4 left-4 z-[100] p-3 rounded-2xl bg-[#080808] border border-white/10 text-white shadow-2xl">
+        {mobileOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
-
-      {/* Desktop Sidebar */}
-      <SidebarContent />
-
-      {/* Mobile overlay */}
-      {mobileOpen && (
-        <div
-          onClick={() => setMobileOpen(false)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-            zIndex: 99, display: 'none'
-          }}
-          className="mobile-overlay"
-        />
-      )}
+      <div className="hidden lg:block h-screen sticky top-0">
+        <SidebarContent />
+      </div>
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] lg:hidden" />
+            <motion.div initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-y-0 left-0 z-[100] lg:hidden">
+              <SidebarContent />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
-}
+};
+
+const NavItem = ({ link, onClick }) => (
+  <NavLink
+    to={link.to}
+    onClick={onClick}
+    className={({ isActive }) => `
+      group flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300
+      ${isActive 
+        ? 'bg-purple-600/10 text-white border border-purple-500/20 shadow-[0_0_20px_rgba(124,58,237,0.1)]' 
+        : 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.02]'
+      }
+    `}
+  >
+    {({ isActive }) => (
+      <>
+        <link.icon 
+          size={18} 
+          className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-purple-500' : 'text-gray-600'}`} 
+        />
+        <span className="font-bold text-sm tracking-tight">{link.label}</span>
+        {isActive && (
+          <motion.div layoutId="activePill" className="ml-auto w-1 h-1 rounded-full bg-purple-500 shadow-[0_0_10px_#7c3aed]" />
+        )}
+      </>
+    )}
+  </NavLink>
+);
+
+export default Sidebar;
