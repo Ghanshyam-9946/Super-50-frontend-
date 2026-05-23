@@ -16,6 +16,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     department: '',
+    role: 'teacher', // default to teacher
   });
 
   useEffect(() => {
@@ -32,9 +33,15 @@ export default function RegisterPage() {
     }
   }, [error, dispatch]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(register(form));
+    const resultAction = await dispatch(register(form));
+    if (register.fulfilled.match(resultAction)) {
+      if (resultAction.payload.pendingVerification) {
+        toast.success(resultAction.payload.message || 'Registration successful. Waiting for admin approval.');
+        navigate('/login');
+      }
+    }
   };
 
   return (
@@ -93,7 +100,7 @@ export default function RegisterPage() {
             <GraduationCap size={32} color="white" />
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 8 }}>
-            Faculty Registration
+            Faculty & Guide Registration
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
             Create your account to manage students and tracking
@@ -161,6 +168,26 @@ export default function RegisterPage() {
                   <option value="Electronics">Electronics</option>
                   <option value="Mechanical">Mechanical</option>
                   <option value="Civil">Civil</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Role */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                Registration Role
+              </label>
+              <div style={{ position: 'relative' }}>
+                <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <select
+                  className="input-field"
+                  style={{ paddingLeft: 38, appearance: 'none' }}
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  required
+                >
+                  <option value="teacher">Teacher / Faculty</option>
+                  <option value="guide">Project Guide</option>
                 </select>
               </div>
             </div>

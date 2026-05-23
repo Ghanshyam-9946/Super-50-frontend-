@@ -53,12 +53,15 @@ export function Hero() {
 
   return (
     <section ref={containerRef} className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 pt-24 pb-16">
-      {/* Background Mesh and Blobs - Restored */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 left-1/4 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-brand-indigo/15 blur-[140px] animate-blob" />
-        <div className="absolute bottom-0 right-1/4 h-[900px] w-[900px] translate-x-1/2 rounded-full bg-brand-purple/15 blur-[160px] animate-blob" style={{ animationDelay: "-7s" }} />
-        <div className="absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-orange/8 blur-[120px] animate-blob" style={{ animationDelay: "-14s" }} />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,var(--background)_85%)]" />
+      {/* Modern Grid and Vibrant Glow Background */}
+      <div className="absolute inset-0 z-0 bg-white dark:bg-[#0a0a0a]">
+        {/* Subtle Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        
+        {/* Clean Glowing Orbs */}
+        <div className="absolute top-0 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] animate-blob" />
+        <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] translate-x-1/2 rounded-full bg-purple-500/20 dark:bg-purple-600/20 blur-[120px] animate-blob" style={{ animationDelay: "-4s" }} />
+        <div className="absolute -bottom-32 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-pink-500/20 dark:bg-pink-600/20 blur-[120px] animate-blob" style={{ animationDelay: "-8s" }} />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl text-center">
@@ -102,10 +105,10 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mx-auto mt-6 max-w-3xl text-xl text-muted-foreground/80 md:text-2xl font-medium leading-relaxed"
+          className="mx-auto mt-6 max-w-3xl text-xl text-slate-800 dark:text-slate-200 md:text-2xl font-medium leading-relaxed drop-shadow-sm"
         >
           Empowering the next generation of innovators. Track placements, compete in the 
-          <span className="text-foreground"> Super 50</span>, and showcase your professional portfolio — all in one unified workspace.
+          <span className="text-foreground font-bold"> Super 50</span>, and showcase your professional portfolio — all in one unified workspace.
         </motion.p>
 
         <motion.div

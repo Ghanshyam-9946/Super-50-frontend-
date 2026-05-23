@@ -10,7 +10,6 @@ import { Features } from "@/components/Features";
 import { Leaderboard } from "@/components/Leaderboard";
 import { Stats } from "@/components/Stats";
 import { Workflow } from "@/components/Workflow";
-import { Testimonials } from "@/components/Testimonials";
 import { Footer } from "@/components/Footer";
 import { BackToTop } from "@/components/BackToTop";
 import { ProjectShowcase } from "@/components/ProjectShowcase";
@@ -31,7 +30,6 @@ export default function LandingPage() {
         <Leaderboard />
         <Stats />
         <Workflow />
-        <Testimonials />
         <Footer />
       </main>
       <BackToTop />

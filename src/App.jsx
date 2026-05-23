@@ -32,6 +32,7 @@ import DriveEligibilityPage from './pages/admin/DriveEligibilityPage';
 import DriveResultUpload from './pages/admin/DriveResultUpload';
 import FacultyPlacementDashboard from './pages/admin/FacultyPlacementDashboard';
 import ResumeReview from './pages/admin/ResumeReview';
+import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
 
 // New Features
 import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
@@ -52,7 +53,8 @@ const RoleGuard = ({ children, allowed }) => {
   
   if (!allowed.includes(user.role)) {
     const fallback = user.role === 'student' ? '/placement' : 
-                   user.role === 'teacher' ? '/teacher/dashboard' : '/admin/dashboard';
+                   user.role === 'teacher' ? '/teacher/dashboard' : 
+                   user.role === 'guide' ? '/pms/guide' : '/admin/dashboard';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -83,7 +85,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>
         } />
         <Route path="/leaderboard" element={
-          <RoleGuard allowed={['student', 'admin', 'teacher']}><LeaderboardPage /></RoleGuard>
+          <RoleGuard allowed={['student', 'admin', 'teacher', 'guide']}><LeaderboardPage /></RoleGuard>
         } />
         <Route path="/resume" element={
           <RoleGuard allowed={['student']}><ResumeBuilder /></RoleGuard>
@@ -115,6 +117,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/verify" element={
           <RoleGuard allowed={['admin']}><VerifyCertificatesPage /></RoleGuard>
+        } />
+        <Route path="/admin/guides" element={
+          <RoleGuard allowed={['admin']}><VerifyGuidesPage /></RoleGuard>
         } />
         <Route path="/admin/attendance" element={
           <RoleGuard allowed={['admin']}><AttendancePage /></RoleGuard>
@@ -156,7 +161,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
 
         {/* Shared */}
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/leaderboard" element={
+          <RoleGuard allowed={['student', 'admin', 'teacher', 'guide']}><LeaderboardPage /></RoleGuard>
+        } />
 
         {/* PMS Routes - Mounted under /pms */}
         <Route path="/pms/*" element={<PMSRoutes />} />

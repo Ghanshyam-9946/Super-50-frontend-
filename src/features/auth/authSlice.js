@@ -18,6 +18,9 @@ export const login = createAsyncThunk('auth/login', async (credentials, { reject
 export const register = createAsyncThunk('auth/register', async (userData, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/auth/register', userData);
+    if (data.pendingVerification) {
+      return data;
+    }
     localStorage.setItem('super50_token', data.token);
     localStorage.setItem('super50_user', JSON.stringify(data.user));
     return data;
@@ -98,8 +101,13 @@ const authSlice = createSlice({
       .addCase(register.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        if (action.payload.pendingVerification) {
+          state.user = null;
+          state.token = null;
+        } else {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+        }
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;

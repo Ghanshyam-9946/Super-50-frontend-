@@ -50,12 +50,18 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
+  const guideLinks = [
+    { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  ];
+
   const adminLinks = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/faculty/resumes', icon: FileText, label: 'Resume Review' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/admin/guides', icon: UserPlus, label: 'Verify Guides' },
     { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
     { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
     { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
@@ -92,7 +98,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
         {/* Core Nav */}
         <div className="space-y-1.5">
           <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4">Core</p>
-          {(user?.role === 'admin' ? adminLinks : user?.role === 'teacher' ? teacherLinks : commonStudentLinks).map((link) => (
+          {(user?.role === 'admin' ? adminLinks : 
+            user?.role === 'teacher' ? teacherLinks : 
+            user?.role === 'guide' ? guideLinks : 
+            commonStudentLinks).map((link) => (
             <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
           ))}
         </div>
@@ -151,7 +160,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
             </div>
             <div className="overflow-hidden">
               <div className="font-bold text-sm text-white truncate">{user?.name}</div>
-              <div className="text-[10px] text-gray-500 truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : 'Student'}</div>
+              <div className="text-[10px] text-gray-500 truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : user?.role}</div>
             </div>
           </div>
           
