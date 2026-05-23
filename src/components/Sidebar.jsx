@@ -4,7 +4,7 @@ import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X,
-  Briefcase, FileText, Layout, Star
+  Briefcase, FileText, Layout, Star, FolderOpen, Database
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,6 +26,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/resume', icon: FileText, label: 'Resume Builder' },
   ];
 
+  // PMS Section (ALL students)
+  const pmsStudentLinks = [
+    { to: '/pms/student', icon: FolderOpen, label: 'Major Project (PMS)' },
+  ];
+
   // Super 50 Exclusive Section
   const super50Links = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Super 50 Portal' },
@@ -41,6 +46,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/teacher/attendance', icon: ClipboardList, label: 'Attendance' },
+    { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
@@ -51,6 +57,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
+    { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
     { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/drive-eligibility', icon: Briefcase, label: 'Drive Eligibility' },
@@ -95,6 +102,16 @@ const Sidebar = ({ theme, toggleTheme }) => {
           <div className="space-y-1.5">
             <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4">Training & Placement</p>
             {tpLinks.map((link) => (
+              <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
+            ))}
+          </div>
+        )}
+
+        {/* PMS Section (Students Only) */}
+        {user?.role === 'student' && (
+          <div className="space-y-1.5">
+            <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4 mt-6">Academic Projects</p>
+            {pmsStudentLinks.map((link) => (
               <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
             ))}
           </div>

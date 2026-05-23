@@ -42,6 +42,9 @@ import ProjectDetails from './pages/student/ProjectDetails';
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
 
+// PMS
+import PMSRoutes from './pages/pms/PMSRoutes';
+
 // Role guard component
 const RoleGuard = ({ children, allowed }) => {
   const { user, token } = useSelector((state) => state.auth);
@@ -154,6 +157,9 @@ function AppRoutes({ theme, toggleTheme }) {
 
         {/* Shared */}
         <Route path="/leaderboard" element={<LeaderboardPage />} />
+
+        {/* PMS Routes - Mounted under /pms */}
+        <Route path="/pms/*" element={<PMSRoutes />} />
       </Route>
 
       {/* Unauthorized */}
