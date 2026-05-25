@@ -74,13 +74,13 @@ export default function RegisterPage() {
         transition={{ duration: 0.6, ease: 'easeOut' }}
         style={{ width: '100%', maxWidth: 460, padding: '24px' }}
       >
-        <Link to="/login" style={{ 
-          display: 'inline-flex', 
-          alignItems: 'center', 
-          gap: 8, 
-          color: 'var(--text-muted)', 
-          textDecoration: 'none', 
-          fontSize: 14, 
+        <Link to="/login" style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          color: 'var(--text-muted)',
+          textDecoration: 'none',
+          fontSize: 14,
           marginBottom: 24,
           fontWeight: 500,
           transition: 'color 0.2s'

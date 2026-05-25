@@ -37,8 +37,13 @@ body {
   z-index: 0;
 }
 
-.orb-purple { background: var(--primary); }
-.orb-blue { background: var(--secondary); }
+.orb-purple {
+  background: var(--primary);
+}
+
+.orb-blue {
+  background: var(--secondary);
+}
 
 /* ─── Glassmorphism ─── */
 .glass-card {

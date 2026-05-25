@@ -150,7 +150,7 @@ const EditTeamModal = ({ open, onClose, team, currentUser, onSaved }) => {
         ...p,
         members: [...p.members, {
           student,
-          enrollmentNo: student.enrollmentNo,
+          enrollmentNo: student.enrollmentNo || student.enrollmentNumber,
           name: student.name,
           role: 'Member',
         }],
@@ -512,7 +512,7 @@ const CreateTeamForm = ({ user, onCreated }) => {
       ...p,
       members: [...p.members, {
         student: student._id,
-        enrollmentNo: student.enrollmentNo,
+        enrollmentNo: student.enrollmentNo || student.enrollmentNumber,
         name: student.name,
         role: 'Member',
       }],

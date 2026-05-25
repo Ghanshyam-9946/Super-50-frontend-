@@ -42,7 +42,7 @@ const Super50SelectionPage = () => {
   return (
     <div className="page-layout">
       <header className="mb-12">
-        <Link to="/admin/dashboard" className="text-gray-500 hover:text-purple-400 flex items-center gap-2 text-sm font-bold mb-6 transition-colors group">
+        <Link to="/admin/dashboard" className="text-slate-600 hover:text-purple-400 flex items-center gap-2 text-sm font-bold mb-6 transition-colors group">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
         </Link>
         <div className="flex items-center gap-4">
@@ -50,8 +50,8 @@ const Super50SelectionPage = () => {
             <Star size={32} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">Super 50 Selection</h1>
-            <p className="text-gray-400 mt-1">Unlock premium dashboard features for selected students.</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Super 50 Selection</h1>
+            <p className="text-slate-500 mt-1">Unlock premium dashboard features for selected students.</p>
           </div>
         </div>
       </header>
@@ -62,31 +62,31 @@ const Super50SelectionPage = () => {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-8"
         >
-          <div className="glass-card p-8 space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-3">
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 space-y-6">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
               <Upload size={20} className="text-purple-500" /> Upload Selection List
             </h3>
             
             <div 
               {...getRootProps()} 
               className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer ${
-                isDragActive ? 'border-purple-500 bg-purple-500/5' : 'border-white/10 hover:border-white/20 bg-white/[0.02]'
+                isDragActive ? 'border-purple-500 bg-purple-500/5' : 'border-slate-200 hover:border-white/20 bg-slate-50'
               }`}
             >
               <input {...getInputProps()} />
               {file ? (
                 <div className="space-y-2">
                   <FileSpreadsheet size={48} className="text-purple-500 mx-auto" />
-                  <p className="font-bold text-white">{file.name}</p>
-                  <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                  <p className="font-bold text-slate-900">{file.name}</p>
+                  <p className="text-xs text-slate-600">{(file.size / 1024).toFixed(1)} KB</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
                     <FileSpreadsheet size={32} className="text-gray-600" />
                   </div>
-                  <p className="text-white font-bold">Drop Excel here or click to browse</p>
-                  <p className="text-xs text-gray-500">Expected column: "Email"</p>
+                  <p className="text-slate-900 font-bold">Drop Excel here or click to browse</p>
+                  <p className="text-xs text-slate-600">Expected column: "Email"</p>
                 </div>
               )}
             </div>
@@ -124,31 +124,31 @@ const Super50SelectionPage = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           {result ? (
-            <div className="glass-card p-8 text-center space-y-6 border-green-500/20 bg-green-500/[0.02]">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 text-center space-y-6 border-green-500/20 bg-green-500/[0.02]">
               <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto text-green-500">
                 <CheckCircle size={40} />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white">Selection Updated!</h3>
-                <p className="text-gray-400 mt-2">{result.message}</p>
+                <h3 className="text-2xl font-bold text-slate-900">Selection Updated!</h3>
+                <p className="text-slate-500 mt-2">{result.message}</p>
               </div>
               <div className="grid grid-cols-1 gap-4 pt-4">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                  <div className="text-3xl font-black text-white">{result.data?.modifiedCount || 0}</div>
-                  <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Students Unlocked</div>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="text-3xl font-black text-slate-900">{result.data?.modifiedCount || 0}</div>
+                  <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1">Students Unlocked</div>
                 </div>
               </div>
               <button 
                 onClick={() => setResult(null)}
-                className="text-purple-400 text-sm font-bold hover:text-white transition-colors"
+                className="text-purple-400 text-sm font-bold hover:text-slate-900 transition-colors"
               >
                 Upload another list
               </button>
             </div>
           ) : (
-            <div className="glass-card p-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale">
               <Star size={64} className="text-gray-700" />
-              <h3 className="text-xl font-bold text-gray-500">Waiting for data...</h3>
+              <h3 className="text-xl font-bold text-slate-600">Waiting for data...</h3>
               <p className="text-sm text-gray-600 max-w-xs">Results of your Super 50 selection will appear here after upload.</p>
             </div>
           )}

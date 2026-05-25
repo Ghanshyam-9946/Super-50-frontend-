@@ -22,7 +22,7 @@ function AddStudentModal({ onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="glass-card" style={{ width: '90%', maxWidth: 480, padding: 32, position: 'relative' }}>
+        className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 480, padding: 32, position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
           <X size={20} />
         </button>
@@ -107,7 +107,7 @@ export default function StudentsPage() {
         </select>
       </div>
 
-      <motion.div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}
+      <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 0, overflow: 'hidden' }}
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         {loading ? (
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>

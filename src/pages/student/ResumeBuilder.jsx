@@ -92,18 +92,18 @@ const ResumeBuilder = () => {
 
   return (
     <div className="min-h-screen bg-[#030303] flex flex-col">
-      <header className="p-4 glass-nav sticky top-0 z-50 flex items-center justify-between px-8">
+      <header className="p-4 bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50 flex items-center justify-between px-8">
         <div className="flex items-center gap-3">
           <FileText className="text-purple-500" />
-          <h1 className="text-lg font-bold text-white tracking-tight">Resume Builder</h1>
+          <h1 className="text-lg font-bold text-slate-900 tracking-tight">Resume Builder</h1>
         </div>
         <div className="flex items-center gap-4">
-          <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-200">
             {[1, 2, 3].map(t => (
               <button 
                 key={t}
                 onClick={() => dispatch(updateLocalResume({ templateId: t }))}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${currentResume?.templateId === t ? 'bg-purple-600 text-white' : 'text-gray-500 hover:text-white'}`}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${currentResume?.templateId === t ? 'bg-purple-600 text-slate-900' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 T{t}
               </button>
@@ -114,11 +114,11 @@ const ResumeBuilder = () => {
                Submit for Review
              </button>
           )}
-          <div className="h-4 w-px bg-white/10"></div>
-          <button onClick={() => setShowPreview(!showPreview)} className="text-gray-400 hover:text-white transition-colors">
+          <div className="h-4 w-px bg-slate-100"></div>
+          <button onClick={() => setShowPreview(!showPreview)} className="text-slate-500 hover:text-slate-900 transition-colors">
             {showPreview ? <Edit3 size={18} /> : <Eye size={18} />}
           </button>
-          <button onClick={handleExport} className="text-gray-400 hover:text-white transition-colors">
+          <button onClick={handleExport} className="text-slate-500 hover:text-slate-900 transition-colors">
             <Download size={18} />
           </button>
           <button onClick={handleSave} className="btn-premium py-2 px-6 flex items-center gap-2">
@@ -128,7 +128,7 @@ const ResumeBuilder = () => {
       </header>
 
       <main className="flex-1 flex overflow-hidden">
-        <aside className="w-64 border-r border-white/5 p-6 space-y-2 hidden md:block overflow-y-auto">
+        <aside className="w-64 border-r border-slate-100 p-6 space-y-2 hidden md:block overflow-y-auto">
           {[
             { id: 'personal', label: 'Personal Info', icon: User },
             { id: 'education', label: 'Education', icon: BookOpen },
@@ -140,7 +140,7 @@ const ResumeBuilder = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-bold transition-all ${
-                activeTab === tab.id ? 'bg-purple-500/10 text-purple-400' : 'text-gray-500 hover:text-gray-300'
+                activeTab === tab.id ? 'bg-purple-500/10 text-purple-400' : 'text-slate-600 hover:text-gray-300'
               }`}
             >
               <tab.icon size={18} />
@@ -165,7 +165,7 @@ const ResumeBuilder = () => {
                   {currentResume.feedback.map((f, i) => (
                     <div key={i} className="text-gray-300 text-sm border-l-2 border-purple-500/30 pl-4 py-1">
                       <p className="italic">"{f.comment}"</p>
-                      <p className="text-[10px] text-gray-500 mt-1">{new Date(f.createdAt).toLocaleDateString()}</p>
+                      <p className="text-[10px] text-slate-600 mt-1">{new Date(f.createdAt).toLocaleDateString()}</p>
                     </div>
                   ))}
                 </div>
@@ -175,14 +175,14 @@ const ResumeBuilder = () => {
             <AnimatePresence mode="wait">
               {activeTab === 'personal' && (
                 <motion.section key="p" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
-                  <h2 className="text-2xl font-bold text-white">Personal Information</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">Personal Information</h2>
                   <div className="grid grid-cols-2 gap-6">
                     <InputField label="Phone" value={currentResume?.content?.personalInfo?.phone} onChange={(v) => handleUpdate('personalInfo', 'phone', v)} />
                     <InputField label="Location" value={currentResume?.content?.personalInfo?.location} onChange={(v) => handleUpdate('personalInfo', 'location', v)} />
                     <div className="col-span-2">
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Professional Summary</label>
+                      <label className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2 block">Professional Summary</label>
                       <textarea
-                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-purple-500/50 min-h-[120px]"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:outline-none focus:border-purple-500/50 min-h-[120px]"
                         value={currentResume?.content?.personalInfo?.summary}
                         onChange={(e) => handleUpdate('personalInfo', 'summary', e.target.value)}
                         placeholder="Highlight your key achievements and career goals..."
@@ -195,13 +195,13 @@ const ResumeBuilder = () => {
               {activeTab === 'education' && (
                 <motion.section key="e" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white">Education</h2>
+                    <h2 className="text-2xl font-bold text-slate-900">Education</h2>
                     <button onClick={() => addItem('education', { institution: '', degree: '', year: '', score: '' })} className="text-purple-400 flex items-center gap-2 text-sm font-bold">
                       <Plus size={16} /> Add More
                     </button>
                   </div>
                   {currentResume?.content?.education?.map((edu, i) => (
-                    <div key={i} className="glass-card p-6 relative group">
+                    <div key={i} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 relative group">
                       <button onClick={() => removeItem('education', i)} className="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash2 size={16} />
                       </button>
@@ -218,12 +218,12 @@ const ResumeBuilder = () => {
 
               {activeTab === 'skills' && (
                 <motion.section key="s" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
-                  <h2 className="text-2xl font-bold text-white">Skills</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">Skills</h2>
                   <div className="flex flex-wrap gap-2">
                     {currentResume?.content?.skills?.map((skill, i) => (
-                      <div key={i} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-white group">
+                      <div key={i} className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-900 group">
                         <span className="text-sm">{skill}</span>
-                        <button onClick={() => removeItem('skills', i)} className="text-gray-500 hover:text-red-500">
+                        <button onClick={() => removeItem('skills', i)} className="text-slate-600 hover:text-red-500">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -246,13 +246,13 @@ const ResumeBuilder = () => {
               {activeTab === 'experience' && (
                 <motion.section key="ex" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white">Experience</h2>
+                    <h2 className="text-2xl font-bold text-slate-900">Experience</h2>
                     <button onClick={() => addItem('experience', { company: '', role: '', duration: '', description: '' })} className="text-purple-400 flex items-center gap-2 text-sm font-bold">
                       <Plus size={16} /> Add Experience
                     </button>
                   </div>
                   {currentResume?.content?.experience?.map((exp, i) => (
-                    <div key={i} className="glass-card p-6 relative group">
+                    <div key={i} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 relative group">
                       <button onClick={() => removeItem('experience', i)} className="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash2 size={16} />
                       </button>
@@ -263,9 +263,9 @@ const ResumeBuilder = () => {
                           <InputField label="Duration (e.g. Jan 2023 - Present)" value={exp.duration} onChange={(v) => handleUpdate('experience', 'duration', v, i)} />
                         </div>
                         <div className="col-span-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Description</label>
+                          <label className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2 block">Description</label>
                           <textarea
-                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-purple-500/50 min-h-[80px]"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:outline-none focus:border-purple-500/50 min-h-[80px]"
                             value={exp.description}
                             onChange={(e) => handleUpdate('experience', 'description', e.target.value, i)}
                           />
@@ -279,13 +279,13 @@ const ResumeBuilder = () => {
               {activeTab === 'projects' && (
                 <motion.section key="pr" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white">Projects</h2>
+                    <h2 className="text-2xl font-bold text-slate-900">Projects</h2>
                     <button onClick={() => addItem('projects', { title: '', description: '', link: '' })} className="text-purple-400 flex items-center gap-2 text-sm font-bold">
                       <Plus size={16} /> Add Project
                     </button>
                   </div>
                   {currentResume?.content?.projects?.map((proj, i) => (
-                    <div key={i} className="glass-card p-6 relative group">
+                    <div key={i} className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 relative group">
                       <button onClick={() => removeItem('projects', i)} className="absolute top-4 right-4 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Trash2 size={16} />
                       </button>
@@ -293,9 +293,9 @@ const ResumeBuilder = () => {
                         <InputField label="Project Title" value={proj.title} onChange={(v) => handleUpdate('projects', 'title', v, i)} />
                         <InputField label="Project Link" value={proj.link} onChange={(v) => handleUpdate('projects', 'link', v, i)} />
                         <div className="col-span-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">Description</label>
+                          <label className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2 block">Description</label>
                           <textarea
-                            className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-purple-500/50 min-h-[80px]"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:outline-none focus:border-purple-500/50 min-h-[80px]"
                             value={proj.description}
                             onChange={(e) => handleUpdate('projects', 'description', e.target.value, i)}
                           />
@@ -309,7 +309,7 @@ const ResumeBuilder = () => {
           </div>
         </div>
 
-        <div className={`flex-1 bg-white/[0.02] border-l border-white/5 p-8 overflow-y-auto ${showPreview ? 'block' : 'hidden lg:block'}`}>
+        <div className={`flex-1 bg-slate-50 border-l border-slate-100 p-8 overflow-y-auto ${showPreview ? 'block' : 'hidden lg:block'}`}>
            <div ref={resumeRef} className="max-w-[210mm] mx-auto shadow-2xl overflow-hidden bg-white text-black min-h-[297mm]">
               {currentResume?.templateId === 1 && <TemplateOne data={currentResume} />}
               {currentResume?.templateId === 2 && <TemplateTwo data={currentResume} />}
@@ -325,7 +325,7 @@ const TemplateOne = ({ data }) => (
   <div className="p-12 h-full text-black">
     <div className="border-b-4 border-black pb-8">
       <h1 className="text-5xl font-black uppercase tracking-tighter">{data?.student?.name}</h1>
-      <div className="flex gap-6 mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+      <div className="flex gap-6 mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
         <span className="flex items-center gap-2"><Mail size={12}/> {data?.student?.email}</span>
         <span className="flex items-center gap-2"><Phone size={12}/> {data?.content?.personalInfo?.phone}</span>
         <span className="flex items-center gap-2"><MapPin size={12}/> {data?.content?.personalInfo?.location}</span>
@@ -334,11 +334,11 @@ const TemplateOne = ({ data }) => (
     <div className="grid grid-cols-3 gap-12 mt-12">
       <div className="col-span-2 space-y-12">
         <section>
-          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-gray-400">Professional Summary</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-slate-500">Professional Summary</h3>
           <p className="text-sm text-gray-800 leading-relaxed">{data?.content?.personalInfo?.summary}</p>
         </section>
         <section>
-          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-gray-400">Education</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-slate-500">Education</h3>
           {data?.content?.education?.map((edu, i) => (
             <div key={i} className="mb-6">
               <div className="flex justify-between items-start">
@@ -350,14 +350,14 @@ const TemplateOne = ({ data }) => (
           ))}
         </section>
         <section>
-          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-gray-400">Experience</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-slate-500">Experience</h3>
           {data?.content?.experience?.map((exp, i) => (
             <div key={i} className="mb-6">
               <div className="flex justify-between items-start">
                 <h4 className="font-bold text-sm uppercase">{exp.company}</h4>
                 <span className="text-[10px] font-black bg-gray-100 px-2 py-1">{exp.duration}</span>
               </div>
-              <p className="text-xs font-bold text-gray-500 italic mt-1">{exp.role}</p>
+              <p className="text-xs font-bold text-slate-600 italic mt-1">{exp.role}</p>
               <p className="text-xs text-gray-600 mt-2 leading-relaxed">{exp.description}</p>
             </div>
           ))}
@@ -365,7 +365,7 @@ const TemplateOne = ({ data }) => (
       </div>
       <div className="space-y-12">
         <section>
-          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-gray-400">Skills</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-slate-500">Skills</h3>
           <div className="flex flex-wrap gap-2">
             {data?.content?.skills?.map((s, i) => (
               <span key={i} className="border-2 border-black px-2 py-1 text-[9px] font-black uppercase">{s}</span>
@@ -373,7 +373,7 @@ const TemplateOne = ({ data }) => (
           </div>
         </section>
         <section>
-          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-gray-400">Projects</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-[4px] mb-6 text-slate-500">Projects</h3>
           {data?.content?.projects?.map((proj, i) => (
             <div key={i} className="mb-6">
               <h4 className="font-bold text-xs uppercase">{proj.title}</h4>
@@ -388,13 +388,13 @@ const TemplateOne = ({ data }) => (
 
 const TemplateTwo = ({ data }) => (
   <div className="flex h-full min-h-[297mm] text-black">
-    <div className="w-1/3 bg-gray-900 text-white p-10 space-y-12">
+    <div className="w-1/3 bg-white text-slate-900 p-10 space-y-12">
        <div className="w-32 h-32 rounded-full border-4 border-purple-500 overflow-hidden mx-auto">
          <img src={data?.content?.personalInfo?.photo || `https://ui-avatars.com/api/?name=${data?.student?.name}&size=200`} className="w-full h-full object-cover" />
        </div>
        <section>
          <h3 className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-6">Contact</h3>
-         <div className="space-y-4 text-[10px] text-gray-400">
+         <div className="space-y-4 text-[10px] text-slate-500">
            <div className="flex items-center gap-3"><Mail size={12}/> {data?.student?.email}</div>
            <div className="flex items-center gap-3"><Phone size={12}/> {data?.content?.personalInfo?.phone}</div>
            <div className="flex items-center gap-3"><MapPin size={12}/> {data?.content?.personalInfo?.location}</div>
@@ -404,7 +404,7 @@ const TemplateTwo = ({ data }) => (
          <h3 className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-6">Expertise</h3>
          <div className="flex flex-wrap gap-2">
             {data?.content?.skills?.map((s, i) => (
-              <span key={i} className="bg-white/10 px-2 py-1 text-[9px] font-bold uppercase rounded">{s}</span>
+              <span key={i} className="bg-slate-100 px-2 py-1 text-[9px] font-bold uppercase rounded">{s}</span>
             ))}
           </div>
        </section>
@@ -431,7 +431,7 @@ const TemplateTwo = ({ data }) => (
                    <span>{exp.company}</span>
                    <span className="text-purple-600">{exp.duration}</span>
                  </div>
-                 <p className="text-[10px] text-gray-400 italic mb-1">{exp.role}</p>
+                 <p className="text-[10px] text-slate-500 italic mb-1">{exp.role}</p>
                  <p className="text-[10px] text-gray-600 leading-relaxed">{exp.description}</p>
               </div>
            ))}
@@ -446,7 +446,7 @@ const TemplateTwo = ({ data }) => (
                   <span>{edu.degree}</span>
                   <span className="text-purple-600">{edu.year}</span>
                 </div>
-                <p className="text-[10px] text-gray-500">{edu.institution}</p>
+                <p className="text-[10px] text-slate-600">{edu.institution}</p>
              </div>
            ))}
          </section>
@@ -457,7 +457,7 @@ const TemplateTwo = ({ data }) => (
 
 const TemplateThree = ({ data }) => (
   <div className="p-0 h-full flex flex-col text-black">
-    <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-12 text-white">
+    <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-12 text-slate-900">
        <h1 className="text-5xl font-bold tracking-tighter">{data?.student?.name}</h1>
        <div className="flex gap-8 mt-6 text-xs font-medium opacity-80">
           <span className="flex items-center gap-2"><Mail size={14}/> {data?.student?.email}</span>
@@ -481,7 +481,7 @@ const TemplateThree = ({ data }) => (
               {data?.content?.projects?.map((proj, i) => (
                 <div key={i}>
                    <h4 className="text-xs font-bold text-gray-900">{proj.title}</h4>
-                   <p className="text-[10px] text-gray-500 mt-1">{proj.description}</p>
+                   <p className="text-[10px] text-slate-600 mt-1">{proj.description}</p>
                 </div>
               ))}
             </div>
@@ -500,7 +500,7 @@ const TemplateThree = ({ data }) => (
                   <div className="col-span-3">
                      <h4 className="text-sm font-bold text-gray-900">{exp.role}</h4>
                      <p className="text-xs text-blue-500 font-medium mb-1">{exp.company}</p>
-                     <p className="text-xs text-gray-500 leading-relaxed">{exp.description}</p>
+                     <p className="text-xs text-slate-600 leading-relaxed">{exp.description}</p>
                   </div>
                </div>
              ))}
@@ -512,7 +512,7 @@ const TemplateThree = ({ data }) => (
                   <span className="text-xs font-bold text-blue-600">{edu.year}</span>
                   <div className="col-span-3">
                      <h4 className="text-sm font-bold text-gray-900">{edu.degree}</h4>
-                     <p className="text-xs text-gray-500">{edu.institution}</p>
+                     <p className="text-xs text-slate-600">{edu.institution}</p>
                   </div>
                </div>
              ))}
@@ -524,10 +524,10 @@ const TemplateThree = ({ data }) => (
 
 const InputField = ({ label, value, onChange }) => (
   <div>
-    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 block">{label}</label>
+    <label className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-2 block">{label}</label>
     <input
       type="text"
-      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-purple-500/50"
+      className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-900 focus:outline-none focus:border-purple-500/50"
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
     />

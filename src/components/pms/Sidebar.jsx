@@ -5,8 +5,8 @@ import {
   CloudUpload, ClipboardCheck, Bell, FileText, BookOpen, Award,
   Code2, TrendingUp, FolderArchive, Activity, CalendarCheck, FileEdit,
 } from 'lucide-react';
-import { useAuth } from '../context/pms/AuthContext';
-import { useNotifications } from '../context/pms/NotificationContext';
+import { useAuth } from '../../context/pms/AuthContext';
+import { useNotifications } from '../../context/pms/NotificationContext';
 import { cn } from '../../utils/pms/helpers';
 
 const adminNav = [

@@ -35,7 +35,7 @@ function UploadModal({ onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="glass-card" style={{ width: '90%', maxWidth: 520, padding: 32, position: 'relative' }}>
+        className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 520, padding: 32, position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
           <X size={20} />
         </button>
@@ -128,7 +128,7 @@ export default function CertificatesPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
           <AnimatePresence>
             {filtered.map((cert, i) => (
-              <motion.div key={cert._id} className="glass-card" style={{ padding: 20 }}
+              <motion.div key={cert._id} className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 20 }}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: i * 0.05 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>

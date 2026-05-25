@@ -24,7 +24,7 @@ function AddStudentModal({ onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="glass-card" style={{ width: '90%', maxWidth: 480, padding: 32, position: 'relative' }}>
+        className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 480, padding: 32, position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
           <X size={20} />
         </button>
@@ -127,7 +127,7 @@ export default function BulkCreatePage() {
 
       {/* Step 1: Upload */}
       {!bulkPreview && !bulkResult && (
-        <motion.div className="glass-card" style={{ padding: 32, maxWidth: 600, margin: '0 auto' }}
+        <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 32, maxWidth: 600, margin: '0 auto' }}
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Step 1 — Upload File</h3>
           <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`} style={{ marginBottom: 20 }}>
@@ -172,7 +172,7 @@ export default function BulkCreatePage() {
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 0, overflow: 'hidden', marginBottom: 20 }}>
             <div style={{ overflowX: 'auto', maxHeight: 400, overflowY: 'auto' }}>
               <table className="data-table">
                 <thead>
@@ -235,7 +235,7 @@ export default function BulkCreatePage() {
       {/* Step 3: Result */}
       {bulkResult && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="glass-card" style={{ padding: 32, maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+          className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 32, maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
           <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 8, color: '#10b981' }}>Accounts Created!</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 28 }}>{bulkResult.message}</p>

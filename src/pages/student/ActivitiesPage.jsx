@@ -31,7 +31,7 @@ function AddModal({ onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="glass-card" style={{ width: '90%', maxWidth: 500, padding: 32, position: 'relative' }}>
+        className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 500, padding: 32, position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
           <X size={20} />
         </button>
@@ -141,7 +141,7 @@ export default function ActivitiesPage() {
               const cfg = typeConfig[act.type] || typeConfig.other;
               const Icon = cfg.icon;
               return (
-                <motion.div key={act._id} className="glass-card" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 16 }}
+                <motion.div key={act._id} className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 16 }}
                   initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }} transition={{ delay: i * 0.04 }}>
                   <div style={{ width: 44, height: 44, borderRadius: 10, background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

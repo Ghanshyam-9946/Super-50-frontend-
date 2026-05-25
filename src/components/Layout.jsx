@@ -13,9 +13,9 @@ export default function Layout({ theme, toggleTheme }) {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="min-h-screen bg-slate-50 text-slate-900 relative z-10 flex">
       <Sidebar theme={theme} toggleTheme={toggleTheme} />
-      <main style={{ flex: 1, marginLeft: 260, minHeight: '100vh', background: 'var(--bg-primary)' }}>
+      <main className="flex-1 w-full min-h-screen">
         <Outlet />
       </main>
     </div>

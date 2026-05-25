@@ -105,7 +105,7 @@ const DriveResultUpload = () => {
   return (
     <div className="page-layout">
       <header className="mb-12">
-        <Link to="/admin/dashboard" className="text-gray-500 hover:text-purple-400 flex items-center gap-2 text-sm font-bold mb-6 transition-colors group">
+        <Link to="/admin/dashboard" className="text-slate-600 hover:text-purple-400 flex items-center gap-2 text-sm font-bold mb-6 transition-colors group">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
         </Link>
         <div className="flex items-center gap-4">
@@ -113,8 +113,8 @@ const DriveResultUpload = () => {
             <Building2 size={32} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">Drive Result Upload</h1>
-            <p className="text-gray-400 mt-1">Upload dynamic Excel results and track student rounds.</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Drive Result Upload</h1>
+            <p className="text-slate-500 mt-1">Upload dynamic Excel results and track student rounds.</p>
           </div>
         </div>
       </header>
@@ -125,18 +125,18 @@ const DriveResultUpload = () => {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-8"
         >
-          <div className="glass-card p-8 space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-3">
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 space-y-6">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
               <Upload size={20} className="text-indigo-500" /> Upload Excel Sheet
             </h3>
 
             {/* Drive Selection */}
             <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Select Drive</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Select Drive</label>
               <select 
                 value={selectedDrive} 
                 onChange={(e) => setSelectedDrive(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:outline-none focus:border-indigo-500"
               >
                 <option value="">-- Choose a Placement Drive --</option>
                 {drives.map(drive => (
@@ -148,23 +148,23 @@ const DriveResultUpload = () => {
             <div 
               {...getRootProps()} 
               className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer ${
-                isDragActive ? 'border-indigo-500 bg-indigo-500/5' : 'border-white/10 hover:border-white/20 bg-white/[0.02]'
+                isDragActive ? 'border-indigo-500 bg-indigo-500/5' : 'border-slate-200 hover:border-white/20 bg-slate-50'
               }`}
             >
               <input {...getInputProps()} />
               {file ? (
                 <div className="space-y-2">
                   <FileSpreadsheet size={48} className="text-indigo-500 mx-auto" />
-                  <p className="font-bold text-white">{file.name}</p>
-                  <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                  <p className="font-bold text-slate-900">{file.name}</p>
+                  <p className="text-xs text-slate-600">{(file.size / 1024).toFixed(1)} KB</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
                     <FileSpreadsheet size={32} className="text-gray-600" />
                   </div>
-                  <p className="text-white font-bold">Drop Excel here or click to browse</p>
-                  <p className="text-xs text-gray-500">Only .xlsx or .xls files</p>
+                  <p className="text-slate-900 font-bold">Drop Excel here or click to browse</p>
+                  <p className="text-xs text-slate-600">Only .xlsx or .xls files</p>
                 </div>
               )}
             </div>
@@ -172,10 +172,10 @@ const DriveResultUpload = () => {
             {/* Dynamic Headings */}
             {file && fileColumns.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
                   Select Round Columns (Priority Wise - Max 5)
                 </label>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
                   {fileColumns.map((col, index) => {
                     const isChecked = headings.includes(col);
                     const priorityIndex = headings.indexOf(col);
@@ -186,13 +186,13 @@ const DriveResultUpload = () => {
                         onClick={() => toggleHeading(col)}
                         className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${
                           isChecked 
-                            ? 'bg-indigo-500/10 border-indigo-500/30 text-white' 
-                            : 'bg-black/20 border-white/5 text-gray-400 hover:bg-white/5'
+                            ? 'bg-indigo-500/10 border-indigo-500/30 text-slate-900' 
+                            : 'bg-black/20 border-slate-100 text-slate-500 hover:bg-slate-50'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${
-                            isChecked ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-gray-600 bg-transparent'
+                            isChecked ? 'bg-indigo-500 border-indigo-500 text-slate-900' : 'border-gray-600 bg-transparent'
                           }`}>
                             {isChecked && <CheckCircle size={14} />}
                           </div>
@@ -247,13 +247,13 @@ const DriveResultUpload = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           {result ? (
-            <div className="glass-card p-8 text-center space-y-6 border-indigo-500/20 bg-indigo-500/[0.02]">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 text-center space-y-6 border-indigo-500/20 bg-indigo-500/[0.02]">
               <div className="w-20 h-20 rounded-full bg-indigo-500/20 flex items-center justify-center mx-auto text-indigo-500">
                 <CheckCircle size={40} />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white">Upload Successful!</h3>
-                <p className="text-gray-400 mt-2">Student placement results have been updated.</p>
+                <h3 className="text-2xl font-bold text-slate-900">Upload Successful!</h3>
+                <p className="text-slate-500 mt-2">Student placement results have been updated.</p>
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4">
                 <div className="p-4 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
@@ -273,15 +273,15 @@ const DriveResultUpload = () => {
                   setHeadings([]); 
                   setFileColumns([]); 
                 }}
-                className="text-indigo-400 text-sm font-bold hover:text-white transition-colors"
+                className="text-indigo-400 text-sm font-bold hover:text-slate-900 transition-colors"
               >
                 Upload another result sheet
               </button>
             </div>
           ) : (
-            <div className="glass-card p-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale">
               <Building2 size={64} className="text-gray-700" />
-              <h3 className="text-xl font-bold text-gray-500">Waiting for data...</h3>
+              <h3 className="text-xl font-bold text-slate-600">Waiting for data...</h3>
               <p className="text-sm text-gray-600 max-w-xs">Result updates will appear here after upload.</p>
             </div>
           )}

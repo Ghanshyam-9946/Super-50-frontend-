@@ -44,7 +44,7 @@ const FacultyPlacementDashboard = () => {
   if (loading && drives.length === 0) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
       <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
-      <p className="text-gray-400 font-medium">Loading placement analytics...</p>
+      <p className="text-slate-500 font-medium">Loading placement analytics...</p>
     </div>
   );
 
@@ -52,8 +52,8 @@ const FacultyPlacementDashboard = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Placement Management</h1>
-          <p className="text-gray-400 mt-1">Manage drives, track rounds, and monitor student selections.</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Placement Management</h1>
+          <p className="text-slate-500 mt-1">Manage drives, track rounds, and monitor student selections.</p>
         </div>
         <div className="flex items-center gap-3">
           <input
@@ -65,7 +65,7 @@ const FacultyPlacementDashboard = () => {
           />
           <button 
             onClick={() => document.getElementById('round-upload').click()}
-            className="btn-outline-premium px-4 py-2 flex items-center gap-2"
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm rounded-xl transition-all font-bold px-4 py-2 flex items-center gap-2"
           >
             <Upload size={18} /> Round Data
           </button>
@@ -92,28 +92,28 @@ const FacultyPlacementDashboard = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className="glass-card p-5"
+            className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5"
           >
             <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-xl bg-white/5 ${stat.color}`}>
+              <div className={`p-3 rounded-xl bg-slate-50 ${stat.color}`}>
                 <stat.icon size={24} />
               </div>
-              <span className="text-3xl font-bold text-white">{stat.value}</span>
+              <span className="text-3xl font-bold text-slate-900">{stat.value}</span>
             </div>
-            <p className="text-gray-500 text-sm mt-4 font-medium">{stat.label}</p>
+            <p className="text-slate-600 text-sm mt-4 font-medium">{stat.label}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Main Content */}
       <div className="space-y-6">
-        <div className="flex items-center gap-6 border-b border-white/5">
+        <div className="flex items-center gap-6 border-b border-slate-100">
           {['drives', 'analytics', 'selections'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
-                activeTab === tab ? 'text-purple-400' : 'text-gray-500 hover:text-gray-300'
+                activeTab === tab ? 'text-purple-400' : 'text-slate-600 hover:text-gray-300'
               }`}
             >
               {tab}
@@ -132,15 +132,15 @@ const FacultyPlacementDashboard = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className="glass-card p-5 flex items-center justify-between hover:bg-white/5 transition-colors cursor-pointer"
+                className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-5">
                   <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
                     <Briefcase className="text-purple-400" size={24} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">{drive.companyName}</h3>
-                    <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
+                    <h3 className="text-lg font-bold text-slate-900">{drive.companyName}</h3>
+                    <div className="flex items-center gap-3 text-sm text-slate-600 mt-1">
                       <span>{drive.package}</span>
                       <span>•</span>
                       <span>{drive.rounds?.length || 0} Rounds</span>
@@ -148,9 +148,9 @@ const FacultyPlacementDashboard = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-8">
-                  <div className="hidden lg:flex items-center gap-4 text-right px-6 border-x border-white/5">
+                  <div className="hidden lg:flex items-center gap-4 text-right px-6 border-x border-slate-100">
                     <div>
-                      <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Eligibility</p>
+                      <p className="text-[10px] text-slate-600 uppercase font-black tracking-widest">Eligibility</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs font-bold text-green-400 flex items-center gap-1">
                           <CheckCircle size={12} /> Active
@@ -159,7 +159,7 @@ const FacultyPlacementDashboard = () => {
                     </div>
                   </div>
                   <div className="hidden md:block text-right">
-                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wider">Deadline</p>
+                    <p className="text-xs text-slate-600 uppercase font-bold tracking-wider">Deadline</p>
                     <p className="text-sm text-gray-300">{new Date(drive.deadline).toLocaleDateString()}</p>
                   </div>
                   <ChevronRight className="text-gray-600" />
@@ -168,10 +168,10 @@ const FacultyPlacementDashboard = () => {
             ))}
 
             {drives.length === 0 && (
-              <div className="glass-card p-12 text-center">
+              <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-12 text-center">
                 <Clock className="mx-auto text-gray-600 mb-4" size={48} />
-                <h3 className="text-xl font-bold text-white">No Drives Found</h3>
-                <p className="text-gray-400 mt-2">Start by creating a new placement drive.</p>
+                <h3 className="text-xl font-bold text-slate-900">No Drives Found</h3>
+                <p className="text-slate-500 mt-2">Start by creating a new placement drive.</p>
               </div>
             )}
           </div>

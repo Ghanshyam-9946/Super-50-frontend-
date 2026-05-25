@@ -107,7 +107,7 @@ export default function LeaderboardPage() {
       )}
 
       {/* Full Table */}
-      <motion.div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}
+      <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 0, overflow: 'hidden' }}
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 700, fontSize: 14 }}>All Students ({filtered.length})</span>

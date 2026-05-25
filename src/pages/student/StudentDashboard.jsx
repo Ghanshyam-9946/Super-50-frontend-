@@ -55,10 +55,10 @@ export default function StudentDashboard() {
     <div className="page-layout">
       <div className="page-header">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="page-title">
-            Hello, <span className="gradient-text">{student?.name?.split(' ')[0]}</span> 👋
+          <h1 className="text-3xl font-black text-slate-900 mb-1">
+            Hello, <span className="text-indigo-600">{student?.name?.split(' ')[0]}</span> 👋
           </h1>
-          <p className="page-subtitle">
+          <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">
             {student?.department} • Batch {student?.batch} • {student?.enrollmentNumber}
           </p>
         </motion.div>
@@ -75,17 +75,17 @@ export default function StudentDashboard() {
             <div className="stat-icon" style={{ background: bg, color }}>
               <Icon size={22} />
             </div>
-            <div className="stat-value" style={{ color }}>{value}<span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{unit}</span></div>
-            <div className="stat-label">{label}</div>
+            <div className="stat-value" style={{ color }}>{value}<span style={{ fontSize: 14, color: '#64748b' }}>{unit}</span></div>
+            <div className="stat-label text-slate-500 font-bold text-xs uppercase tracking-widest">{label}</div>
           </motion.div>
         ))}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 20, marginBottom: 24 }}>
         {/* Score Ring */}
-        <motion.div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+        <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 28, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
           initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, alignSelf: 'flex-start' }}>
+          <h3 className="text-slate-900" style={{ fontSize: 15, fontWeight: 700, marginBottom: 20, alignSelf: 'flex-start' }}>
             Performance Score
           </h3>
           <ScoreRing score={student?.performanceScore || 0} size={200} />
@@ -96,10 +96,10 @@ export default function StudentDashboard() {
               { label: 'Activities (40%)', value: Math.min((stats.totalActivities || 0) * 5, 40), color: '#7c3aed' },
             ].map(({ label, value, color }) => (
               <div key={label} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4, color: 'var(--text-muted)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4, color: '#64748b' }}>
                   <span>{label}</span><span style={{ color, fontWeight: 600 }}>{Math.round(value)}</span>
                 </div>
-                <div style={{ height: 4, background: 'var(--bg-secondary)', borderRadius: 2 }}>
+                <div style={{ height: 4, background: '#f1f5f9', borderRadius: 2 }}>
                   <div style={{ height: '100%', width: `${Math.min(value, 40)}%`, background: color, borderRadius: 2, transition: 'width 1s ease' }} />
                 </div>
               </div>
@@ -108,9 +108,9 @@ export default function StudentDashboard() {
         </motion.div>
 
         {/* Activity Chart */}
-        <motion.div className="glass-card" style={{ padding: 28 }}
+        <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 28 }}
           initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}>Activity Breakdown</h3>
+          <h3 className="text-slate-900" style={{ fontSize: 15, fontWeight: 700, marginBottom: 20 }}>Activity Breakdown</h3>
           <div style={{ height: 240 }}>
             <Bar data={activityData} options={chartDefaults} />
           </div>
@@ -118,11 +118,11 @@ export default function StudentDashboard() {
       </div>
 
       {/* Recent Certificates */}
-      <motion.div className="glass-card" style={{ padding: 24 }}
+      <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 24 }}
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Recent Certificates</h3>
+        <h3 className="text-slate-900" style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Recent Certificates</h3>
         {certificates.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+          <div style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
             <Award size={40} style={{ opacity: 0.3, marginBottom: 8 }} />
             <p>No certificates uploaded yet</p>
           </div>
@@ -131,12 +131,12 @@ export default function StudentDashboard() {
             {certificates.slice(0, 5).map((cert) => (
               <div key={cert._id} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px', background: 'var(--bg-secondary)',
-                borderRadius: 10, border: '1px solid var(--border)',
+                padding: '12px 16px', background: '#f8fafc',
+                borderRadius: 10, border: '1px solid #e2e8f0',
               }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{cert.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{cert.issuedBy}</div>
+                  <div className="text-slate-900" style={{ fontWeight: 600, fontSize: 14 }}>{cert.title}</div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>{cert.issuedBy}</div>
                 </div>
                 <span className={`badge badge-${cert.verified}`}>
                   {cert.verified === 'approved' ? '✓' : cert.verified === 'rejected' ? '✗' : '⏳'}

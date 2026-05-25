@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import PMSLayout from '../../components/pms/PMSLayout';
 
 // Admin
 import AdminDashboard from './admin/Dashboard';
@@ -50,43 +51,51 @@ const RoleGuard = ({ children, allowed }) => {
 export default function PMSRoutes() {
   return (
     <Routes>
-      {/* Admin */}
-      <Route path="admin" element={<RoleGuard allowed={['admin']}><AdminDashboard /></RoleGuard>} />
-      <Route path="admin/academic-year" element={<RoleGuard allowed={['admin']}><AcademicYears /></RoleGuard>} />
-      <Route path="admin/projects" element={<RoleGuard allowed={['admin']}><Projects /></RoleGuard>} />
-      <Route path="admin/presentations" element={<RoleGuard allowed={['admin']}><Presentations /></RoleGuard>} />
-      <Route path="admin/guides" element={<RoleGuard allowed={['admin']}><Guides /></RoleGuard>} />
-      <Route path="admin/students" element={<RoleGuard allowed={['admin']}><Students /></RoleGuard>} />
-      <Route path="admin/teams" element={<RoleGuard allowed={['admin']}><Teams /></RoleGuard>} />
-      <Route path="admin/promote" element={<RoleGuard allowed={['admin']}><Promote /></RoleGuard>} />
-      <Route path="admin/attendance" element={<RoleGuard allowed={['admin']}><AdminAttendance /></RoleGuard>} />
-      <Route path="admin/semester-attendance" element={<RoleGuard allowed={['admin']}><SemesterAttendance /></RoleGuard>} />
-      <Route path="admin/reports" element={<RoleGuard allowed={['admin']}><Reports /></RoleGuard>} />
-      <Route path="admin/forms" element={<RoleGuard allowed={['admin']}><AdminForms /></RoleGuard>} />
-      <Route path="admin/guidelines" element={<RoleGuard allowed={['admin']}><AdminGuidelines /></RoleGuard>} />
-      <Route path="admin/templates" element={<RoleGuard allowed={['admin']}><AdminTemplates /></RoleGuard>} />
-      <Route path="admin/settings" element={<RoleGuard allowed={['admin']}><Settings /></RoleGuard>} />
+      {/* All PMS routes wrapped in PMSLayout → gives PMS Sidebar + Topbar */}
+      <Route element={<PMSLayout />}>
 
-      {/* Student */}
-      <Route path="student" element={<RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>} />
-      <Route path="student/team" element={<RoleGuard allowed={['student']}><StudentTeam /></RoleGuard>} />
-      <Route path="student/progress" element={<RoleGuard allowed={['student']}><StudentProgress /></RoleGuard>} />
-      <Route path="student/presentations" element={<RoleGuard allowed={['student']}><StudentPresentations /></RoleGuard>} />
-      <Route path="student/marks" element={<RoleGuard allowed={['student']}><StudentMarks /></RoleGuard>} />
-      <Route path="student/report" element={<RoleGuard allowed={['student']}><ProjectReport /></RoleGuard>} />
-      <Route path="student/code-editor" element={<RoleGuard allowed={['student']}><CodeEditor /></RoleGuard>} />
-      <Route path="student/resources" element={<RoleGuard allowed={['student']}><StudentResources /></RoleGuard>} />
-      <Route path="student/guidelines" element={<RoleGuard allowed={['student']}><StudentGuidelines /></RoleGuard>} />
+        {/* Admin — /pms/admin/dashboard alias for sidebar nav link */}
+        <Route path="admin" element={<RoleGuard allowed={['admin']}><AdminDashboard /></RoleGuard>} />
+        <Route path="admin/dashboard" element={<RoleGuard allowed={['admin']}><AdminDashboard /></RoleGuard>} />
+        <Route path="admin/academic-year" element={<RoleGuard allowed={['admin']}><AcademicYears /></RoleGuard>} />
+        <Route path="admin/projects" element={<RoleGuard allowed={['admin']}><Projects /></RoleGuard>} />
+        <Route path="admin/presentations" element={<RoleGuard allowed={['admin']}><Presentations /></RoleGuard>} />
+        <Route path="admin/guides" element={<RoleGuard allowed={['admin']}><Guides /></RoleGuard>} />
+        <Route path="admin/students" element={<RoleGuard allowed={['admin']}><Students /></RoleGuard>} />
+        <Route path="admin/teams" element={<RoleGuard allowed={['admin']}><Teams /></RoleGuard>} />
+        <Route path="admin/promote" element={<RoleGuard allowed={['admin']}><Promote /></RoleGuard>} />
+        <Route path="admin/attendance" element={<RoleGuard allowed={['admin']}><AdminAttendance /></RoleGuard>} />
+        <Route path="admin/semester-attendance" element={<RoleGuard allowed={['admin']}><SemesterAttendance /></RoleGuard>} />
+        <Route path="admin/reports" element={<RoleGuard allowed={['admin']}><Reports /></RoleGuard>} />
+        <Route path="admin/forms" element={<RoleGuard allowed={['admin']}><AdminForms /></RoleGuard>} />
+        <Route path="admin/guidelines" element={<RoleGuard allowed={['admin']}><AdminGuidelines /></RoleGuard>} />
+        <Route path="admin/templates" element={<RoleGuard allowed={['admin']}><AdminTemplates /></RoleGuard>} />
+        <Route path="admin/settings" element={<RoleGuard allowed={['admin']}><Settings /></RoleGuard>} />
 
-      {/* Guide */}
-      <Route path="guide" element={<RoleGuard allowed={['guide', 'teacher']}><GuideDashboard /></RoleGuard>} />
-      <Route path="guide/groups" element={<RoleGuard allowed={['guide', 'teacher']}><GuideGroups /></RoleGuard>} />
-      <Route path="guide/review/:teamId" element={<RoleGuard allowed={['guide', 'teacher']}><GuideReview /></RoleGuard>} />
-      <Route path="guide/rubrics/:teamId" element={<RoleGuard allowed={['guide', 'teacher']}><GuideRubrics /></RoleGuard>} />
-      <Route path="guide/attendance" element={<RoleGuard allowed={['guide', 'teacher']}><GuideAttendance /></RoleGuard>} />
-      <Route path="guide/status" element={<RoleGuard allowed={['guide', 'teacher']}><GuideStatus /></RoleGuard>} />
-      <Route path="guide/status/:teamId" element={<RoleGuard allowed={['guide', 'teacher']}><GuideStatusDetail /></RoleGuard>} />
-      <Route path="guide/reports" element={<RoleGuard allowed={['guide', 'teacher']}><GuideReports /></RoleGuard>} />
+        {/* Student — /pms/student/dashboard alias for sidebar nav link */}
+        <Route path="student" element={<RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>} />
+        <Route path="student/dashboard" element={<RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>} />
+        <Route path="student/team" element={<RoleGuard allowed={['student']}><StudentTeam /></RoleGuard>} />
+        <Route path="student/progress" element={<RoleGuard allowed={['student']}><StudentProgress /></RoleGuard>} />
+        <Route path="student/presentations" element={<RoleGuard allowed={['student']}><StudentPresentations /></RoleGuard>} />
+        <Route path="student/marks" element={<RoleGuard allowed={['student']}><StudentMarks /></RoleGuard>} />
+        <Route path="student/report" element={<RoleGuard allowed={['student']}><ProjectReport /></RoleGuard>} />
+        <Route path="student/code-editor" element={<RoleGuard allowed={['student']}><CodeEditor /></RoleGuard>} />
+        <Route path="student/resources" element={<RoleGuard allowed={['student']}><StudentResources /></RoleGuard>} />
+        <Route path="student/guidelines" element={<RoleGuard allowed={['student']}><StudentGuidelines /></RoleGuard>} />
+
+        {/* Guide — /pms/guide/dashboard alias for sidebar nav link */}
+        <Route path="guide" element={<RoleGuard allowed={['guide', 'teacher']}><GuideDashboard /></RoleGuard>} />
+        <Route path="guide/dashboard" element={<RoleGuard allowed={['guide', 'teacher']}><GuideDashboard /></RoleGuard>} />
+        <Route path="guide/groups" element={<RoleGuard allowed={['guide', 'teacher']}><GuideGroups /></RoleGuard>} />
+        <Route path="guide/review/:teamId" element={<RoleGuard allowed={['guide', 'teacher']}><GuideReview /></RoleGuard>} />
+        <Route path="guide/rubrics/:teamId" element={<RoleGuard allowed={['guide', 'teacher']}><GuideRubrics /></RoleGuard>} />
+        <Route path="guide/attendance" element={<RoleGuard allowed={['guide', 'teacher']}><GuideAttendance /></RoleGuard>} />
+        <Route path="guide/status" element={<RoleGuard allowed={['guide', 'teacher']}><GuideStatus /></RoleGuard>} />
+        <Route path="guide/status/:teamId" element={<RoleGuard allowed={['guide', 'teacher']}><GuideStatusDetail /></RoleGuard>} />
+        <Route path="guide/reports" element={<RoleGuard allowed={['guide', 'teacher']}><GuideReports /></RoleGuard>} />
+
+      </Route>
     </Routes>
   );
 }

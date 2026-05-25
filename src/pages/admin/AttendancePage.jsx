@@ -62,7 +62,7 @@ export default function AttendancePage() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {/* Upload Section */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="glass-card" style={{ padding: 24, marginBottom: 16 }}>
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 24, marginBottom: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Upload ERP Sheet</h3>
 
             {/* Dropzone */}
@@ -132,7 +132,7 @@ export default function AttendancePage() {
         </motion.div>
 
         {/* History */}
-        <motion.div className="glass-card" style={{ padding: 24 }}
+        <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 24 }}
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Upload History</h3>
           {history.length === 0 ? (

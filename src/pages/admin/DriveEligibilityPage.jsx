@@ -42,7 +42,7 @@ const DriveEligibilityPage = () => {
   return (
     <div className="page-layout">
       <header className="mb-12">
-        <Link to="/admin/dashboard" className="text-gray-500 hover:text-purple-400 flex items-center gap-2 text-sm font-bold mb-6 transition-colors group">
+        <Link to="/admin/dashboard" className="text-slate-600 hover:text-purple-400 flex items-center gap-2 text-sm font-bold mb-6 transition-colors group">
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
         </Link>
         <div className="flex items-center gap-4">
@@ -50,8 +50,8 @@ const DriveEligibilityPage = () => {
             <Briefcase size={32} />
           </div>
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">Drive Eligibility Upload</h1>
-            <p className="text-gray-400 mt-1">Publish student eligibility for specific company drives via Excel.</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Drive Eligibility Upload</h1>
+            <p className="text-slate-500 mt-1">Publish student eligibility for specific company drives via Excel.</p>
           </div>
         </div>
       </header>
@@ -62,31 +62,31 @@ const DriveEligibilityPage = () => {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-8"
         >
-          <div className="glass-card p-8 space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-3">
+          <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 space-y-6">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
               <Upload size={20} className="text-blue-500" /> Upload Eligibility List
             </h3>
             
             <div 
               {...getRootProps()} 
               className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer ${
-                isDragActive ? 'border-blue-500 bg-blue-500/5' : 'border-white/10 hover:border-white/20 bg-white/[0.02]'
+                isDragActive ? 'border-blue-500 bg-blue-500/5' : 'border-slate-200 hover:border-white/20 bg-slate-50'
               }`}
             >
               <input {...getInputProps()} />
               {file ? (
                 <div className="space-y-2">
                   <FileSpreadsheet size={48} className="text-blue-500 mx-auto" />
-                  <p className="font-bold text-white">{file.name}</p>
-                  <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                  <p className="font-bold text-slate-900">{file.name}</p>
+                  <p className="text-xs text-slate-600">{(file.size / 1024).toFixed(1)} KB</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
                     <FileSpreadsheet size={32} className="text-gray-600" />
                   </div>
-                  <p className="text-white font-bold">Drop Excel here or click to browse</p>
-                  <div className="text-xs text-gray-500 space-y-1">
+                  <p className="text-slate-900 font-bold">Drop Excel here or click to browse</p>
+                  <div className="text-xs text-slate-600 space-y-1">
                     <p>Required: "Email", "CompanyName"</p>
                     <p>Optional: "Package", "Deadline"</p>
                   </div>
@@ -115,10 +115,10 @@ const DriveEligibilityPage = () => {
               <p className="font-bold mb-2 uppercase tracking-widest text-[10px]">Excel Format Guide</p>
               Your Excel sheet should have the following headers (case-insensitive):
               <ul className="list-disc list-inside mt-2 space-y-1 opacity-80">
-                <li><code className="bg-white/10 px-1 rounded">Email</code>: Student's registered email</li>
-                <li><code className="bg-white/10 px-1 rounded">CompanyName</code>: Name of the hiring company</li>
-                <li><code className="bg-white/10 px-1 rounded">Package</code>: Salary package (optional)</li>
-                <li><code className="bg-white/10 px-1 rounded">Deadline</code>: Drive application date (optional)</li>
+                <li><code className="bg-slate-100 px-1 rounded">Email</code>: Student's registered email</li>
+                <li><code className="bg-slate-100 px-1 rounded">CompanyName</code>: Name of the hiring company</li>
+                <li><code className="bg-slate-100 px-1 rounded">Package</code>: Salary package (optional)</li>
+                <li><code className="bg-slate-100 px-1 rounded">Deadline</code>: Drive application date (optional)</li>
               </ul>
             </div>
           </div>
@@ -129,13 +129,13 @@ const DriveEligibilityPage = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           {result ? (
-            <div className="glass-card p-8 text-center space-y-6 border-blue-500/20 bg-blue-500/[0.02]">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-8 text-center space-y-6 border-blue-500/20 bg-blue-500/[0.02]">
               <div className="w-20 h-20 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto text-blue-500">
                 <CheckCircle size={40} />
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-white">Upload Successful!</h3>
-                <p className="text-gray-400 mt-2">{result.message}</p>
+                <h3 className="text-2xl font-bold text-slate-900">Upload Successful!</h3>
+                <p className="text-slate-500 mt-2">{result.message}</p>
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4">
                 <div className="p-4 rounded-3xl bg-blue-500/10 border border-blue-500/20 shadow-lg shadow-blue-500/5">
@@ -148,15 +148,15 @@ const DriveEligibilityPage = () => {
                 </div>
               </div>
               
-              <div className="bg-white/5 rounded-3xl p-6 border border-white/5 text-left">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Operations Summary</p>
+              <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 text-left">
+                <p className="text-xs font-bold text-slate-600 uppercase tracking-widest mb-4">Operations Summary</p>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Successfully Processed</span>
+                    <span className="text-slate-500">Successfully Processed</span>
                     <span className="text-green-400 font-bold">{result.data?.updated || 0}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400">Database Errors</span>
+                    <span className="text-slate-500">Database Errors</span>
                     <span className="text-red-400 font-bold">{result.data?.errors?.length || 0}</span>
                   </div>
                 </div>
@@ -171,15 +171,15 @@ const DriveEligibilityPage = () => {
               )}
               <button 
                 onClick={() => setResult(null)}
-                className="text-blue-400 text-sm font-bold hover:text-white transition-colors"
+                className="text-blue-400 text-sm font-bold hover:text-slate-900 transition-colors"
               >
                 Upload another eligibility list
               </button>
             </div>
           ) : (
-            <div className="glass-card p-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale">
+            <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4 opacity-50 grayscale">
               <Building2 size={64} className="text-gray-700" />
-              <h3 className="text-xl font-bold text-gray-500">Waiting for data...</h3>
+              <h3 className="text-xl font-bold text-slate-600">Waiting for data...</h3>
               <p className="text-sm text-gray-600 max-w-xs">Eligibility statistics and drive updates will appear here after upload.</p>
             </div>
           )}

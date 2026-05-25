@@ -164,10 +164,10 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/leaderboard" element={
           <RoleGuard allowed={['student', 'admin', 'teacher', 'guide']}><LeaderboardPage /></RoleGuard>
         } />
-
-        {/* PMS Routes - Mounted under /pms */}
-        <Route path="/pms/*" element={<PMSRoutes />} />
       </Route>
+
+      {/* PMS Routes - outside main Layout so PMS gets its own Sidebar + Topbar */}
+      <Route path="/pms/*" element={<PMSRoutes />} />
 
       {/* Unauthorized */}
       <Route path="/unauthorized" element={

@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/pms/AuthContext';
+import { useAuth } from '../../context/pms/AuthContext';
 import { PageLoader } from './Common';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {

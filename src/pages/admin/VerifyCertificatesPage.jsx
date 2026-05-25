@@ -11,7 +11,7 @@ function RejectModal({ cert, onClose, onConfirm }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-        className="glass-card" style={{ width: '90%', maxWidth: 420, padding: 28 }}>
+        className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 420, padding: 28 }}>
         <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: 'var(--danger)' }}>Reject Certificate</h3>
         <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
           Rejecting: <strong style={{ color: 'var(--text-primary)' }}>{cert.title}</strong>
@@ -80,7 +80,7 @@ export default function VerifyCertificatesPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <AnimatePresence>
             {pendingCertificates.map((cert, i) => (
-              <motion.div key={cert._id} className="glass-card" style={{ padding: 22 }}
+              <motion.div key={cert._id} className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 22 }}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: 100 }} transition={{ delay: i * 0.05 }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>

@@ -23,7 +23,7 @@ const StudentPlacementDashboard = () => {
   if (loading && studentApplications.length === 0) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
       <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
-      <p className="text-gray-400 font-medium">Loading your placement journey...</p>
+      <p className="text-slate-500 font-medium">Loading your placement journey...</p>
     </div>
   );
 
@@ -34,11 +34,11 @@ const StudentPlacementDashboard = () => {
           <motion.h1 
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-3xl font-extrabold text-white tracking-tight"
+            className="text-3xl font-extrabold text-slate-900 tracking-tight"
           >
             Placement Dashboard
           </motion.h1>
-          <p className="text-gray-400 mt-1">Track your job applications and recruitment progress.</p>
+          <p className="text-slate-500 mt-1">Track your job applications and recruitment progress.</p>
         </div>
       </header>
 
@@ -56,22 +56,22 @@ const StudentPlacementDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="glass-card p-6 overflow-hidden relative group"
+            className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 overflow-hidden relative group"
           >
             {/* Background Glow */}
             <div className={`absolute -right-20 -top-20 w-64 h-64 blur-3xl opacity-10 rounded-full ${app.finalResult === 'selected' ? 'bg-green-500' : 'bg-purple-500'}`}></div>
 
             <div className="flex items-start justify-between relative z-10">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-purple-500/50 transition-colors">
+                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 group-hover:border-purple-500/50 transition-colors">
                   <Briefcase className="text-purple-400" size={28} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">{app.drive?.companyName || 'Unknown Company'}</h3>
+                  <h3 className="text-xl font-bold text-slate-900">{app.drive?.companyName || 'Unknown Company'}</h3>
                   <div className="flex items-center gap-3 mt-1 text-sm">
                     <span className="text-purple-300 font-semibold">{app.drive?.package || 'N/A'}</span>
-                    <span className="text-gray-500">•</span>
-                    <span className="text-gray-400">Drive Deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'TBA'}</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-slate-500">Drive Deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'TBA'}</span>
                   </div>
                 </div>
               </div>
@@ -98,9 +98,9 @@ const StudentPlacementDashboard = () => {
 
             {/* Timeline UI */}
             <div className="mt-8 space-y-6 relative z-10">
-              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Recruitment Timeline</h4>
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest">Recruitment Timeline</h4>
               
-              <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-white/5">
+              <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-50">
                 {app.roundsProgress?.map((round, idx) => (
                   <div key={idx} className="relative">
                     <div className={`absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[#030303] z-10 ${
@@ -117,7 +117,7 @@ const StudentPlacementDashboard = () => {
                         {round.status === 'cleared' && <CheckCircle size={14} className="inline ml-2" />}
                         {round.status === 'eliminated' && <XCircle size={14} className="inline ml-2" />}
                       </span>
-                      {round.feedback && <p className="text-xs text-gray-500 mt-1">{round.feedback}</p>}
+                      {round.feedback && <p className="text-xs text-slate-600 mt-1">{round.feedback}</p>}
                     </div>
                   </div>
                 ))}
@@ -126,7 +126,7 @@ const StudentPlacementDashboard = () => {
                   <div className="relative">
                     <div className="absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[#030303] z-10 bg-purple-500 animate-pulse"></div>
                     <span className="text-sm font-bold text-purple-400">Apply Now</span>
-                    <p className="text-xs text-gray-500 mt-1">Application deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'N/A'}</p>
+                    <p className="text-xs text-slate-600 mt-1">Application deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 )}
               </div>
@@ -144,11 +144,11 @@ const StudentPlacementDashboard = () => {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="col-span-full glass-card p-12 text-center"
+            className="col-span-full bg-white border border-slate-200 shadow-sm rounded-2xl p-12 text-center"
           >
             <Clock className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-white">No Active Drives</h3>
-            <p className="text-gray-400 mt-2">Check back later for new placement opportunities.</p>
+            <h3 className="text-xl font-bold text-slate-900">No Active Drives</h3>
+            <p className="text-slate-500 mt-2">Check back later for new placement opportunities.</p>
           </motion.div>
         )}
       </div>

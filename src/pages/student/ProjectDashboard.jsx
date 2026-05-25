@@ -18,8 +18,8 @@ const ProjectDashboard = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Project Management</h1>
-          <p className="text-gray-400 mt-1">Track your team projects, tasks, and documentation.</p>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Project Management</h1>
+          <p className="text-slate-500 mt-1">Track your team projects, tasks, and documentation.</p>
         </div>
         <button className="btn-premium px-6 py-2 flex items-center gap-2">
           <Plus size={18} /> New Project
@@ -32,7 +32,7 @@ const ProjectDashboard = () => {
             key={project._id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 flex flex-col h-full"
+            className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 flex flex-col h-full"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
@@ -50,16 +50,16 @@ const ProjectDashboard = () => {
               </div>
             </div>
 
-            <h3 className="text-xl font-bold text-white mb-2">{project.title}</h3>
-            <p className="text-gray-400 text-sm line-clamp-2 mb-6">{project.description}</p>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">{project.title}</h3>
+            <p className="text-slate-500 text-sm line-clamp-2 mb-6">{project.description}</p>
 
             {/* Progress Bar */}
             <div className="space-y-2 mb-6">
               <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
-                <span className="text-gray-500">Progress</span>
+                <span className="text-slate-600">Progress</span>
                 <span className="text-purple-400">{project.progress}%</span>
               </div>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${project.progress}%` }}
@@ -73,13 +73,13 @@ const ProjectDashboard = () => {
                {project.tasks.slice(0, 2).map((task, i) => (
                  <div key={i} className="flex items-center gap-3 text-sm text-gray-300">
                    {task.completed ? <CheckCircle2 size={16} className="text-green-500" /> : <Circle size={16} className="text-gray-600" />}
-                   <span className={task.completed ? 'line-through text-gray-500' : ''}>{task.title}</span>
+                   <span className={task.completed ? 'line-through text-slate-600' : ''}>{task.title}</span>
                  </div>
                ))}
             </div>
 
-            <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-gray-500 font-bold uppercase">
+            <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-slate-600 font-bold uppercase">
                 <Calendar size={14} />
                 {new Date(project.createdAt).toLocaleDateString()}
               </div>
@@ -91,10 +91,10 @@ const ProjectDashboard = () => {
         ))}
 
         {projects.length === 0 && (
-          <div className="col-span-full glass-card p-12 text-center">
+          <div className="col-span-full bg-white border border-slate-200 shadow-sm rounded-2xl p-12 text-center">
             <Layout className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-white">No Projects Found</h3>
-            <p className="text-gray-400 mt-2">Start a new project with your teammates.</p>
+            <h3 className="text-xl font-bold text-slate-900">No Projects Found</h3>
+            <p className="text-slate-500 mt-2">Start a new project with your teammates.</p>
           </div>
         )}
       </div>

@@ -56,32 +56,32 @@ export default function VerifyGuidesPage() {
             <UserPlus size={14} />
             <span>Guide Management</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2">
             Verify Guides
           </h1>
-          <p className="text-gray-400 text-lg">Approve or revoke access for project guides.</p>
+          <p className="text-slate-500 text-lg">Approve or revoke access for project guides.</p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex items-center justify-between gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-3xl">
+      <div className="flex items-center justify-between gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={20} />
           <input
             type="text"
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black/50 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+            className="w-full bg-black/50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-colors"
           />
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden">
+      <div className="bg-slate-50 border border-slate-100 rounded-3xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-400">
-            <thead className="text-xs uppercase bg-black/50 text-gray-500 border-b border-white/5">
+          <table className="w-full text-left text-sm text-slate-500">
+            <thead className="text-xs uppercase bg-black/50 text-slate-600 border-b border-slate-100">
               <tr>
                 <th className="px-6 py-4 font-bold tracking-wider">Guide Info</th>
                 <th className="px-6 py-4 font-bold tracking-wider">Department</th>
@@ -96,21 +96,21 @@ export default function VerifyGuidesPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   key={guide._id}
-                  className="hover:bg-white/[0.02] transition-colors"
+                  className="hover:bg-slate-50 transition-colors"
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center text-white font-bold">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-slate-200 flex items-center justify-center text-slate-900 font-bold">
                         {guide.name[0]}
                       </div>
                       <div>
-                        <div className="text-white font-semibold">{guide.name}</div>
-                        <div className="text-xs text-gray-500">{guide.email}</div>
+                        <div className="text-slate-900 font-semibold">{guide.name}</div>
+                        <div className="text-xs text-slate-600">{guide.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-lg bg-white/5 text-gray-300 text-xs font-medium">
+                    <span className="px-3 py-1 rounded-lg bg-slate-50 text-gray-300 text-xs font-medium">
                       {guide.department || 'N/A'}
                     </span>
                   </td>
@@ -140,7 +140,7 @@ export default function VerifyGuidesPage() {
               ))}
               {filteredGuides.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="4" className="px-6 py-8 text-center text-slate-600">
                     No guides found.
                   </td>
                 </tr>
