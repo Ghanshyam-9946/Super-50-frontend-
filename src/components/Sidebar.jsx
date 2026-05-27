@@ -23,7 +23,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Training & Placement Section (ALL students)
   const tpLinks = [
     { to: '/placement', icon: Briefcase, label: 'T&P Dashboard' },
-    { to: '/resume', icon: FileText, label: 'Resume Builder' },
+
   ];
 
   // PMS Section (ALL students)

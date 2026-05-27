@@ -36,7 +36,7 @@ import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
 
 // New Features
 import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
-import ResumeBuilder from './pages/student/ResumeBuilder';
+
 import ProjectDashboard from './pages/student/ProjectDashboard';
 import ProjectDetails from './pages/student/ProjectDetails';
 
@@ -87,9 +87,7 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/leaderboard" element={
           <RoleGuard allowed={['student', 'admin', 'teacher', 'guide']}><LeaderboardPage /></RoleGuard>
         } />
-        <Route path="/resume" element={
-          <RoleGuard allowed={['student']}><ResumeBuilder /></RoleGuard>
-        } />
+
         <Route path="/placement" element={
           <RoleGuard allowed={['student']}><StudentPlacementDashboard /></RoleGuard>
         } />

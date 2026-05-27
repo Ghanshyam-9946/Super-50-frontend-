@@ -76,7 +76,13 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
   }, [pickerQuery, pickerOpen, team, form.members]);
 
   const addMemberFromPicker = (student) => {
+    // Check for duplicate by student ID or enrollment number
     setForm((p) => {
+      const exists = p.members.some((m) => m.studentId === student._id || m.enrollmentNo === student.enrollmentNo);
+      if (exists) {
+        toast.error('Member already added');
+        return p;
+      }
       if (p.members.length >= 5) {
         toast.error('Max 5 members');
         return p;
@@ -91,7 +97,9 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         }],
       };
     });
+    // Reset picker state and close picker
     setPickerQuery('');
+    setPickerResults([]);
     setPickerOpen(false);
   };
 

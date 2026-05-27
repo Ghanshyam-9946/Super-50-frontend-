@@ -111,7 +111,7 @@ const Super50SelectionPage = () => {
               <p className="font-bold mb-2 uppercase tracking-widest text-[10px]">How it works</p>
               Students whose emails match the uploaded list will instantly gain access to:
               <ul className="list-disc list-inside mt-2 space-y-1 opacity-80">
-                <li>Professional Resume Builder</li>
+
                 <li>Exclusive Placement Drives</li>
                 <li>High-Impact Project Tracking</li>
               </ul>
