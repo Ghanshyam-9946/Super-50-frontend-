@@ -4,17 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAdminStats, fetchAllStudents } from '../../features/students/studentsSlice';
 import { fetchPendingCertificates } from '../../features/certificates/certificatesSlice';
 import { fetchFacultyReviewQueue } from '../../features/resume/resumeSlice';
-import { 
-  Users, Award, TrendingUp, ClipboardList, 
-  ShieldCheck, Clock, FileText, Search, 
+import {
+  Users, Award, TrendingUp, ClipboardList,
+  ShieldCheck, Clock, FileText, Search,
   ChevronRight, Filter, Download, Star, UserPlus, Briefcase, X
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import StudentPlacementHistoryModal from '../../components/StudentPlacementHistoryModal';
-import { 
-  Chart as ChartJS, CategoryScale, LinearScale, 
-  BarElement, Tooltip, Legend, ArcElement 
+import {
+  Chart as ChartJS, CategoryScale, LinearScale,
+  BarElement, Tooltip, Legend, ArcElement
 } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, ArcElement);
@@ -27,7 +27,7 @@ export default function AdminDashboard() {
   const { user } = useSelector((s) => s.auth);
 
   const [selectedDept, setSelectedDept] = useState('All');
-  
+
   // Placement History Search State
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -42,7 +42,7 @@ export default function AdminDashboard() {
 
   const scoreDistribution = useMemo(() => [0, 25, 50, 75].map((threshold, i, arr) => ({
     label: i === 3 ? '75-100' : `${threshold}-${arr[i + 1]}`,
-    count: allStudents.filter((s) => 
+    count: allStudents.filter((s) =>
       (selectedDept === 'All' || s.department === selectedDept) &&
       s.performanceScore >= threshold && s.performanceScore < (arr[i + 1] || 101)
     ).length,
@@ -94,8 +94,8 @@ export default function AdminDashboard() {
       <div className="relative z-40">
         <div className={`bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-center gap-4 transition-all ${isSearchFocused ? 'ring-2 ring-indigo-500/50 shadow-md' : ''}`}>
           <Search className="text-slate-600" size={20} />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search student by name or enrollment number to view placement history..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -113,20 +113,20 @@ export default function AdminDashboard() {
         {/* Search Results Dropdown */}
         <AnimatePresence>
           {isSearchFocused && searchQuery.length > 1 && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               className="absolute top-full left-0 right-0 mt-4 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto custom-scrollbar"
             >
               {allStudents
-                .filter(s => 
-                  s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                .filter(s =>
+                  s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   (s.enrollmentNumber && s.enrollmentNumber.toLowerCase().includes(searchQuery.toLowerCase()))
                 )
                 .slice(0, 10)
                 .map(student => (
-                  <div 
+                  <div
                     key={student._id}
                     onClick={() => {
                       setSelectedStudentForHistory(student);
@@ -136,8 +136,8 @@ export default function AdminDashboard() {
                     className="p-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer flex items-center justify-between group transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <img 
-                        src={`https://ui-avatars.com/api/?name=${student.name}&background=random`} 
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
                         className="w-10 h-10 rounded-full border border-slate-200"
                       />
                       <div>
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
       {/* Grid Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, i) => (
-          <motion.div 
+          <motion.div
             key={card.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
               <h3 className="text-xl font-bold text-slate-900">Performance Score Distribution</h3>
               <p className="text-xs text-slate-600 mt-1">Total student counts by score range</p>
             </div>
-            <select 
+            <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
               className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-500"
@@ -198,8 +198,8 @@ export default function AdminDashboard() {
             </select>
           </div>
           <div className="h-[300px]">
-            <Bar 
-              data={barData} 
+            <Bar
+              data={barData}
               options={{
                 responsive: true,
                 maintainAspectRatio: false,
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
                   x: { grid: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold' } } },
                   y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' }, beginAtZero: true },
                 },
-              }} 
+              }}
             />
           </div>
         </div>
@@ -219,16 +219,15 @@ export default function AdminDashboard() {
           <div className="space-y-6">
             {(adminStats?.topStudents || []).map((student, i) => (
               <div key={student._id} className="flex items-center gap-4 group">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${
-                  i === 0 ? 'bg-yellow-500/20 text-yellow-500' : 
-                  i === 1 ? 'bg-gray-400/20 text-slate-500' : 
-                  'bg-orange-500/20 text-orange-500'
-                }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-yellow-500/20 text-yellow-500' :
+                    i === 1 ? 'bg-gray-400/20 text-slate-500' :
+                      'bg-orange-500/20 text-orange-500'
+                  }`}>
                   #{i + 1}
                 </div>
-                <img 
-                  src={`https://ui-avatars.com/api/?name=${student.name}&background=random`} 
-                  className="w-10 h-10 rounded-full border-2 border-slate-100 group-hover:scale-110 transition-transform" 
+                <img
+                  src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                  className="w-10 h-10 rounded-full border-2 border-slate-100 group-hover:scale-110 transition-transform"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -311,7 +310,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Student Placement History Modal */}
-      <StudentPlacementHistoryModal 
+      <StudentPlacementHistoryModal
         isOpen={!!selectedStudentForHistory}
         onClose={() => setSelectedStudentForHistory(null)}
         student={selectedStudentForHistory}

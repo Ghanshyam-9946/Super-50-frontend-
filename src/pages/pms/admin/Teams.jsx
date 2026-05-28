@@ -515,68 +515,68 @@ const Teams = () => {
       <Card title={<>All Teams <span className="badge-secondary ml-1">{teams.length}</span></>} icon={Layers} noPadding>
         {loading ? <div className="py-10 flex justify-center"><Spinner /></div>
           : teams.length === 0 ? <EmptyState icon={Layers} title="No teams yet" />
-          : (
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr><th>Group</th><th>Project Title</th><th>Sem</th><th>Project</th><th>Members</th><th>Guide</th><th className="text-right">Actions</th></tr>
-                </thead>
-                <tbody>
-                  {teams.map((t) => (
-                    <tr key={t._id}>
-                      <td>
-                        <div className="font-semibold text-xs flex items-center gap-1.5">
-                          {t.groupNo}
-                          {t.isLocked && <Lock className="w-3 h-3 text-amber-600" title="Locked" />}
-                        </div>
-                        <div className="text-xs text-slate-500">{t.groupName}</div>
-                      </td>
-                      <td>{t.projectTitle}</td>
-                      <td><span className="badge-info">{t.semester}th</span></td>
-                      <td><span className="badge-primary">{t.project?.projectName}</span></td>
-                      <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
-                      <td>
-                        {t.guide ? (
-                          <span className="font-medium text-sm">{t.guide.name}</span>
-                        ) : (
-                          <span className="badge-warning"><AlertTriangle className="w-3 h-3" /> Unassigned</span>
-                        )}
-                      </td>
-                      <td className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <button onClick={() => setEditTeam(t)} className="btn-outline btn-sm" title="Edit team">
-                            <Edit3 className="w-3 h-3" />
-                          </button>
-                          <button onClick={() => setAssignTeam(t)} className="btn-secondary btn-sm" title="Assign guide">
-                            <UserCheck className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleLock(t)}
-                            className={t.isLocked ? 'btn-secondary btn-sm text-amber-600' : 'btn-secondary btn-sm'}
-                            title={t.isLocked ? 'Unlock team (allow student edits)' : 'Lock team (prevent student edits)'}
-                          >
-                            {t.isLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                          </button>
-                          <a
-                            href={adminAPI.initiationFormUrl(t._id)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn-secondary btn-sm"
-                            title="Download initiation form"
-                          >
-                            <FileText className="w-3 h-3" />
-                          </a>
-                          <button onClick={() => handleDelete(t)} className="btn-secondary btn-sm text-red-600" title="Delete team">
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+            : (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr><th>Group</th><th>Project Title</th><th>Sem</th><th>Project</th><th>Members</th><th>Guide</th><th className="text-right">Actions</th></tr>
+                  </thead>
+                  <tbody>
+                    {teams.map((t) => (
+                      <tr key={t._id}>
+                        <td>
+                          <div className="font-semibold text-xs flex items-center gap-1.5">
+                            {t.groupNo}
+                            {t.isLocked && <Lock className="w-3 h-3 text-amber-600" title="Locked" />}
+                          </div>
+                          <div className="text-xs text-slate-500">{t.groupName}</div>
+                        </td>
+                        <td>{t.projectTitle}</td>
+                        <td><span className="badge-info">{t.semester}th</span></td>
+                        <td><span className="badge-primary">{t.project?.projectName}</span></td>
+                        <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
+                        <td>
+                          {t.guide ? (
+                            <span className="font-medium text-sm">{t.guide.name}</span>
+                          ) : (
+                            <span className="badge-warning"><AlertTriangle className="w-3 h-3" /> Unassigned</span>
+                          )}
+                        </td>
+                        <td className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => setEditTeam(t)} className="btn-outline btn-sm" title="Edit team">
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => setAssignTeam(t)} className="btn-secondary btn-sm" title="Assign guide">
+                              <UserCheck className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => handleToggleLock(t)}
+                              className={t.isLocked ? 'btn-secondary btn-sm text-amber-600' : 'btn-secondary btn-sm'}
+                              title={t.isLocked ? 'Unlock team (allow student edits)' : 'Lock team (prevent student edits)'}
+                            >
+                              {t.isLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                            </button>
+                            <a
+                              href={adminAPI.initiationFormUrl(t._id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-secondary btn-sm"
+                              title="Download initiation form"
+                            >
+                              <FileText className="w-3 h-3" />
+                            </a>
+                            <button onClick={() => handleDelete(t)} className="btn-secondary btn-sm text-red-600" title="Delete team">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
       </Card>
 
       <EditTeamModal open={!!editTeam} onClose={() => setEditTeam(null)} team={editTeam} onSaved={fetchTeams} />

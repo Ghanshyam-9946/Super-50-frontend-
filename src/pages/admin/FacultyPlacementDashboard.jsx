@@ -33,7 +33,7 @@ const FacultyPlacementDashboard = () => {
 
     try {
       const response = await api.post('/placement/rounds/upload', formData);
-      
+
       toast.success(response.data.message || 'Upload successful!', { id: toastId });
       dispatch(fetchFacultyPlacementDashboard());
     } catch (err) {
@@ -63,7 +63,7 @@ const FacultyPlacementDashboard = () => {
             accept=".xlsx, .xls"
             onChange={handleFileUpload}
           />
-          <button 
+          <button
             onClick={() => document.getElementById('round-upload').click()}
             className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm rounded-xl transition-all font-bold px-4 py-2 flex items-center gap-2"
           >
@@ -87,8 +87,8 @@ const FacultyPlacementDashboard = () => {
           { label: 'Avg Package', value: '8.4 LPA', icon: BarChart3, color: 'text-blue-400' },
           { label: 'Ongoing Rounds', value: '12', icon: Filter, color: 'text-yellow-400' },
         ].map((stat, i) => (
-          <motion.div 
-            key={i} 
+          <motion.div
+            key={i}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
@@ -112,9 +112,8 @@ const FacultyPlacementDashboard = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
-                activeTab === tab ? 'text-purple-400' : 'text-slate-600 hover:text-gray-300'
-              }`}
+              className={`pb-4 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-purple-400' : 'text-slate-600 hover:text-gray-300'
+                }`}
             >
               {tab}
               {activeTab === tab && (
@@ -127,7 +126,7 @@ const FacultyPlacementDashboard = () => {
         {activeTab === 'drives' && (
           <div className="grid grid-cols-1 gap-4">
             {drives.map((drive, idx) => (
-              <motion.div 
+              <motion.div
                 key={drive._id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}

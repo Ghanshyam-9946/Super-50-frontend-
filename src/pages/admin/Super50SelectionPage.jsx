@@ -23,10 +23,10 @@ const Super50SelectionPage = () => {
 
   const handleUpload = async () => {
     if (!file) return toast.error('Please select an Excel file');
-    
+
     const formData = new FormData();
     formData.append('file', file);
-    
+
     setLoading(true);
     try {
       const { data } = await api.post('/admin/select-super50', formData);
@@ -57,7 +57,7 @@ const Super50SelectionPage = () => {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="space-y-8"
@@ -66,12 +66,11 @@ const Super50SelectionPage = () => {
             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-3">
               <Upload size={20} className="text-purple-500" /> Upload Selection List
             </h3>
-            
-            <div 
-              {...getRootProps()} 
-              className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer ${
-                isDragActive ? 'border-purple-500 bg-purple-500/5' : 'border-slate-200 hover:border-white/20 bg-slate-50'
-              }`}
+
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer ${isDragActive ? 'border-purple-500 bg-purple-500/5' : 'border-slate-200 hover:border-white/20 bg-slate-50'
+                }`}
             >
               <input {...getInputProps()} />
               {file ? (
@@ -119,7 +118,7 @@ const Super50SelectionPage = () => {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
         >
@@ -138,7 +137,7 @@ const Super50SelectionPage = () => {
                   <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mt-1">Students Unlocked</div>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setResult(null)}
                 className="text-purple-400 text-sm font-bold hover:text-slate-900 transition-colors"
               >
