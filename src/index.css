@@ -6,6 +6,12 @@
   --bg: #030303;
   --primary: #7c3aed;
   --secondary: #3b82f6;
+  --brand-indigo: #6366f1;
+  --brand-purple: #a855f7;
+  --brand-orange: #f97316;
+  --brand-indigo-rgb: 99,102,241;
+  --brand-purple-rgb: 168,85,247;
+  --brand-orange-rgb: 249,115,22;
 }
 
 body {
@@ -93,6 +99,20 @@ body {
   transition: all 0.3s ease;
 }
 
+/* ─── Header Button Adjustments ─── */
+.header-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.header-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+
+
 .btn-outline-premium:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
@@ -132,4 +152,31 @@ body {
 
 .mockup-glow:hover::after {
   opacity: 0.4;
+}
+
+/* ─── Custom Badges ─── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-width: 1px;
+}
+.badge-approved {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: rgb(52, 211, 153);
+}
+.badge-rejected {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgb(248, 113, 113);
+}
+.badge-pending {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.2);
+  color: rgb(251, 191, 36);
 }

@@ -77,7 +77,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-[#080808] border-r border-slate-100 w-72">
+    <div className="flex flex-col h-full w-72 bg-white/60 backdrop-blur-xl border-r border-slate-200/60">
       {/* Brand */}
       <div className="p-8">
         <div className="flex items-center gap-4">
@@ -85,8 +85,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
             <GraduationCap size={26} color="white" />
           </div>
           <div>
-            <div className="font-black text-xl text-slate-900 tracking-tighter">SUPER 50</div>
-            <div className="text-[10px] font-bold text-purple-500 uppercase tracking-widest leading-none mt-1">
+            <div className="font-black text-xl text-slate-950 tracking-tighter">SUPER 50</div>
+            <div className="text-[10px] font-bold text-purple-600 uppercase tracking-widest leading-none mt-1">
               {user?.role} Portal
             </div>
           </div>
@@ -97,7 +97,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       <nav className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar pb-8">
         {/* Core Nav */}
         <div className="space-y-1.5">
-          <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4">Core</p>
+          <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4">Core</p>
           {(user?.role === 'admin' ? adminLinks :
             user?.role === 'teacher' ? teacherLinks :
               user?.role === 'guide' ? guideLinks :
@@ -109,7 +109,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
         {/* T&P Section (Students Only) */}
         {user?.role === 'student' && (
           <div className="space-y-1.5">
-            <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4">Training & Placement</p>
+            <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4">Training & Placement</p>
             {tpLinks.map((link) => (
               <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
             ))}
@@ -119,7 +119,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
         {/* PMS Section (Students Only) */}
         {user?.role === 'student' && (
           <div className="space-y-1.5">
-            <p className="px-4 text-[10px] font-black text-gray-600 uppercase tracking-[2px] mb-4 mt-6">Academic Projects</p>
+            <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4 mt-6">Academic Projects</p>
             {pmsStudentLinks.map((link) => (
               <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
             ))}
@@ -130,19 +130,19 @@ const Sidebar = ({ theme, toggleTheme }) => {
         {user?.role === 'student' && (
           <div className="space-y-1.5">
             <div className="px-4 flex items-center justify-between mb-4">
-              <p className="text-[10px] font-black text-gray-600 uppercase tracking-[2px]">Super 50 Portal</p>
-              {!user?.isSuper50 && <ShieldCheck size={12} className="text-gray-700" />}
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Super 50 Portal</p>
+              {!user?.isSuper50 && <ShieldCheck size={12} className="text-slate-400" />}
             </div>
             {user?.isSuper50 ? (
               super50Links.map((link) => (
                 <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
               ))
             ) : (
-              <div className="px-4 py-6 rounded-3xl bg-gradient-to-b from-white/[0.03] to-transparent border border-slate-100 relative overflow-hidden group">
+              <div className="px-4 py-6 rounded-3xl bg-slate-50/50 border border-slate-200/60 relative overflow-hidden group">
                 <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 blur-2xl rounded-full" />
                 <Star className="text-purple-500/50 mb-3" size={20} />
-                <h4 className="text-xs font-bold text-slate-500 mb-1">Portal Locked</h4>
-                <p className="text-[10px] text-gray-600 leading-relaxed">
+                <h4 className="text-xs font-bold text-slate-700 mb-1">Portal Locked</h4>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
                   Super 50 selection is required for access to activities and tracking.
                 </p>
               </div>
@@ -153,14 +153,14 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
       {/* Footer / User Profile */}
       <div className="p-4 mt-auto">
-        <div className="bg-slate-50 border border-slate-100 rounded-3xl p-4 mb-4">
+        <div className="bg-white/80 border border-slate-200/60 rounded-3xl p-4 mb-4">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-black border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-900 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 border border-purple-500/20 flex items-center justify-center text-sm font-bold text-white shadow-inner">
               {user?.name?.[0]}
             </div>
             <div className="overflow-hidden">
               <div className="font-bold text-sm text-slate-900 truncate">{user?.name}</div>
-              <div className="text-[10px] text-slate-600 truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : user?.role}</div>
+              <div className="text-[10px] text-purple-600 truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : user?.role}</div>
             </div>
           </div>
 
@@ -185,7 +185,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   return (
     <>
-      <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden fixed top-4 left-4 z-[100] p-3 rounded-2xl bg-[#080808] border border-slate-200 text-slate-900 shadow-2xl">
+      <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden fixed top-4 left-4 z-[100] p-3 rounded-2xl bg-white border border-slate-200 text-slate-900 shadow-2xl">
         {mobileOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
       <div className="hidden lg:block h-screen sticky top-0">
@@ -194,7 +194,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       <AnimatePresence>
         {mobileOpen && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[90] lg:hidden" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-slate-950/20 backdrop-blur-sm z-[90] lg:hidden" />
             <motion.div initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-y-0 left-0 z-[100] lg:hidden">
               <SidebarContent />
             </motion.div>
@@ -210,10 +210,10 @@ const NavItem = ({ link, onClick }) => (
     to={link.to}
     onClick={onClick}
     className={({ isActive }) => `
-      group flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300
+      group flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 border
       ${isActive
-        ? 'bg-purple-600/10 text-slate-900 border border-purple-500/20 shadow-[0_0_20px_rgba(124,58,237,0.1)]'
-        : 'text-slate-600 hover:text-gray-300 hover:bg-slate-50'
+        ? 'bg-purple-500/10 text-purple-600 border-purple-500/20 shadow-[0_4px_12px_rgba(124,58,237,0.08)]'
+        : 'text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-100/50'
       }
     `}
   >
@@ -221,11 +221,11 @@ const NavItem = ({ link, onClick }) => (
       <>
         <link.icon
           size={18}
-          className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-purple-500' : 'text-gray-600'}`}
+          className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-purple-600' : 'text-slate-400 group-hover:text-slate-700'}`}
         />
         <span className="font-bold text-sm tracking-tight">{link.label}</span>
         {isActive && (
-          <motion.div layoutId="activePill" className="ml-auto w-1 h-1 rounded-full bg-purple-500 shadow-[0_0_10px_#7c3aed]" />
+          <motion.div layoutId="activePill" className="ml-auto w-1 h-1 rounded-full bg-purple-600 shadow-[0_0_10px_#7c3aed]" />
         )}
       </>
     )}

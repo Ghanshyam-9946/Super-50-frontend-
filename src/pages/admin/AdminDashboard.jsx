@@ -59,32 +59,33 @@ export default function AdminDashboard() {
   }), [scoreDistribution]);
 
   const statCards = useMemo(() => [
-    { icon: Users, label: 'Super 50 Students', value: adminStats?.super50Count || 0, color: '#a78bfa', bg: 'rgba(167,139,250,0.1)' },
-    { icon: Users, label: 'Regular Students', value: adminStats?.regularCount || 0, color: '#60a5fa', bg: 'rgba(96,165,250,0.1)' },
-    { icon: TrendingUp, label: 'Avg Performance', value: `${Math.round(adminStats?.stats?.avgScore || 0)}`, unit: '/100', color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-    { icon: FileText, label: 'Resumes to Review', value: facultyResumes.length, color: '#f43f5e', bg: 'rgba(244,63,94,0.1)' },
+    { icon: Users, label: 'Super 50 Students', value: adminStats?.super50Count || 0, color: 'var(--brand-indigo)', bg: 'rgba(var(--brand-indigo-rgb),0.1)' },
+    { icon: Users, label: 'Regular Students', value: adminStats?.regularCount || 0, color: 'var(--brand-purple)', bg: 'rgba(var(--brand-purple-rgb),0.1)' },
+    { icon: TrendingUp, label: 'Avg Performance', value: `${Math.round(adminStats?.stats?.avgScore || 0)}`, unit: '/100', color: 'var(--brand-orange)', bg: 'rgba(var(--brand-orange-rgb),0.1)' },
+    { icon: FileText, label: 'Resumes to Review', value: facultyResumes.length, color: 'var(--brand-indigo)', bg: 'rgba(var(--brand-indigo-rgb),0.1)' },
   ], [adminStats, facultyResumes]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      {/* Header */}
+      <header className="glass flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter">
+          <h1 className="text-4xl font-black text-gradient tracking-tighter">
             {user?.role === 'admin' ? '⚙️ Enterprise' : '👩‍🏫 Faculty'} Dashboard
           </h1>
           <p className="text-slate-600 mt-1 font-medium">Monitoring {adminStats?.totalStudents || 0} students across {filters.departments?.length || 0} departments.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/admin/bulk-create" className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm py-2 px-4 text-xs flex items-center gap-2 rounded-xl font-bold transition-all">
+          <Link to="/admin/bulk-create" className="btn-premium flex items-center gap-2 text-xs header-btn">
             <UserPlus size={16} /> Onboard (Excel)
           </Link>
-          <Link to="/admin/drive-eligibility" className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm py-2 px-4 text-xs flex items-center gap-2 rounded-xl font-bold transition-all">
+          <Link to="/admin/drive-eligibility" className="btn-premium flex items-center gap-2 text-xs header-btn">
             <Briefcase size={16} /> Eligibility (Excel)
           </Link>
-          <Link to="/admin/drive-results" className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 shadow-sm py-2 px-4 text-xs flex items-center gap-2 rounded-xl font-bold transition-all">
+          <Link to="/admin/drive-results" className="btn-outline-premium flex items-center gap-2 text-xs header-btn">
             <ClipboardList size={16} /> Results (Excel)
           </Link>
-          <Link to="/admin/super50-selection" className="btn-premium py-2 px-4 text-xs flex items-center gap-2 shadow-purple-500/40">
+          <Link to="/admin/super50-selection" className="btn-premium flex items-center gap-2 text-xs header-btn">
             <Star size={16} /> Super 50
           </Link>
         </div>
@@ -92,7 +93,7 @@ export default function AdminDashboard() {
 
       {/* Student Placement History Search */}
       <div className="relative z-40">
-        <div className={`bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex items-center gap-4 transition-all ${isSearchFocused ? 'ring-2 ring-indigo-500/50 shadow-md' : ''}`}>
+        <div className={`glass border border-slate-200/60 rounded-2xl p-4 flex items-center gap-4 transition-all ${isSearchFocused ? 'ring-2 ring-purple-500/35 shadow-md' : ''}`}>
           <Search className="text-slate-600" size={20} />
           <input
             type="text"
@@ -117,7 +118,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="absolute top-full left-0 right-0 mt-4 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto custom-scrollbar"
+              className="absolute top-full left-0 right-0 mt-4 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto custom-scrollbar"
             >
               {allStudents
                 .filter(s =>
@@ -141,7 +142,7 @@ export default function AdminDashboard() {
                         className="w-10 h-10 rounded-full border border-slate-200"
                       />
                       <div>
-                        <div className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{student.name}</div>
+                        <div className="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition-colors">{student.name}</div>
                         <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{student.enrollmentNumber || 'N/A'} • {student.department}</div>
                       </div>
                     </div>
@@ -161,20 +162,20 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 flex flex-col justify-between"
+            className="glass border border-slate-200/50 rounded-2xl shadow-sm p-6 flex flex-col justify-between hover:shadow-lg transition-all hover:scale-[1.02] duration-300"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 rounded-2xl" style={{ background: card.bg, color: card.color }}>
                 <card.icon size={24} />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-600">Real-time</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Real-time</span>
             </div>
             <div>
               <div className="text-3xl font-black text-slate-900">
                 {card.value}
-                <span className="text-sm font-bold text-gray-600 ml-1">{card.unit}</span>
+                <span className="text-sm font-bold text-slate-500 ml-1">{card.unit}</span>
               </div>
-              <div className="text-xs font-bold text-slate-600 uppercase tracking-widest mt-1">{card.label}</div>
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{card.label}</div>
             </div>
           </motion.div>
         ))}
@@ -182,11 +183,11 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+        <div className="lg:col-span-2 glass border border-slate-200/50 rounded-3xl p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h3 className="text-xl font-bold text-slate-900">Performance Score Distribution</h3>
-              <p className="text-xs text-slate-600 mt-1">Total student counts by score range</p>
+              <p className="text-xs text-slate-500 mt-1">Total student counts by score range</p>
             </div>
             <select
               value={selectedDept}
@@ -214,14 +215,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Top Performers */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+        <div className="glass border border-slate-200/50 rounded-3xl p-8">
           <h3 className="text-xl font-bold text-slate-900 mb-8">🏆 Top Performers</h3>
           <div className="space-y-6">
             {(adminStats?.topStudents || []).map((student, i) => (
               <div key={student._id} className="flex items-center gap-4 group">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-yellow-500/20 text-yellow-500' :
-                    i === 1 ? 'bg-gray-400/20 text-slate-500' :
-                      'bg-orange-500/20 text-orange-500'
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${i === 0 ? 'bg-yellow-500/20 text-yellow-600' :
+                  i === 1 ? 'bg-gray-400/20 text-slate-500' :
+                    'bg-orange-500/20 text-orange-600'
                   }`}>
                   #{i + 1}
                 </div>
@@ -234,13 +235,13 @@ export default function AdminDashboard() {
                     <div className="text-sm font-bold text-slate-900">{student.name}</div>
                     {student.isSuper50 && <Star size={10} className="text-yellow-500 fill-yellow-500" />}
                   </div>
-                  <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{student.department}</div>
+                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{student.department}</div>
                 </div>
-                <div className="text-xl font-black text-purple-500">{Math.round(student.performanceScore)}</div>
+                <div className="text-xl font-black text-purple-600">{Math.round(student.performanceScore)}</div>
               </div>
             ))}
           </div>
-          <button className="w-full mt-8 py-3 text-xs font-black uppercase tracking-widest text-purple-500 border border-purple-500/20 rounded-xl hover:bg-purple-500/10 transition-all">
+          <button className="w-full mt-8 py-3 text-xs font-black uppercase tracking-widest text-purple-600 border border-purple-500/20 rounded-xl hover:bg-purple-600/10 transition-all font-bold">
             View Full Leaderboard
           </button>
         </div>
@@ -248,32 +249,32 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Resume Review Queue */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+        <div className="glass border border-slate-200/50 rounded-3xl p-8">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-bold text-slate-900">Resume Review Queue</h3>
-            <span className="bg-rose-500/10 text-rose-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+            <span className="bg-rose-500/10 text-rose-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-500/20">
               {facultyResumes.length} Pending
             </span>
           </div>
           <div className="space-y-4">
             {facultyResumes.slice(0, 4).map((resume) => (
-              <div key={resume._id} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between hover:bg-white/[0.04] transition-colors group">
+              <div key={resume._id} className="bg-slate-50/50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between hover:bg-slate-100/50 transition-colors group">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
                     <FileText className="text-rose-500" size={20} />
                   </div>
                   <div>
                     <div className="text-sm font-bold text-slate-900">{resume.student?.name}</div>
-                    <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Awaiting Review</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Awaiting Review</div>
                   </div>
                 </div>
-                <button className="p-2 text-slate-600 hover:text-indigo-600 transition-colors">
+                <button className="p-2 text-slate-500 hover:text-purple-600 transition-colors">
                   <ChevronRight size={20} />
                 </button>
               </div>
             ))}
             {facultyResumes.length === 0 && (
-              <div className="text-center py-12 text-gray-600 font-bold uppercase tracking-widest text-xs">
+              <div className="text-center py-12 text-slate-400 font-bold uppercase tracking-widest text-xs">
                 Queue is clear
               </div>
             )}
@@ -281,26 +282,29 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Notifications / System Alerts */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+        <div className="glass border border-slate-200/50 rounded-3xl p-8">
           <h3 className="text-xl font-bold text-slate-900 mb-8">System Alerts</h3>
           <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-                <ShieldCheck className="text-orange-500" size={20} />
+            <div className="flex gap-4 items-start p-4 rounded-2xl bg-orange-500/5 border border-orange-500/10">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 text-orange-500">
+                <ShieldCheck size={20} />
               </div>
               <div>
                 <div className="text-sm font-bold text-slate-900">Certificate Verification Needed</div>
                 <p className="text-xs text-slate-600 mt-1">There are {pendingCertificates.length} certificates waiting for your approval.</p>
+                <Link to="/admin/verify" className="inline-block mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 transition-colors">
+                  Verify Now →
+                </Link>
               </div>
             </div>
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                <Star className="text-purple-500" size={20} />
+            <div className="flex gap-4 items-start p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-500">
+                <Star size={20} />
               </div>
-              <div className="flex-1">
+              <div>
                 <div className="text-sm font-bold text-slate-900">Super 50 Selection</div>
                 <p className="text-xs text-slate-600 mt-1">Unlock premium features for high-performing students.</p>
-                <Link to="/admin/super50-selection" className="inline-block mt-3 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors">
+                <Link to="/admin/super50-selection" className="inline-block mt-2 text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">
                   Open Portal →
                 </Link>
               </div>
