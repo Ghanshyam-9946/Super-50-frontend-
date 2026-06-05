@@ -2,13 +2,16 @@ import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
-const ranks = [
-  { rank: 1, name: "Aanya Sharma", college: "CSE · 4th Year", score: 982, avatar: "AS", trend: "+12" },
-  { rank: 2, name: "Rohan Mehta", college: "ECE · 3rd Year", score: 956, avatar: "RM", trend: "+8" },
-  { rank: 3, name: "Priya Iyer", college: "CSE · 4th Year", score: 934, avatar: "PI", trend: "+5" },
-  { rank: 4, name: "Karthik Rao", college: "IT · 3rd Year", score: 911, avatar: "KR", trend: "+3" },
-  { rank: 5, name: "Sneha Verma", college: "CSE · 2nd Year", score: 889, avatar: "SV", trend: "+11" },
-];
+interface Rank {
+  rank: number;
+  name: string;
+  college: string;
+  score: number;
+  avatar: string;
+  trend: string;
+}
+
+
 
 function Counter({ to }) {
   const [v, setV] = useState(0);
@@ -32,7 +35,29 @@ function Counter({ to }) {
 }
 
 export function Leaderboard() {
-  const max = ranks[0].score;
+  const [ranks, setRanks] = useState<Rank[]>([]);
+  useEffect(() => {
+    const fetchRanks = async () => {
+      try {
+        const res = await fetch('/api/leaderboard');
+        if (!res.ok) throw new Error('Network response was not ok');
+        const data: Rank[] = await res.json();
+        setRanks(data);
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error);
+      }
+    };
+    // Initial load
+    fetchRanks();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchRanks, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Determine the max score for the progress bars (fallback to 1 to avoid division by zero)
+  const max = ranks.length ? Math.max(...ranks.map((r) => r.score)) : 1;
+
+  // max is now computed above
   return (
     <section id="leaderboard" className="relative px-6 py-32">
       <div className="mx-auto max-w-5xl">

@@ -56,7 +56,7 @@ const RoleGuard = ({ children, allowed }) => {
                    user.role === 'teacher' ? '/teacher/dashboard' : 
                    user.role === 'guide' ? '/pms/guide' : 
                    user.role === 'admin' ? '/leaderboard' :
-                   user.role === 'super50_admin' ? '/admin/super50-selection' :
+                   user.role === 'super50_admin' ? '/admin/dashboard' :
                    user.role === 'tp_admin' ? '/admin/drive-eligibility' :
                    user.role === 'pms_admin' ? '/pms/admin' : '/login';
     return <Navigate to={fallback} replace />;
@@ -112,13 +112,13 @@ function AppRoutes({ theme, toggleTheme }) {
 
         {/* Admin routes */}
         <Route path="/admin/dashboard" element={
-          <RoleGuard allowed={['admin']}><AdminDashboard /></RoleGuard>
+          <RoleGuard allowed={['admin', 'super50_admin']}><AdminDashboard /></RoleGuard>
         } />
         <Route path="/admin/students" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage /></RoleGuard>
         } />
         <Route path="/admin/verify" element={
-          <RoleGuard allowed={['admin']}><VerifyCertificatesPage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'super50_admin']}><VerifyCertificatesPage /></RoleGuard>
         } />
         <Route path="/admin/guides" element={
           <RoleGuard allowed={['admin']}><VerifyGuidesPage /></RoleGuard>

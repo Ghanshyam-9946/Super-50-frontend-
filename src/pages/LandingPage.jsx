@@ -7,7 +7,7 @@ import { ScrollProgress } from "@/components/ScrollProgress";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
-import { Leaderboard } from "@/components/Leaderboard";
+import LeaderboardPage from "@/pages/shared/LeaderboardPage";
 import { Stats } from "@/components/Stats";
 import { Workflow } from "@/components/Workflow";
 import { Footer } from "@/components/Footer";
@@ -27,7 +27,7 @@ export default function LandingPage() {
         <Hero />
         <Features />
         <ProjectShowcase />
-        <Leaderboard />
+        <LeaderboardPage limit={5} />
         <Stats />
         <Workflow />
         <Footer />

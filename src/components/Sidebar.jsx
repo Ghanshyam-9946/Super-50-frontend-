@@ -65,6 +65,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const super50AdminLinks = [
+    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/students', icon: Users, label: 'Super 50 Students' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },

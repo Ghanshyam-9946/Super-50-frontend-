@@ -11,11 +11,11 @@ export function Footer() {
         <div className="grid gap-20 lg:grid-cols-12">
           <div className="lg:col-span-5">
             <div className="flex items-center gap-4 group cursor-pointer">
-              <div className="flex h-12 w-12 items-center justify-center rounded-[1.25rem] bg-gradient-to-br from-brand-indigo to-brand-purple shadow-xl shadow-brand-indigo/20 group-hover:scale-110 transition-transform duration-500">
-                <span className="font-display text-xl font-black text-white">X</span>
+  <div className="flex h-12 w-12 items-center justify-center">
+                <img src="/upload/SISTec_Logo.png" alt="SCOPE Logo" className="h-12 w-12" />
               </div>
               <span className="font-display text-2xl font-[900] tracking-tight text-foreground">
-                CampusX<span className="text-brand-orange">.</span>
+                SCOPE<span className="text-brand-orange">.</span>
               </span>
             </div>
             <p className="mt-8 max-w-sm text-lg text-slate-700 dark:text-slate-300 font-medium leading-relaxed drop-shadow-sm">
@@ -23,11 +23,11 @@ export function Footer() {
             </p>
             <div className="mt-10 flex gap-5">
               {[Twitter, GithubIcon, Linkedin, Instagram].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="glass-strong flex h-11 w-11 items-center justify-center rounded-2xl transition-all hover:bg-brand-indigo hover:text-white hover:scale-110 shadow-sm border-white"
-                >
+                  <a
+                    key={i}
+                    href="#"
+                    className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 text-brand-indigo hover:bg-brand-indigo hover:text-white transition-all shadow-sm border-white"
+                  >
                   <Icon size={20} />
                 </a>
               ))}
@@ -50,10 +50,10 @@ export function Footer() {
             <ul className="space-y-4 text-base font-bold text-slate-700 dark:text-slate-300">
               <li className="flex items-center gap-3">
                 <div className="h-2 w-2 rounded-full bg-brand-orange" />
-                connect@campusx.nexus
+                connect@scope.nexus
               </li>
               <li>+91 80 4321 0000</li>
-              <li className="leading-relaxed">CampusX Innovation Hub, 4th Floor<br />Vibrant Tech Park, Bengaluru 560001</li>
+              <li className="leading-relaxed">SCOPE Innovation Hub, 4th Floor<br />Vibrant Tech Park, Bengaluru 560001</li>
             </ul>
           </div>
         </div>

@@ -10,6 +10,24 @@ export const fetchMyActivities = createAsyncThunk('activities/fetchMine', async 
   }
 });
 
+export const fetchPendingActivities = createAsyncThunk('activities/fetchPending', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.get('/activities/pending');
+    return data.data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Failed to fetch pending activities');
+  }
+});
+
+export const verifyActivity = createAsyncThunk('activities/verify', async ({ id, action, rejectionReason }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.patch(`/activities/${id}/verify`, { action, rejectionReason });
+    return data.data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Verification failed');
+  }
+});
+
 export const addActivity = createAsyncThunk('activities/add', async (activityData, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/activities', activityData);
@@ -32,6 +50,7 @@ const activitiesSlice = createSlice({
   name: 'activities',
   initialState: {
     myActivities: [],
+    pendingActivities: [],
     loading: false,
     error: null,
   },
@@ -52,6 +71,15 @@ const activitiesSlice = createSlice({
       })
       .addCase(deleteActivity.fulfilled, (state, action) => {
         state.myActivities = state.myActivities.filter((a) => a._id !== action.payload);
+      })
+      .addCase(fetchPendingActivities.fulfilled, (state, action) => {
+        state.pendingActivities = action.payload;
+      })
+      .addCase(verifyActivity.fulfilled, (state, action) => {
+        const activity = action.payload;
+        state.pendingActivities = state.pendingActivities.filter((a) => a._id !== activity._id);
+        const allIdx = state.myActivities.findIndex((a) => a._id === activity._id);
+        if (allIdx !== -1) state.myActivities[allIdx] = activity;
       });
   },
 });

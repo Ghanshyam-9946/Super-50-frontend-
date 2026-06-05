@@ -7,7 +7,7 @@ import { Trophy, Medal, Search, Filter, TrendingUp, Calendar, Award, Zap } from 
 const rankColors = { 1: '#fbbf24', 2: '#94a3b8', 3: '#cd7c2f' };
 const rankEmojis = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-export default function LeaderboardPage() {
+export default function LeaderboardPage({ limit }) {
   const dispatch = useDispatch();
   const { leaderboard, loading } = useSelector((s) => s.students);
   const { user } = useSelector((s) => s.auth);
@@ -20,11 +20,14 @@ export default function LeaderboardPage() {
 
   const filtered = search
     ? leaderboard.filter(
-        (s) =>
-          s.name.toLowerCase().includes(search.toLowerCase()) ||
-          s.enrollmentNumber.toLowerCase().includes(search.toLowerCase())
-      )
+      (s) =>
+        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.enrollmentNumber.toLowerCase().includes(search.toLowerCase())
+    )
     : leaderboard;
+
+  // When a limit is provided (e.g., on the landing page), show only the first `limit` entries
+  const displayed = typeof limit === 'number' ? filtered.slice(0, limit) : filtered;
 
   const myRank = leaderboard.findIndex((s) => s._id === user?._id) + 1;
 
@@ -70,7 +73,7 @@ export default function LeaderboardPage() {
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }} className={limit ? 'hidden' : ''}>
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
@@ -83,11 +86,11 @@ export default function LeaderboardPage() {
         </div>
         <div style={{ position: 'relative' }}>
           <Filter size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <select 
-            className="bg-black/50 border border-slate-700/50 rounded-xl py-2 pl-10 pr-8 text-white focus:outline-none focus:border-purple-500/50 transition-colors appearance-none" 
-            style={{ minWidth: 180 }} 
-            value={dept} 
-            onChange={(e) => setDept(e.target.value)} 
+          <select
+            className="bg-black/50 border border-slate-700/50 rounded-xl py-2 pl-10 pr-8 text-white focus:outline-none focus:border-purple-500/50 transition-colors appearance-none"
+            style={{ minWidth: 180 }}
+            value={dept}
+            onChange={(e) => setDept(e.target.value)}
             id="leaderboard-dept-filter"
           >
             <option value="">All Departments</option>
@@ -97,7 +100,7 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Top 3 podium */}
-      {!search && filtered.length >= 3 && (
+      {!search && filtered.length >= 3 && !limit && (
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 32, alignItems: 'flex-end' }}
@@ -120,7 +123,7 @@ export default function LeaderboardPage() {
 
         {loading ? (
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[1,2,3,4,5].map(i => <div key={i} className="animate-pulse bg-white/5 rounded-xl" style={{ height: 56 }} />)}
+            {[1, 2, 3, 4, 5].map(i => <div key={i} className="animate-pulse bg-white/5 rounded-xl" style={{ height: 56 }} />)}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -136,7 +139,7 @@ export default function LeaderboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {filtered.map((student, i) => {
+                {displayed.map((student, i) => {
                   const isMe = student._id === user?._id;
                   const rColor = rankColors[student.rank];
                   return (

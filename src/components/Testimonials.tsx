@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 
 const items = [
-  { name: "Aarav K.", role: "Placed at Microsoft", quote: "CampusX turned my placement prep into a structured journey. The interview calendar alone is worth it." },
+  { name: "Aarav K.", role: "Placed at Microsoft", quote: "SCOPE turned my placement prep into a structured journey. The interview calendar alone is worth it." },
   { name: "Diya S.", role: "Super 50 · Rank #3", quote: "Watching my rank climb in real time is addictive. It pushed me harder than any class ever did." },
   { name: "Kabir N.", role: "CSE · Final Year", quote: "Mentor reviews on my major project landed me a research collab. Game changing." },
   { name: "Meera R.", role: "Placed at Atlassian", quote: "One link to share with recruiters. My projects, certificates, rank — everything in one beautiful page." },

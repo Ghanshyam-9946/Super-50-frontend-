@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchAllStudents, toggleStudentStatus, createStudent } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users } from 'lucide-react';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
+import StudentProfileModal from '../../components/StudentProfileModal';
 
 function AddStudentModal({ onClose }) {
   const dispatch = useDispatch();
@@ -62,6 +63,7 @@ export default function StudentsPage() {
   const [sortField, setSortField] = useState('performanceScore');
   const [sortDir, setSortDir] = useState('desc');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   useEffect(() => {
     dispatch(fetchAllStudents({ department: dept || undefined, batch: batch || undefined, search: search || undefined, sort: `${sortDir === 'desc' ? '-' : ''}${sortField}` }));
@@ -129,7 +131,7 @@ export default function StudentsPage() {
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Score <SortIcon field="performanceScore" /></span>
                   </th>
                   <th>Status</th>
-                  {user?.role === 'admin' && <th>Action</th>}
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,15 +170,23 @@ export default function StudentsPage() {
                         {student.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    {user?.role === 'admin' && (
-                      <td>
-                        <button onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
-                          className={student.isActive ? 'btn-danger' : 'btn-success'}
-                          style={{ fontSize: 12, padding: '5px 12px' }} id={`toggle-${student._id}`}>
-                          {student.isActive ? 'Deactivate' : 'Activate'}
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => setSelectedStudentId(student._id)}
+                          className="btn-outline-premium text-xs py-1 px-2 flex items-center gap-1"
+                        >
+                          <Eye size={14} /> Profile
                         </button>
-                      </td>
-                    )}
+                        {user?.role === 'admin' && (
+                          <button onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
+                            className={student.isActive ? 'btn-danger' : 'btn-success'}
+                            style={{ fontSize: 12, padding: '5px 12px' }} id={`toggle-${student._id}`}>
+                            {student.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </motion.tr>
                 ))}
               </tbody>
@@ -192,6 +202,11 @@ export default function StudentsPage() {
       </motion.div>
 
       {showAddModal && <AddStudentModal onClose={() => setShowAddModal(false)} />}
+      <StudentProfileModal 
+        isOpen={!!selectedStudentId} 
+        onClose={() => setSelectedStudentId(null)} 
+        studentId={selectedStudentId} 
+      />
     </div>
   );
 }

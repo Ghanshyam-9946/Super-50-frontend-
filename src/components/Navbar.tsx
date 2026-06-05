@@ -36,14 +36,14 @@ export function Navbar() {
     >
       <motion.nav
         style={{ paddingTop: padding, paddingBottom: padding, borderRadius }}
-        className={`${isScrolled ? "glass-strong shadow-floating border-white/60" : "bg-transparent"} relative flex items-center justify-between px-8 transition-all duration-500`}
+        className={`bg-white/80 glass-strong shadow-floating border-white/60 flex items-center justify-between px-8 transition-all duration-500`}
       >
         <div onClick={() => navigate('/')} className="flex items-center gap-3 group cursor-pointer">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-indigo to-brand-purple shadow-xl shadow-brand-indigo/20 group-hover:scale-110 transition-transform duration-300">
-            <span className="font-display text-lg font-black text-white">X</span>
+          <div className="flex h-10 w-10 items-center justify-center">
+            <img src="/upload/SISTec_Logo.png" alt="SCOPE Logo" className="h-10 w-10" />
           </div>
           <span className="font-display text-2xl font-black tracking-tight text-foreground">
-            CampusX<span className="text-brand-orange">.</span>
+            SCOPE<span className="text-brand-orange">.</span>
           </span>
         </div>
 

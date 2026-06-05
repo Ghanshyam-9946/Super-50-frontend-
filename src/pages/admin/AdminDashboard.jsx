@@ -2,13 +2,15 @@ import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchAdminStats, fetchAllStudents } from '../../features/students/studentsSlice';
-import { fetchPendingCertificates } from '../../features/certificates/certificatesSlice';
+import { fetchPendingCertificates, verifyCertificate } from '../../features/certificates/certificatesSlice';
+import { fetchPendingActivities, verifyActivity } from '../../features/activities/activitiesSlice';
 import { fetchFacultyReviewQueue } from '../../features/resume/resumeSlice';
 import {
   Users, Award, TrendingUp, ClipboardList,
   ShieldCheck, Clock, FileText, Search,
-  ChevronRight, Filter, Download, Star, UserPlus, Briefcase, X
+  ChevronRight, Filter, Download, Star, UserPlus, Briefcase, X, Check, Loader2, Eye
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import StudentPlacementHistoryModal from '../../components/StudentPlacementHistoryModal';
@@ -23,10 +25,14 @@ export default function AdminDashboard() {
   const dispatch = useDispatch();
   const { adminStats, allStudents, filters } = useSelector((s) => s.students);
   const { pendingCertificates } = useSelector((s) => s.certificates);
+  const { pendingActivities } = useSelector((s) => s.activities);
   const { facultyResumes } = useSelector((s) => s.resume);
   const { user } = useSelector((s) => s.auth);
 
   const [selectedDept, setSelectedDept] = useState('All');
+  const [processing, setProcessing] = useState({});
+  const [rejectModal, setRejectModal] = useState(null);
+  const [activityDetailsModal, setActivityDetailsModal] = useState(null);
 
   // Placement History Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,6 +43,7 @@ export default function AdminDashboard() {
     dispatch(fetchAdminStats());
     dispatch(fetchAllStudents());
     dispatch(fetchPendingCertificates());
+    dispatch(fetchPendingActivities());
     dispatch(fetchFacultyReviewQueue());
   }, [dispatch]);
 
@@ -71,23 +78,29 @@ export default function AdminDashboard() {
       <header className="glass flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <div>
           <h1 className="text-4xl font-black text-gradient tracking-tighter">
-            {user?.role === 'admin' ? '⚙️ Enterprise' : '👩‍🏫 Faculty'} Dashboard
+            {user?.role === 'admin' ? '⚙️ Enterprise' : user?.role === 'super50_admin' ? '🌟 Super50 Admin' : '👩‍🏫 Faculty'} Dashboard
           </h1>
           <p className="text-slate-600 mt-1 font-medium">Monitoring {adminStats?.totalStudents || 0} students across {filters.departments?.length || 0} departments.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/admin/bulk-create" className="btn-premium flex items-center gap-2 text-xs header-btn">
-            <UserPlus size={16} /> Onboard (Excel)
-          </Link>
-          <Link to="/admin/drive-eligibility" className="btn-premium flex items-center gap-2 text-xs header-btn">
-            <Briefcase size={16} /> Eligibility (Excel)
-          </Link>
-          <Link to="/admin/drive-results" className="btn-outline-premium flex items-center gap-2 text-xs header-btn">
-            <ClipboardList size={16} /> Results (Excel)
-          </Link>
-          <Link to="/admin/super50-selection" className="btn-premium flex items-center gap-2 text-xs header-btn">
-            <Star size={16} /> Super 50
-          </Link>
+          {user?.role === 'admin' && (
+            <>
+              <Link to="/admin/bulk-create" className="btn-premium flex items-center gap-2 text-xs header-btn">
+                <UserPlus size={16} /> Onboard (Excel)
+              </Link>
+              <Link to="/admin/drive-eligibility" className="btn-premium flex items-center gap-2 text-xs header-btn">
+                <Briefcase size={16} /> Eligibility (Excel)
+              </Link>
+              <Link to="/admin/drive-results" className="btn-outline-premium flex items-center gap-2 text-xs header-btn">
+                <ClipboardList size={16} /> Results (Excel)
+              </Link>
+            </>
+          )}
+          {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+            <Link to="/admin/super50-selection" className="btn-premium flex items-center gap-2 text-xs header-btn">
+              <Star size={16} /> Super 50
+            </Link>
+          )}
         </div>
       </header>
 
@@ -290,8 +303,8 @@ export default function AdminDashboard() {
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <div className="text-sm font-bold text-slate-900">Certificate Verification Needed</div>
-                <p className="text-xs text-slate-600 mt-1">There are {pendingCertificates.length} certificates waiting for your approval.</p>
+                <div className="text-sm font-bold text-slate-900">Certificate & Activity Verification</div>
+                <p className="text-xs text-slate-600 mt-1">There are {pendingCertificates.length} certificates and {pendingActivities?.length || 0} activities waiting for your approval.</p>
                 <Link to="/admin/verify" className="inline-block mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 transition-colors">
                   Verify Now →
                 </Link>
@@ -310,6 +323,95 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Pending Certificates Approval for Dashboard */}
+          {pendingCertificates.length > 0 && (
+            <div className="mt-8 border-t border-slate-200/60 pt-8">
+              <h3 className="text-xl font-bold text-slate-900 mb-4">Pending Certificates</h3>
+              <div className="space-y-4">
+                {pendingCertificates.slice(0, 5).map((cert) => (
+                  <div key={cert._id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="font-bold text-sm text-slate-900">{cert.title}</div>
+                      <div className="text-xs text-slate-500">By {cert.student?.name} • {cert.issuedBy}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        className="btn-success flex items-center gap-1 py-1.5 px-3 text-xs"
+                        onClick={async () => {
+                          setProcessing((p) => ({ ...p, [cert._id]: 'approve' }));
+                          const result = await dispatch(verifyCertificate({ id: cert._id, action: 'approve' }));
+                          setProcessing((p) => ({ ...p, [cert._id]: null }));
+                          if (!result.error) toast.success('Certificate approved!');
+                          else toast.error(result.payload);
+                        }}
+                        disabled={!!processing[cert._id]}
+                      >
+                        {processing[cert._id] === 'approve' ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                        Approve
+                      </button>
+                      <button
+                        className="btn-danger flex items-center gap-1 py-1.5 px-3 text-xs"
+                        onClick={() => setRejectModal(cert)}
+                      >
+                        <X size={12} /> Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {pendingCertificates.length > 5 && (
+                  <Link to="/admin/verify" className="block text-center mt-2 text-xs font-bold text-purple-600 hover:text-purple-700">
+                    View all {pendingCertificates.length} certificates →
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Pending Activities Approval for Dashboard */}
+          {pendingActivities?.length > 0 && (
+            <div className="mt-8 border-t border-slate-200/60 pt-8">
+              <h3 className="text-xl font-bold text-slate-900 mb-4">Pending Activities</h3>
+              <div className="space-y-4">
+                {pendingActivities.slice(0, 5).map((act) => (
+                  <div key={act._id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="font-bold text-sm text-slate-900">{act.title}</div>
+                      <div className="text-xs text-slate-500">By {act.student?.name} • {act.type}</div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        className="btn-outline-premium flex items-center gap-1 py-1.5 px-3 text-xs"
+                        onClick={() => setActivityDetailsModal(act)}
+                      >
+                        <Eye size={12} /> Details
+                      </button>
+                      <button
+                        className="btn-success flex items-center gap-1 py-1.5 px-3 text-xs"
+                        onClick={async () => {
+                          setProcessing((p) => ({ ...p, [act._id]: 'approve' }));
+                          const result = await dispatch(verifyActivity({ id: act._id, action: 'approve' }));
+                          setProcessing((p) => ({ ...p, [act._id]: null }));
+                          if (!result.error) toast.success('Activity approved!');
+                          else toast.error(result.payload);
+                        }}
+                        disabled={!!processing[act._id]}
+                      >
+                        {processing[act._id] === 'approve' ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                        Approve
+                      </button>
+                      <button
+                        className="btn-danger flex items-center gap-1 py-1.5 px-3 text-xs"
+                        onClick={() => setRejectModal({ ...act, isActivity: true })}
+                      >
+                        <X size={12} /> Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -319,6 +421,89 @@ export default function AdminDashboard() {
         onClose={() => setSelectedStudentForHistory(null)}
         student={selectedStudentForHistory}
       />
+
+      {/* Reject Modal */}
+      {rejectModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 420, padding: 28 }}>
+            <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: 'var(--danger)' }}>Reject Certificate</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+              Rejecting: <strong style={{ color: 'var(--text-primary)' }}>{rejectModal.title}</strong>
+            </p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setRejectModal(null)}>Cancel</button>
+              <button className="btn-danger" style={{ flex: 1, justifyContent: 'center' }}
+                onClick={async () => {
+                  setProcessing((p) => ({ ...p, [rejectModal._id]: 'reject' }));
+                  let result;
+                  if (rejectModal.isActivity) {
+                    result = await dispatch(verifyActivity({ id: rejectModal._id, action: 'reject', reason: '' }));
+                  } else {
+                    result = await dispatch(verifyCertificate({ id: rejectModal._id, action: 'reject', reason: '' }));
+                  }
+                  setProcessing((p) => ({ ...p, [rejectModal._id]: null }));
+                  setRejectModal(null);
+                  if (!result.error) toast.success(`${rejectModal.isActivity ? 'Activity' : 'Certificate'} rejected!`);
+                  else toast.error(result.payload);
+                }}
+                disabled={processing[rejectModal._id] === 'reject'}>
+                {processing[rejectModal._id] === 'reject' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />} Reject
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Activity Details Modal */}
+      {activityDetailsModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 500, padding: 28 }}>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-xl font-bold text-slate-900">Activity Details</h3>
+              <button onClick={() => setActivityDetailsModal(null)} className="text-slate-500 hover:text-slate-900 bg-slate-50 p-1 rounded-md">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4 text-sm mt-4">
+              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Title</span>
+                <span className="col-span-2 font-medium text-slate-900">{activityDetailsModal.title}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Type</span>
+                <span className="col-span-2 font-medium text-slate-900 uppercase">{activityDetailsModal.type}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Platform</span>
+                <span className="col-span-2 font-medium text-slate-900">{activityDetailsModal.platform || 'N/A'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Duration</span>
+                <span className="col-span-2 font-medium text-slate-900">{activityDetailsModal.duration || 'N/A'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Description</span>
+                <span className="col-span-2 font-medium text-slate-900 whitespace-pre-wrap">{activityDetailsModal.description || 'N/A'}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pb-2">
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Link</span>
+                <span className="col-span-2 font-medium">
+                  {activityDetailsModal.link ? (
+                    <a href={activityDetailsModal.link} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline break-all">
+                      {activityDetailsModal.link}
+                    </a>
+                  ) : 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
+              <button className="btn-secondary px-4" onClick={() => setActivityDetailsModal(null)}>Close</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
