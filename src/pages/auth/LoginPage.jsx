@@ -117,8 +117,8 @@ export default function LoginPage() {
                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="email"
-                  className="input-field"
-                  style={{ paddingLeft: 38 }}
+                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                  style={{ paddingLeft: 40 }}
                   placeholder="you@example.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -142,8 +142,8 @@ export default function LoginPage() {
                 <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type={showPass ? 'text' : 'password'}
-                  className="input-field"
-                  style={{ paddingLeft: 38, paddingRight: 40 }}
+                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-10 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                  style={{ paddingLeft: 40, paddingRight: 40 }}
                   placeholder="Enter your password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -164,8 +164,8 @@ export default function LoginPage() {
             <div style={{ marginTop: 28 }}>
               <button
                 type="submit"
-                className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center', padding: '12px 24px', fontSize: 15 }}
+                className="btn-premium"
+                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '12px 24px', fontSize: 15 }}
                 disabled={loading}
                 id="login-submit"
               >

@@ -52,9 +52,13 @@ const RoleGuard = ({ children, allowed }) => {
   if (!token || !user) return <Navigate to="/login" replace />;
   
   if (!allowed.includes(user.role)) {
-    const fallback = user.role === 'student' ? '/placement' : 
+    const fallback = user.role === 'student' ? '/leaderboard' : 
                    user.role === 'teacher' ? '/teacher/dashboard' : 
-                   user.role === 'guide' ? '/pms/guide' : '/admin/dashboard';
+                   user.role === 'guide' ? '/pms/guide' : 
+                   user.role === 'admin' ? '/leaderboard' :
+                   user.role === 'super50_admin' ? '/admin/super50-selection' :
+                   user.role === 'tp_admin' ? '/admin/drive-eligibility' :
+                   user.role === 'pms_admin' ? '/pms/admin' : '/login';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -63,8 +67,8 @@ const RoleGuard = ({ children, allowed }) => {
 const Super50Guard = ({ children }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/login" replace />;
-  if (user.role === 'admin' || user.role === 'teacher') return children;
-  if (!user.isSuper50) return <Navigate to="/placement" replace />;
+  if (user.role === 'admin' || user.role === 'teacher' || user.role === 'super50_admin') return children;
+  if (!user.isSuper50) return <Navigate to="/leaderboard" replace />;
   return children;
 };
 
@@ -82,10 +86,10 @@ function AppRoutes({ theme, toggleTheme }) {
       <Route element={<Layout theme={theme} toggleTheme={toggleTheme} />}>
         {/* Student Routes - General */}
         <Route path="/dashboard" element={
-          <RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>
+          <Super50Guard><StudentDashboard /></Super50Guard>
         } />
         <Route path="/leaderboard" element={
-          <RoleGuard allowed={['student', 'admin', 'teacher', 'guide']}><LeaderboardPage /></RoleGuard>
+          <RoleGuard allowed={['student', 'admin', 'teacher', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><LeaderboardPage /></RoleGuard>
         } />
 
         <Route path="/placement" element={
@@ -111,7 +115,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['admin']}><AdminDashboard /></RoleGuard>
         } />
         <Route path="/admin/students" element={
-          <RoleGuard allowed={['admin']}><StudentsPage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage /></RoleGuard>
         } />
         <Route path="/admin/verify" element={
           <RoleGuard allowed={['admin']}><VerifyCertificatesPage /></RoleGuard>
@@ -126,16 +130,16 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['admin']}><BulkCreatePage /></RoleGuard>
         } />
         <Route path="/admin/super50-selection" element={
-          <RoleGuard allowed={['admin']}><Super50SelectionPage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'super50_admin']}><Super50SelectionPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
-          <RoleGuard allowed={['admin']}><DriveEligibilityPage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
         } />
         <Route path="/admin/drive-results" element={
-          <RoleGuard allowed={['admin']}><DriveResultUpload /></RoleGuard>
+          <RoleGuard allowed={['admin', 'tp_admin']}><DriveResultUpload /></RoleGuard>
         } />
         <Route path="/faculty/placement" element={
-          <RoleGuard allowed={['admin', 'teacher']}><FacultyPlacementDashboard /></RoleGuard>
+          <RoleGuard allowed={['admin', 'teacher', 'tp_admin']}><FacultyPlacementDashboard /></RoleGuard>
         } />
         <Route path="/faculty/resumes" element={
           <RoleGuard allowed={['admin', 'teacher']}><ResumeReview /></RoleGuard>
@@ -160,7 +164,7 @@ function AppRoutes({ theme, toggleTheme }) {
 
         {/* Shared */}
         <Route path="/leaderboard" element={
-          <RoleGuard allowed={['student', 'admin', 'teacher', 'guide']}><LeaderboardPage /></RoleGuard>
+          <RoleGuard allowed={['student', 'admin', 'teacher', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><LeaderboardPage /></RoleGuard>
         } />
       </Route>
 

@@ -32,13 +32,13 @@ export default function LeaderboardPage() {
 
   return (
     <div className="page-layout">
-      <div className="page-header">
+      <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="page-title">
-            <Trophy size={28} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 10, color: '#fbbf24' }} />
+          <h1 className="text-3xl font-black text-white mb-2 flex items-center">
+            <Trophy size={28} className="inline mr-3 text-amber-400" />
             Leaderboard
           </h1>
-          <p className="page-subtitle">Top performing Super 50 students ranked by performance score</p>
+          <p className="text-slate-400">Top performing Super 50 students ranked by performance score</p>
         </motion.div>
       </div>
 
@@ -74,8 +74,7 @@ export default function LeaderboardPage() {
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
           <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
-            className="input-field"
-            style={{ paddingLeft: 36 }}
+            className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
             placeholder="Search by name or enrollment..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -84,7 +83,13 @@ export default function LeaderboardPage() {
         </div>
         <div style={{ position: 'relative' }}>
           <Filter size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <select className="select-field" style={{ paddingLeft: 36, minWidth: 180 }} value={dept} onChange={(e) => setDept(e.target.value)} id="leaderboard-dept-filter">
+          <select 
+            className="bg-black/50 border border-slate-700/50 rounded-xl py-2 pl-10 pr-8 text-white focus:outline-none focus:border-purple-500/50 transition-colors appearance-none" 
+            style={{ minWidth: 180 }} 
+            value={dept} 
+            onChange={(e) => setDept(e.target.value)} 
+            id="leaderboard-dept-filter"
+          >
             <option value="">All Departments</option>
             {departments.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
@@ -107,43 +112,44 @@ export default function LeaderboardPage() {
       )}
 
       {/* Full Table */}
-      <motion.div className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ padding: 0, overflow: 'hidden' }}
+      <motion.div className="glass-card overflow-hidden"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, fontSize: 14 }}>All Students ({filtered.length})</span>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'white' }}>All Students ({filtered.length})</span>
         </div>
 
         {loading ? (
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[1,2,3,4,5].map(i => <div key={i} className="skeleton" style={{ height: 56 }} />)}
+            {[1,2,3,4,5].map(i => <div key={i} className="animate-pulse bg-white/5 rounded-xl" style={{ height: 56 }} />)}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
-              <thead>
+            <table className="w-full text-left text-sm text-slate-300">
+              <thead className="text-xs uppercase bg-black/40 text-slate-400 border-b border-white/5">
                 <tr>
-                  <th>Rank</th>
-                  <th>Student</th>
-                  <th>Department</th>
-                  <th>Batch</th>
-                  <th>Attendance</th>
-                  <th>Score</th>
+                  <th className="px-6 py-4 font-bold">Rank</th>
+                  <th className="px-6 py-4 font-bold">Student</th>
+                  <th className="px-6 py-4 font-bold">Department</th>
+                  <th className="px-6 py-4 font-bold">Batch</th>
+                  <th className="px-6 py-4 font-bold">Attendance</th>
+                  <th className="px-6 py-4 font-bold">Score</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-white/5">
                 {filtered.map((student, i) => {
                   const isMe = student._id === user?._id;
                   const rColor = rankColors[student.rank];
                   return (
                     <motion.tr key={student._id}
+                      className="hover:bg-white/5 transition-colors"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.03 }}
                       style={isMe ? { outline: '2px solid rgba(124,58,237,0.4)' } : {}}>
-                      <td style={{ fontWeight: 800, fontSize: 16, color: rColor || 'var(--text-muted)', width: 60 }}>
+                      <td className="px-6 py-4 font-black text-lg" style={{ color: rColor || '#94a3b8', width: 60 }}>
                         {rankEmojis[student.rank] || `#${student.rank}`}
                       </td>
-                      <td>
+                      <td className="px-6 py-4">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{
                             width: 36, height: 36, borderRadius: '50%',
@@ -154,24 +160,24 @@ export default function LeaderboardPage() {
                             {student.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: 13 }}>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: 'white' }}>
                               {student.name} {isMe && <span style={{ fontSize: 10, background: 'rgba(124,58,237,0.2)', color: 'var(--accent-light)', padding: '1px 6px', borderRadius: 10, marginLeft: 4 }}>You</span>}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{student.enrollmentNumber}</div>
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{student.enrollmentNumber}</div>
                           </div>
                         </div>
                       </td>
-                      <td style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{student.department}</td>
-                      <td style={{ fontSize: 13, color: 'var(--text-muted)' }}>{student.batch}</td>
-                      <td>
+                      <td className="px-6 py-4" style={{ fontSize: 13, color: '#cbd5e1' }}>{student.department}</td>
+                      <td className="px-6 py-4" style={{ fontSize: 13, color: '#94a3b8' }}>{student.batch}</td>
+                      <td className="px-6 py-4">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1, height: 6, background: 'var(--bg-secondary)', borderRadius: 3, minWidth: 60 }}>
-                            <div style={{ height: '100%', width: `${student.attendancePercentage}%`, background: student.attendancePercentage >= 75 ? 'var(--success)' : student.attendancePercentage >= 50 ? 'var(--warning)' : 'var(--danger)', borderRadius: 3 }} />
+                          <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, minWidth: 60 }}>
+                            <div style={{ height: '100%', width: `${student.attendancePercentage}%`, background: student.attendancePercentage >= 75 ? '#10b981' : student.attendancePercentage >= 50 ? '#f59e0b' : '#ef4444', borderRadius: 3 }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 600, minWidth: 38 }}>{Math.round(student.attendancePercentage)}%</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, minWidth: 38, color: 'white' }}>{Math.round(student.attendancePercentage)}%</span>
                         </div>
                       </td>
-                      <td>
+                      <td className="px-6 py-4">
                         <span style={{
                           fontSize: 18, fontWeight: 900,
                           color: student.performanceScore >= 75 ? '#10b981' : student.performanceScore >= 50 ? '#7c3aed' : student.performanceScore >= 25 ? '#f59e0b' : '#ef4444',

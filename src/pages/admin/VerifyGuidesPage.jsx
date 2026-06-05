@@ -57,9 +57,9 @@ export default function VerifyGuidesPage() {
             <span>Guide Management</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2">
-            Verify Guides
+            Verify Admins & Guides
           </h1>
-          <p className="text-slate-500 text-lg">Approve or revoke access for project guides.</p>
+          <p className="text-slate-500 text-lg">Approve or revoke access for administrators and project guides.</p>
         </div>
       </div>
 
@@ -83,7 +83,8 @@ export default function VerifyGuidesPage() {
           <table className="w-full text-left text-sm text-slate-500">
             <thead className="text-xs uppercase bg-black/50 text-slate-600 border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-bold tracking-wider">Guide Info</th>
+                <th className="px-6 py-4 font-bold tracking-wider">User Info</th>
+                <th className="px-6 py-4 font-bold tracking-wider">Role</th>
                 <th className="px-6 py-4 font-bold tracking-wider">Department</th>
                 <th className="px-6 py-4 font-bold tracking-wider">Status</th>
                 <th className="px-6 py-4 font-bold tracking-wider text-right">Actions</th>
@@ -110,7 +111,12 @@ export default function VerifyGuidesPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-lg bg-slate-50 text-gray-300 text-xs font-medium">
+                    <span className="px-3 py-1 rounded-lg bg-slate-50 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                      {guide.role === 'guide' ? 'Project Guide' : guide.role === 'pms_admin' ? 'PMS Admin' : guide.role === 'super50_admin' ? 'Super 50 Admin' : 'T&P Admin'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-3 py-1 rounded-lg bg-slate-50 text-gray-400 text-xs font-medium">
                       {guide.department || 'N/A'}
                     </span>
                   </td>
@@ -133,7 +139,7 @@ export default function VerifyGuidesPage() {
                           : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
                         }`}
                     >
-                      {guide.isActive ? <><X size={14} /> Revoke Access</> : <><Check size={14} /> Approve Guide</>}
+                      {guide.isActive ? <><X size={14} /> Revoke Access</> : <><Check size={14} /> Approve User</>}
                     </button>
                   </td>
                 </motion.tr>

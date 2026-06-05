@@ -56,19 +56,29 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const adminLinks = [
-    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
-    { to: '/faculty/resumes', icon: FileText, label: 'Resume Review' },
-    { to: '/admin/students', icon: Users, label: 'All Students' },
-    { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/admin/guides', icon: UserPlus, label: 'Verify Guides' },
-    { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
-    { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
+    { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Admins' },
+  ];
+
+  const super50AdminLinks = [
+    { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+    { to: '/admin/students', icon: Users, label: 'Super 50 Students' },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  ];
+
+  const tpAdminLinks = [
     { to: '/admin/drive-eligibility', icon: Briefcase, label: 'Drive Eligibility' },
     { to: '/admin/drive-results', icon: ClipboardList, label: 'Drive Results' },
+    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  ];
+
+  const pmsAdminLinks = [
+    { to: '/pms/admin', icon: Database, label: 'PMS Dashboard' },
   ];
 
   const handleLogout = () => {
@@ -99,9 +109,12 @@ const Sidebar = ({ theme, toggleTheme }) => {
         <div className="space-y-1.5">
           <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4">Core</p>
           {(user?.role === 'admin' ? adminLinks :
+            user?.role === 'super50_admin' ? super50AdminLinks :
+            user?.role === 'tp_admin' ? tpAdminLinks :
+            user?.role === 'pms_admin' ? pmsAdminLinks :
             user?.role === 'teacher' ? teacherLinks :
-              user?.role === 'guide' ? guideLinks :
-                commonStudentLinks).map((link) => (
+            user?.role === 'guide' ? guideLinks :
+            commonStudentLinks).map((link) => (
                   <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
                 ))}
         </div>
@@ -127,26 +140,14 @@ const Sidebar = ({ theme, toggleTheme }) => {
         )}
 
         {/* Super 50 Section (Students Only) */}
-        {user?.role === 'student' && (
+        {user?.role === 'student' && user?.isSuper50 && (
           <div className="space-y-1.5">
             <div className="px-4 flex items-center justify-between mb-4">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[2px]">Super 50 Portal</p>
-              {!user?.isSuper50 && <ShieldCheck size={12} className="text-slate-400" />}
             </div>
-            {user?.isSuper50 ? (
-              super50Links.map((link) => (
-                <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
-              ))
-            ) : (
-              <div className="px-4 py-6 rounded-3xl bg-slate-50/50 border border-slate-200/60 relative overflow-hidden group">
-                <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 blur-2xl rounded-full" />
-                <Star className="text-purple-500/50 mb-3" size={20} />
-                <h4 className="text-xs font-bold text-slate-700 mb-1">Portal Locked</h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed">
-                  Super 50 selection is required for access to activities and tracking.
-                </p>
-              </div>
-            )}
+            {super50Links.map((link) => (
+              <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
+            ))}
           </div>
         )}
       </nav>
