@@ -45,7 +45,7 @@ export default function RegisterPage() {
 
   const startCountdown = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    setCountdown(30);
+    setCountdown(60);
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -61,7 +61,7 @@ export default function RegisterPage() {
     e.preventDefault();
     const resultAction = await dispatch(sendRegisterOtp({ name: form.name, email: form.email }));
     if (sendRegisterOtp.fulfilled.match(resultAction)) {
-      toast.success('OTP sent to your email! Valid for 30 seconds.');
+      toast.success('OTP sent to your email! Valid for 60 seconds.');
       setStep(2);
       startCountdown();
     }
@@ -72,7 +72,7 @@ export default function RegisterPage() {
     try {
       const resultAction = await dispatch(sendRegisterOtp({ name: form.name, email: form.email }));
       if (sendRegisterOtp.fulfilled.match(resultAction)) {
-        toast.success('New OTP sent! Valid for 30 seconds.');
+        toast.success('New OTP sent! Valid for 60 seconds.');
         setOtp('');
         startCountdown();
       }

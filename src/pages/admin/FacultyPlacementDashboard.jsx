@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchFacultyPlacementDashboard, clearPlacementError } from '../../features/placement/placementSlice';
 import { motion } from 'framer-motion';
-import { Upload, Filter, Search, BarChart3, Users, Briefcase, AlertCircle, Clock } from 'lucide-react';
+import { Upload, Filter, Search, BarChart3, Users, Briefcase, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
 const FacultyPlacementDashboard = () => {
   const dispatch = useDispatch();
-  const { drives, stats, loading, error } = useSelector((state) => state.placement);
+  const { drives, stats, selections, loading, error } = useSelector((state) => state.placement);
   const [activeTab, setActiveTab] = useState('drives');
 
   useEffect(() => {
@@ -171,6 +171,45 @@ const FacultyPlacementDashboard = () => {
                 <Clock className="mx-auto text-gray-600 mb-4" size={48} />
                 <h3 className="text-xl font-bold text-slate-900">No Drives Found</h3>
                 <p className="text-slate-500 mt-2">Start by creating a new placement drive.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'selections' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {selections?.map((selection, idx) => (
+              <motion.div
+                key={selection._id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.05 }}
+                className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex items-start gap-4"
+              >
+                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 shrink-0">
+                  <CheckCircle className="text-green-500" size={24} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-bold text-slate-900 truncate">{selection.student?.name}</h3>
+                  <p className="text-sm text-slate-500 truncate">{selection.student?.email} • {selection.student?.department}</p>
+                  <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-slate-500 font-medium">Company</p>
+                      <p className="font-bold text-slate-900">{selection.drive?.companyName}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500 font-medium">Package</p>
+                      <p className="font-bold text-green-600">{selection.drive?.package}</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+            {(!selections || selections.length === 0) && (
+              <div className="col-span-full bg-white border border-slate-200 shadow-sm rounded-2xl p-12 text-center">
+                <Users className="mx-auto text-gray-600 mb-4" size={48} />
+                <h3 className="text-xl font-bold text-slate-900">No Selections Yet</h3>
+                <p className="text-slate-500 mt-2">Selected students will appear here.</p>
               </div>
             )}
           </div>

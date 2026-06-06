@@ -20,7 +20,7 @@ export const sendRegisterOtp = createAsyncThunk('auth/sendRegisterOtp', async (u
     const { data } = await api.post('/auth/send-register-otp', userData);
     return data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Failed to send OTP');
+    return rejectWithValue(err.response?.data?.message || err.message || 'Failed to send OTP');
   }
 });
 
@@ -34,7 +34,7 @@ export const register = createAsyncThunk('auth/register', async (userData, { rej
     localStorage.setItem('super50_user', JSON.stringify(data.user));
     return data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Registration failed');
+    return rejectWithValue(err.response?.data?.message || err.message || 'Registration failed');
   }
 });
 
@@ -43,7 +43,7 @@ export const changePassword = createAsyncThunk('auth/changePassword', async (pay
     const { data } = await api.post('/auth/change-password', payload);
     return data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Password change failed');
+    return rejectWithValue(err.response?.data?.message || err.message || 'Password change failed');
   }
 });
 
