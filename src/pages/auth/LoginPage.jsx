@@ -93,7 +93,7 @@ export default function LoginPage() {
             <GraduationCap size={36} color="white" />
           </motion.div>
           <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 8 }}>
-            <span className="gradient-text">Super 50</span>
+            <span className="gradient-text">SCOPE</span>
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
             Student Performance Tracking System

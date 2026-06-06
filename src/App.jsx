@@ -31,12 +31,10 @@ import Super50SelectionPage from './pages/admin/Super50SelectionPage';
 import DriveEligibilityPage from './pages/admin/DriveEligibilityPage';
 import DriveResultUpload from './pages/admin/DriveResultUpload';
 import FacultyPlacementDashboard from './pages/admin/FacultyPlacementDashboard';
-import ResumeReview from './pages/admin/ResumeReview';
 import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
 
 // New Features
 import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
-
 import ProjectDashboard from './pages/student/ProjectDashboard';
 import ProjectDetails from './pages/student/ProjectDetails';
 
@@ -91,7 +89,6 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/leaderboard" element={
           <RoleGuard allowed={['student', 'admin', 'teacher', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><LeaderboardPage /></RoleGuard>
         } />
-
         <Route path="/placement" element={
           <RoleGuard allowed={['student']}><StudentPlacementDashboard /></RoleGuard>
         } />
@@ -144,9 +141,6 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/faculty/placement" element={
           <RoleGuard allowed={['admin', 'teacher', 'tp_admin']}><FacultyPlacementDashboard /></RoleGuard>
         } />
-        <Route path="/faculty/resumes" element={
-          <RoleGuard allowed={['admin', 'teacher']}><ResumeReview /></RoleGuard>
-        } />
 
         {/* Teacher routes (shared admin pages, read/write but no bulk-create) */}
         <Route path="/teacher/dashboard" element={
@@ -163,11 +157,6 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/teacher/placement" element={
           <RoleGuard allowed={['teacher']}><FacultyPlacementDashboard /></RoleGuard>
-        } />
-
-        {/* Shared */}
-        <Route path="/leaderboard" element={
-          <RoleGuard allowed={['student', 'admin', 'teacher', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><LeaderboardPage /></RoleGuard>
         } />
       </Route>
 

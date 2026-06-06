@@ -52,10 +52,14 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const adminLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
-    { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
-    { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+    { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
+    { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
+    { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
+    { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Admins' },
   ];
 
@@ -91,7 +95,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
             <GraduationCap size={26} color="white" />
           </div>
           <div>
-            <div className="font-black text-xl text-slate-950 tracking-tighter">SUPER 50</div>
+            <div className="font-black text-xl text-slate-950 tracking-tighter">SCOPE</div>
             <div className="text-[10px] font-bold text-purple-600 uppercase tracking-widest leading-none mt-1">
               {user?.role} Portal
             </div>
@@ -160,7 +164,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
               <div className="text-[10px] text-purple-600 truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : user?.role}</div>
             </div>
           </div>
-
+          
           <div className="flex gap-2">
             <button
               onClick={toggleTheme}

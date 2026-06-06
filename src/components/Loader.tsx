@@ -32,14 +32,14 @@ export function Loader() {
                 transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
               />
               <div className="absolute inset-0 flex items-center justify-center">
-                <motion.span
+                <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="font-display text-4xl font-[900] text-gradient-brand"
+                  className="h-12 w-12"
                 >
-                    <img src="/upload/SISTec_Logo.png" alt="SCOPE Logo" className="h-12 w-12" />
-                </motion.span>
+                  <img src="/upload/SISTec_Logo.png" alt="SCOPE Logo" className="h-12 w-12" />
+                </motion.div>
               </div>
             </div>
             
@@ -50,13 +50,13 @@ export function Loader() {
                 transition={{ delay: 0.5 }}
                 className="font-mono text-[11px] font-black tracking-[0.8em] text-brand-indigo uppercase pl-[0.8em]"
               >
-                SCOPE (SISTec CSE Operations & Progress Engine)
+                SCOPE (SISTec CSE Operations &amp; Progress Engine)
               </motion.div>
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: [0, 1, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="text-[10px] font-bold text-slate-300 uppercase tracking-widest"
+                className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest"
               >
                 Syncing innovation node...
               </motion.div>

@@ -77,7 +77,7 @@ export function Leaderboard() {
 
         <div className="glass-strong relative overflow-hidden rounded-[2rem] shadow-lg border-white/60">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <div className="font-mono text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="font-mono text-[10px] font-black uppercase tracking-widest text-black dark:text-slate-400">
               Elite Performers
             </div>
             <div className="flex items-center gap-2 text-[10px] font-black text-brand-orange">
@@ -95,15 +95,15 @@ export function Leaderboard() {
                 <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl font-display text-lg font-black ${
                   r.rank === 1 ? "bg-gradient-to-br from-brand-indigo to-brand-purple text-white shadow-md"
                   : r.rank === 2 ? "bg-slate-800 text-white"
-                  : r.rank === 3 ? "bg-slate-100 text-slate-600"
-                  : "bg-transparent text-slate-400"
+                  : r.rank === 3 ? "bg-slate-100 text-black dark:text-slate-300"
+                  : "bg-transparent text-black dark:text-slate-400"
                 }`}>
                   {r.rank}
                 </div>
                 
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-base font-black text-foreground">{r.name}</div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{r.college}</div>
+                  <div className="text-[10px] font-bold text-black dark:text-slate-400 uppercase tracking-tighter">{r.college}</div>
                 </div>
 
                 <div className="hidden flex-1 sm:block px-8">

@@ -57,7 +57,7 @@ export function Hero() {
       <div className="absolute inset-0 z-0 bg-white dark:bg-[#0a0a0a]">
         {/* Subtle Grid Pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-        
+
         {/* Clean Glowing Orbs */}
         <div className="absolute top-0 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] animate-blob" />
         <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] translate-x-1/2 rounded-full bg-purple-500/20 dark:bg-purple-600/20 blur-[120px] animate-blob" style={{ animationDelay: "-4s" }} />
@@ -105,26 +105,23 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mx-auto mt-6 max-w-3xl text-xl text-slate-800 dark:text-slate-200 md:text-2xl font-medium leading-relaxed drop-shadow-sm"
+          className="mx-auto mt-6 max-w-3xl text-xl text-muted-foreground/80 md:text-2xl font-medium leading-relaxed"
         >
-          Empowering the next generation of innovators. Track placements, compete in the 
-          <span className="text-foreground font-bold"> Super 50</span>, and showcase your professional portfolio — all in one unified workspace.
+          Empowering the next generation of innovators. Track placements, compete in the
+          <span className="text-foreground"> Super 50</span>, and showcase your professional portfolio — all in one unified workspace.
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-6"
+          className="mt-8 flex items-center justify-center"
         >
           <a href="#features" className="btn-premium h-14 px-10 text-base group shadow-[0_0_20px_var(--brand-indigo)/20]">
-            <Sparkles size={18} className="mr-2 transition-transform group-hover:rotate-12" /> 
-            Explore Ecosystem 
+            <Sparkles size={18} className="mr-2 transition-transform group-hover:rotate-12" />
+            Explore Ecosystem
             <ArrowRight size={18} className="ml-2 transition-transform group-hover:translate-x-1" />
           </a>
-          <button onClick={() => navigate('/login')} className="btn-ghost h-14 px-10 text-base shadow-sm cursor-pointer flex items-center">
-            <LogIn size={18} className="mr-2" /> Student Login
-          </button>
         </motion.div>
 
         {/* Enhanced Layered Dashboard Preview */}
@@ -133,7 +130,7 @@ export function Hero() {
           className="relative mx-auto mt-24 max-w-6xl"
         >
           <div className="absolute -inset-10 rounded-[3rem] bg-gradient-to-r from-brand-indigo/20 via-brand-purple/20 to-brand-orange/20 blur-[100px] opacity-50" />
-          
+
           <div className="glass-strong relative rounded-[2.5rem] p-3 shadow-[0_50px_100px_-20px_oklch(0_0_0/0.15)] border border-white/60 overflow-hidden group">
             <div className="rounded-[2rem] bg-white/60 backdrop-blur-xl p-8 transition-colors group-hover:bg-white/80">
               <div className="mb-8 flex items-center justify-between">
@@ -158,7 +155,7 @@ export function Hero() {
                     transition={{ duration: 6 + idx, repeat: Infinity, ease: "easeInOut", delay: idx * 0.7 }}
                     className="rounded-[2rem] bg-white/80 p-7 shadow-xl shadow-slate-200/50 border border-white text-left group/card hover:bg-white transition-all hover:scale-[1.02]"
                   >
-                    <div className="text-[12px] font-black uppercase tracking-[0.15em] text-slate-400 mb-6">{item.title}</div>
+                    <div className="text-[12px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-6">{item.title}</div>
                     <div className={`font-display text-4xl font-[900] text-${item.color} tracking-tight`}>
                       {item.val}
                     </div>
@@ -179,7 +176,7 @@ export function Hero() {
                   <Sparkles size={24} className="text-white" />
                 </div>
                 <div>
-                  <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Global Status</div>
+                  <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Global Status</div>
                   <div className="font-display text-base font-black text-foreground">Top 1% Worldwide</div>
                 </div>
               </div>
@@ -198,7 +195,7 @@ export function Hero() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Recent Milestone</div>
+                  <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Recent Milestone</div>
                   <div className="font-display text-base font-black text-brand-orange">Dream Offer Locked</div>
                 </div>
               </div>

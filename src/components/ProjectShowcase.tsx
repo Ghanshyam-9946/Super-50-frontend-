@@ -23,7 +23,7 @@ const projects = [
   },
   {
     id: 3,
-    title: "Nexus Leaderboard",
+    title: "SCOPE Leaderboard",
     category: "Real-time · Elite",
     desc: "High-performance ranking engine with live socket updates and animated talent score visualization.",
     tags: ["TypeScript", "Node.js", "Redis", "Canvas"],
@@ -80,7 +80,7 @@ export function ProjectShowcase() {
                     {p.category}
                   </div>
                   <h3 className="mb-3 font-display text-2xl font-black">{p.title}</h3>
-                  <p className="text-sm text-slate-500 font-medium line-clamp-2">
+                  <p className="text-sm text-muted-foreground font-medium line-clamp-2">
                     {p.desc}
                   </p>
                 </div>
@@ -88,13 +88,13 @@ export function ProjectShowcase() {
                 <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-6">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
-                      <Star size={14} className="text-slate-400" />
-                      <span className="text-[10px] font-black text-slate-400">{p.stats.stars}</span>
+                      <Star size={14} className="text-black/60 dark:text-slate-400" />
+                      <span className="text-[10px] font-black text-black/60 dark:text-slate-400">{p.stats.stars}</span>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-100 hover:bg-slate-50">
-                      <GithubIcon size={16} className="text-slate-600" />
+                      <GithubIcon size={16} className="text-black/80 dark:text-slate-400" />
                     </button>
                     <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-indigo text-white">
                       <ExternalLink size={16} />

@@ -7,8 +7,8 @@ const features = [
     icon: Briefcase,
     tag: "01 / Career Hub",
     title: "Placement Portal",
-    desc: "End-to-end placement tracking with real-time company drives, interview schedules and resume tooling.",
-    bullets: ["Company drives feed", "Interview calendar", "Resume manager", "Live placement updates"],
+    desc: "End-to-end placement tracking with real-time company drives and interview schedules.",
+    bullets: ["Company drives feed", "Interview calendar", "Live placement updates"],
     accent: "from-brand-indigo to-brand-purple",
     metric: { label: "Avg offer", value: "18 LPA" },
   },
@@ -77,7 +77,7 @@ function TiltCard({ feature, index }) {
           transition={{ duration: 5 + index, repeat: Infinity, ease: "easeInOut" }}
           className="glass absolute right-8 top-8 rounded-2xl px-5 py-2.5 border-white shadow-xl shadow-black/5"
         >
-          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{feature.metric.label}</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{feature.metric.label}</div>
           <div className="font-display text-lg font-black text-gradient-brand">{feature.metric.value}</div>
         </motion.div>
 
@@ -93,11 +93,11 @@ function TiltCard({ feature, index }) {
             {feature.tag}
           </div>
           <h3 className="mb-5 font-display text-4xl font-[900] tracking-tight leading-none">{feature.title}</h3>
-          <p className="mb-10 text-lg leading-relaxed text-slate-500 font-medium">{feature.desc}</p>
+          <p className="mb-10 text-lg leading-relaxed text-muted-foreground font-medium">{feature.desc}</p>
 
           <div className="grid gap-4">
             {feature.bullets.map((b) => (
-              <div key={b} className="flex items-center gap-4 text-sm font-bold text-slate-600">
+              <div key={b} className="flex items-center gap-4 text-sm font-bold text-muted-foreground">
                 <div className={`h-2 w-2 rounded-full bg-gradient-to-r ${feature.accent} shadow-sm`} />
                 <span>{b}</span>
               </div>

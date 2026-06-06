@@ -37,7 +37,7 @@ export function Footer() {
           <div className="lg:col-span-3">
             <div className="mb-8 font-mono text-[11px] font-black uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">Ecosystem</div>
             <ul className="space-y-4 text-base font-bold">
-              {["Placement Portal", "Super 50 Platform", "Innovation Gallery", "Global Leaderboard"].map((l) => (
+              {["Placement Portal", "SCOPE Platform", "Innovation Gallery", "Global Leaderboard"].map((l) => (
                 <li key={l}>
                   <a href="#" className="text-slate-700 dark:text-slate-300 hover:text-brand-indigo dark:hover:text-brand-purple transition-all hover:translate-x-1 inline-block">{l}</a>
                 </li>
@@ -50,7 +50,7 @@ export function Footer() {
             <ul className="space-y-4 text-base font-bold text-slate-700 dark:text-slate-300">
               <li className="flex items-center gap-3">
                 <div className="h-2 w-2 rounded-full bg-brand-orange" />
-                connect@scope.nexus
+                connect@scope
               </li>
               <li>+91 80 4321 0000</li>
               <li className="leading-relaxed">SCOPE Innovation Hub, 4th Floor<br />Vibrant Tech Park, Bengaluru 560001</li>
@@ -62,7 +62,7 @@ export function Footer() {
           <div className="glass-strong bg-white/50 dark:bg-black/50 px-8 py-3.5 rounded-full border-slate-300 dark:border-white/20 shadow-xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-300 hover:scale-[1.02] transition-all duration-500 cursor-default group/footer">
             <span className="opacity-70">© 2026</span>
             <span className="mx-2 opacity-30">|</span>
-            Designed & Developed by <span className="text-gradient-brand group-hover/footer:drop-shadow-[0_0_8px_var(--brand-indigo)/30] transition-all">Shivam, Ghanshyam, Shubham and Ajay</span>
+            Designed &amp; Developed by <span className="text-gradient-brand group-hover/footer:drop-shadow-[0_0_8px_var(--brand-indigo)/30] transition-all">Shivam, Ghanshyam, Shubham and Ajay</span>
             <span className="mx-2 opacity-20">|</span>
             under the Guidance of <span className="text-foreground">Prof. Nargish Gupta</span>
           </div>

@@ -47,7 +47,7 @@ export function Stats() {
             >
               <div className="relative z-10">
                 <Counter to={s.value} suffix={s.suffix} />
-                <div className="mt-2 font-mono text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <div className="mt-2 font-mono text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   {s.label}
                 </div>
               </div>

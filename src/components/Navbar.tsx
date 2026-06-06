@@ -52,7 +52,7 @@ export function Navbar() {
             <li key={l.href} onMouseEnter={() => setHoveredLink(l.label)} onMouseLeave={() => setHoveredLink(null)}>
               <a
                 href={l.href}
-                className="relative px-4 py-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+                className="relative px-4 py-2 text-sm font-bold text-foreground transition-colors hover:text-brand-indigo"
               >
                 <span className="relative z-10">{l.label}</span>
                 {hoveredLink === l.label && (
@@ -72,7 +72,7 @@ export function Navbar() {
         <div className="hidden items-center gap-6 md:flex">
           <button 
             onClick={() => navigate('/login')} 
-            className="text-sm font-bold text-muted-foreground transition-colors hover:text-brand-indigo cursor-pointer bg-transparent border-none"
+            className="text-sm font-bold text-foreground transition-colors hover:text-brand-indigo cursor-pointer bg-transparent border-none"
           >
             Sign in
           </button>
@@ -102,13 +102,13 @@ export function Navbar() {
             className="glass-strong absolute inset-x-0 top-full mt-4 flex flex-col gap-5 rounded-[2rem] p-8 md:hidden shadow-floating border-white/60"
           >
             {links.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-lg font-black text-slate-600 hover:text-brand-indigo transition-colors">
+              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-lg font-black text-black dark:text-white hover:text-brand-indigo transition-colors">
                 {l.label}
               </a>
             ))}
             <hr className="border-slate-100" />
             <div className="flex flex-col gap-4">
-              <button onClick={() => { navigate('/login'); setOpen(false); }} className="text-center font-bold text-slate-400 bg-transparent border-none">Sign in</button>
+              <button onClick={() => { navigate('/login'); setOpen(false); }} className="text-center font-bold text-black dark:text-white bg-transparent border-none">Sign in</button>
               <button onClick={() => { navigate('/login'); setOpen(false); }} className="btn-premium h-14 w-full text-base">
                 Get Access
               </button>

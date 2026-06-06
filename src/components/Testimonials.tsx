@@ -15,7 +15,7 @@ function Card({ t }: { t: typeof items[number] }) {
       <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-orange/10 font-display text-4xl font-black text-brand-orange">
         "
       </div>
-      <p className="text-lg leading-relaxed text-slate-500 font-medium italic">
+      <p className="text-lg leading-relaxed text-muted-foreground font-medium italic">
         {t.quote}
       </p>
       <div className="mt-10 flex items-center gap-5">
@@ -28,7 +28,7 @@ function Card({ t }: { t: typeof items[number] }) {
           <div className="text-lg font-[900] text-foreground leading-tight">{t.name}</div>
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-brand-orange" />
-            <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{t.role}</div>
+            <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">{t.role}</div>
           </div>
         </div>
       </div>

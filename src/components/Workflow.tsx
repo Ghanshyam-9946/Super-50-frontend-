@@ -70,7 +70,7 @@ export function Workflow() {
                       <div className="h-2 w-2 rounded-full bg-brand-orange animate-pulse" />
                     </div>
                     <h3 className="font-display text-3xl font-[900] tracking-tight text-foreground leading-tight">{s.title}</h3>
-                    <p className="mt-5 text-lg text-slate-500 font-medium leading-relaxed">{s.desc}</p>
+                    <p className="mt-5 text-lg text-muted-foreground font-medium leading-relaxed">{s.desc}</p>
                     
                     {/* Hover detail indicator */}
                     <div className="absolute bottom-6 right-8 opacity-0 group-hover:opacity-100 transition-opacity">
