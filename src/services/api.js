@@ -25,8 +25,10 @@ api.interceptors.response.use(
       localStorage.removeItem('super50_token');
       localStorage.removeItem('super50_user');
       
-      // Don't redirect if we are already on the login page
-      if (!window.location.pathname.startsWith('/login')) {
+      // Don't redirect if we are already on a public page
+      const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
+      const isPublicPath = publicPaths.some(path => window.location.pathname === path || window.location.pathname.startsWith('/reset-password'));
+      if (!isPublicPath) {
         window.location.href = '/login';
       }
     }

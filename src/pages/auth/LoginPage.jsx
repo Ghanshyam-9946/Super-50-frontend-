@@ -96,7 +96,7 @@ export default function LoginPage() {
             <span className="gradient-text">SCOPE</span>
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-            Student Performance Tracking System
+            SISTec CSE Operations & Progress Engine
           </p>
         </div>
 

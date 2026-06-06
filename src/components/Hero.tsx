@@ -108,7 +108,7 @@ export function Hero() {
           className="mx-auto mt-6 max-w-3xl text-xl text-muted-foreground/80 md:text-2xl font-medium leading-relaxed"
         >
           Empowering the next generation of innovators. Track placements, compete in the
-          <span className="text-foreground"> Super 50</span>, and showcase your professional portfolio — all in one unified workspace.
+          Super 50, and showcase your professional portfolio — all in one unified workspace.
         </motion.p>
 
         <motion.div
