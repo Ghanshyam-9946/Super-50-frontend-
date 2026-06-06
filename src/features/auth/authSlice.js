@@ -15,6 +15,15 @@ export const login = createAsyncThunk('auth/login', async (credentials, { reject
   }
 });
 
+export const sendRegisterOtp = createAsyncThunk('auth/sendRegisterOtp', async (userData, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post('/auth/send-register-otp', userData);
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Failed to send OTP');
+  }
+});
+
 export const register = createAsyncThunk('auth/register', async (userData, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/auth/register', userData);
@@ -95,6 +104,14 @@ const authSlice = createSlice({
         state.token = action.payload.token;
       })
       .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(sendRegisterOtp.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(sendRegisterOtp.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(sendRegisterOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { register, clearError } from '../../features/auth/authSlice';
-import { GraduationCap, Mail, Lock, User, Building, Loader2, ArrowLeft } from 'lucide-react';
+import { register, sendRegisterOtp, clearError } from '../../features/auth/authSlice';
+import { GraduationCap, Mail, Lock, User, Building, Loader2, ArrowLeft, Key, RefreshCw, Timer } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
@@ -18,6 +18,11 @@ export default function RegisterPage() {
     department: '',
     role: 'teacher', // default to teacher
   });
+  const [step, setStep] = useState(1);
+  const [otp, setOtp] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -33,9 +38,52 @@ export default function RegisterPage() {
     }
   }, [error, dispatch]);
 
-  const handleSubmit = async (e) => {
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  const startCountdown = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setCountdown(30);
+    timerRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    const resultAction = await dispatch(register(form));
+    const resultAction = await dispatch(sendRegisterOtp({ name: form.name, email: form.email }));
+    if (sendRegisterOtp.fulfilled.match(resultAction)) {
+      toast.success('OTP sent to your email! Valid for 30 seconds.');
+      setStep(2);
+      startCountdown();
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setResendLoading(true);
+    try {
+      const resultAction = await dispatch(sendRegisterOtp({ name: form.name, email: form.email }));
+      if (sendRegisterOtp.fulfilled.match(resultAction)) {
+        toast.success('New OTP sent! Valid for 30 seconds.');
+        setOtp('');
+        startCountdown();
+      }
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    const resultAction = await dispatch(register({ ...form, otp }));
     if (register.fulfilled.match(resultAction)) {
       if (resultAction.payload.pendingVerification) {
         toast.success(resultAction.payload.message || 'Registration successful. Waiting for admin approval.');
@@ -109,7 +157,8 @@ export default function RegisterPage() {
 
         {/* Register Card */}
         <div className="glass-card" style={{ padding: 32 }}>
-          <form onSubmit={handleSubmit}>
+          {step === 1 ? (
+            <form onSubmit={handleSendOtp}>
             {/* Full Name */}
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
@@ -222,10 +271,111 @@ export default function RegisterPage() {
               disabled={loading}
             >
               {loading ? (
-                <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Creating account...</>
-              ) : 'Register Account →'}
+                <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Sending OTP...</>
+              ) : 'Continue to Verification →'}
             </button>
           </form>
+          ) : (
+            <form onSubmit={handleRegister}>
+              <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+                  We've sent a 6-digit OTP to <strong>{form.email}</strong>. Please enter it below.
+                </p>
+              </div>
+
+              {/* OTP */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                  One-Time Password (OTP)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Key size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="text"
+                    className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors text-center tracking-[0.5em]"
+                    placeholder="------"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    maxLength={6}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Countdown Timer */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 24,
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: countdown > 0 ? 'rgba(124,58,237,0.08)' : 'rgba(239,68,68,0.08)',
+                border: `1px solid ${countdown > 0 ? 'rgba(124,58,237,0.2)' : 'rgba(239,68,68,0.2)'}`,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Timer size={15} style={{ color: countdown > 0 && countdown > 5 ? '#7c3aed' : '#ef4444' }} />
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: countdown > 5 ? '#a78bfa' : '#f87171',
+                    transition: 'color 0.3s',
+                  }}>
+                    {countdown > 0 ? `OTP expires in ${countdown}s` : 'OTP expired!'}
+                  </span>
+                </div>
+                {/* Resend Button */}
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={countdown > 0 || resendLoading || loading}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    padding: '5px 12px',
+                    borderRadius: 8,
+                    border: 'none',
+                    cursor: countdown > 0 || resendLoading || loading ? 'not-allowed' : 'pointer',
+                    background: countdown > 0 || resendLoading || loading
+                      ? 'rgba(255,255,255,0.05)'
+                      : 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                    color: countdown > 0 || resendLoading || loading ? 'var(--text-muted)' : 'white',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {resendLoading ? (
+                    <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <RefreshCw size={13} />
+                  )}
+                  {resendLoading ? 'Sending...' : 'Resend OTP'}
+                </button>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
+                disabled={loading || otp.length < 6}
+              >
+                {loading ? (
+                  <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Creating account...</>
+                ) : 'Complete Registration →'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="w-full mt-4 bg-transparent border border-slate-700 text-white font-medium py-3 rounded-xl transition-all duration-200 hover:bg-white/5"
+                disabled={loading}
+              >
+                Back to Details
+              </button>
+            </form>
+          )}
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: 'var(--text-muted)' }}>
