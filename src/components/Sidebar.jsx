@@ -23,7 +23,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Training & Placement Section (ALL students)
   const tpLinks = [
     { to: '/placement', icon: Briefcase, label: 'T&P Dashboard' },
-
+    { to: '/placement/results', icon: ClipboardList, label: 'Drive Results' },
   ];
 
   // PMS Section (ALL students)
@@ -42,12 +42,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
-    { to: '/faculty/resumes', icon: FileText, label: 'Resume Review' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
-    { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/teacher/attendance', icon: ClipboardList, label: 'Attendance' },
-    { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
   const guideLinks = [

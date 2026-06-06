@@ -95,6 +95,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/placement" element={
           <RoleGuard allowed={['student']}><StudentPlacementDashboard /></RoleGuard>
         } />
+        <Route path="/placement/results" element={
+          <RoleGuard allowed={['student']}><StudentPlacementDashboard showOnlyResults={true} /></RoleGuard>
+        } />
 
         {/* Student Routes - Super 50 Exclusive */}
         <Route path="/projects" element={

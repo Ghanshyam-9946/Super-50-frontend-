@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Briefcase, CheckCircle, XCircle, Clock, ChevronRight, Award, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const StudentPlacementDashboard = () => {
+const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
   const dispatch = useDispatch();
   const { studentApplications, loading, error } = useSelector((state) => state.placement);
 
@@ -27,6 +27,15 @@ const StudentPlacementDashboard = () => {
     </div>
   );
 
+  const displayedApps = showOnlyResults 
+    ? studentApplications.filter(app => 
+        app.status === 'selected' || 
+        app.status === 'rejected' ||
+        app.status === 'not-eligible' || 
+        app.roundsProgress?.length > 0
+      )
+    : studentApplications;
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -36,7 +45,7 @@ const StudentPlacementDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             className="text-3xl font-extrabold text-slate-900 tracking-tight"
           >
-            Placement Dashboard
+            {showOnlyResults ? 'Drive Results' : 'Placement Dashboard'}
           </motion.h1>
           <p className="text-slate-500 mt-1">Track your job applications and recruitment progress.</p>
         </div>
@@ -50,7 +59,7 @@ const StudentPlacementDashboard = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {studentApplications.map((app) => (
+        {displayedApps.map((app) => (
           <motion.div
             key={app._id}
             initial={{ opacity: 0, y: 20 }}
@@ -114,9 +123,18 @@ const StudentPlacementDashboard = () => {
                         round.status === 'eliminated' ? 'text-red-400' : 'text-gray-300'
                       }`}>
                         {round.roundName}
-                        {round.status === 'cleared' && <CheckCircle size={14} className="inline ml-2" />}
-                        {round.status === 'eliminated' && <XCircle size={14} className="inline ml-2" />}
                       </span>
+                      <div className="mt-1 flex items-center gap-1">
+                        {round.status === 'cleared' && <CheckCircle size={12} className="text-green-500" />}
+                        {round.status === 'eliminated' && <XCircle size={12} className="text-red-500" />}
+                        <span className={`text-[10px] uppercase tracking-widest font-black ${
+                          round.status === 'cleared' ? 'text-green-500' : 
+                          round.status === 'eliminated' ? 'text-red-500' : 'text-gray-500'
+                        }`}>
+                          {round.status === 'cleared' ? 'Shortlisted' : 
+                           round.status === 'eliminated' ? 'Not Shortlisted' : 'Pending'}
+                        </span>
+                      </div>
                       {round.feedback && <p className="text-xs text-slate-600 mt-1">{round.feedback}</p>}
                     </div>
                   </div>
@@ -140,15 +158,15 @@ const StudentPlacementDashboard = () => {
           </motion.div>
         ))}
 
-        {!loading && studentApplications.length === 0 && (
+        {!loading && displayedApps.length === 0 && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="col-span-full bg-white border border-slate-200 shadow-sm rounded-2xl p-12 text-center"
           >
             <Clock className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-slate-900">No Active Drives</h3>
-            <p className="text-slate-500 mt-2">Check back later for new placement opportunities.</p>
+            <h3 className="text-xl font-bold text-slate-900">{showOnlyResults ? "No Results Yet" : "No Active Drives"}</h3>
+            <p className="text-slate-500 mt-2">{showOnlyResults ? "You haven't received any results from placement drives yet." : "Check back later for new placement opportunities."}</p>
           </motion.div>
         )}
       </div>

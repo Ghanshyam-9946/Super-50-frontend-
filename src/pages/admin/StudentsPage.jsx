@@ -83,7 +83,7 @@ export default function StudentsPage() {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 className="page-title">All Students</h1>
-          <p className="page-subtitle">{total} Super 50 students enrolled</p>
+          <p className="page-subtitle">{total} Total Students</p>
         </div>
         {user?.role === 'admin' && (
           <button className="btn-primary" onClick={() => setShowAddModal(true)} id="add-student-btn">
@@ -130,6 +130,7 @@ export default function StudentsPage() {
                   <th onClick={() => handleSort('performanceScore')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>Score <SortIcon field="performanceScore" /></span>
                   </th>
+                  <th>Type</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
@@ -163,6 +164,11 @@ export default function StudentsPage() {
                     <td>
                       <span style={{ fontSize: 18, fontWeight: 900, color: student.performanceScore >= 75 ? '#10b981' : student.performanceScore >= 50 ? '#7c3aed' : student.performanceScore >= 25 ? '#f59e0b' : '#ef4444' }}>
                         {Math.round(student.performanceScore)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge ${student.isSuper50 ? 'badge-approved' : 'badge-pending'}`} style={{ backgroundColor: student.isSuper50 ? '#f3e8ff' : '#f1f5f9', color: student.isSuper50 ? '#7c3aed' : '#64748b' }}>
+                        {student.isSuper50 ? 'Super 50' : 'Regular'}
                       </span>
                     </td>
                     <td>

@@ -227,11 +227,14 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                               <span className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
                                 app.status === 'selected' ? 'bg-emerald-100 text-emerald-700' :
                                 app.status === 'rejected' ? 'bg-rose-100 text-rose-700' :
+                                app.status === 'eligible' ? 'bg-indigo-100 text-indigo-700' :
+                                app.status === 'not-eligible' ? 'bg-slate-200 text-slate-700' :
                                 'bg-blue-100 text-blue-700'
                               }`}>
                                 {app.status === 'selected' ? <CheckCircle size={14} /> :
-                                 app.status === 'rejected' ? <XCircle size={14} /> : <Clock size={14} />}
-                                {app.status}
+                                 app.status === 'rejected' ? <XCircle size={14} /> : 
+                                 app.status === 'not-eligible' ? <X size={14} /> : <Clock size={14} />}
+                                {app.status.replace('-', ' ')}
                               </span>
                             </div>
                           </div>
@@ -258,7 +261,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                                           round.status === 'eliminated' ? 'text-rose-600' :
                                           'text-slate-500'
                                         }`}>
-                                          {round.status}
+                                          {round.status === 'cleared' ? 'Shortlisted' : 
+                                           round.status === 'eliminated' ? 'Not Shortlisted' : 'Pending'}
                                         </div>
                                       </div>
                                     </div>

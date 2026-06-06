@@ -13,7 +13,7 @@ import {
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import StudentPlacementHistoryModal from '../../components/StudentPlacementHistoryModal';
+import StudentProfileModal from '../../components/StudentProfileModal';
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarElement, Tooltip, Legend, ArcElement
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
           <Search className="text-slate-600" size={20} />
           <input
             type="text"
-            placeholder="Search student by name or enrollment number to view placement history..."
+            placeholder="Search student by name or enrollment number to view full profile & placements..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
@@ -194,8 +194,56 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Performance Chart */}
+      {user?.role === 'teacher' ? (
+        <div className="glass border border-slate-200/50 rounded-3xl p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-2xl font-black text-slate-900">🎓 Student & Placement Directory</h3>
+              <p className="text-sm text-slate-500 mt-1">Search or browse students to view their full profile, activities, and detailed placement tracking.</p>
+            </div>
+            <Link to="/teacher/students" className="btn-premium text-xs px-4 py-2 flex items-center gap-2">
+              <Users size={16} /> View Complete List
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {allStudents.slice(0, 8).map((student) => (
+              <div key={student._id} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all group">
+                <div className="flex items-center gap-4">
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                    className="w-12 h-12 rounded-full border-2 border-slate-100"
+                    alt={student.name}
+                  />
+                  <div>
+                    <div className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      {student.name}
+                      {student.isSuper50 && <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded-full uppercase font-black tracking-widest border border-purple-200">Super 50</span>}
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                      {student.enrollmentNumber} • {student.department}
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setSelectedStudentForHistory(student)}
+                  className="btn-outline-premium text-xs py-2 px-4 flex items-center gap-2"
+                >
+                  <Eye size={14} /> Full Profile & Placements
+                </button>
+              </div>
+            ))}
+          </div>
+          {allStudents.length === 0 && (
+            <div className="text-center py-12 text-slate-400 font-bold text-sm uppercase tracking-widest">
+              No students found in directory
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Performance Chart */}
         <div className="lg:col-span-2 glass border border-slate-200/50 rounded-3xl p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -412,14 +460,59 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+          
+          {/* Student Directory Preview for Dashboard */}
+          {user?.role !== 'teacher' && (
+            <div className="mt-8 border-t border-slate-200/60 pt-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-slate-900">Student Directory Preview</h3>
+                <Link to="/teacher/students" className="text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">
+                  View All {allStudents.length} Students →
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {allStudents.slice(0, 5).map((student) => (
+                  <div key={student._id} className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex items-center justify-between group">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                        className="w-10 h-10 rounded-full border border-slate-200"
+                        alt={student.name}
+                      />
+                      <div>
+                        <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                          {student.name}
+                          {student.isSuper50 && <span className="bg-purple-100 text-purple-600 text-[10px] px-2 py-0.5 rounded-full uppercase font-black">Super 50</span>}
+                        </div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{student.enrollmentNumber} • {student.department}</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedStudentForHistory(student)}
+                      className="btn-outline-premium text-xs py-1.5 px-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Eye size={14} /> View Profile
+                    </button>
+                  </div>
+                ))}
+                {allStudents.length === 0 && (
+                  <div className="text-center py-6 text-slate-400 font-bold text-xs uppercase tracking-widest">
+                    No students found
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+      </>
+      )}
 
-      {/* Student Placement History Modal */}
-      <StudentPlacementHistoryModal
+      {/* Student Profile Modal (Full Details) */}
+      <StudentProfileModal
         isOpen={!!selectedStudentForHistory}
         onClose={() => setSelectedStudentForHistory(null)}
-        student={selectedStudentForHistory}
+        studentId={selectedStudentForHistory?._id}
       />
 
       {/* Reject Modal */}
