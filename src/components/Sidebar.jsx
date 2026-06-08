@@ -110,13 +110,13 @@ const Sidebar = ({ theme, toggleTheme }) => {
           <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-4">Core</p>
           {(user?.role === 'admin' ? adminLinks :
             user?.role === 'super50_admin' ? super50AdminLinks :
-            user?.role === 'tp_admin' ? tpAdminLinks :
-            user?.role === 'pms_admin' ? pmsAdminLinks :
-            user?.role === 'teacher' ? teacherLinks :
-            user?.role === 'guide' ? guideLinks :
-            commonStudentLinks).map((link) => (
-                  <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
-                ))}
+              user?.role === 'tp_admin' ? tpAdminLinks :
+                user?.role === 'pms_admin' ? pmsAdminLinks :
+                  user?.role === 'teacher' ? teacherLinks :
+                    user?.role === 'guide' ? guideLinks :
+                      commonStudentLinks).map((link) => (
+                        <NavItem key={link.to} link={link} onClick={() => setMobileOpen(false)} />
+                      ))}
         </div>
 
         {/* T&P Section (Students Only) */}
@@ -164,7 +164,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
               <div className="text-[10px] text-purple-600 truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : user?.role}</div>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={toggleTheme}

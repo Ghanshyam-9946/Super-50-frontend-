@@ -47,7 +47,7 @@ import PMSRoutes from './pages/pms/PMSRoutes';
 // Role guard component
 const RoleGuard = ({ children, allowed }) => {
   const { user, token } = useSelector((state) => state.auth);
-  if (!token || !user) return <Navigate to="/login" replace />;
+  if (!token || !user) return <Navigate to="/" replace />;
   
   if (!allowed.includes(user.role)) {
     const fallback = user.role === 'student' ? '/leaderboard' : 
@@ -64,7 +64,7 @@ const RoleGuard = ({ children, allowed }) => {
 
 const Super50Guard = ({ children }) => {
   const { user, token } = useSelector((state) => state.auth);
-  if (!token || !user) return <Navigate to="/login" replace />;
+  if (!token || !user) return <Navigate to="/" replace />;
   if (user.role === 'admin' || user.role === 'teacher' || user.role === 'super50_admin') return children;
   if (!user.isSuper50) return <Navigate to="/leaderboard" replace />;
   return children;

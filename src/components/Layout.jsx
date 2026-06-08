@@ -5,7 +5,7 @@ import Sidebar from './Sidebar';
 export default function Layout({ theme, toggleTheme }) {
   const { user, token } = useSelector((s) => s.auth);
 
-  if (!token || !user) return <Navigate to="/login" replace />;
+  if (!token || !user) return <Navigate to="/" replace />;
 
   // Force password change on first login for students
   if (!user.passwordChanged && user.role === 'student') {

@@ -130,13 +130,10 @@ export default function LoginPage() {
 
             {/* Password */}
             <div style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <div style={{ marginBottom: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
                   Password
                 </label>
-                <Link to="/forgot-password" style={{ fontSize: 12, color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
-                  Forgot password?
-                </Link>
               </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -175,6 +172,12 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-muted)' }}>

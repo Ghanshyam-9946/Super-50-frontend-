@@ -43,7 +43,7 @@ import GuideStatusDetail from './guide/StatusDetail';
 // Role guard component
 const RoleGuard = ({ children, allowed }) => {
   const { user, token } = useSelector((state) => state.auth);
-  if (!token || !user) return <Navigate to="/login" replace />;
+  if (!token || !user) return <Navigate to="/" replace />;
   if (!allowed.includes(user.role)) return <Navigate to="/unauthorized" replace />;
   return children;
 };

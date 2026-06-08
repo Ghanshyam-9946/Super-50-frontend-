@@ -69,7 +69,7 @@ export function Hero() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-8 inline-flex items-center gap-2.5 rounded-full glass px-5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground shadow-lg border-white/40"
+          className="mb-8 inline-flex items-center gap-2.5 rounded-full glass px-5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-black shadow-lg border-white/40"
         >
           <span className="relative flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-orange opacity-75" />
@@ -78,7 +78,7 @@ export function Hero() {
           v2.0 — The Student Innovation Ecosystem
         </motion.div>
 
-        <h1 className="font-display text-6xl font-[900] leading-[1] tracking-tight text-foreground md:text-8xl lg:text-9xl mb-6">
+        <h1 className="font-display text-6xl font-[900] leading-[1] tracking-tight text-black md:text-8xl lg:text-9xl mb-6">
           <div className="flex flex-wrap justify-center gap-x-[0.2em]">
             {titleWords.map((word, idx) => (
               <motion.span

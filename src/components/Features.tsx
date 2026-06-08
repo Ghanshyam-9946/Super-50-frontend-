@@ -1,6 +1,7 @@
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { useRef } from "react";
 import { Briefcase, Trophy, FolderKanban, ArrowUpRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const features = [
   {
@@ -105,12 +106,12 @@ function TiltCard({ feature, index }) {
           </div>
 
           <div className="mt-12 flex items-center">
-            <a href="#" className="group/btn flex items-center gap-3 text-sm font-black uppercase tracking-widest text-brand-indigo">
+            <Link to="/login" className="group/btn flex items-center gap-3 text-sm font-black uppercase tracking-widest text-brand-indigo">
               Enter Portal 
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 transition-all group-hover/btn:bg-brand-indigo group-hover/btn:text-white group-hover/btn:translate-x-2">
                 <ArrowUpRight size={16} />
               </div>
-            </a>
+            </Link>
           </div>
         </div>
       </motion.div>
