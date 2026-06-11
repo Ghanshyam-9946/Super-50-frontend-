@@ -4,17 +4,17 @@ import { Award, CheckCircle2, XCircle, Clock } from 'lucide-react';
 export default function CertificateCard({ cert }) {
   const statusConfig = {
     approved: {
-      bg: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+      bg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
       icon: CheckCircle2,
       label: 'Approved'
     },
     rejected: {
-      bg: 'bg-red-50 text-red-700 border-red-200/60',
+      bg: 'bg-red-50 text-red-600 border-red-100',
       icon: XCircle,
       label: 'Rejected'
     },
     pending: {
-      bg: 'bg-amber-50 text-amber-700 border-amber-200/60',
+      bg: 'bg-amber-50 text-amber-600 border-amber-100',
       icon: Clock,
       label: 'Pending'
     }
@@ -24,25 +24,25 @@ export default function CertificateCard({ cert }) {
   const StatusIcon = config.icon;
 
   return (
-    <div className="glass p-5 rounded-2xl border border-slate-200/60 hover:border-purple-500/30 hover:shadow-lg hover:shadow-purple-500/5 hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between gap-4">
-      <div className="flex items-start gap-3">
-        <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl border border-purple-100">
-          <Award size={22} />
+    <div className="glass-card p-6 flex flex-col justify-between gap-5 group cursor-default">
+      <div className="flex items-start gap-4">
+        <div className="p-3 bg-purple-50 text-[var(--primary)] rounded-2xl border border-purple-100 shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+          <Award size={24} className="group-hover:fill-purple-100 transition-colors" />
         </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-slate-900 text-sm leading-snug truncate" title={cert.title}>
+        <div className="flex-1 min-w-0 mt-0.5">
+          <h4 className="font-bold text-[var(--text-primary)] text-[15px] leading-snug truncate group-hover:text-[var(--primary)] transition-colors" title={cert.title}>
             {cert.title}
           </h4>
-          <p className="text-xs text-slate-500 mt-1 truncate" title={cert.issuedBy}>
-            Issued by {cert.issuedBy}
+          <p className="text-[13px] font-medium text-[var(--text-secondary)] mt-1 truncate" title={cert.issuedBy}>
+            {cert.issuedBy}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-100">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status</span>
-        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${config.bg}`}>
-          <StatusIcon size={12} />
+      <div className="flex items-center justify-between mt-2 pt-4 border-t border-[var(--border-light)]">
+        <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest opacity-70">Status</span>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border ${config.bg}`}>
+          <StatusIcon size={14} />
           <span>{config.label}</span>
         </div>
       </div>

@@ -99,9 +99,9 @@ export function Footer() {
         <div className="mt-16 pt-8 border-t border-slate-900/60 flex justify-center items-center">
           <p className="text-xs text-slate-500 text-center font-medium tracking-wide">
             © 2026 Designed & Developed by{" "}
-            <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Ajay, Ghanshyam, Shubham</span>{" "}
+            <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Shubham, Shivam, Ghanshyam</span>{" "}
             and{" "}
-            <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Shivam</span>{" "}
+            <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Ajay</span>{" "}
             under the Guidance of{" "}
             <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Prof. Nargish Gupta</span>.
           </p>

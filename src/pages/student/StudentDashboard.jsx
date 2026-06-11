@@ -15,7 +15,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Award, Zap, Calendar, TrendingUp, Star, Link as RouterLink } from 'lucide-react';
+import { Award, Zap, Calendar, TrendingUp, Link as RouterLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Super50Card from '../../components/Super50Card';
 import CertificateCard from '../../components/CertificateCard';
@@ -25,11 +25,24 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointEleme
 const chartDefaults = {
   plugins: { legend: { display: false } },
   scales: {
-    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 11 } } },
-    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 11 } } },
+    x: { grid: { display: false }, ticks: { color: '#6B7280', font: { size: 12, family: 'Inter', weight: '500' } }, border: { display: false } },
+    y: { grid: { color: '#E5E7EB', borderDash: [4, 4] }, ticks: { color: '#6B7280', font: { size: 12, family: 'Inter' } }, border: { display: false } },
   },
   responsive: true,
   maintainAspectRatio: false,
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
 };
 
 export default function StudentDashboard() {
@@ -53,14 +66,15 @@ export default function StudentDashboard() {
         {
           data: activityTypes.map((t) => stats.activityBreakdown?.[t] || 0),
           backgroundColor: [
-            'var(--brand-indigo)',
-            'var(--brand-purple)',
-            'var(--brand-orange)',
-            '#f59e0b',
-            '#f97316',
-            '#64748b',
+            '#8B5CF6',
+            '#A855F7',
+            '#7C3AED',
+            '#6366f1',
+            '#c084fc',
+            '#e2e8f0',
           ],
-          borderRadius: 6,
+          borderRadius: 8,
+          barThickness: 32,
         },
       ],
     }),
@@ -74,24 +88,24 @@ export default function StudentDashboard() {
         label: 'Performance Score',
         value: Math.round(student?.performanceScore || 0),
         unit: '/100',
-        color: 'var(--brand-indigo)',
-        bg: 'rgba(var(--brand-indigo-rgb),0.1)',
+        color: 'var(--primary)',
+        bg: 'rgba(139, 92, 246, 0.1)',
       },
       {
         icon: Calendar,
         label: 'Attendance',
         value: Math.round(student?.attendancePercentage || 0),
         unit: '%',
-        color: 'var(--brand-purple)',
-        bg: 'rgba(var(--brand-purple-rgb),0.1)',
+        color: 'var(--primary-dark)',
+        bg: 'rgba(124, 58, 237, 0.1)',
       },
       {
         icon: Award,
         label: 'Certificates',
         value: stats.approvedCertificates || 0,
         unit: ' approved',
-        color: 'var(--brand-orange)',
-        bg: 'rgba(var(--brand-orange-rgb),0.1)',
+        color: 'var(--primary-light)',
+        bg: 'rgba(168, 85, 247, 0.1)',
       },
       {
         icon: Zap,
@@ -99,7 +113,7 @@ export default function StudentDashboard() {
         value: stats.totalActivities || 0,
         unit: ' total',
         color: 'var(--brand-indigo)',
-        bg: 'rgba(var(--brand-indigo-rgb),0.1)',
+        bg: 'rgba(99, 102, 241, 0.1)',
       },
     ],
     [student, stats]
@@ -108,83 +122,91 @@ export default function StudentDashboard() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Greeting */}
-      <header className="glass p-8 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-          <h1 className="text-4xl font-black text-gradient tracking-tight">
-            Hello, <span className="text-purple-600">{student?.name?.split(' ')[0]}</span> 👋
+      <motion.header 
+        initial={{ opacity: 0, y: -20 }} 
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="glass-card p-8 flex flex-col md:flex-row md:items-center justify-between gap-6"
+      >
+        <div>
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
+            Hello, <span className="text-gradient">{student?.name?.split(' ')[0]}</span>
           </h1>
-          <p className="text-slate-500 font-bold text-xs uppercase tracking-widest mt-1">
+          <p className="text-[var(--text-secondary)] font-bold text-[11px] uppercase tracking-[0.15em] mt-2 opacity-80">
             {student?.department} • Batch {student?.batch} • {student?.enrollmentNumber}
           </p>
-        </motion.div>
-      </header>
+        </div>
+      </motion.header>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map(({ icon: Icon, label, value, unit, color, bg }, i) => (
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
+        {statCards.map(({ icon: Icon, label, value, unit, color, bg }) => (
           <motion.div
             key={label}
-            className="glass p-6 rounded-2xl flex flex-col justify-between hover:shadow-lg transition-all hover:scale-[1.02] duration-300 border border-slate-200/50"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
+            variants={itemVariants}
+            className="glass-card p-6 flex flex-col justify-between group"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center border" style={{ background: bg, color, borderColor: 'rgba(255,255,255,0.2)' }}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110" style={{ background: bg, color }}>
                 <Icon size={22} />
               </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Real-time</span>
+              <span className="text-[10px] font-bold text-[var(--text-secondary)] opacity-60 uppercase tracking-widest">Real-time</span>
             </div>
             <div>
-              <div className="text-3xl font-black text-slate-900">
+              <div className="text-4xl font-display font-black text-[var(--text-primary)] tracking-tight">
                 {value}
-                <span className="text-sm font-bold text-slate-500 ml-1">{unit}</span>
+                <span className="text-sm font-bold text-[var(--text-secondary)] ml-1 opacity-70">{unit}</span>
               </div>
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">
+              <div className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-2">
                 {label}
               </div>
             </div>
           </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+      >
         {/* Left Side: Super 50 Portal (lg:col-span-4) */}
-        <div className="lg:col-span-4">
+        <motion.div variants={itemVariants} className="lg:col-span-4 h-full">
           <Super50Card />
-        </div>
+        </motion.div>
 
         {/* Right Side: Score & Activity (lg:col-span-8) */}
-        <div className="lg:col-span-8 flex flex-col gap-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="lg:col-span-8 flex flex-col gap-8 h-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
             {/* Score Ring */}
-            <motion.div 
-              className="glass p-6 rounded-3xl flex flex-col items-center justify-between min-h-[380px]"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <h3 className="text-slate-900 font-bold text-base mb-6 w-full">
-                Performance Score
+            <motion.div variants={itemVariants} className="glass-card p-8 flex flex-col items-center justify-between">
+              <h3 className="text-[var(--text-primary)] font-bold text-lg mb-6 w-full">
+                Performance Breakdown
               </h3>
-              <div className="flex-grow flex items-center justify-center">
-                <ScoreRing score={student?.performanceScore || 0} size={160} />
+              <div className="flex-grow flex items-center justify-center my-4">
+                <ScoreRing score={student?.performanceScore || 0} size={180} />
               </div>
-              <div className="mt-6 w-full space-y-3">
+              <div className="mt-6 w-full space-y-4">
                 {[
-                  { label: 'Attendance (30%)', value: (student?.attendancePercentage || 0) * 0.3, maxVal: 30, color: 'var(--brand-purple)' },
-                  { label: 'Certificates (30%)', value: Math.min((stats.approvedCertificates || 0) * 10, 30), maxVal: 30, color: 'var(--brand-orange)' },
-                  { label: 'Activities (40%)', value: Math.min((stats.totalActivities || 0) * 5, 40), maxVal: 40, color: 'var(--brand-indigo)' },
+                  { label: 'Attendance', value: (student?.attendancePercentage || 0) * 0.3, maxVal: 30, color: 'var(--primary-dark)' },
+                  { label: 'Certificates', value: Math.min((stats.approvedCertificates || 0) * 10, 30), maxVal: 30, color: 'var(--primary-light)' },
+                  { label: 'Activities', value: Math.min((stats.totalActivities || 0) * 5, 40), maxVal: 40, color: 'var(--brand-indigo)' },
                 ].map(({ label, value, maxVal, color }) => (
                   <div key={label}>
-                    <div className="flex justify-between text-xs mb-1 text-slate-500 font-bold">
+                    <div className="flex justify-between text-xs mb-1.5 text-[var(--text-secondary)] font-bold">
                       <span>{label}</span>
                       <span style={{ color }}>{Math.round(value)}/{maxVal}</span>
                     </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-1000"
+                        className="h-full rounded-full transition-all duration-1000 ease-out"
                         style={{
                           width: `${Math.min((value / maxVal) * 100, 100)}%`,
                           background: color,
@@ -197,40 +219,41 @@ export default function StudentDashboard() {
             </motion.div>
 
             {/* Activity Chart */}
-            <motion.div 
-              className="glass p-6 rounded-3xl flex flex-col justify-between min-h-[380px]"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 }}
-            >
+            <motion.div variants={itemVariants} className="glass-card p-8 flex flex-col justify-between">
               <div>
-                <h3 className="text-slate-900 font-bold text-base">Activity Breakdown</h3>
-                <p className="text-xs text-slate-500 mt-1">Logged activities count by type</p>
+                <h3 className="text-[var(--text-primary)] font-bold text-lg">Activity History</h3>
+                <p className="text-[13px] text-[var(--text-secondary)] mt-1 font-medium">Logged activities by type</p>
               </div>
-              <div className="flex-grow min-h-[220px] mt-6 relative">
+              <div className="flex-grow min-h-[220px] mt-8 relative">
                 <Bar data={activityData} options={chartDefaults} />
               </div>
             </motion.div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Certificates Section */}
-      <div className="glass p-8 rounded-3xl">
-        <div className="flex items-center justify-between mb-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="glass-card p-8"
+      >
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-xl font-bold text-slate-900">Recent Certificates</h3>
-            <p className="text-xs text-slate-500 mt-1">Your uploaded certifications and verification status</p>
+            <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Recent Certificates</h3>
+            <p className="text-[13px] text-[var(--text-secondary)] mt-1 font-medium">Your uploaded certifications and verification status</p>
           </div>
-          <Link to="/certificates" className="text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors uppercase tracking-wider">
+          <Link to="/certificates" className="text-xs font-bold text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors uppercase tracking-widest">
             View All →
           </Link>
         </div>
+        
         {certificates.length === 0 ? (
-          <div className="text-center py-12 text-slate-400">
-            <Award size={48} className="mx-auto opacity-30 mb-3 text-slate-500" />
-            <p className="font-medium text-sm">No certificates uploaded yet</p>
-            <Link to="/certificates" className="mt-3 inline-block text-xs font-bold text-purple-600 hover:underline">
+          <div className="text-center py-16 bg-[#F8FAFC] rounded-2xl border border-[var(--border-light)] border-dashed">
+            <Award size={48} className="mx-auto mb-4 text-[#CBD5E1]" />
+            <p className="font-bold text-[var(--text-secondary)] text-sm">No certificates uploaded yet</p>
+            <Link to="/certificates" className="mt-4 btn-premium py-2 px-6">
               Upload Now
             </Link>
           </div>
@@ -241,7 +264,7 @@ export default function StudentDashboard() {
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -1,160 +1,212 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --bg: #030303;
-  --primary: #7c3aed;
-  --secondary: #3b82f6;
+  /* Core Typography */
+  font-family: 'Inter', system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  /* Requested SaaS Light Theme Palette */
+  --bg-app: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --border-light: #E5E7EB;
+
+  /* Purple Branding */
+  --primary: #8B5CF6;
+  --primary-dark: #7C3AED;
+  --primary-light: #A855F7;
+  
   --brand-indigo: #6366f1;
-  --brand-purple: #a855f7;
   --brand-orange: #f97316;
-  --brand-indigo-rgb: 99,102,241;
-  --brand-purple-rgb: 168,85,247;
-  --brand-orange-rgb: 249,115,22;
+
+  /* RGB variants for opacity */
+  --primary-rgb: 139, 92, 246;
+  --brand-indigo-rgb: 99, 102, 241;
+  --brand-orange-rgb: 249, 115, 22;
+
+  /* Shadows (Vercel/Linear style) */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.03);
+  --shadow-elevated: 0 10px 30px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-hover: 0 15px 35px rgba(139, 92, 246, 0.1), 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] {
+  --bg-app: #030303;
+  --bg-card: rgba(255, 255, 255, 0.02);
+  --text-primary: #FFFFFF;
+  --text-secondary: #9CA3AF;
+  --border-light: rgba(255, 255, 255, 0.08);
+
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 15px 35px rgba(139, 92, 246, 0.15), 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 body {
-  background-color: var(--bg);
-  color: #fff;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   margin: 0;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ─── Premium Background ─── */
-.noise-bg {
-  position: fixed;
-  inset: 0;
-  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
-  opacity: 0.05;
-  pointer-events: none;
-  z-index: 1;
+/* ─── Premium Dashboard Elements ─── */
+
+.glass {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-soft);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.orb {
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  filter: blur(120px);
-  opacity: 0.15;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.orb-purple {
-  background: var(--primary);
-}
-
-.orb-blue {
-  background: var(--secondary);
-}
-
-/* ─── Glassmorphism ─── */
 .glass-card {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 24px;
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-.glass-nav {
-  background: rgba(3, 3, 3, 0.8);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* ─── Buttons ─── */
-.btn-premium {
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
-  color: white;
-  padding: 14px 32px;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 15px;
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-}
-
-.btn-premium:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 30px rgba(124, 58, 237, 0.5);
+  box-shadow: var(--shadow-hover);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
-.btn-outline-premium {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 14px 32px;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 15px;
-  transition: all 0.3s ease;
+.glass-card:hover::before {
+  opacity: 1;
 }
 
-/* ─── Header Button Adjustments ─── */
-.header-btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  border-radius: 12px;
-  font-weight: 600;
-  transition: transform 0.2s ease, background 0.2s ease;
-}
+/* ─── Typography & Gradients ─── */
 
-.header-btn:hover {
-  transform: translateY(-1px) scale(1.05);
-}
-
-
-.btn-outline-premium:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* ─── Text Gradients ─── */
 .text-gradient {
-  background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* ─── Grid Pattern ─── */
-.grid-pattern {
-  background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+.font-display {
+  font-family: var(--font-display);
 }
 
-/* ─── Mockups ─── */
-.mockup-glow {
-  position: relative;
+/* ─── Premium Buttons ─── */
+
+.btn-premium {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.mockup-glow::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(135deg, #7c3aed, #3b82f6);
-  border-radius: 20px;
-  z-index: -1;
-  filter: blur(10px);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+.btn-premium:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
 }
 
-.mockup-glow:hover::after {
-  opacity: 0.4;
+.btn-premium:active:not(:disabled) {
+  transform: translateY(0);
 }
 
-/* ─── Custom Badges ─── */
+.btn-premium:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-outline-premium {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline-premium:hover {
+  background: var(--bg-app);
+  border-color: rgba(139, 92, 246, 0.3);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.08);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.btn-danger {
+  background: transparent;
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* ─── Header Buttons ─── */
+.header-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  border-radius: 10px;
+}
+
+/* ─── Custom Scrollbar ─── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 10px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+}
+
+/* ─── Badges ─── */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -162,21 +214,54 @@ body {
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   border-width: 1px;
 }
 .badge-approved {
-  background-color: rgba(16, 185, 129, 0.1);
+  background-color: rgba(16, 185, 129, 0.08);
   border-color: rgba(16, 185, 129, 0.2);
-  color: rgb(52, 211, 153);
+  color: #059669;
 }
 .badge-rejected {
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.2);
-  color: rgb(248, 113, 113);
+  color: #DC2626;
 }
 .badge-pending {
-  background-color: rgba(245, 158, 11, 0.1);
+  background-color: rgba(245, 158, 11, 0.08);
   border-color: rgba(245, 158, 11, 0.2);
-  color: rgb(251, 191, 36);
+  color: #D97706;
+}
+
+[data-theme="dark"] .badge-approved { color: #34D399; }
+[data-theme="dark"] .badge-rejected { color: #F87171; }
+[data-theme="dark"] .badge-pending { color: #FBBF24; }
+
+/* ─── Landing Page Compat ─── */
+.noise-bg {
+  position: fixed;
+  inset: 0;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(-15px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

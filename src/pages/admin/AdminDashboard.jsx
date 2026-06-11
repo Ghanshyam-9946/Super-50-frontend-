@@ -78,48 +78,48 @@ export default function AdminDashboard() {
     datasets: [{
       label: 'Students',
       data: scoreDistribution.map((d) => d.count),
-      backgroundColor: ['#ef4444', '#f59e0b', '#7c3aed', '#10b981'],
+      backgroundColor: ['#ef4444', '#f59e0b', '#8b5cf6', '#10b981'],
       borderRadius: 12,
     }],
   }), [scoreDistribution]);
 
   const statCards = useMemo(() => [
-    { icon: Users, label: 'Super 50 Students', value: adminStats?.super50Count || 0, color: 'var(--brand-indigo)', bg: 'rgba(var(--brand-indigo-rgb),0.1)' },
-    { icon: Users, label: 'Regular Students', value: adminStats?.regularCount || 0, color: 'var(--brand-purple)', bg: 'rgba(var(--brand-purple-rgb),0.1)' },
-    { icon: TrendingUp, label: 'Avg Performance', value: `${Math.round(adminStats?.stats?.avgScore || 0)}`, unit: '/100', color: 'var(--brand-orange)', bg: 'rgba(var(--brand-orange-rgb),0.1)' },
+    { icon: Users, label: 'Super 50 Students', value: adminStats?.super50Count || 0, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { icon: Users, label: 'Regular Students', value: adminStats?.regularCount || 0, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { icon: TrendingUp, label: 'Avg Performance', value: `${Math.round(adminStats?.stats?.avgScore || 0)}`, unit: '/100', color: 'text-amber-500', bg: 'bg-amber-50' },
   ], [adminStats]);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <header className="glass flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
+      <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <div>
-          <h1 className="text-4xl font-black text-gradient tracking-tighter">
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
             {user?.role === 'admin' ? '⚙️ Enterprise' : user?.role === 'super50_admin' ? '🌟 Super50 Admin' : '👩‍🏫 Faculty'} Dashboard
           </h1>
-          <p className="text-slate-600 mt-1 font-medium">Monitoring {adminStats?.totalStudents || 0} students across {filters.departments?.length || 0} departments.</p>
+          <p className="text-[var(--text-secondary)] mt-2 font-medium">Monitoring {adminStats?.totalStudents || 0} students across {filters.departments?.length || 0} departments.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {user?.role === 'admin' && (
             <>
-              <Link to="/admin/bulk-create" className="btn-premium flex items-center gap-2 text-xs header-btn">
+              <Link to="/admin/bulk-create" className="btn-premium flex items-center gap-2 text-xs">
                 <UserPlus size={16} /> Onboard (Excel)
               </Link>
-              <Link to="/admin/drive-eligibility" className="btn-premium flex items-center gap-2 text-xs header-btn">
+              <Link to="/admin/drive-eligibility" className="btn-premium flex items-center gap-2 text-xs">
                 <Briefcase size={16} /> Eligibility (Excel)
               </Link>
-              <Link to="/admin/drive-results" className="btn-outline-premium flex items-center gap-2 text-xs header-btn">
+              <Link to="/admin/drive-results" className="btn-outline-premium flex items-center gap-2 text-xs">
                 <ClipboardList size={16} /> Results (Excel)
               </Link>
             </>
           )}
           {(user?.role === 'admin' || user?.role === 'super50_admin') && (
-            <Link to="/admin/super50-selection" className="btn-premium flex items-center gap-2 text-xs header-btn">
+            <Link to="/admin/super50-selection" className="btn-premium flex items-center gap-2 text-xs">
               <Star size={16} /> Super 50
             </Link>
           )}
           {user?.role === 'teacher' && (
-            <Link to="/teacher/students" className="btn-premium flex items-center gap-2 text-xs header-btn">
+            <Link to="/teacher/students" className="btn-premium flex items-center gap-2 text-xs">
               <Users size={16} /> View Student Records
             </Link>
           )}
@@ -128,8 +128,8 @@ export default function AdminDashboard() {
 
       {/* Student Placement History Search */}
       <div className="relative z-40">
-        <div className={`glass border border-slate-200/60 rounded-2xl p-4 flex items-center gap-4 transition-all ${isSearchFocused ? 'ring-2 ring-purple-500/35 shadow-md' : ''}`}>
-          <Search className="text-slate-600" size={20} />
+        <div className={`bg-white border border-[var(--border-light)] rounded-[1.2rem] p-4 flex items-center gap-4 transition-all duration-300 shadow-sm ${isSearchFocused ? 'ring-4 ring-purple-500/20 shadow-md border-purple-300' : ''}`}>
+          <Search className="text-[var(--primary)]" size={20} />
           <input
             type="text"
             placeholder="Search student by name or enrollment number to view full profile & placements..."
@@ -137,10 +137,10 @@ export default function AdminDashboard() {
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-            className="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder-slate-400 text-sm font-bold"
+            className="flex-1 bg-transparent border-none outline-none text-[var(--text-primary)] placeholder-slate-400 text-sm font-medium"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="text-slate-600 hover:text-slate-900">
+            <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600 bg-slate-50 p-1 rounded-md">
               <X size={16} />
             </button>
           )}
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="absolute top-full left-0 right-0 mt-4 bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-80 overflow-y-auto custom-scrollbar"
+              className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-xl border border-[var(--border-light)] rounded-[1.2rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] overflow-hidden max-h-80 overflow-y-auto custom-scrollbar"
             >
               {allStudents
                 .filter(s =>
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
                       setSearchQuery('');
                       setIsSearchFocused(false);
                     }}
-                    className="p-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer flex items-center justify-between group transition-colors"
+                    className="p-4 border-b border-slate-100 hover:bg-purple-50/50 cursor-pointer flex items-center justify-between group transition-colors"
                   >
                     <div className="flex items-center gap-4">
                       <img
@@ -178,11 +178,11 @@ export default function AdminDashboard() {
                         alt={student.name}
                       />
                       <div>
-                        <div className="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition-colors">{student.name}</div>
-                        <div className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{student.enrollmentNumber || 'N/A'} • {student.department}</div>
+                        <div className="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">{student.name}</div>
+                        <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">{student.enrollmentNumber || 'N/A'} • {student.department}</div>
                       </div>
                     </div>
-                    <ChevronRight size={16} className="text-slate-500 group-hover:text-slate-900 transition-colors group-hover:translate-x-1" />
+                    <ChevronRight size={16} className="text-slate-300 group-hover:text-[var(--primary)] transition-all group-hover:translate-x-1" />
                   </div>
                 ))}
             </motion.div>
@@ -192,20 +192,20 @@ export default function AdminDashboard() {
 
       {/* Student Detailed Record Panel */}
       {loadingDetails && (
-        <div className="glass-card p-12 text-center flex flex-col items-center justify-center gap-4">
-          <div className="w-10 h-10 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
-          <p className="text-gray-400 font-medium text-sm">Fetching student profile and records...</p>
+        <div className="glass-card p-16 text-center flex flex-col items-center justify-center gap-4">
+          <div className="w-12 h-12 border-4 border-purple-500/20 border-t-[var(--primary)] rounded-full animate-spin"></div>
+          <p className="text-[var(--text-secondary)] font-medium text-sm">Fetching student profile and records...</p>
         </div>
       )}
 
       {!loadingDetails && !selectedStudentDetails && (
-        <div className="glass-card p-8 text-center flex flex-col items-center justify-center gap-3 border border-white/5 bg-white/[0.01]">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-            <Search size={24} />
+        <div className="glass-card p-12 text-center flex flex-col items-center justify-center gap-4 border-dashed">
+          <div className="w-16 h-16 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-400 border border-indigo-100 shadow-sm">
+            <Search size={28} />
           </div>
-          <h3 className="text-base font-bold text-white">Student Record Lookup</h3>
-          <p className="text-xs text-gray-500 max-w-md">
-            Search a student by name above or click on any student in the **Ecosystem Leaderboard** to view their detailed profile, placement drives record, and PMS academic projects.
+          <h3 className="text-lg font-display font-black text-[var(--text-primary)]">Student Record Lookup</h3>
+          <p className="text-[13px] text-[var(--text-secondary)] font-medium max-w-md leading-relaxed">
+            Search a student by name above or click on any student in the <strong>Ecosystem Leaderboard</strong> to view their detailed profile, placement drives record, and PMS academic projects.
           </p>
         </div>
       )}
@@ -214,54 +214,54 @@ export default function AdminDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-8 relative space-y-8 border-indigo-500/30"
+          className="glass-card p-8 relative space-y-8 border-[var(--primary-light)] border-[2px] shadow-sm"
         >
           {/* Close button */}
           <button
             onClick={() => setSelectedStudentDetails(null)}
-            className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"
+            className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 bg-slate-50 p-2 rounded-full transition-colors"
           >
             <X size={20} />
           </button>
 
           {/* Header / Student Profile */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/5">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-purple-500/20">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-[var(--border-light)]">
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 rounded-[1.5rem] bg-gradient-to-tr from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-3xl font-display font-black text-white shadow-md shadow-purple-500/20">
                 {selectedStudentDetails.student.name[0]}
               </div>
               <div>
-                <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                <h2 className="text-2xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
                   {selectedStudentDetails.student.name}
                   {selectedStudentDetails.student.isSuper50 && (
-                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30">
-                      <Star size={10} className="fill-yellow-500" /> Super 50
+                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.1em] px-2.5 py-1 rounded-md bg-amber-50 text-amber-600 border border-amber-200">
+                      <Star size={12} className="fill-amber-500" /> Super 50
                     </span>
                   )}
                 </h2>
-                <p className="text-sm text-gray-500 mt-1 font-bold">
+                <p className="text-[13px] text-[var(--text-secondary)] mt-1.5 font-medium">
                   {selectedStudentDetails.student.enrollmentNumber} • {selectedStudentDetails.student.department} • Batch {selectedStudentDetails.student.batch}
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-6">
+            <div className="flex flex-wrap gap-8 bg-[var(--bg-app)] p-5 rounded-[1.2rem] border border-[var(--border-light)] shadow-inner-sm">
               <div className="text-center">
-                <div className="text-xs font-bold text-gray-600 uppercase tracking-widest">Attendance</div>
-                <div className="text-xl font-black text-white mt-1">{Math.round(selectedStudentDetails.student.attendancePercentage || 0)}%</div>
+                <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80">Attendance</div>
+                <div className="text-2xl font-display font-black text-[var(--text-primary)] mt-1">{Math.round(selectedStudentDetails.student.attendancePercentage || 0)}%</div>
               </div>
-              <div className="text-center">
-                <div className="text-xs font-bold text-gray-600 uppercase tracking-widest">Performance</div>
-                <div className="text-xl font-black text-purple-400 mt-1">{Math.round(selectedStudentDetails.student.performanceScore || 0)}/100</div>
+              <div className="text-center border-l border-[var(--border-light)] pl-8">
+                <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80">Performance</div>
+                <div className="text-2xl font-display font-black text-[var(--primary)] mt-1">{Math.round(selectedStudentDetails.student.performanceScore || 0)}<span className="text-sm text-slate-400">/100</span></div>
               </div>
-              <div className="text-center">
-                <div className="text-xs font-bold text-gray-600 uppercase tracking-widest">Super 50 Status</div>
+              <div className="text-center border-l border-[var(--border-light)] pl-8">
+                <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80">Super 50 Status</div>
                 {selectedStudentDetails.student.isSuper50 ? (
-                  <div className="text-xl font-black text-yellow-500 mt-1 flex items-center gap-1 justify-center">
-                    <Star size={16} className="fill-yellow-500 inline animate-pulse" /> Rank #{leaderboard.findIndex(s => s._id === selectedStudentDetails.student._id) + 1 || 'N/A'}
+                  <div className="text-xl font-display font-black text-amber-500 mt-2 flex items-center gap-1 justify-center">
+                    <Star size={18} className="fill-amber-500 inline animate-pulse" /> Rank #{leaderboard.findIndex(s => s._id === selectedStudentDetails.student._id) + 1 || 'N/A'}
                   </div>
                 ) : (
-                  <div className="text-sm font-bold text-gray-500 mt-2">Not in Super 50</div>
+                  <div className="text-xs font-bold text-slate-400 mt-2.5">Not in Super 50</div>
                 )}
               </div>
             </div>
@@ -270,40 +270,43 @@ export default function AdminDashboard() {
           {/* Details Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Placement Details */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Briefcase className="text-purple-400" size={20} /> Placement History
+            <div className="space-y-5">
+              <h3 className="text-lg font-display font-black text-[var(--text-primary)] flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-purple-50 text-[var(--primary)] border border-purple-100">
+                  <Briefcase size={18} />
+                </div>
+                Placement History
               </h3>
 
               {/* Placement Stats Summary */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
-                  <div className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Drives Appeared</div>
-                  <div className="text-xl font-black text-white mt-1">
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                  <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80">Drives Appeared</div>
+                  <div className="text-2xl font-display font-black text-[var(--text-primary)] mt-1">
                     {selectedStudentDetails.placementApplications?.length || 0}
                   </div>
                 </div>
-                <div className="p-3 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
-                  <div className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Drives Qualified</div>
-                  <div className="text-xl font-black text-emerald-400 mt-1">
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
+                  <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80">Drives Qualified</div>
+                  <div className="text-2xl font-display font-black text-emerald-600 mt-1">
                     {selectedStudentDetails.placementApplications?.filter(app => app.status === 'selected' || app.status === 'placed').length || 0}
                   </div>
                 </div>
               </div>
 
-              <div className="glass-card p-5 bg-white/[0.01] space-y-4 max-h-60 overflow-y-auto custom-scrollbar">
+              <div className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-4 space-y-4 max-h-60 overflow-y-auto custom-scrollbar shadow-inner-sm">
                 {selectedStudentDetails.placementApplications?.length > 0 ? (
                   selectedStudentDetails.placementApplications.map((app, idx) => (
-                    <div key={idx} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-sm">
                       <div>
-                        <div className="font-bold text-sm text-white">{app.drive?.companyName}</div>
-                        <div className="text-xs text-gray-500 mt-0.5">{app.drive?.package || 'N/A'} package</div>
+                        <div className="font-bold text-[14px] text-[var(--text-primary)]">{app.drive?.companyName}</div>
+                        <div className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">{app.drive?.package || 'N/A'} package</div>
                       </div>
                       <div>
-                        <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                          app.status === 'selected' || app.status === 'placed' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                          app.status === 'eligible' || app.status === 'applied' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' :
-                          'bg-red-500/20 text-red-400 border border-red-500/30'
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-[0.1em] ${
+                          app.status === 'selected' || app.status === 'placed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                          app.status === 'eligible' || app.status === 'applied' ? 'bg-purple-50 text-[var(--primary)] border border-purple-200' :
+                          'bg-red-50 text-red-600 border border-red-200'
                         }`}>
                           {app.status}
                         </span>
@@ -311,42 +314,44 @@ export default function AdminDashboard() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-gray-600 font-medium py-4">This student hasn't appeared or qualified in any drives yet.</p>
+                  <p className="text-xs text-slate-500 font-medium py-4 text-center">This student hasn't appeared or qualified in any drives yet.</p>
                 )}
               </div>
             </div>
 
             {/* PMS Details */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <FileText className="text-purple-400" size={20} /> Academic Project (PMS)
+            <div className="space-y-5">
+              <h3 className="text-lg font-display font-black text-[var(--text-primary)] flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-blue-50 text-blue-500 border border-blue-100">
+                  <FileText size={18} />
+                </div>
+                Academic Project (PMS)
               </h3>
-              <div className="glass-card p-5 bg-white/[0.01] space-y-4">
+              <div className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-6 shadow-inner-sm">
                 {selectedStudentDetails.team ? (
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <span className="text-xs font-bold text-gray-600 uppercase tracking-widest block">Group Number</span>
-                      <span className="font-bold text-white text-xs">{selectedStudentDetails.team.groupNo}</span>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+                      <div>
+                        <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 block">Group Number</span>
+                        <span className="font-display font-black text-[var(--text-primary)] text-xl mt-0.5">{selectedStudentDetails.team.groupNo}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 block">Guide</span>
+                        <span className="font-bold text-[var(--text-primary)] text-sm">{selectedStudentDetails.team.guide?.name || 'Assigned soon'}</span>
+                      </div>
                     </div>
                     <div>
-                      <span className="text-xs font-bold text-gray-600 uppercase tracking-widest block">Project Title</span>
-                      <span className="font-bold text-purple-400">{selectedStudentDetails.team.projectTitle}</span>
+                      <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 block mb-1">Project Title</span>
+                      <span className="font-bold text-[var(--primary)] text-[15px] leading-snug">{selectedStudentDetails.team.projectTitle}</span>
                     </div>
-                    <div>
-                      <span className="text-xs font-bold text-gray-600 uppercase tracking-widest block">Guide</span>
-                      <span className="font-medium text-white">{selectedStudentDetails.team.guide?.name || 'Assigned soon'}</span>
-                      {selectedStudentDetails.team.guide?.email && (
-                        <span className="text-xs text-gray-500 block">{selectedStudentDetails.team.guide.email}</span>
-                      )}
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-gray-600 uppercase tracking-widest block">Team Members</span>
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        <span className="px-2 py-1 bg-purple-50/10 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold">
+                    <div className="pt-2">
+                      <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 block mb-2">Team Members</span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-2.5 py-1 bg-purple-50 text-[var(--primary)] border border-purple-200 rounded-md text-[11px] font-bold">
                           {selectedStudentDetails.team.teamLeader?.name} (Leader)
                         </span>
                         {selectedStudentDetails.team.members?.map((m, idx) => (
-                          <span key={idx} className="px-2 py-1 bg-white/5 border border-white/5 rounded-lg text-xs font-bold text-gray-400">
+                          <span key={idx} className="px-2.5 py-1 bg-white border border-slate-200 shadow-sm rounded-md text-[11px] font-bold text-slate-600">
                             {m.student?.name} ({m.role})
                           </span>
                         ))}
@@ -354,7 +359,10 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-600 font-medium py-4">This student is not part of any PMS project group yet.</p>
+                  <div className="py-12 text-center text-slate-400">
+                    <FileText size={32} className="mx-auto mb-3 opacity-50" />
+                    <p className="text-[13px] font-medium">This student is not part of any PMS project group yet.</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -370,67 +378,67 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="glass border border-slate-200/50 rounded-2xl shadow-sm p-6 flex flex-col justify-between hover:shadow-lg transition-all hover:scale-[1.02] duration-300"
+            className="glass-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-300 hover:-translate-y-1"
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 rounded-2xl" style={{ background: card.bg, color: card.color }}>
+            <div className="flex items-center justify-between mb-6">
+              <div className={`p-3.5 rounded-[1rem] ${card.bg} ${card.color} border border-slate-100`}>
                 <card.icon size={24} />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Real-time</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">Real-time</span>
             </div>
             <div>
-              <div className="text-3xl font-black text-slate-900">
+              <div className="text-4xl font-display font-black text-[var(--text-primary)]">
                 {card.value}
-                <span className="text-sm font-bold text-slate-500 ml-1">{card.unit}</span>
+                <span className="text-sm font-bold text-slate-400 ml-1">{card.unit}</span>
               </div>
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{card.label}</div>
+              <div className="text-[12px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] mt-2 opacity-80">{card.label}</div>
             </div>
           </motion.div>
         ))}
       </div>
 
       {user?.role === 'teacher' ? (
-        <div className="glass border border-slate-200/50 rounded-3xl p-8">
+        <div className="glass-card p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-2xl font-black text-slate-900">🎓 Student & Placement Directory</h3>
-              <p className="text-sm text-slate-500 mt-1">Search or browse students to view their full profile, activities, and detailed placement tracking.</p>
+              <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">🎓 Student & Placement Directory</h3>
+              <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Search or browse students to view their full profile, activities, and detailed placement tracking.</p>
             </div>
-            <Link to="/teacher/students" className="btn-premium text-xs px-4 py-2 flex items-center gap-2">
+            <Link to="/teacher/students" className="btn-premium text-xs px-6 py-3 flex items-center gap-2">
               <Users size={16} /> View Complete List
             </Link>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {allStudents.slice(0, 8).map((student) => (
-              <div key={student._id} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all group">
+              <div key={student._id} className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all group hover:border-[var(--primary)]">
                 <div className="flex items-center gap-4">
                   <img
                     src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                    className="w-12 h-12 rounded-full border-2 border-slate-100"
+                    className="w-12 h-12 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
                     alt={student.name}
                   />
                   <div>
-                    <div className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <div className="text-[15px] font-bold text-[var(--text-primary)] flex items-center gap-2">
                       {student.name}
-                      {student.isSuper50 && <span className="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded-full uppercase font-black tracking-widest border border-purple-200">Super 50</span>}
+                      {student.isSuper50 && <span className="bg-amber-50 text-amber-600 text-[9px] px-2 py-0.5 rounded border border-amber-200 uppercase font-black tracking-widest">Super 50</span>}
                     </div>
-                    <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                    <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-1 opacity-80">
                       {student.enrollmentNumber} • {student.department}
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedStudentForHistory(student)}
-                  className="btn-outline-premium text-xs py-2 px-4 flex items-center gap-2"
+                  className="btn-outline-premium text-xs py-2 px-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  <Eye size={14} /> Full Profile & Placements
+                  <Eye size={14} /> Profile
                 </button>
               </div>
             ))}
           </div>
           {allStudents.length === 0 && (
-            <div className="text-center py-12 text-slate-400 font-bold text-sm uppercase tracking-widest">
+            <div className="text-center py-16 text-slate-400 font-bold text-sm uppercase tracking-widest border border-dashed rounded-3xl mt-6">
               No students found in directory
             </div>
           )}
@@ -439,22 +447,22 @@ export default function AdminDashboard() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Performance Chart */}
-            <div className="lg:col-span-2 glass border border-slate-200/50 rounded-3xl p-8">
-              <div className="flex items-center justify-between mb-8">
+            <div className="lg:col-span-2 glass-card p-8 flex flex-col">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">Performance Score Distribution</h3>
-                  <p className="text-xs text-slate-500 mt-1">Total student counts by score range</p>
+                  <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Performance Distribution</h3>
+                  <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Total student counts by score range</p>
                 </div>
                 <select
                   value={selectedDept}
                   onChange={(e) => setSelectedDept(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-purple-500"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer shadow-sm"
                 >
                   <option value="All">All Departments</option>
                   {filters.departments?.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
-              <div className="h-[300px]">
+              <div className="flex-1 min-h-[300px]">
                 <Bar
                   data={barData}
                   options={{
@@ -462,8 +470,8 @@ export default function AdminDashboard() {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                      x: { grid: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold' } } },
-                      y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' }, beginAtZero: true },
+                      x: { grid: { display: false }, border: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold', size: 11, family: 'Inter' } } },
+                      y: { grid: { color: '#f1f5f9', borderDash: [4, 4] }, border: { display: false }, ticks: { color: '#64748b', font: { weight: '600', size: 11, family: 'Inter' } }, beginAtZero: true },
                     },
                   }}
                 />
@@ -471,40 +479,42 @@ export default function AdminDashboard() {
             </div>
 
             {/* Top Performers */}
-            <div className="glass border border-slate-200/50 rounded-3xl p-8">
-              <h3 className="text-xl font-bold text-slate-900 mb-8">🏆 Ecosystem Leaderboard</h3>
-              <div className="space-y-6 max-h-[360px] overflow-y-auto custom-scrollbar pr-2">
+            <div className="glass-card p-8 flex flex-col max-h-[500px]">
+              <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-6 flex items-center gap-2">
+                🏆 Ecosystem Leaderboard
+              </h3>
+              <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2">
                 {(leaderboard || []).slice(0, 15).map((student, i) => (
                   <div
                     key={student._id}
                     onClick={() => handleSelectStudent(student)}
-                    className="flex items-center gap-4 group cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition-all"
+                    className="flex items-center gap-4 group cursor-pointer bg-white border border-slate-100 hover:border-purple-200 hover:shadow-sm p-3 rounded-[1rem] transition-all"
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${
-                      i === 0 ? 'bg-yellow-500/20 text-yellow-600' :
-                      i === 1 ? 'bg-gray-400/20 text-slate-500' :
-                      i === 2 ? 'bg-orange-500/20 text-orange-600' :
-                      'bg-slate-100 text-slate-500'
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[11px] border ${
+                      i === 0 ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm' :
+                      i === 1 ? 'bg-slate-100 text-slate-500 border-slate-200 shadow-sm' :
+                      i === 2 ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-sm' :
+                      'bg-slate-50 text-slate-400 border-transparent'
                     }`}>
                       #{i + 1}
                     </div>
                     <img
                       src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                      className="w-10 h-10 rounded-full border-2 border-slate-100 group-hover:scale-110 transition-transform"
+                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 group-hover:scale-110 transition-transform"
                       alt={student.name}
                     />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-bold text-slate-900 group-hover:text-purple-600 transition-colors">{student.name}</div>
-                        {student.isSuper50 && <Star size={10} className="text-yellow-500 fill-yellow-500" />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <div className="text-[13px] font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors truncate">{student.name}</div>
+                        {student.isSuper50 && <Star size={10} className="text-amber-500 fill-amber-500 shrink-0" />}
                       </div>
-                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{student.department}</div>
+                      <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] truncate opacity-80">{student.department}</div>
                     </div>
-                    <div className="text-xl font-black text-purple-600">{Math.round(student.performanceScore)}</div>
+                    <div className="text-lg font-display font-black text-[var(--primary)] shrink-0">{Math.round(student.performanceScore)}</div>
                   </div>
                 ))}
               </div>
-              <Link to="/leaderboard" className="w-full inline-block text-center mt-8 py-3 text-xs font-black uppercase tracking-widest text-purple-600 border border-purple-500/20 rounded-xl hover:bg-purple-600/10 transition-all font-bold">
+              <Link to="/leaderboard" className="w-full inline-block text-center mt-6 py-3.5 text-xs font-black uppercase tracking-widest text-[var(--primary)] border border-purple-200 rounded-xl hover:bg-purple-50 transition-all">
                 View Full Leaderboard
               </Link>
             </div>
@@ -512,30 +522,30 @@ export default function AdminDashboard() {
 
           <div className="grid grid-cols-1 gap-8">
             {/* Recent Notifications / System Alerts */}
-            <div className="glass border border-slate-200/50 rounded-3xl p-8">
-              <h3 className="text-xl font-bold text-slate-900 mb-8">System Alerts</h3>
-              <div className="space-y-6">
-                <div className="flex gap-4 items-start p-4 rounded-2xl bg-orange-500/5 border border-orange-500/10">
-                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0 text-orange-500">
-                    <ShieldCheck size={20} />
+            <div className="glass-card p-8">
+              <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-8">System Alerts</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex gap-4 items-start p-6 rounded-[1.2rem] bg-orange-50 border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 rounded-[1rem] bg-white border border-orange-100 flex items-center justify-center shrink-0 text-orange-500 shadow-sm">
+                    <ShieldCheck size={24} />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">Certificate & Activity Verification</div>
-                    <p className="text-xs text-slate-600 mt-1">There are {pendingCertificates.length} certificates and {pendingActivities?.length || 0} activities waiting for your approval.</p>
-                    <Link to="/admin/verify" className="inline-block mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 transition-colors">
-                      Verify Now →
+                    <div className="text-[15px] font-bold text-orange-900">Certificate Verification</div>
+                    <p className="text-[13px] text-orange-700/80 font-medium mt-1">There are {pendingCertificates.length} certificates and {pendingActivities?.length || 0} activities waiting for approval.</p>
+                    <Link to="/admin/verify" className="inline-flex items-center gap-1 mt-3 text-xs font-black uppercase tracking-widest text-orange-600 hover:text-orange-700 transition-colors bg-white px-3 py-1.5 rounded-lg border border-orange-200">
+                      Verify Now <ChevronRight size={14} />
                     </Link>
                   </div>
                 </div>
-                <div className="flex gap-4 items-start p-4 rounded-2xl bg-purple-500/5 border border-purple-500/10">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0 text-purple-500">
-                    <Star size={20} />
+                <div className="flex gap-4 items-start p-6 rounded-[1.2rem] bg-purple-50 border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 rounded-[1rem] bg-white border border-purple-100 flex items-center justify-center shrink-0 text-[var(--primary)] shadow-sm">
+                    <Star size={24} />
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-slate-900">Super 50 Selection</div>
-                    <p className="text-xs text-slate-600 mt-1">Unlock premium features for high-performing students.</p>
-                    <Link to="/admin/super50-selection" className="inline-block mt-2 text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">
-                      Open Portal →
+                    <div className="text-[15px] font-bold text-purple-900">Super 50 Selection</div>
+                    <p className="text-[13px] text-purple-700/80 font-medium mt-1">Unlock premium features for high-performing students.</p>
+                    <Link to="/admin/super50-selection" className="inline-flex items-center gap-1 mt-3 text-xs font-black uppercase tracking-widest text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors bg-white px-3 py-1.5 rounded-lg border border-purple-200">
+                      Open Portal <ChevronRight size={14} />
                     </Link>
                   </div>
                 </div>
@@ -543,18 +553,18 @@ export default function AdminDashboard() {
 
               {/* Pending Certificates Approval for Dashboard */}
               {pendingCertificates.length > 0 && (
-                <div className="mt-8 border-t border-slate-200/60 pt-8">
-                  <h3 className="text-xl font-bold text-slate-900 mb-4">Pending Certificates</h3>
-                  <div className="space-y-4">
-                    {pendingCertificates.slice(0, 5).map((cert) => (
-                      <div key={cert._id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                          <div className="font-bold text-sm text-slate-900">{cert.title}</div>
-                          <div className="text-xs text-slate-500">By {cert.student?.name} • {cert.issuedBy}</div>
+                <div className="mt-12">
+                  <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-6">Pending Certificates</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pendingCertificates.slice(0, 4).map((cert) => (
+                      <div key={cert._id} className="bg-white border border-slate-200 shadow-sm hover:border-[var(--primary)] transition-all rounded-[1.2rem] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-[14px] text-[var(--text-primary)] truncate">{cert.title}</div>
+                          <div className="text-[12px] text-[var(--text-secondary)] font-medium mt-0.5 truncate">By {cert.student?.name} • {cert.issuedBy}</div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <button
-                            className="btn-success flex items-center gap-1 py-1.5 px-3 text-xs"
+                            className="btn-success flex items-center gap-1.5 py-2 px-3 text-[11px] rounded-lg font-black uppercase tracking-wider"
                             onClick={async () => {
                               setProcessing((p) => ({ ...p, [cert._id]: 'approve' }));
                               const result = await dispatch(verifyCertificate({ id: cert._id, action: 'approve' }));
@@ -564,47 +574,47 @@ export default function AdminDashboard() {
                             }}
                             disabled={!!processing[cert._id]}
                           >
-                            {processing[cert._id] === 'approve' ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                            {processing[cert._id] === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                             Approve
                           </button>
                           <button
-                            className="btn-danger flex items-center gap-1 py-1.5 px-3 text-xs"
+                            className="btn-danger flex items-center gap-1.5 py-2 px-3 text-[11px] rounded-lg font-black uppercase tracking-wider"
                             onClick={() => setRejectModal(cert)}
                           >
-                            <X size={12} /> Reject
+                            <X size={14} /> Reject
                           </button>
                         </div>
                       </div>
                     ))}
-                    {pendingCertificates.length > 5 && (
-                      <Link to="/admin/verify" className="block text-center mt-2 text-xs font-bold text-purple-600 hover:text-purple-700">
-                        View all {pendingCertificates.length} certificates →
-                      </Link>
-                    )}
                   </div>
+                  {pendingCertificates.length > 4 && (
+                    <Link to="/admin/verify" className="inline-block mt-4 text-[11px] font-black uppercase tracking-widest text-[var(--primary)] hover:text-[var(--primary-dark)]">
+                      View all {pendingCertificates.length} certificates →
+                    </Link>
+                  )}
                 </div>
               )}
 
               {/* Pending Activities Approval for Dashboard */}
               {pendingActivities?.length > 0 && (
-                <div className="mt-8 border-t border-slate-200/60 pt-8">
-                  <h3 className="text-xl font-bold text-slate-900 mb-4">Pending Activities</h3>
-                  <div className="space-y-4">
-                    {pendingActivities.slice(0, 5).map((act) => (
-                      <div key={act._id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                          <div className="font-bold text-sm text-slate-900">{act.title}</div>
-                          <div className="text-xs text-slate-500">By {act.student?.name} • {act.type}</div>
+                <div className="mt-12">
+                  <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-6">Pending Activities</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pendingActivities.slice(0, 4).map((act) => (
+                      <div key={act._id} className="bg-white border border-slate-200 shadow-sm hover:border-blue-300 transition-all rounded-[1.2rem] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-[14px] text-[var(--text-primary)] truncate">{act.title}</div>
+                          <div className="text-[12px] text-[var(--text-secondary)] font-medium mt-0.5 truncate">By {act.student?.name} • {act.type}</div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 shrink-0">
                           <button
-                            className="btn-outline-premium flex items-center gap-1 py-1.5 px-3 text-xs"
+                            className="bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 flex items-center gap-1.5 py-2 px-3 text-[11px] rounded-lg font-black uppercase tracking-wider transition-colors"
                             onClick={() => setActivityDetailsModal(act)}
                           >
-                            <Eye size={12} /> Details
+                            <Eye size={14} /> Details
                           </button>
                           <button
-                            className="btn-success flex items-center gap-1 py-1.5 px-3 text-xs"
+                            className="btn-success flex items-center gap-1.5 py-2 px-3 text-[11px] rounded-lg font-black uppercase tracking-wider"
                             onClick={async () => {
                               setProcessing((p) => ({ ...p, [act._id]: 'approve' }));
                               const result = await dispatch(verifyActivity({ id: act._id, action: 'approve' }));
@@ -614,14 +624,14 @@ export default function AdminDashboard() {
                             }}
                             disabled={!!processing[act._id]}
                           >
-                            {processing[act._id] === 'approve' ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                            {processing[act._id] === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                             Approve
                           </button>
                           <button
-                            className="btn-danger flex items-center gap-1 py-1.5 px-3 text-xs"
+                            className="btn-danger flex items-center gap-1.5 py-2 px-3 text-[11px] rounded-lg font-black uppercase tracking-wider"
                             onClick={() => setRejectModal({ ...act, isActivity: true })}
                           >
-                            <X size={12} /> Reject
+                            <X size={14} /> Reject
                           </button>
                         </div>
                       </div>
@@ -632,40 +642,37 @@ export default function AdminDashboard() {
 
               {/* Student Directory Preview for Dashboard */}
               {user?.role !== 'teacher' && (
-                <div className="mt-8 border-t border-slate-200/60 pt-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-slate-900">Student Directory Preview</h3>
-                    <Link to="/teacher/students" className="text-xs font-bold text-purple-600 hover:text-purple-700 transition-colors">
+                <div className="mt-12">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Student Directory Preview</h3>
+                    <Link to="/teacher/students" className="text-[11px] font-black uppercase tracking-widest text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors">
                       View All {allStudents.length} Students →
                     </Link>
                   </div>
-                  <div className="space-y-3">
-                    {allStudents.slice(0, 5).map((student) => (
-                      <div key={student._id} className="bg-slate-50/50 border border-slate-100 rounded-xl p-4 flex items-center justify-between group">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allStudents.slice(0, 6).map((student) => (
+                      <div key={student._id} className="bg-[var(--bg-app)] border border-slate-200 rounded-[1.2rem] p-4 flex items-center justify-between group hover:border-[var(--primary)] transition-all cursor-pointer" onClick={() => setSelectedStudentForHistory(student)}>
                         <div className="flex items-center gap-4">
                           <img
                             src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                            className="w-10 h-10 rounded-full border border-slate-200"
+                            className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
                             alt={student.name}
                           />
                           <div>
-                            <div className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                              {student.name}
-                              {student.isSuper50 && <span className="bg-purple-100 text-purple-600 text-[10px] px-2 py-0.5 rounded-full uppercase font-black">Super 50</span>}
+                            <div className="text-[13px] font-bold text-[var(--text-primary)] flex items-center gap-2">
+                              <span className="truncate max-w-[120px]">{student.name}</span>
+                              {student.isSuper50 && <Star size={10} className="text-amber-500 fill-amber-500 shrink-0" />}
                             </div>
-                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{student.enrollmentNumber} • {student.department}</div>
+                            <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] mt-0.5 opacity-80">{student.enrollmentNumber}</div>
                           </div>
                         </div>
-                        <button
-                          onClick={() => setSelectedStudentForHistory(student)}
-                          className="btn-outline-premium text-xs py-1.5 px-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Eye size={14} /> View Profile
-                        </button>
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center border border-slate-200 group-hover:bg-[var(--primary)] group-hover:border-[var(--primary)] group-hover:text-white transition-all duration-300">
+                          <Eye size={14} className="text-slate-400 group-hover:text-white" />
+                        </div>
                       </div>
                     ))}
                     {allStudents.length === 0 && (
-                      <div className="text-center py-6 text-slate-400 font-bold text-xs uppercase tracking-widest">
+                      <div className="col-span-full text-center py-8 text-slate-400 font-bold text-[11px] uppercase tracking-widest border border-dashed rounded-2xl">
                         No students found
                       </div>
                     )}
@@ -686,15 +693,18 @@ export default function AdminDashboard() {
 
       {/* Reject Modal */}
       {rejectModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 420, padding: 28 }}>
-            <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 8, color: 'var(--danger)' }}>Reject Certificate</h3>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-              Rejecting: <strong style={{ color: 'var(--text-primary)' }}>{rejectModal.title}</strong>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifycontent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white border border-slate-200 shadow-xl rounded-3xl" style={{ width: '90%', maxWidth: 420, padding: 32 }}>
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center border border-red-100 mb-4">
+              <X size={24} />
+            </div>
+            <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-2">Reject {rejectModal.isActivity ? 'Activity' : 'Certificate'}</h3>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
+              Are you sure you want to reject <strong className="text-slate-900">{rejectModal.title}</strong>? This action cannot be undone.
             </p>
-            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button className="btn-secondary" style={{ flex: 1, justifycontent: 'center' }} onClick={() => setRejectModal(null)}>Cancel</button>
-              <button className="btn-danger" style={{ flex: 1, justifycontent: 'center' }}
+            <div className="flex gap-3">
+              <button className="flex-1 bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 py-3 rounded-xl text-[13px] font-bold transition-colors" onClick={() => setRejectModal(null)}>Cancel</button>
+              <button className="flex-1 bg-red-500 text-white hover:bg-red-600 py-3 rounded-xl text-[13px] font-bold transition-colors shadow-sm shadow-red-500/20 flex items-center justify-center gap-2"
                 onClick={async () => {
                   setProcessing((p) => ({ ...p, [rejectModal._id]: 'reject' }));
                   let result;
@@ -709,7 +719,8 @@ export default function AdminDashboard() {
                   else toast.error(result.payload);
                 }}
                 disabled={processing[rejectModal._id] === 'reject'}>
-                {processing[rejectModal._id] === 'reject' ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <X size={14} />} Reject
+                {processing[rejectModal._id] === 'reject' ? <Loader2 size={16} className="animate-spin" /> : null} 
+                Reject
               </button>
             </div>
           </motion.div>
@@ -718,50 +729,53 @@ export default function AdminDashboard() {
 
       {/* Activity Details Modal */}
       {activityDetailsModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white border border-slate-200 shadow-sm rounded-2xl" style={{ width: '90%', maxWidth: 500, padding: 28 }}>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-slate-900">Activity Details</h3>
-              <button onClick={() => setActivityDetailsModal(null)} className="text-slate-500 hover:text-slate-900 bg-slate-50 p-1 rounded-md">
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifycontent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white border border-slate-200 shadow-xl rounded-[1.5rem]" style={{ width: '90%', maxWidth: 500, padding: 32 }}>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Activity Details</h3>
+                <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Review the submitted activity information.</p>
+              </div>
+              <button onClick={() => setActivityDetailsModal(null)} className="text-slate-400 hover:text-slate-700 bg-slate-50 p-2 rounded-full transition-colors border border-slate-100">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-4 text-sm mt-4">
-              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Title</span>
-                <span className="col-span-2 font-medium text-slate-900">{activityDetailsModal.title}</span>
+            <div className="space-y-4 text-[13px]">
+              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Title</span>
+                <span className="col-span-2 font-bold text-[var(--text-primary)]">{activityDetailsModal.title}</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Type</span>
-                <span className="col-span-2 font-medium text-slate-900 uppercase">{activityDetailsModal.type}</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Type</span>
+                <span className="col-span-2 font-bold text-[var(--primary)] uppercase tracking-wider text-[11px] bg-purple-50 w-max px-2 py-0.5 rounded border border-purple-100">{activityDetailsModal.type}</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Platform</span>
-                <span className="col-span-2 font-medium text-slate-900">{activityDetailsModal.platform || 'N/A'}</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Platform</span>
+                <span className="col-span-2 font-bold text-[var(--text-primary)]">{activityDetailsModal.platform || 'N/A'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Duration</span>
-                <span className="col-span-2 font-medium text-slate-900">{activityDetailsModal.duration || 'N/A'}</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Duration</span>
+                <span className="col-span-2 font-bold text-[var(--text-primary)]">{activityDetailsModal.duration || 'N/A'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 border-b border-slate-100 pb-2">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Description</span>
-                <span className="col-span-2 font-medium text-slate-900 whitespace-pre-wrap">{activityDetailsModal.description || 'N/A'}</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Description</span>
+                <span className="col-span-2 font-medium text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">{activityDetailsModal.description || 'N/A'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-2 pb-2">
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Link</span>
+              <div className="grid grid-cols-3 gap-4 pb-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Link</span>
                 <span className="col-span-2 font-medium">
                   {activityDetailsModal.link ? (
-                    <a href={activityDetailsModal.link} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline break-all">
+                    <a href={activityDetailsModal.link} target="_blank" rel="noreferrer" className="text-[var(--primary)] font-bold hover:underline break-all">
                       {activityDetailsModal.link}
                     </a>
-                  ) : 'N/A'}
+                  ) : <span className="text-slate-400 italic">Not provided</span>}
                 </span>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100">
-              <button className="btn-secondary px-4" onClick={() => setActivityDetailsModal(null)}>Close</button>
+            <div className="flex justify-end mt-8 pt-6 border-t border-slate-100">
+              <button className="bg-slate-900 text-white hover:bg-slate-800 px-6 py-3 rounded-xl text-[13px] font-bold transition-colors" onClick={() => setActivityDetailsModal(null)}>Close Details</button>
             </div>
           </motion.div>
         </div>

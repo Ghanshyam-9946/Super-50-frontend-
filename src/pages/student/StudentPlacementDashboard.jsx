@@ -22,8 +22,8 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
 
   if (loading && studentApplications.length === 0) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-      <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
-      <p className="text-slate-500 font-medium">Loading your placement journey...</p>
+      <div className="w-12 h-12 border-4 border-purple-500/20 border-t-[var(--primary)] rounded-full animate-spin"></div>
+      <p className="text-[var(--text-secondary)] font-medium">Loading your placement journey...</p>
     </div>
   );
 
@@ -36,69 +36,81 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
       )
     : studentApplications;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <motion.h1 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-3xl font-extrabold text-slate-900 tracking-tight"
-          >
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      <header className="glass-card p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
             {showOnlyResults ? 'Drive Results' : 'Placement Dashboard'}
-          </motion.h1>
-          <p className="text-slate-500 mt-1">Track your job applications and recruitment progress.</p>
-        </div>
+          </h1>
+          <p className="text-[var(--text-secondary)] font-medium mt-2">Track your job applications and recruitment progress.</p>
+        </motion.div>
       </header>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 text-red-400">
+        <div className="bg-red-500/10 border border-red-200 p-4 rounded-xl flex items-center gap-3 text-red-600">
           <AlertCircle size={20} />
-          <p className="text-sm font-medium">{error}</p>
+          <p className="text-sm font-bold">{error}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+      >
         {displayedApps.map((app) => (
           <motion.div
             key={app._id}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 overflow-hidden relative group"
+            variants={itemVariants}
+            className="glass-card p-8 overflow-hidden relative group"
           >
             {/* Background Glow */}
-            <div className={`absolute -right-20 -top-20 w-64 h-64 blur-3xl opacity-10 rounded-full ${app.finalResult === 'selected' ? 'bg-green-500' : 'bg-purple-500'}`}></div>
+            <div className={`absolute -right-20 -top-20 w-64 h-64 blur-[60px] opacity-20 rounded-full transition-all duration-700 group-hover:scale-110 ${app.finalResult === 'selected' ? 'bg-emerald-500' : 'bg-purple-500'}`}></div>
 
             <div className="flex items-start justify-between relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 group-hover:border-purple-500/50 transition-colors">
-                  <Briefcase className="text-purple-400" size={28} />
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-[1rem] bg-[var(--bg-app)] flex items-center justify-center border border-[var(--border-light)] group-hover:border-[var(--primary)] group-hover:shadow-sm transition-all duration-300">
+                  <Briefcase className="text-[var(--primary)]" size={28} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">{app.drive?.companyName || 'Unknown Company'}</h3>
-                  <div className="flex items-center gap-3 mt-1 text-sm">
-                    <span className="text-purple-300 font-semibold">{app.drive?.package || 'N/A'}</span>
-                    <span className="text-slate-600">•</span>
-                    <span className="text-slate-500">Drive Deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'TBA'}</span>
+                  <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{app.drive?.companyName || 'Unknown Company'}</h3>
+                  <div className="flex items-center gap-3 mt-1.5 text-[13px] font-medium">
+                    <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md">{app.drive?.package || 'N/A'}</span>
+                    <span className="text-[var(--text-secondary)] opacity-50">•</span>
+                    <span className="text-[var(--text-secondary)]">Deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'TBA'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                <div className={`flex items-center gap-2 px-4 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all duration-500 ${
-                  app.status === 'eligible' ? 'bg-green-500/10 text-green-400 border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]' :
-                  app.status === 'not-eligible' ? 'bg-red-500/10 text-red-400 border-red-500/20 grayscale-[0.5]' :
-                  app.status === 'selected' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]' :
-                  'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all duration-500 ${
+                  app.status === 'eligible' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                  app.status === 'not-eligible' ? 'bg-red-50 text-red-600 border-red-200' :
+                  app.status === 'selected' ? 'bg-purple-50 text-[var(--primary-dark)] border-purple-200 shadow-[0_4px_10px_rgba(139,92,246,0.1)]' :
+                  'bg-blue-50 text-blue-600 border-blue-200'
                 }`}>
-                  {app.status === 'eligible' && <CheckCircle size={12} className="animate-pulse" />}
-                  {app.status === 'not-eligible' && <XCircle size={12} />}
-                  {app.status === 'selected' && <Award size={12} className="animate-bounce" />}
+                  {app.status === 'eligible' && <CheckCircle size={14} className="animate-pulse" />}
+                  {app.status === 'not-eligible' && <XCircle size={14} />}
+                  {app.status === 'selected' && <Award size={14} className="animate-bounce" />}
                   {app.status === 'not-eligible' ? 'Not Eligible' : app.status}
                 </div>
                 {app.finalResult === 'selected' && (
-                  <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-500 px-4 py-1.5 rounded-2xl text-[10px] font-black border border-yellow-500/30 shadow-lg shadow-yellow-500/10">
+                  <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1.5 rounded-xl text-[10px] font-black border border-amber-500/30 shadow-md shadow-orange-500/20 mt-1">
                     <Award size={14} /> HIRED
                   </div>
                 )}
@@ -106,53 +118,53 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
             </div>
 
             {/* Timeline UI */}
-            <div className="mt-8 space-y-6 relative z-10">
-              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest">Recruitment Timeline</h4>
+            <div className="mt-10 space-y-6 relative z-10">
+              <h4 className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] opacity-80">Recruitment Timeline</h4>
               
-              <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-50">
+              <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[var(--border-light)]">
                 {app.roundsProgress?.map((round, idx) => (
                   <div key={idx} className="relative">
-                    <div className={`absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[#030303] z-10 ${
-                      round.status === 'cleared' ? 'bg-green-500' : 
-                      round.status === 'eliminated' ? 'bg-red-500' : 'bg-gray-600'
+                    <div className={`absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[var(--bg-card)] z-10 ${
+                      round.status === 'cleared' ? 'bg-emerald-500' : 
+                      round.status === 'eliminated' ? 'bg-red-500' : 'bg-slate-300'
                     }`}></div>
                     
                     <div className="flex flex-col">
-                      <span className={`text-sm font-bold ${
-                        round.status === 'cleared' ? 'text-green-400' : 
-                        round.status === 'eliminated' ? 'text-red-400' : 'text-gray-300'
+                      <span className={`text-[15px] font-bold ${
+                        round.status === 'cleared' ? 'text-emerald-600' : 
+                        round.status === 'eliminated' ? 'text-red-600' : 'text-[var(--text-secondary)]'
                       }`}>
                         {round.roundName}
                       </span>
-                      <div className="mt-1 flex items-center gap-1">
-                        {round.status === 'cleared' && <CheckCircle size={12} className="text-green-500" />}
-                        {round.status === 'eliminated' && <XCircle size={12} className="text-red-500" />}
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        {round.status === 'cleared' && <CheckCircle size={14} className="text-emerald-500" />}
+                        {round.status === 'eliminated' && <XCircle size={14} className="text-red-500" />}
                         <span className={`text-[10px] uppercase tracking-widest font-black ${
-                          round.status === 'cleared' ? 'text-green-500' : 
-                          round.status === 'eliminated' ? 'text-red-500' : 'text-gray-500'
+                          round.status === 'cleared' ? 'text-emerald-600' : 
+                          round.status === 'eliminated' ? 'text-red-600' : 'text-slate-400'
                         }`}>
                           {round.status === 'cleared' ? 'Shortlisted' : 
                            round.status === 'eliminated' ? 'Not Shortlisted' : 'Pending'}
                         </span>
                       </div>
-                      {round.feedback && <p className="text-xs text-slate-600 mt-1">{round.feedback}</p>}
+                      {round.feedback && <p className="text-[13px] font-medium text-[var(--text-secondary)] mt-2 bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-light)]">{round.feedback}</p>}
                     </div>
                   </div>
                 ))}
 
                 {app.status === 'eligible' && (
                   <div className="relative">
-                    <div className="absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[#030303] z-10 bg-purple-500 animate-pulse"></div>
-                    <span className="text-sm font-bold text-purple-400">Apply Now</span>
-                    <p className="text-xs text-slate-600 mt-1">Application deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'N/A'}</p>
+                    <div className="absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[var(--bg-card)] z-10 bg-[var(--primary)] animate-pulse shadow-[0_0_10px_rgba(139,92,246,0.5)]"></div>
+                    <span className="text-[15px] font-bold text-[var(--primary-dark)]">Apply Now</span>
+                    <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Application deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 )}
               </div>
             </div>
 
             {app.status === 'eligible' && (
-              <button className="mt-8 w-full btn-premium py-3 text-sm flex items-center justify-center gap-2">
-                Register for Drive <ChevronRight size={18} />
+              <button className="mt-10 w-full btn-premium py-4 rounded-xl text-[15px] flex items-center justify-center gap-2 group-hover:shadow-[0_8px_25px_rgba(139,92,246,0.3)] transition-all duration-300">
+                Register for Drive <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
               </button>
             )}
           </motion.div>
@@ -160,16 +172,17 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
 
         {!loading && displayedApps.length === 0 && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="col-span-full bg-white border border-slate-200 shadow-sm rounded-2xl p-12 text-center"
+            variants={itemVariants}
+            className="col-span-full glass-card p-16 text-center"
           >
-            <Clock className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-slate-900">{showOnlyResults ? "No Results Yet" : "No Active Drives"}</h3>
-            <p className="text-slate-500 mt-2">{showOnlyResults ? "You haven't received any results from placement drives yet." : "Check back later for new placement opportunities."}</p>
+            <div className="w-20 h-20 bg-slate-50 border border-[var(--border-light)] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+              <Clock className="text-[#CBD5E1]" size={36} />
+            </div>
+            <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">{showOnlyResults ? "No Results Yet" : "No Active Drives"}</h3>
+            <p className="text-[var(--text-secondary)] font-medium mt-3 max-w-md mx-auto">{showOnlyResults ? "You haven't received any results from placement drives yet." : "Check back later for new placement opportunities."}</p>
           </motion.div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

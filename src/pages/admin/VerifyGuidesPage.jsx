@@ -42,91 +42,90 @@ export default function VerifyGuidesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin text-purple-500" size={40} />
+        <Loader2 className="animate-spin text-[var(--primary)]" size={48} />
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-sm font-semibold mb-4">
+      <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-[var(--primary-dark)] text-[11px] font-black uppercase tracking-widest w-max mb-2 shadow-sm">
             <UserPlus size={14} />
             <span>Guide Management</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-2">
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
             Verify Admins & Guides
           </h1>
-          <p className="text-slate-500 text-lg">Approve or revoke access for administrators and project guides.</p>
-        </div>
-      </div>
+          <p className="text-[var(--text-secondary)] font-medium mt-1">Approve or revoke access for administrators and project guides across the ecosystem.</p>
+        </motion.div>
+      </header>
 
       {/* Controls */}
-      <div className="flex items-center justify-between gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
+      <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={20} />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black/50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-colors"
+            className="w-full bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
           />
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-slate-50 border border-slate-100 rounded-3xl overflow-hidden">
+      <motion.div className="glass-card overflow-hidden shadow-sm"
+        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-500">
-            <thead className="text-xs uppercase bg-black/50 text-slate-600 border-b border-slate-100">
+          <table className="w-full text-left text-[13px] text-[var(--text-secondary)] font-medium">
+            <thead className="text-[10px] uppercase bg-[var(--bg-app)] text-slate-500 font-black tracking-widest border-b border-[var(--border-light)]">
               <tr>
-                <th className="px-6 py-4 font-bold tracking-wider">User Info</th>
-                <th className="px-6 py-4 font-bold tracking-wider">Role</th>
-                <th className="px-6 py-4 font-bold tracking-wider">Department</th>
-                <th className="px-6 py-4 font-bold tracking-wider">Status</th>
-                <th className="px-6 py-4 font-bold tracking-wider text-right">Actions</th>
+                <th className="px-6 py-4">User Info</th>
+                <th className="px-6 py-4">Role</th>
+                <th className="px-6 py-4">Department</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-[var(--border-light)]">
               {filteredGuides.map((guide, idx) => (
                 <motion.tr
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
+                  transition={{ delay: Math.min(idx * 0.05, 0.5) }}
                   key={guide._id}
                   className="hover:bg-slate-50 transition-colors"
                 >
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-slate-200 flex items-center justify-center text-slate-900 font-bold">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full border border-slate-200 shadow-sm flex items-center justify-center font-black text-white text-sm" style={{ background: `hsl(${(guide.name.charCodeAt(0) * 37) % 360}, 60%, 40%)` }}>
                         {guide.name[0]}
                       </div>
                       <div>
-                        <div className="text-slate-900 font-semibold">{guide.name}</div>
-                        <div className="text-xs text-slate-600">{guide.email}</div>
+                        <div className="text-[14px] font-bold text-[var(--text-primary)]">{guide.name}</div>
+                        <div className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 mt-0.5">{guide.email}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-lg bg-slate-50 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                    <span className="bg-slate-50 text-slate-600 border border-slate-200 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
                       {guide.role === 'guide' ? 'Project Guide' : guide.role === 'pms_admin' ? 'PMS Admin' : guide.role === 'super50_admin' ? 'Super 50 Admin' : 'T&P Admin'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-lg bg-slate-50 text-gray-400 text-xs font-medium">
-                      {guide.department || 'N/A'}
-                    </span>
+                  <td className="px-6 py-4 font-bold text-slate-600">
+                    {guide.department || 'N/A'}
                   </td>
                   <td className="px-6 py-4">
                     {guide.isActive ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-xs font-semibold">
+                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
                         <ShieldCheck size={14} /> Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-xs font-semibold">
+                      <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
                         <ShieldAlert size={14} /> Pending
                       </span>
                     )}
@@ -134,10 +133,11 @@ export default function VerifyGuidesPage() {
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => toggleStatus(guide._id)}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${guide.isActive
-                          ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                          : 'bg-green-500/10 text-green-400 hover:bg-green-500/20'
-                        }`}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border ${
+                        guide.isActive
+                          ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                          : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                      }`}
                     >
                       {guide.isActive ? <><X size={14} /> Revoke Access</> : <><Check size={14} /> Approve User</>}
                     </button>
@@ -146,15 +146,16 @@ export default function VerifyGuidesPage() {
               ))}
               {filteredGuides.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-slate-600">
-                    No guides found.
+                  <td colSpan="5" className="px-6 py-16 text-center text-slate-400">
+                    <ShieldAlert size={40} className="mx-auto mb-4 opacity-50" />
+                    <p className="font-bold uppercase tracking-widest text-[11px]">No guides or admins found.</p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

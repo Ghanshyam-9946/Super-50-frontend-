@@ -75,7 +75,6 @@ export function Hero() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-orange opacity-75" />
             <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-orange shadow-[0_0_10px_var(--brand-orange)]" />
           </span>
-          v2.0 — The Student Innovation Ecosystem
         </motion.div>
 
         <h1 className="font-display text-6xl font-[900] leading-[1] tracking-tight text-black md:text-8xl lg:text-9xl mb-6">

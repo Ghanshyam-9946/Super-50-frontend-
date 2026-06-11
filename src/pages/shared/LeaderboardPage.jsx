@@ -34,14 +34,14 @@ export default function LeaderboardPage({ limit }) {
   const departments = [...new Set(leaderboard.map((s) => s.department))].filter(Boolean);
 
   return (
-    <div className="page-layout">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="mb-8">
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-3xl font-black text-white mb-2 flex items-center">
-            <Trophy size={28} className="inline mr-3 text-amber-400" />
-            Leaderboard
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-2">
+          <h1 className="text-3xl md:text-4xl font-display font-black text-[var(--text-primary)] flex items-center">
+            <Trophy size={32} className="inline mr-3 text-amber-500" />
+            Ecosystem Leaderboard
           </h1>
-          <p className="text-slate-400">Top performing Super 50 students ranked by performance score</p>
+          <p className="text-[var(--text-secondary)] font-medium">Top performing Super 50 students ranked by performance score</p>
         </motion.div>
       </div>
 
@@ -49,23 +49,20 @@ export default function LeaderboardPage({ limit }) {
       {user?.role === 'student' && myRank > 0 && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="glass-card p-6 border-2 border-[var(--primary-light)] flex items-center justify-between"
           style={{
-            background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(79,70,229,0.1))',
-            border: '1px solid rgba(124,58,237,0.4)',
-            borderRadius: 14, padding: '16px 24px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginBottom: 24,
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(124, 58, 237, 0.02))',
           }}
         >
           <div>
-            <div style={{ fontSize: 12, color: 'var(--accent-light)', fontWeight: 600, marginBottom: 4 }}>YOUR CURRENT RANK</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-primary)' }}>
-              #{myRank} <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>out of {leaderboard.length} students</span>
+            <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80 mb-1">YOUR CURRENT RANK</div>
+            <div className="text-3xl font-display font-black text-[var(--text-primary)]">
+              #{myRank} <span className="text-sm text-[var(--text-secondary)] font-bold ml-2">out of {leaderboard.length} students</span>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Your Score</div>
-            <div style={{ fontSize: 32, fontWeight: 900, color: '#7c3aed' }}>
+          <div className="text-right border-l border-[var(--border-light)] pl-8">
+            <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80 mb-1">Your Score</div>
+            <div className="text-4xl font-display font-black text-[var(--primary)]">
               {Math.round(user?.performanceScore || 0)}
             </div>
           </div>
@@ -73,22 +70,21 @@ export default function LeaderboardPage({ limit }) {
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }} className={limit ? 'hidden' : ''}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-          <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+      <div className={`flex flex-wrap gap-4 mb-6 ${limit ? 'hidden' : ''}`}>
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-2 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+            className="w-full bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
             placeholder="Search by name or enrollment..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             id="leaderboard-search"
           />
         </div>
-        <div style={{ position: 'relative' }}>
-          <Filter size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <div className="relative">
+          <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <select
-            className="bg-black/50 border border-slate-700/50 rounded-xl py-2 pl-10 pr-8 text-white focus:outline-none focus:border-purple-500/50 transition-colors appearance-none"
-            style={{ minWidth: 180 }}
+            className="bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[200px]"
             value={dept}
             onChange={(e) => setDept(e.target.value)}
             id="leaderboard-dept-filter"
@@ -96,6 +92,9 @@ export default function LeaderboardPage({ limit }) {
             <option value="">All Departments</option>
             {departments.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
         </div>
       </div>
 
@@ -103,86 +102,93 @@ export default function LeaderboardPage({ limit }) {
       {!search && filtered.length >= 3 && !limit && (
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 32, alignItems: 'flex-end' }}
+          className="flex justify-center gap-4 md:gap-8 mb-12 items-end mt-8"
         >
           {/* 2nd */}
-          <PodiumCard student={filtered[1]} rank={2} height={130} />
+          <PodiumCard student={filtered[1]} rank={2} height={120} />
           {/* 1st */}
-          <PodiumCard student={filtered[0]} rank={1} height={170} />
+          <PodiumCard student={filtered[0]} rank={1} height={160} />
           {/* 3rd */}
-          <PodiumCard student={filtered[2]} rank={3} height={100} />
+          <PodiumCard student={filtered[2]} rank={3} height={90} />
         </motion.div>
       )}
 
       {/* Full Table */}
       <motion.div className="glass-card overflow-hidden"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, fontSize: 14, color: 'white' }}>All Students ({filtered.length})</span>
+        <div className="p-6 border-b border-[var(--border-light)] flex justify-between items-center bg-slate-50/50">
+          <span className="font-display font-black text-lg text-[var(--text-primary)]">All Students ({filtered.length})</span>
         </div>
 
         {loading ? (
-          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[1, 2, 3, 4, 5].map(i => <div key={i} className="animate-pulse bg-white/5 rounded-xl" style={{ height: 56 }} />)}
+          <div className="p-6 flex flex-col gap-3">
+            {[1, 2, 3, 4, 5].map(i => <div key={i} className="animate-pulse bg-slate-100 rounded-xl h-14" />)}
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="w-full text-left text-sm text-slate-300">
-              <thead className="text-xs uppercase bg-black/40 text-slate-400 border-b border-white/5">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-[13px] text-[var(--text-secondary)] font-medium">
+              <thead className="text-[10px] uppercase bg-[var(--bg-app)] text-slate-500 font-black tracking-widest border-b border-[var(--border-light)]">
                 <tr>
-                  <th className="px-6 py-4 font-bold">Rank</th>
-                  <th className="px-6 py-4 font-bold">Student</th>
-                  <th className="px-6 py-4 font-bold">Department</th>
-                  <th className="px-6 py-4 font-bold">Batch</th>
-                  <th className="px-6 py-4 font-bold">Attendance</th>
-                  <th className="px-6 py-4 font-bold">Score</th>
+                  <th className="px-6 py-4">Rank</th>
+                  <th className="px-6 py-4">Student</th>
+                  <th className="px-6 py-4">Department</th>
+                  <th className="px-6 py-4">Batch</th>
+                  <th className="px-6 py-4">Attendance</th>
+                  <th className="px-6 py-4">Score</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-[var(--border-light)]">
                 {displayed.map((student, i) => {
                   const isMe = student._id === user?._id;
                   const rColor = rankColors[student.rank];
                   return (
                     <motion.tr key={student._id}
-                      className="hover:bg-white/5 transition-colors"
+                      className="hover:bg-slate-50 transition-colors"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      style={isMe ? { outline: '2px solid rgba(124,58,237,0.4)' } : {}}>
-                      <td className="px-6 py-4 font-black text-lg" style={{ color: rColor || '#94a3b8', width: 60 }}>
-                        {rankEmojis[student.rank] || `#${student.rank}`}
+                      style={isMe ? { backgroundColor: 'rgba(139, 92, 246, 0.05)', position: 'relative' } : {}}>
+                      {isMe && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--primary)]" />}
+                      <td className="px-6 py-4 font-black text-lg" style={{ color: rColor || '#94a3b8', width: 80 }}>
+                        {rankEmojis[student.rank] || (
+                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-500">
+                            #{student.rank}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{
-                            width: 36, height: 36, borderRadius: '50%',
-                            background: `hsl(${(student.name.charCodeAt(0) * 37) % 360}, 60%, 30%)`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontWeight: 700, fontSize: 14, color: 'white', flexShrink: 0,
-                          }}>
-                            {student.name.charAt(0).toUpperCase()}
-                          </div>
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                            className="w-10 h-10 rounded-full border border-slate-200 shadow-sm"
+                            alt={student.name}
+                          />
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: 13, color: 'white' }}>
-                              {student.name} {isMe && <span style={{ fontSize: 10, background: 'rgba(124,58,237,0.2)', color: 'var(--accent-light)', padding: '1px 6px', borderRadius: 10, marginLeft: 4 }}>You</span>}
+                            <div className="font-bold text-[14px] text-[var(--text-primary)]">
+                              {student.name} {isMe && <span className="text-[9px] bg-purple-100 text-[var(--primary-dark)] px-2 py-0.5 rounded uppercase font-black tracking-widest ml-2">You</span>}
                             </div>
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{student.enrollmentNumber}</div>
+                            <div className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 mt-0.5">{student.enrollmentNumber}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4" style={{ fontSize: 13, color: '#cbd5e1' }}>{student.department}</td>
-                      <td className="px-6 py-4" style={{ fontSize: 13, color: '#94a3b8' }}>{student.batch}</td>
+                      <td className="px-6 py-4 font-bold">{student.department}</td>
+                      <td className="px-6 py-4 font-bold">{student.batch}</td>
                       <td className="px-6 py-4">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, minWidth: 60 }}>
-                            <div style={{ height: '100%', width: `${student.attendancePercentage}%`, background: student.attendancePercentage >= 75 ? '#10b981' : student.attendancePercentage >= 50 ? '#f59e0b' : '#ef4444', borderRadius: 3 }} />
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-slate-100 rounded-full min-w-[80px] overflow-hidden border border-slate-200">
+                            <div 
+                              className="h-full rounded-full transition-all duration-500" 
+                              style={{ 
+                                width: `${student.attendancePercentage}%`, 
+                                background: student.attendancePercentage >= 75 ? '#10b981' : student.attendancePercentage >= 50 ? '#f59e0b' : '#ef4444' 
+                              }} 
+                            />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 600, minWidth: 38, color: 'white' }}>{Math.round(student.attendancePercentage)}%</span>
+                          <span className="text-[11px] font-black text-[var(--text-primary)] min-w-[32px]">{Math.round(student.attendancePercentage)}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span style={{
-                          fontSize: 18, fontWeight: 900,
+                        <span className="text-xl font-display font-black" style={{
                           color: student.performanceScore >= 75 ? '#10b981' : student.performanceScore >= 50 ? '#7c3aed' : student.performanceScore >= 25 ? '#f59e0b' : '#ef4444',
                         }}>
                           {Math.round(student.performanceScore)}
@@ -204,30 +210,36 @@ function PodiumCard({ student, rank, height }) {
   const color = rankColors[rank];
   return (
     <motion.div
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -6 }}
+      className="glass-card flex flex-col items-center justify-end relative shadow-md transition-all"
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        background: 'var(--bg-card)', border: `2px solid ${color}33`,
-        borderRadius: 16, padding: '16px 20px', width: 160,
-        boxShadow: `0 0 20px ${color}22`,
+        border: `2px solid ${color}33`,
+        padding: '24px 20px 0', 
+        width: 180,
       }}
     >
-      <div style={{ fontSize: 28, marginBottom: 6 }}>{rankEmojis[rank]}</div>
-      <div style={{
-        width: 44, height: 44, borderRadius: '50%',
-        background: `hsl(${(student.name.charCodeAt(0) * 37) % 360}, 60%, 30%)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontWeight: 700, fontSize: 18, color: 'white', marginBottom: 8,
-        border: `2px solid ${color}`,
-      }}>
-        {student.name.charAt(0)}
+      <div className="absolute -top-6 text-4xl drop-shadow-md">{rankEmojis[rank]}</div>
+      
+      <img
+        src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
+        className="w-16 h-16 rounded-full border-[3px] shadow-sm z-10 bg-white"
+        style={{ borderColor: color }}
+        alt={student.name}
+      />
+      
+      <div className="font-display font-black text-[15px] text-[var(--text-primary)] text-center mt-3 truncate w-full px-2">{student.name.split(' ')[0]}</div>
+      <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-1 opacity-80 truncate w-full text-center px-2">{student.department}</div>
+      
+      <div className="mt-4 text-center">
+        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-80 mb-0.5">Score</div>
+        <div className="text-3xl font-display font-black" style={{ color }}>{Math.round(student.performanceScore)}</div>
       </div>
-      <div style={{ fontWeight: 700, fontSize: 13, textAlign: 'center', marginBottom: 2 }}>{student.name.split(' ')[0]}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>{student.department}</div>
-      <div style={{ fontSize: 22, fontWeight: 900, color }}>{Math.round(student.performanceScore)}</div>
-      <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>score</div>
-      <div style={{ marginTop: 6, height: height * 0.15, width: '100%', background: `${color}22`, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ fontSize: 10, fontWeight: 700, color }}>#{rank}</span>
+      
+      <div 
+        className="mt-6 w-[calc(100%+40px)] rounded-t-xl flex items-center justify-center opacity-80" 
+        style={{ height, background: `linear-gradient(to top, ${color}22, ${color}44)` }}
+      >
+        <span className="text-2xl font-display font-black" style={{ color: color }}>#{rank}</span>
       </div>
     </motion.div>
   );
