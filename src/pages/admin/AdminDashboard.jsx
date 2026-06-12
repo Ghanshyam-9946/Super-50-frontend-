@@ -303,11 +303,10 @@ export default function AdminDashboard() {
                         <div className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">{app.drive?.package || 'N/A'} package</div>
                       </div>
                       <div>
-                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-[0.1em] ${
-                          app.status === 'selected' || app.status === 'placed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
-                          app.status === 'eligible' || app.status === 'applied' ? 'bg-purple-50 text-[var(--primary)] border border-purple-200' :
-                          'bg-red-50 text-red-600 border border-red-200'
-                        }`}>
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-[0.1em] ${app.status === 'selected' || app.status === 'placed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                            app.status === 'eligible' || app.status === 'applied' ? 'bg-purple-50 text-[var(--primary)] border border-purple-200' :
+                              'bg-red-50 text-red-600 border border-red-200'
+                          }`}>
                           {app.status}
                         </span>
                       </div>
@@ -490,12 +489,11 @@ export default function AdminDashboard() {
                     onClick={() => handleSelectStudent(student)}
                     className="flex items-center gap-4 group cursor-pointer bg-white border border-slate-100 hover:border-purple-200 hover:shadow-sm p-3 rounded-[1rem] transition-all"
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[11px] border ${
-                      i === 0 ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm' :
-                      i === 1 ? 'bg-slate-100 text-slate-500 border-slate-200 shadow-sm' :
-                      i === 2 ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-sm' :
-                      'bg-slate-50 text-slate-400 border-transparent'
-                    }`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[11px] border ${i === 0 ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm' :
+                        i === 1 ? 'bg-slate-100 text-slate-500 border-slate-200 shadow-sm' :
+                          i === 2 ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-sm' :
+                            'bg-slate-50 text-slate-400 border-transparent'
+                      }`}>
                       #{i + 1}
                     </div>
                     <img
@@ -719,7 +717,7 @@ export default function AdminDashboard() {
                   else toast.error(result.payload);
                 }}
                 disabled={processing[rejectModal._id] === 'reject'}>
-                {processing[rejectModal._id] === 'reject' ? <Loader2 size={16} className="animate-spin" /> : null} 
+                {processing[rejectModal._id] === 'reject' ? <Loader2 size={16} className="animate-spin" /> : null}
                 Reject
               </button>
             </div>
