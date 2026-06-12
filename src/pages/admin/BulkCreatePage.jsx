@@ -137,7 +137,11 @@ export default function BulkCreatePage() {
               <code key={col} className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm">{col}</code>
             ))}
           </div>
-          <p className="text-blue-800/80">Each student will automatically receive a welcome email with their secure login credentials. They must change password on first login.</p>
+          <p className="text-blue-800/80 mb-4">Each student will automatically receive a welcome email with their secure login credentials. They must change password on first login.</p>
+          <div className="border-t border-blue-200/50 pt-4">
+            <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Sample Excel Format</p>
+            <img src="/upload/register.jpeg" alt="Sample Excel Format" className="rounded-xl shadow-sm border border-blue-200/60 max-w-full h-auto object-contain bg-white" />
+          </div>
         </div>
       </motion.div>
 
