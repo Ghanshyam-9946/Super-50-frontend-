@@ -63,7 +63,7 @@ function AddStudentModal({ onClose }) {
   );
 }
 
-export default function StudentsPage() {
+export default function StudentsPage({ isSuper50 = false }) {
   const dispatch = useDispatch();
   const { allStudents, filters, loading, total } = useSelector((s) => s.students);
   const { user } = useSelector((s) => s.auth);
@@ -76,8 +76,14 @@ export default function StudentsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   useEffect(() => {
-    dispatch(fetchAllStudents({ department: dept || undefined, batch: batch || undefined, search: search || undefined, sort: `${sortDir === 'desc' ? '-' : ''}${sortField}` }));
-  }, [dispatch, dept, batch, search, sortField, sortDir]);
+    dispatch(fetchAllStudents({ 
+      department: dept || undefined, 
+      batch: batch || undefined, 
+      search: search || undefined, 
+      sort: `${sortDir === 'desc' ? '-' : ''}${sortField}`,
+      isSuper50: isSuper50 ? 'true' : undefined
+    }));
+  }, [dispatch, dept, batch, search, sortField, sortDir, isSuper50]);
 
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -92,7 +98,7 @@ export default function StudentsPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2">
-          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">Student Directory</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">{isSuper50 ? 'Super 50 Students' : 'Student Directory'}</h1>
           <p className="text-[var(--text-secondary)] font-medium">Manage {total} students, view profiles, and update status.</p>
         </motion.div>
         {user?.role === 'admin' && (

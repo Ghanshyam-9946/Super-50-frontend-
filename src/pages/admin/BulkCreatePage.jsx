@@ -140,7 +140,14 @@ export default function BulkCreatePage() {
           <p className="text-blue-800/80 mb-4">Each student will automatically receive a welcome email with their secure login credentials. They must change password on first login.</p>
           <div className="border-t border-blue-200/50 pt-4">
             <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Sample Excel Format</p>
-            <img src="/upload/register.jpeg" alt="Sample Excel Format" className="rounded-xl shadow-sm border border-blue-200/60 max-w-full h-auto object-contain bg-white" />
+            <a 
+              href="/upload/register.xlsx" 
+              download="register.xlsx"
+              className="inline-flex items-center gap-2 bg-white border border-blue-200 hover:border-blue-400 text-blue-700 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
+            >
+              <FileSpreadsheet size={18} />
+              Download Sample Excel File
+            </a>
           </div>
         </div>
       </motion.div>

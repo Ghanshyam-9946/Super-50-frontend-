@@ -44,6 +44,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
+    { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
   ];
 
   const guideLinks = [
@@ -56,6 +57,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
     { to: '/pms/admin', icon: Database, label: 'PMS Admin' },

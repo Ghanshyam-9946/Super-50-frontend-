@@ -117,6 +117,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/students" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage /></RoleGuard>
         } />
+        <Route path="/admin/super50-students" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage isSuper50={true} /></RoleGuard>
+        } />
         <Route path="/admin/verify" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><VerifyCertificatesPage /></RoleGuard>
         } />
@@ -148,6 +151,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/teacher/students" element={
           <RoleGuard allowed={['teacher']}><StudentsPage /></RoleGuard>
+        } />
+        <Route path="/teacher/super50-students" element={
+          <RoleGuard allowed={['teacher']}><StudentsPage isSuper50={true} /></RoleGuard>
         } />
         <Route path="/teacher/verify" element={
           <RoleGuard allowed={['teacher']}><VerifyCertificatesPage /></RoleGuard>

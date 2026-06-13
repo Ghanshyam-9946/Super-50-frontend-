@@ -62,6 +62,30 @@ const Super50SelectionPage = () => {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-8"
         >
+          <div className="bg-blue-50 border border-blue-200 shadow-sm rounded-[1.2rem] p-6 flex gap-4">
+            <Info className="text-blue-500 shrink-0" size={24} />
+            <div className="text-[13px] text-blue-900 leading-relaxed font-medium w-full">
+              <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">How it works</p>
+              Students whose emails match the uploaded list will instantly gain access to:
+              <ul className="list-disc list-inside mt-3 space-y-2 font-bold text-blue-800/80 mb-4">
+                <li>Exclusive Placement Drives</li>
+                <li>High-Impact Project Tracking</li>
+                <li>Ecosystem Leaderboard Rank</li>
+              </ul>
+              <div className="border-t border-blue-200/50 pt-4 mt-2">
+                <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Sample Excel Format</p>
+                <a 
+                  href="/upload/super%2050.xlsx" 
+                  download="super 50.xlsx"
+                  className="inline-flex items-center gap-2 bg-white border border-blue-200 hover:border-blue-400 text-blue-700 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
+                >
+                  <FileSpreadsheet size={18} />
+                  Download Sample Excel File
+                </a>
+              </div>
+            </div>
+          </div>
+
           <div className="glass-card p-8 space-y-8 shadow-sm">
             <h3 className="text-xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
               <Upload size={24} className="text-[var(--primary)]" /> Upload Selection List
@@ -105,19 +129,6 @@ const Super50SelectionPage = () => {
               )}
               {loading ? 'Processing Selection...' : 'Apply Selection'}
             </button>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 shadow-sm rounded-[1.2rem] p-6 flex gap-4">
-            <Info className="text-blue-500 shrink-0" size={24} />
-            <div className="text-[13px] text-blue-900 leading-relaxed font-medium">
-              <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">How it works</p>
-              Students whose emails match the uploaded list will instantly gain access to:
-              <ul className="list-disc list-inside mt-3 space-y-2 font-bold text-blue-800/80">
-                <li>Exclusive Placement Drives</li>
-                <li>High-Impact Project Tracking</li>
-                <li>Ecosystem Leaderboard Rank</li>
-              </ul>
-            </div>
           </div>
         </motion.div>
 
