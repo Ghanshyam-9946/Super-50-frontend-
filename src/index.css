@@ -13,6 +13,12 @@
   --text-secondary: #6B7280;
   --border-light: #E5E7EB;
 
+  /* Theme-specific background helpers */
+  --bg-modal: #FFFFFF;
+  --bg-hover: #F1F5F9;
+  --bg-input: #F8FAFC;
+  --bg-select: #FFFFFF;
+
   /* Purple Branding */
   --primary: #8B5CF6;
   --primary-dark: #7C3AED;
@@ -38,6 +44,16 @@
   --text-primary: #FFFFFF;
   --text-secondary: #9CA3AF;
   --border-light: rgba(255, 255, 255, 0.08);
+
+  /* Theme-specific background helpers in Dark Mode */
+  --bg-modal: #0B0B0F;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+  --bg-input: rgba(255, 255, 255, 0.04);
+  --bg-select: #111116;
+
+  /* Boost primary purples for higher contrast in dark mode */
+  --primary: #A78BFA;
+  --primary-light: #C084FC;
 
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3);
   --shadow-elevated: 0 10px 30px rgba(0, 0, 0, 0.4);

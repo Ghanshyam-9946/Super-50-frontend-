@@ -52,7 +52,7 @@ export default function VerifyGuidesPage() {
       {/* Header */}
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-[var(--primary-dark)] text-[11px] font-black uppercase tracking-widest w-max mb-2 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[var(--primary)] text-[11px] font-black uppercase tracking-widest w-max mb-2 shadow-sm">
             <UserPlus size={14} />
             <span>Guide Management</span>
           </div>
@@ -72,7 +72,7 @@ export default function VerifyGuidesPage() {
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
           />
         </div>
       </div>
@@ -98,11 +98,11 @@ export default function VerifyGuidesPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: Math.min(idx * 0.05, 0.5) }}
                   key={guide._id}
-                  className="hover:bg-slate-50 transition-colors"
+                  className="hover:bg-[var(--bg-hover)] transition-colors"
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full border border-slate-200 shadow-sm flex items-center justify-center font-black text-white text-sm" style={{ background: `hsl(${(guide.name.charCodeAt(0) * 37) % 360}, 60%, 40%)` }}>
+                      <div className="w-10 h-10 rounded-full border border-[var(--border-light)] shadow-sm flex items-center justify-center font-black text-white text-sm" style={{ background: `hsl(${(guide.name.charCodeAt(0) * 37) % 360}, 60%, 40%)` }}>
                         {guide.name[0]}
                       </div>
                       <div>
@@ -112,20 +112,20 @@ export default function VerifyGuidesPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="bg-slate-50 text-slate-600 border border-slate-200 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
+                    <span className="bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
                       {guide.role === 'guide' ? 'Project Guide' : guide.role === 'pms_admin' ? 'PMS Admin' : guide.role === 'super50_admin' ? 'Super 50 Admin' : 'T&P Admin'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-bold text-slate-600">
+                  <td className="px-6 py-4 font-bold text-[var(--text-primary)]">
                     {guide.department || 'N/A'}
                   </td>
                   <td className="px-6 py-4">
                     {guide.isActive ? (
-                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
+                      <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
                         <ShieldCheck size={14} /> Active
                       </span>
                     ) : (
-                      <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
+                      <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
                         <ShieldAlert size={14} /> Pending
                       </span>
                     )}
@@ -135,8 +135,8 @@ export default function VerifyGuidesPage() {
                       onClick={() => toggleStatus(guide._id)}
                       className={`inline-flex items-center gap-2 px-4 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border ${
                         guide.isActive
-                          ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                          : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'
+                          ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20'
+                          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
                       }`}
                     >
                       {guide.isActive ? <><X size={14} /> Revoke Access</> : <><Check size={14} /> Approve User</>}

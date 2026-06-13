@@ -74,7 +74,7 @@ export default function LeaderboardPage({ limit }) {
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
-            className="w-full bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
             placeholder="Search by name or enrollment..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -84,7 +84,7 @@ export default function LeaderboardPage({ limit }) {
         <div className="relative">
           <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <select
-            className="bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[200px]"
+            className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[200px]"
             value={dept}
             onChange={(e) => setDept(e.target.value)}
             id="leaderboard-dept-filter"
@@ -116,13 +116,13 @@ export default function LeaderboardPage({ limit }) {
       {/* Full Table */}
       <motion.div className="glass-card overflow-hidden"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-        <div className="p-6 border-b border-[var(--border-light)] flex justify-between items-center bg-slate-50/50">
+        <div className="p-6 border-b border-[var(--border-light)] flex justify-between items-center bg-[var(--bg-app)]">
           <span className="font-display font-black text-lg text-[var(--text-primary)]">All Students ({filtered.length})</span>
         </div>
 
         {loading ? (
           <div className="p-6 flex flex-col gap-3">
-            {[1, 2, 3, 4, 5].map(i => <div key={i} className="animate-pulse bg-slate-100 rounded-xl h-14" />)}
+            {[1, 2, 3, 4, 5].map(i => <div key={i} className="animate-pulse bg-[var(--bg-hover)] rounded-xl h-14" />)}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -143,7 +143,7 @@ export default function LeaderboardPage({ limit }) {
                   const rColor = rankColors[student.rank];
                   return (
                     <motion.tr key={student._id}
-                      className="hover:bg-slate-50 transition-colors"
+                      className="hover:bg-[var(--bg-hover)] transition-colors"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.03 }}
@@ -151,7 +151,7 @@ export default function LeaderboardPage({ limit }) {
                       {isMe && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--primary)]" />}
                       <td className="px-6 py-4 font-black text-lg" style={{ color: rColor || '#94a3b8', width: 80 }}>
                         {rankEmojis[student.rank] || (
-                          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs text-slate-500">
+                          <div className="w-8 h-8 rounded-full bg-[var(--bg-hover)] flex items-center justify-center text-xs text-[var(--text-secondary)]">
                             #{student.rank}
                           </div>
                         )}
@@ -160,12 +160,12 @@ export default function LeaderboardPage({ limit }) {
                         <div className="flex items-center gap-4">
                           <img
                             src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                            className="w-10 h-10 rounded-full border border-slate-200 shadow-sm"
+                            className="w-10 h-10 rounded-full border border-[var(--border-light)] shadow-sm"
                             alt={student.name}
                           />
                           <div>
                             <div className="font-bold text-[14px] text-[var(--text-primary)]">
-                              {student.name} {isMe && <span className="text-[9px] bg-purple-100 text-[var(--primary-dark)] px-2 py-0.5 rounded uppercase font-black tracking-widest ml-2">You</span>}
+                              {student.name} {isMe && <span className="text-[9px] bg-purple-500/10 text-[var(--primary)] px-2 py-0.5 rounded uppercase font-black tracking-widest ml-2">You</span>}
                             </div>
                             <div className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 mt-0.5">{student.enrollmentNumber}</div>
                           </div>
@@ -175,7 +175,7 @@ export default function LeaderboardPage({ limit }) {
                       <td className="px-6 py-4 font-bold">{student.batch}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-2 bg-slate-100 rounded-full min-w-[80px] overflow-hidden border border-slate-200">
+                          <div className="flex-1 h-2 bg-[var(--bg-input)] rounded-full min-w-[80px] overflow-hidden border border-[var(--border-light)]">
                             <div 
                               className="h-full rounded-full transition-all duration-500" 
                               style={{ 
@@ -222,7 +222,7 @@ function PodiumCard({ student, rank, height }) {
       
       <img
         src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-        className="w-16 h-16 rounded-full border-[3px] shadow-sm z-10 bg-white"
+        className="w-16 h-16 rounded-full border-[3px] shadow-sm z-10 bg-[var(--bg-modal)]"
         style={{ borderColor: color }}
         alt={student.name}
       />

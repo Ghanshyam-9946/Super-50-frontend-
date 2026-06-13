@@ -84,9 +84,9 @@ export default function AdminDashboard() {
   }), [scoreDistribution]);
 
   const statCards = useMemo(() => [
-    { icon: Users, label: 'Super 50 Students', value: adminStats?.super50Count || 0, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-    { icon: Users, label: 'Regular Students', value: adminStats?.regularCount || 0, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { icon: TrendingUp, label: 'Avg Performance', value: `${Math.round(adminStats?.stats?.avgScore || 0)}`, unit: '/100', color: 'text-amber-500', bg: 'bg-amber-50' },
+    { icon: Users, label: 'Super 50 Students', value: adminStats?.super50Count || 0, color: 'text-indigo-500', bg: 'bg-indigo-500/10 border-indigo-500/20' },
+    { icon: Users, label: 'Regular Students', value: adminStats?.regularCount || 0, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20' },
+    { icon: TrendingUp, label: 'Avg Performance', value: `${Math.round(adminStats?.stats?.avgScore || 0)}`, unit: '/100', color: 'text-amber-500', bg: 'bg-amber-500/10 border-amber-500/20' },
   ], [adminStats]);
 
   return (
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
 
       {/* Student Placement History Search */}
       <div className="relative z-40">
-        <div className={`bg-white border border-[var(--border-light)] rounded-[1.2rem] p-4 flex items-center gap-4 transition-all duration-300 shadow-sm ${isSearchFocused ? 'ring-4 ring-purple-500/20 shadow-md border-purple-300' : ''}`}>
+        <div className={`bg-[var(--bg-select)] border border-[var(--border-light)] rounded-[1.2rem] p-4 flex items-center gap-4 transition-all duration-300 shadow-sm ${isSearchFocused ? 'ring-4 ring-purple-500/20 shadow-md border-[var(--primary)]' : ''}`}>
           <Search className="text-[var(--primary)]" size={20} />
           <input
             type="text"
@@ -140,7 +140,7 @@ export default function AdminDashboard() {
             className="flex-1 bg-transparent border-none outline-none text-[var(--text-primary)] placeholder-slate-400 text-sm font-medium"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600 bg-slate-50 p-1 rounded-md">
+            <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-hover)] p-1 rounded-md">
               <X size={16} />
             </button>
           )}
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-xl border border-[var(--border-light)] rounded-[1.2rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] overflow-hidden max-h-80 overflow-y-auto custom-scrollbar"
+              className="absolute top-full left-0 right-0 mt-3 bg-[var(--bg-modal)]/95 backdrop-blur-xl border border-[var(--border-light)] rounded-[1.2rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] overflow-hidden max-h-80 overflow-y-auto custom-scrollbar"
             >
               {allStudents
                 .filter(s =>
@@ -169,12 +169,12 @@ export default function AdminDashboard() {
                       setSearchQuery('');
                       setIsSearchFocused(false);
                     }}
-                    className="p-4 border-b border-slate-100 hover:bg-purple-50/50 cursor-pointer flex items-center justify-between group transition-colors"
+                    className="p-4 border-b border-[var(--border-light)] hover:bg-[var(--bg-hover)] cursor-pointer flex items-center justify-between group transition-colors"
                   >
                     <div className="flex items-center gap-4">
                       <img
                         src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                        className="w-10 h-10 rounded-full border border-slate-200"
+                        className="w-10 h-10 rounded-full border border-[var(--border-light)]"
                         alt={student.name}
                       />
                       <div>
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
 
       {!loadingDetails && !selectedStudentDetails && (
         <div className="glass-card p-12 text-center flex flex-col items-center justify-center gap-4 border-dashed">
-          <div className="w-16 h-16 rounded-3xl bg-indigo-50 flex items-center justify-center text-indigo-400 border border-indigo-100 shadow-sm">
+          <div className="w-16 h-16 rounded-3xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-sm">
             <Search size={28} />
           </div>
           <h3 className="text-lg font-display font-black text-[var(--text-primary)]">Student Record Lookup</h3>
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
           {/* Close button */}
           <button
             onClick={() => setSelectedStudentDetails(null)}
-            className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 bg-slate-50 p-2 rounded-full transition-colors"
+            className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors"
           >
             <X size={20} />
           </button>
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
                 <h2 className="text-2xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
                   {selectedStudentDetails.student.name}
                   {selectedStudentDetails.student.isSuper50 && (
-                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.1em] px-2.5 py-1 rounded-md bg-amber-50 text-amber-600 border border-amber-200">
+                    <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.1em] px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20">
                       <Star size={12} className="fill-amber-500" /> Super 50
                     </span>
                   )}
@@ -272,7 +272,7 @@ export default function AdminDashboard() {
             {/* Placement Details */}
             <div className="space-y-5">
               <h3 className="text-lg font-display font-black text-[var(--text-primary)] flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-purple-50 text-[var(--primary)] border border-purple-100">
+                <div className="p-1.5 rounded-lg bg-purple-500/10 text-[var(--primary)] border border-purple-500/20">
                   <Briefcase size={18} />
                 </div>
                 Placement History
@@ -280,15 +280,15 @@ export default function AdminDashboard() {
 
               {/* Placement Stats Summary */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                <div className="p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--border-light)] text-center">
                   <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80">Drives Appeared</div>
                   <div className="text-2xl font-display font-black text-[var(--text-primary)] mt-1">
                     {selectedStudentDetails.placementApplications?.length || 0}
                   </div>
                 </div>
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
+                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center">
                   <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80">Drives Qualified</div>
-                  <div className="text-2xl font-display font-black text-emerald-600 mt-1">
+                  <div className="text-2xl font-display font-black text-emerald-500 mt-1">
                     {selectedStudentDetails.placementApplications?.filter(app => app.status === 'selected' || app.status === 'placed').length || 0}
                   </div>
                 </div>
@@ -297,15 +297,15 @@ export default function AdminDashboard() {
               <div className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-4 space-y-4 max-h-60 overflow-y-auto custom-scrollbar shadow-inner-sm">
                 {selectedStudentDetails.placementApplications?.length > 0 ? (
                   selectedStudentDetails.placementApplications.map((app, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl shadow-sm">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-[var(--bg-select)] border border-[var(--border-light)] rounded-xl shadow-sm">
                       <div>
                         <div className="font-bold text-[14px] text-[var(--text-primary)]">{app.drive?.companyName}</div>
                         <div className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">{app.drive?.package || 'N/A'} package</div>
                       </div>
                       <div>
-                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-[0.1em] ${app.status === 'selected' || app.status === 'placed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
-                            app.status === 'eligible' || app.status === 'applied' ? 'bg-purple-50 text-[var(--primary)] border border-purple-200' :
-                              'bg-red-50 text-red-600 border border-red-200'
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-[0.1em] ${app.status === 'selected' || app.status === 'placed' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                            app.status === 'eligible' || app.status === 'applied' ? 'bg-purple-500/10 text-[var(--primary)] border border-purple-500/20' :
+                              'bg-red-500/10 text-red-500 border border-red-500/20'
                           }`}>
                           {app.status}
                         </span>
@@ -321,7 +321,7 @@ export default function AdminDashboard() {
             {/* PMS Details */}
             <div className="space-y-5">
               <h3 className="text-lg font-display font-black text-[var(--text-primary)] flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-blue-50 text-blue-500 border border-blue-100">
+                <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20">
                   <FileText size={18} />
                 </div>
                 Academic Project (PMS)
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
               <div className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-6 shadow-inner-sm">
                 {selectedStudentDetails.team ? (
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+                    <div className="flex justify-between items-center pb-4 border-b border-[var(--border-light)]">
                       <div>
                         <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 block">Group Number</span>
                         <span className="font-display font-black text-[var(--text-primary)] text-xl mt-0.5">{selectedStudentDetails.team.groupNo}</span>
@@ -346,11 +346,11 @@ export default function AdminDashboard() {
                     <div className="pt-2">
                       <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 block mb-2">Team Members</span>
                       <div className="flex flex-wrap gap-2">
-                        <span className="px-2.5 py-1 bg-purple-50 text-[var(--primary)] border border-purple-200 rounded-md text-[11px] font-bold">
+                        <span className="px-2.5 py-1 bg-purple-500/10 text-[var(--primary)] border border-purple-500/20 rounded-md text-[11px] font-bold">
                           {selectedStudentDetails.team.teamLeader?.name} (Leader)
                         </span>
                         {selectedStudentDetails.team.members?.map((m, idx) => (
-                          <span key={idx} className="px-2.5 py-1 bg-white border border-slate-200 shadow-sm rounded-md text-[11px] font-bold text-slate-600">
+                          <span key={idx} className="px-2.5 py-1 bg-[var(--bg-select)] border border-[var(--border-light)] shadow-sm rounded-md text-[11px] font-bold text-[var(--text-secondary)]">
                             {m.student?.name} ({m.role})
                           </span>
                         ))}
@@ -380,7 +380,7 @@ export default function AdminDashboard() {
             className="glass-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-300 hover:-translate-y-1"
           >
             <div className="flex items-center justify-between mb-6">
-              <div className={`p-3.5 rounded-[1rem] ${card.bg} ${card.color} border border-slate-100`}>
+              <div className={`p-3.5 rounded-[1rem] ${card.bg} ${card.color} border border-[var(--border-light)]`}>
                 <card.icon size={24} />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">Real-time</span>
@@ -414,13 +414,13 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-4">
                   <img
                     src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                    className="w-12 h-12 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
+                    className="w-12 h-12 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)]"
                     alt={student.name}
                   />
                   <div>
                     <div className="text-[15px] font-bold text-[var(--text-primary)] flex items-center gap-2">
                       {student.name}
-                      {student.isSuper50 && <span className="bg-amber-50 text-amber-600 text-[9px] px-2 py-0.5 rounded border border-amber-200 uppercase font-black tracking-widest">Super 50</span>}
+                      {student.isSuper50 && <span className="bg-amber-500/10 text-amber-500 text-[9px] px-2 py-0.5 rounded border border-amber-500/20 uppercase font-black tracking-widest">Super 50</span>}
                     </div>
                     <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-1 opacity-80">
                       {student.enrollmentNumber} • {student.department}
@@ -455,7 +455,7 @@ export default function AdminDashboard() {
                 <select
                   value={selectedDept}
                   onChange={(e) => setSelectedDept(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer shadow-sm"
+                  className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-xl px-4 py-2.5 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all cursor-pointer shadow-sm"
                 >
                   <option value="All">All Departments</option>
                   {filters.departments?.map(d => <option key={d} value={d}>{d}</option>)}
@@ -487,18 +487,18 @@ export default function AdminDashboard() {
                   <div
                     key={student._id}
                     onClick={() => handleSelectStudent(student)}
-                    className="flex items-center gap-4 group cursor-pointer bg-white border border-slate-100 hover:border-purple-200 hover:shadow-sm p-3 rounded-[1rem] transition-all"
+                    className="flex items-center gap-4 group cursor-pointer bg-[var(--bg-select)] border border-[var(--border-light)] hover:border-purple-500/30 hover:shadow-sm p-3 rounded-[1rem] transition-all"
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[11px] border ${i === 0 ? 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm' :
-                        i === 1 ? 'bg-slate-100 text-slate-500 border-slate-200 shadow-sm' :
-                          i === 2 ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-sm' :
-                            'bg-slate-50 text-slate-400 border-transparent'
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-[11px] border ${i === 0 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 shadow-sm' :
+                        i === 1 ? 'bg-[var(--bg-hover)] text-[var(--text-secondary)] border-[var(--border-light)] shadow-sm' :
+                          i === 2 ? 'bg-orange-500/10 text-orange-500 border-orange-500/20 shadow-sm' :
+                            'bg-[var(--bg-input)] text-[var(--text-secondary)] border-transparent'
                       }`}>
                       #{i + 1}
                     </div>
                     <img
                       src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                      className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100 group-hover:scale-110 transition-transform"
+                      className="w-10 h-10 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)] group-hover:scale-110 transition-transform"
                       alt={student.name}
                     />
                     <div className="flex-1 min-w-0">
@@ -512,7 +512,7 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
-              <Link to="/leaderboard" className="w-full inline-block text-center mt-6 py-3.5 text-xs font-black uppercase tracking-widest text-[var(--primary)] border border-purple-200 rounded-xl hover:bg-purple-50 transition-all">
+              <Link to="/leaderboard" className="w-full inline-block text-center mt-6 py-3.5 text-xs font-black uppercase tracking-widest text-[var(--primary)] border border-[var(--primary)]/20 rounded-xl hover:bg-[var(--bg-hover)] transition-all">
                 View Full Leaderboard
               </Link>
             </div>
@@ -523,26 +523,26 @@ export default function AdminDashboard() {
             <div className="glass-card p-8">
               <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-8">System Alerts</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex gap-4 items-start p-6 rounded-[1.2rem] bg-orange-50 border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-12 h-12 rounded-[1rem] bg-white border border-orange-100 flex items-center justify-center shrink-0 text-orange-500 shadow-sm">
+                <div className="flex gap-4 items-start p-6 rounded-[1.2rem] bg-orange-500/10 border border-orange-500/20 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 rounded-[1rem] bg-[var(--bg-card)] border border-orange-500/20 flex items-center justify-center shrink-0 text-orange-500 shadow-sm">
                     <ShieldCheck size={24} />
                   </div>
                   <div>
-                    <div className="text-[15px] font-bold text-orange-900">Certificate Verification</div>
-                    <p className="text-[13px] text-orange-700/80 font-medium mt-1">There are {pendingCertificates.length} certificates and {pendingActivities?.length || 0} activities waiting for approval.</p>
-                    <Link to="/admin/verify" className="inline-flex items-center gap-1 mt-3 text-xs font-black uppercase tracking-widest text-orange-600 hover:text-orange-700 transition-colors bg-white px-3 py-1.5 rounded-lg border border-orange-200">
+                    <div className="text-[15px] font-bold text-[var(--text-primary)]">Certificate Verification</div>
+                    <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">There are {pendingCertificates.length} certificates and {pendingActivities?.length || 0} activities waiting for approval.</p>
+                    <Link to="/admin/verify" className="inline-flex items-center gap-1 mt-3 text-xs font-black uppercase tracking-widest text-orange-500 transition-colors bg-[var(--bg-select)] px-3 py-1.5 rounded-lg border border-orange-500/20">
                       Verify Now <ChevronRight size={14} />
                     </Link>
                   </div>
                 </div>
-                <div className="flex gap-4 items-start p-6 rounded-[1.2rem] bg-purple-50 border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="w-12 h-12 rounded-[1rem] bg-white border border-purple-100 flex items-center justify-center shrink-0 text-[var(--primary)] shadow-sm">
+                <div className="flex gap-4 items-start p-6 rounded-[1.2rem] bg-purple-500/10 border border-purple-500/20 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 rounded-[1rem] bg-[var(--bg-card)] border border-purple-500/20 flex items-center justify-center shrink-0 text-[var(--primary)] shadow-sm">
                     <Star size={24} />
                   </div>
                   <div>
-                    <div className="text-[15px] font-bold text-purple-900">Super 50 Selection</div>
-                    <p className="text-[13px] text-purple-700/80 font-medium mt-1">Unlock premium features for high-performing students.</p>
-                    <Link to="/admin/super50-selection" className="inline-flex items-center gap-1 mt-3 text-xs font-black uppercase tracking-widest text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors bg-white px-3 py-1.5 rounded-lg border border-purple-200">
+                    <div className="text-[15px] font-bold text-[var(--text-primary)]">Super 50 Selection</div>
+                    <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Unlock premium features for high-performing students.</p>
+                    <Link to="/admin/super50-selection" className="inline-flex items-center gap-1 mt-3 text-xs font-black uppercase tracking-widest text-[var(--primary)] hover:text-[var(--primary-dark)] transition-colors bg-[var(--bg-select)] px-3 py-1.5 rounded-lg border border-purple-500/20">
                       Open Portal <ChevronRight size={14} />
                     </Link>
                   </div>
@@ -555,7 +555,7 @@ export default function AdminDashboard() {
                   <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-6">Pending Certificates</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {pendingCertificates.slice(0, 4).map((cert) => (
-                      <div key={cert._id} className="bg-white border border-slate-200 shadow-sm hover:border-[var(--primary)] transition-all rounded-[1.2rem] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                      <div key={cert._id} className="bg-[var(--bg-select)] border border-[var(--border-light)] shadow-sm hover:border-[var(--primary)] transition-all rounded-[1.2rem] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-[14px] text-[var(--text-primary)] truncate">{cert.title}</div>
                           <div className="text-[12px] text-[var(--text-secondary)] font-medium mt-0.5 truncate">By {cert.student?.name} • {cert.issuedBy}</div>
@@ -599,14 +599,14 @@ export default function AdminDashboard() {
                   <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-6">Pending Activities</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {pendingActivities.slice(0, 4).map((act) => (
-                      <div key={act._id} className="bg-white border border-slate-200 shadow-sm hover:border-blue-300 transition-all rounded-[1.2rem] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                      <div key={act._id} className="bg-[var(--bg-select)] border border-[var(--border-light)] shadow-sm hover:border-blue-300 transition-all rounded-[1.2rem] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-[14px] text-[var(--text-primary)] truncate">{act.title}</div>
                           <div className="text-[12px] text-[var(--text-secondary)] font-medium mt-0.5 truncate">By {act.student?.name} • {act.type}</div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                           <button
-                            className="bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 flex items-center gap-1.5 py-2 px-3 text-[11px] rounded-lg font-black uppercase tracking-wider transition-colors"
+                            className="bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] hover:bg-[var(--bg-hover)] flex items-center gap-1.5 py-2 px-3 text-[11px] rounded-lg font-black uppercase tracking-wider transition-colors"
                             onClick={() => setActivityDetailsModal(act)}
                           >
                             <Eye size={14} /> Details
@@ -649,11 +649,11 @@ export default function AdminDashboard() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {allStudents.slice(0, 6).map((student) => (
-                      <div key={student._id} className="bg-[var(--bg-app)] border border-slate-200 rounded-[1.2rem] p-4 flex items-center justify-between group hover:border-[var(--primary)] transition-all cursor-pointer" onClick={() => setSelectedStudentForHistory(student)}>
+                      <div key={student._id} className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-4 flex items-center justify-between group hover:border-[var(--primary)] transition-all cursor-pointer" onClick={() => setSelectedStudentForHistory(student)}>
                         <div className="flex items-center gap-4">
                           <img
                             src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                            className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-slate-100"
+                            className="w-10 h-10 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)]"
                             alt={student.name}
                           />
                           <div>
@@ -664,7 +664,7 @@ export default function AdminDashboard() {
                             <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] mt-0.5 opacity-80">{student.enrollmentNumber}</div>
                           </div>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center border border-slate-200 group-hover:bg-[var(--primary)] group-hover:border-[var(--primary)] group-hover:text-white transition-all duration-300">
+                        <div className="w-8 h-8 rounded-full bg-[var(--bg-input)] flex items-center justify-center border border-[var(--border-light)] group-hover:bg-[var(--primary)] group-hover:border-[var(--primary)] group-hover:text-white transition-all duration-300">
                           <Eye size={14} className="text-slate-400 group-hover:text-white" />
                         </div>
                       </div>
@@ -692,16 +692,16 @@ export default function AdminDashboard() {
       {/* Reject Modal */}
       {rejectModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifycontent: 'center', zIndex: 1100 }}>
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white border border-slate-200 shadow-xl rounded-3xl" style={{ width: '90%', maxWidth: 420, padding: 32 }}>
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center border border-red-100 mb-4">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl" style={{ width: '90%', maxWidth: 420, padding: 32 }}>
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20 mb-4">
               <X size={24} />
             </div>
             <h3 className="text-xl font-display font-black text-[var(--text-primary)] mb-2">Reject {rejectModal.isActivity ? 'Activity' : 'Certificate'}</h3>
             <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
-              Are you sure you want to reject <strong className="text-slate-900">{rejectModal.title}</strong>? This action cannot be undone.
+              Are you sure you want to reject <strong className="text-[var(--text-primary)]">{rejectModal.title}</strong>? This action cannot be undone.
             </p>
             <div className="flex gap-3">
-              <button className="flex-1 bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 py-3 rounded-xl text-[13px] font-bold transition-colors" onClick={() => setRejectModal(null)}>Cancel</button>
+              <button className="flex-1 bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] hover:bg-[var(--bg-hover)] py-3 rounded-xl text-[13px] font-bold transition-colors" onClick={() => setRejectModal(null)}>Cancel</button>
               <button className="flex-1 bg-red-500 text-white hover:bg-red-600 py-3 rounded-xl text-[13px] font-bold transition-colors shadow-sm shadow-red-500/20 flex items-center justify-center gap-2"
                 onClick={async () => {
                   setProcessing((p) => ({ ...p, [rejectModal._id]: 'reject' }));
@@ -728,40 +728,40 @@ export default function AdminDashboard() {
       {/* Activity Details Modal */}
       {activityDetailsModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifycontent: 'center', zIndex: 1100 }}>
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white border border-slate-200 shadow-xl rounded-[1.5rem]" style={{ width: '90%', maxWidth: 500, padding: 32 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-[1.5rem]" style={{ width: '90%', maxWidth: 500, padding: 32 }}>
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Activity Details</h3>
                 <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Review the submitted activity information.</p>
               </div>
-              <button onClick={() => setActivityDetailsModal(null)} className="text-slate-400 hover:text-slate-700 bg-slate-50 p-2 rounded-full transition-colors border border-slate-100">
+              <button onClick={() => setActivityDetailsModal(null)} className="text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors border border-[var(--border-light)]">
                 <X size={20} />
               </button>
             </div>
 
             <div className="space-y-4 text-[13px]">
-              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Title</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-[var(--border-light)] pb-3">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">Title</span>
                 <span className="col-span-2 font-bold text-[var(--text-primary)]">{activityDetailsModal.title}</span>
               </div>
-              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Type</span>
-                <span className="col-span-2 font-bold text-[var(--primary)] uppercase tracking-wider text-[11px] bg-purple-50 w-max px-2 py-0.5 rounded border border-purple-100">{activityDetailsModal.type}</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-[var(--border-light)] pb-3">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">Type</span>
+                <span className="col-span-2 font-bold text-[var(--primary)] uppercase tracking-wider text-[11px] bg-purple-500/10 w-max px-2 py-0.5 rounded border border-purple-500/20">{activityDetailsModal.type}</span>
               </div>
               <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Platform</span>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">Platform</span>
                 <span className="col-span-2 font-bold text-[var(--text-primary)]">{activityDetailsModal.platform || 'N/A'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Duration</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-[var(--border-light)] pb-3">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">Duration</span>
                 <span className="col-span-2 font-bold text-[var(--text-primary)]">{activityDetailsModal.duration || 'N/A'}</span>
               </div>
-              <div className="grid grid-cols-3 gap-4 border-b border-slate-100 pb-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Description</span>
-                <span className="col-span-2 font-medium text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">{activityDetailsModal.description || 'N/A'}</span>
+              <div className="grid grid-cols-3 gap-4 border-b border-[var(--border-light)] pb-3">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">Description</span>
+                <span className="col-span-2 font-medium text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border-light)]">{activityDetailsModal.description || 'N/A'}</span>
               </div>
               <div className="grid grid-cols-3 gap-4 pb-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pt-0.5">Link</span>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest pt-0.5">Link</span>
                 <span className="col-span-2 font-medium">
                   {activityDetailsModal.link ? (
                     <a href={activityDetailsModal.link} target="_blank" rel="noreferrer" className="text-[var(--primary)] font-bold hover:underline break-all">
@@ -772,8 +772,8 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="flex justify-end mt-8 pt-6 border-t border-slate-100">
-              <button className="bg-slate-900 text-white hover:bg-slate-800 px-6 py-3 rounded-xl text-[13px] font-bold transition-colors" onClick={() => setActivityDetailsModal(null)}>Close Details</button>
+            <div className="flex justify-end mt-8 pt-6 border-t border-[var(--border-light)]">
+              <button className="bg-purple-600 text-white hover:bg-purple-700 px-6 py-3 rounded-xl text-[13px] font-bold transition-colors shadow-md shadow-purple-500/20" onClick={() => setActivityDetailsModal(null)}>Close Details</button>
             </div>
           </motion.div>
         </div>

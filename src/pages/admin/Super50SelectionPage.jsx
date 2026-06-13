@@ -46,7 +46,7 @@ const Super50SelectionPage = () => {
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
         </Link>
         <div className="flex flex-col md:flex-row md:items-center gap-6 glass-card p-8 rounded-3xl">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 border border-amber-200 shadow-sm shrink-0">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20 shadow-sm shrink-0">
             <Star size={32} className="fill-amber-500" />
           </div>
           <div>
@@ -62,22 +62,22 @@ const Super50SelectionPage = () => {
           animate={{ opacity: 1, x: 0 }}
           className="space-y-8"
         >
-          <div className="bg-blue-50 border border-blue-200 shadow-sm rounded-[1.2rem] p-6 flex gap-4">
+          <div className="bg-blue-500/10 border border-blue-500/20 shadow-sm rounded-[1.2rem] p-6 flex gap-4">
             <Info className="text-blue-500 shrink-0" size={24} />
-            <div className="text-[13px] text-blue-900 leading-relaxed font-medium w-full">
-              <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">How it works</p>
+            <div className="text-[13px] text-[var(--text-primary)] leading-relaxed font-medium w-full">
+              <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-500">How it works</p>
               Students whose emails match the uploaded list will instantly gain access to:
-              <ul className="list-disc list-inside mt-3 space-y-2 font-bold text-blue-800/80 mb-4">
+              <ul className="list-disc list-inside mt-3 space-y-2 text-[var(--text-secondary)] mb-4">
                 <li>Exclusive Placement Drives</li>
                 <li>High-Impact Project Tracking</li>
                 <li>Ecosystem Leaderboard Rank</li>
               </ul>
-              <div className="border-t border-blue-200/50 pt-4 mt-2">
-                <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Sample Excel Format</p>
+              <div className="border-t border-[var(--border-light)] pt-4 mt-2">
+                <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-500">Sample Excel Format</p>
                 <a 
                   href="/upload/super%2050.xlsx" 
                   download="super 50.xlsx"
-                  className="inline-flex items-center gap-2 bg-white border border-blue-200 hover:border-blue-400 text-blue-700 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
+                  className="inline-flex items-center gap-2 bg-[var(--bg-select)] border border-blue-500/30 hover:border-blue-500 text-blue-500 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
                 >
                   <FileSpreadsheet size={18} />
                   Download Sample Excel File
@@ -94,13 +94,13 @@ const Super50SelectionPage = () => {
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer ${
-                isDragActive ? 'border-[var(--primary)] bg-purple-50/50' : 'border-slate-200 hover:border-[var(--primary-light)] bg-slate-50/30'
+                isDragActive ? 'border-[var(--primary)] bg-purple-500/5' : 'border-[var(--border-light)] hover:border-[var(--primary-light)] bg-[var(--bg-input)]/50'
               }`}
             >
               <input {...getInputProps()} />
               {file ? (
                 <div className="space-y-3">
-                  <div className="w-20 h-20 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-4 border border-purple-100 shadow-sm">
+                  <div className="w-20 h-20 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-4 border border-purple-500/20 shadow-sm">
                     <FileSpreadsheet size={40} className="text-[var(--primary)] mx-auto" />
                   </div>
                   <p className="font-display font-black text-lg text-[var(--text-primary)]">{file.name}</p>
@@ -108,7 +108,7 @@ const Super50SelectionPage = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-sm">
+                  <div className="w-20 h-20 rounded-2xl bg-[var(--bg-hover)] flex items-center justify-center mx-auto mb-4 border border-[var(--border-light)] shadow-sm">
                     <FileSpreadsheet size={40} className="text-slate-400" />
                   </div>
                   <p className="text-[var(--text-primary)] font-display font-black text-xl">Drop Excel here or click to browse</p>
@@ -137,10 +137,10 @@ const Super50SelectionPage = () => {
           animate={{ opacity: 1, x: 0 }}
         >
           {result ? (
-            <div className="glass-card border-[2px] border-emerald-400 shadow-sm rounded-3xl p-12 text-center space-y-8 bg-emerald-50/30 relative overflow-hidden">
+            <div className="glass-card border-[2px] border-emerald-500/30 shadow-sm rounded-3xl p-12 text-center space-y-8 bg-emerald-500/5 relative overflow-hidden">
               <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-emerald-400/20 rounded-full blur-[40px] pointer-events-none"></div>
               
-              <div className="w-24 h-24 rounded-[2rem] bg-emerald-100 flex items-center justify-center mx-auto text-emerald-500 border border-emerald-200 shadow-sm relative z-10">
+              <div className="w-24 h-24 rounded-[2rem] bg-emerald-500/20 flex items-center justify-center mx-auto text-emerald-500 border border-emerald-500/30 shadow-sm relative z-10">
                 <CheckCircle size={48} />
               </div>
               <div className="relative z-10">
@@ -148,9 +148,9 @@ const Super50SelectionPage = () => {
                 <p className="text-[var(--text-secondary)] font-medium mt-3 text-lg">{result.message}</p>
               </div>
               <div className="grid grid-cols-1 gap-4 pt-4 relative z-10">
-                <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm">
+                <div className="p-8 rounded-3xl bg-[var(--bg-select)] border border-[var(--border-light)] shadow-sm">
                   <div className="text-6xl font-display font-black text-[var(--text-primary)]">{result.data?.modifiedCount || 0}</div>
-                  <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest mt-2">Students Unlocked</div>
+                  <div className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-2">Students Unlocked</div>
                 </div>
               </div>
               <button
@@ -162,7 +162,7 @@ const Super50SelectionPage = () => {
             </div>
           ) : (
             <div className="glass-card p-12 flex flex-col items-center justify-center text-center space-y-6 min-h-[500px] border-dashed">
-              <div className="w-24 h-24 bg-slate-50 border border-slate-200 rounded-3xl flex items-center justify-center shadow-sm">
+              <div className="w-24 h-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-3xl flex items-center justify-center shadow-sm">
                 <Star size={48} className="text-slate-300" />
               </div>
               <div>

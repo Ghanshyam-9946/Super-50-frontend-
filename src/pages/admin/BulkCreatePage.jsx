@@ -24,11 +24,11 @@ function AddStudentModal({ onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 bg-slate-50 p-2 rounded-full transition-colors">
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
           <X size={20} />
         </button>
-        <div className="w-12 h-12 rounded-2xl bg-purple-50 text-[var(--primary)] flex items-center justify-center border border-purple-100 mb-4 shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center border border-purple-500/20 mb-4 shadow-sm">
           <UserPlus size={24} />
         </div>
         <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Add Student Manually</h2>
@@ -45,7 +45,7 @@ function AddStudentModal({ onClose }) {
             <div key={key}>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">{label}</label>
               <input 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
                 type={type} 
                 value={form[key]} 
                 placeholder={placeholder}
@@ -112,7 +112,7 @@ export default function BulkCreatePage() {
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2">
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)] flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center text-[var(--primary)] border border-purple-200 shadow-sm shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-[var(--primary)] border border-purple-500/20 shadow-sm shrink-0">
               <UserPlus size={32} />
             </div>
             Bulk Student Creation
@@ -128,22 +128,22 @@ export default function BulkCreatePage() {
 
       {/* Info */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-blue-50 border border-blue-200 shadow-sm rounded-2xl p-6 flex gap-4">
+        className="bg-blue-500/10 border border-blue-500/20 shadow-sm rounded-2xl p-6 flex gap-4">
         <Info size={24} className="text-blue-500 shrink-0" />
-        <div className="text-[13px] text-blue-900 leading-relaxed font-medium">
-          <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Required Columns</p>
+        <div className="text-[13px] text-[var(--text-primary)] leading-relaxed font-medium">
+          <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-500">Required Columns</p>
           <div className="flex flex-wrap gap-2 mb-3">
             {['Name', 'EnrollmentNumber', 'Email', 'Department', 'Batch'].map(col => (
-              <code key={col} className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm">{col}</code>
+              <code key={col} className="bg-[var(--bg-input)] px-2 py-0.5 rounded text-blue-500 font-bold border border-[var(--border-light)] shadow-sm">{col}</code>
             ))}
           </div>
-          <p className="text-blue-800/80 mb-4">Each student will automatically receive a welcome email with their secure login credentials. They must change password on first login.</p>
-          <div className="border-t border-blue-200/50 pt-4">
-            <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Sample Excel Format</p>
+          <p className="text-[var(--text-secondary)] mb-4">Each student will automatically receive a welcome email with their secure login credentials. They must change password on first login.</p>
+          <div className="border-t border-[var(--border-light)] pt-4">
+            <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-500">Sample Excel Format</p>
             <a 
               href="/upload/register.xlsx" 
               download="register.xlsx"
-              className="inline-flex items-center gap-2 bg-white border border-blue-200 hover:border-blue-400 text-blue-700 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
+              className="inline-flex items-center gap-2 bg-[var(--bg-select)] border border-blue-500/30 hover:border-blue-500 text-blue-500 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
             >
               <FileSpreadsheet size={18} />
               Download Sample Excel File
@@ -157,20 +157,20 @@ export default function BulkCreatePage() {
         <motion.div className="glass-card shadow-sm p-10 max-w-2xl mx-auto"
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-black text-slate-500 shadow-sm border border-slate-200 text-sm">1</div>
+            <div className="w-8 h-8 rounded-full bg-[var(--bg-input)] flex items-center justify-center font-black text-[var(--text-secondary)] shadow-sm border border-[var(--border-light)] text-sm">1</div>
             <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Upload File</h3>
           </div>
           
           <div 
             {...getRootProps()} 
             className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer mb-8 ${
-              isDragActive ? 'border-[var(--primary)] bg-purple-50/50' : 'border-slate-200 hover:border-[var(--primary-light)] bg-slate-50/30'
+              isDragActive ? 'border-[var(--primary)] bg-purple-500/5' : 'border-[var(--border-light)] hover:border-[var(--primary-light)] bg-[var(--bg-input)]/50'
             }`}
           >
             <input {...getInputProps()} />
             {file ? (
               <div className="space-y-3">
-                <div className="w-20 h-20 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-2 border border-purple-100 shadow-sm">
+                <div className="w-20 h-20 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-2 border border-purple-500/20 shadow-sm">
                   {file.name.endsWith('.pdf') ? <FileText size={40} className="text-[var(--primary)] mx-auto" /> : <FileSpreadsheet size={40} className="text-[var(--primary)] mx-auto" />}
                 </div>
                 <p className="font-display font-black text-xl text-[var(--text-primary)]">{file.name}</p>
@@ -179,10 +179,10 @@ export default function BulkCreatePage() {
             ) : (
               <div className="space-y-4">
                 <div className="flex justify-center gap-4 mb-2">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-[var(--bg-hover)] flex items-center justify-center border border-[var(--border-light)] shadow-sm">
                     <FileSpreadsheet size={32} className="text-slate-400" />
                   </div>
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-[var(--bg-hover)] flex items-center justify-center border border-[var(--border-light)] shadow-sm">
                     <FileText size={32} className="text-slate-400" />
                   </div>
                 </div>
@@ -210,11 +210,11 @@ export default function BulkCreatePage() {
             </div>
             
             <div className="flex gap-3">
-              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs px-3 py-1.5 rounded-lg uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5">
+              <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-xs px-3 py-1.5 rounded-lg uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-emerald-500"></div> {bulkPreview.newCount} New
               </span>
               {bulkPreview.existingCount > 0 && (
-                <span className="bg-amber-50 text-amber-600 border border-amber-200 text-xs px-3 py-1.5 rounded-lg uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5">
+                <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xs px-3 py-1.5 rounded-lg uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-amber-500"></div> {bulkPreview.existingCount} Existing (Skip)
                 </span>
               )}
@@ -238,7 +238,7 @@ export default function BulkCreatePage() {
                 </thead>
                 <tbody className="divide-y divide-[var(--border-light)]">
                   {bulkPreview.data?.map((s, i) => (
-                    <motion.tr key={i} className="hover:bg-slate-50 transition-colors"
+                    <motion.tr key={i} className="hover:bg-[var(--bg-hover)] transition-colors"
                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.01, 0.5) }}>
                       <td className="px-6 py-4 text-slate-400 font-bold">{i + 1}</td>
                       <td className="px-6 py-4 font-bold text-[var(--text-primary)]">{s.name}</td>
@@ -248,18 +248,18 @@ export default function BulkCreatePage() {
                       <td className="px-6 py-4 font-bold">{s.batch}</td>
                       <td className="px-6 py-4">
                         {s.alreadyExists ? (
-                          <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
+                          <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
                             Exists
                           </span>
                         ) : (
-                          <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
+                          <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
                             New
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <button onClick={() => dispatch(removeStudentFromPreview(i))} 
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove from list">
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/20 rounded-lg transition-colors" title="Remove from list">
                           <Trash2 size={16} />
                         </button>
                       </td>
@@ -289,7 +289,7 @@ export default function BulkCreatePage() {
       {/* Step 3: Result */}
       {bulkResult && (
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="glass-card border-[2px] border-emerald-400 shadow-sm p-12 max-w-3xl mx-auto text-center bg-emerald-50/30 relative overflow-hidden">
+          className="glass-card border-[2px] border-emerald-500/30 shadow-sm p-12 max-w-3xl mx-auto text-center bg-emerald-500/5 relative overflow-hidden">
           <div className="absolute top-0 right-0 -mr-32 -mt-32 w-96 h-96 bg-emerald-400/20 rounded-full blur-[60px] pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 bg-emerald-400/20 rounded-full blur-[60px] pointer-events-none"></div>
           
@@ -299,13 +299,13 @@ export default function BulkCreatePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 relative z-10">
             {[
-              { label: 'Created & Emailed', value: bulkResult.data?.created?.length, color: 'text-emerald-500', border: 'border-emerald-200' },
-              { label: 'Skipped (Exists)', value: bulkResult.data?.skipped?.length, color: 'text-amber-500', border: 'border-amber-200' },
-              { label: 'Failed', value: bulkResult.data?.failed?.length, color: 'text-red-500', border: 'border-red-200' },
+              { label: 'Created & Emailed', value: bulkResult.data?.created?.length, color: 'text-emerald-500', border: 'border-emerald-500/20' },
+              { label: 'Skipped (Exists)', value: bulkResult.data?.skipped?.length, color: 'text-amber-500', border: 'border-amber-500/20' },
+              { label: 'Failed', value: bulkResult.data?.failed?.length, color: 'text-red-500', border: 'border-red-500/20' },
             ].map(({ label, value, color, border }) => (
-              <div key={label} className={`bg-white border ${border} p-6 rounded-3xl shadow-sm`}>
+              <div key={label} className={`bg-[var(--bg-select)] border ${border} p-6 rounded-3xl shadow-sm`}>
                 <div className={`text-5xl font-display font-black ${color} mb-2`}>{value || 0}</div>
-                <div className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{label}</div>
+                <div className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest">{label}</div>
               </div>
             ))}
           </div>

@@ -23,11 +23,11 @@ function AddStudentModal({ onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 bg-slate-50 p-2 rounded-full transition-colors">
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
           <X size={20} />
         </button>
-        <div className="w-12 h-12 rounded-2xl bg-purple-50 text-[var(--primary)] flex items-center justify-center border border-purple-100 mb-4 shadow-sm">
+        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center border border-purple-500/20 mb-4 shadow-sm">
           <UserPlus size={24} />
         </div>
         <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Add Student</h2>
@@ -44,7 +44,7 @@ function AddStudentModal({ onClose }) {
             <div key={key}>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">{label}</label>
               <input 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
                 type={type} 
                 value={form[key]} 
                 placeholder={placeholder}
@@ -115,7 +115,7 @@ export default function StudentsPage({ isSuper50 = false }) {
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
-            className="w-full bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
             placeholder="Search students by name or enrollment..."
             value={search} onChange={(e) => setSearch(e.target.value)} id="students-search" 
           />
@@ -123,7 +123,7 @@ export default function StudentsPage({ isSuper50 = false }) {
         <div className="relative">
           <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <select 
-            className="bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[180px]" 
+            className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[180px]" 
             value={dept} onChange={(e) => setDept(e.target.value)} id="students-dept-filter"
           >
             <option value="">All Departments</option>
@@ -136,7 +136,7 @@ export default function StudentsPage({ isSuper50 = false }) {
         <div className="relative">
           <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <select 
-            className="bg-white border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[150px]" 
+            className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[150px]" 
             value={batch} onChange={(e) => setBatch(e.target.value)} id="students-batch-filter"
           >
             <option value="">All Batches</option>
@@ -152,7 +152,7 @@ export default function StudentsPage({ isSuper50 = false }) {
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         {loading ? (
           <div className="p-6 flex flex-col gap-3">
-            {[1,2,3,4,5].map(i => <div key={i} className="animate-pulse bg-slate-100 rounded-xl h-16" />)}
+            {[1,2,3,4,5].map(i => <div key={i} className="animate-pulse bg-[var(--bg-hover)] rounded-xl h-16" />)}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -177,12 +177,12 @@ export default function StudentsPage({ isSuper50 = false }) {
               <tbody className="divide-y divide-[var(--border-light)]">
                 {allStudents.map((student, i) => (
                   <motion.tr key={student._id}
-                    className="hover:bg-slate-50 transition-colors"
+                    className="hover:bg-[var(--bg-hover)] transition-colors"
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}>
                     <td className="px-6 py-4 text-slate-400 font-bold">{i + 1}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full border border-slate-200 shadow-sm flex items-center justify-center font-black text-white text-sm" style={{ background: `hsl(${(student.name.charCodeAt(0) * 37) % 360}, 60%, 40%)` }}>
+                        <div className="w-10 h-10 rounded-full border border-[var(--border-light)] shadow-sm flex items-center justify-center font-black text-white text-sm" style={{ background: `hsl(${(student.name.charCodeAt(0) * 37) % 360}, 60%, 40%)` }}>
                           {student.name.charAt(0)}
                         </div>
                         <div>
@@ -195,7 +195,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                     <td className="px-6 py-4 font-bold">{student.batch}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full min-w-[60px] overflow-hidden border border-slate-200">
+                        <div className="flex-1 h-2 bg-[var(--bg-input)] rounded-full min-w-[60px] overflow-hidden border border-[var(--border-light)]">
                           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${student.attendancePercentage}%`, background: student.attendancePercentage >= 75 ? '#10b981' : student.attendancePercentage >= 50 ? '#f59e0b' : '#ef4444' }} />
                         </div>
                         <span className="text-[11px] font-black text-[var(--text-primary)] min-w-[32px]">{Math.round(student.attendancePercentage)}%</span>
@@ -208,22 +208,22 @@ export default function StudentsPage({ isSuper50 = false }) {
                     </td>
                     <td className="px-6 py-4">
                       {student.isSuper50 ? (
-                        <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
+                        <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
                           Super 50
                         </span>
                       ) : (
-                        <span className="bg-slate-50 text-slate-500 border border-slate-200 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
+                        <span className="bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
                           Regular
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4">
                       {student.isActive ? (
-                        <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1 w-max">
+                        <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1 w-max">
                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Active
                         </span>
                       ) : (
-                        <span className="bg-red-50 text-red-600 border border-red-200 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1 w-max">
+                        <span className="bg-red-500/10 text-red-500 border border-red-500/20 text-[9px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1 w-max">
                           <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div> Inactive
                         </span>
                       )}
@@ -239,7 +239,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                         {user?.role === 'admin' && (
                           <button 
                             onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
-                            className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100'}`}
+                            className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
                             id={`toggle-${student._id}`}
                           >
                             {student.isActive ? 'Deactivate' : 'Activate'}

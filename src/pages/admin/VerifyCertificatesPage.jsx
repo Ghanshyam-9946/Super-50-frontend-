@@ -11,18 +11,18 @@ function RejectModal({ cert, onClose, onConfirm }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }}
-        className="bg-white border border-slate-200 shadow-xl rounded-[1.5rem]" style={{ width: '90%', maxWidth: 420, padding: 28 }}>
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-[1.5rem]" style={{ width: '90%', maxWidth: 420, padding: 28 }}>
         <h3 className="text-xl font-display font-black text-red-600 mb-2">Reject Certificate</h3>
         <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
           Rejecting: <strong className="text-[var(--text-primary)]">{cert.title}</strong>
         </p>
         <textarea 
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
+          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl p-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
           style={{ minHeight: 90, resize: 'vertical' }}
           placeholder="Reason for rejection (optional but helpful for student)..."
           value={reason} onChange={(e) => setReason(e.target.value)} id="reject-reason" />
         <div className="flex gap-3 mt-6">
-          <button className="flex-1 bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 py-3 rounded-xl text-[13px] font-bold transition-colors" onClick={onClose}>Cancel</button>
+          <button className="flex-1 bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] hover:bg-[var(--bg-hover)] py-3 rounded-xl text-[13px] font-bold transition-colors" onClick={onClose}>Cancel</button>
           <button className="flex-1 bg-red-500 text-white hover:bg-red-600 py-3 rounded-xl text-[13px] font-bold transition-colors shadow-sm shadow-red-500/20 flex items-center justify-center gap-2"
             onClick={async () => { setLoading(true); await onConfirm(reason); setLoading(false); }}
             disabled={loading} id="confirm-reject">
@@ -62,7 +62,7 @@ export default function VerifyCertificatesPage() {
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2">
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)] flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 border border-orange-200 shadow-sm shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 border border-orange-500/20 shadow-sm shrink-0">
               <ShieldCheck size={32} />
             </div>
             Verify Certificates
@@ -73,11 +73,11 @@ export default function VerifyCertificatesPage() {
 
       {loading ? (
         <div className="flex flex-col gap-4">
-          {[1,2,3].map(i => <div key={i} className="animate-pulse bg-white border border-slate-200 rounded-[1.2rem] h-[160px]" />)}
+          {[1,2,3].map(i => <div key={i} className="animate-pulse bg-[var(--bg-card)] border border-[var(--border-light)] rounded-[1.2rem] h-[160px]" />)}
         </div>
       ) : pendingCertificates.length === 0 ? (
         <div className="glass-card p-16 text-center border-dashed">
-          <div className="w-24 h-24 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+          <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
             <ShieldCheck size={48} className="text-emerald-400" />
           </div>
           <h3 className="text-2xl font-display font-black text-[var(--text-primary)] mb-2">All caught up! 🎉</h3>
@@ -92,7 +92,7 @@ export default function VerifyCertificatesPage() {
                 exit={{ opacity: 0, x: 100 }} transition={{ delay: i * 0.05 }}>
                 
                 {/* File icon */}
-                <div className="w-16 h-16 rounded-[1.2rem] bg-amber-50 flex items-center justify-center border border-amber-100 shadow-sm shrink-0">
+                <div className="w-16 h-16 rounded-[1.2rem] bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-sm shrink-0">
                   {cert.fileType === 'pdf' ? <FileText size={32} className="text-amber-500" /> : <Image size={32} className="text-amber-500" />}
                 </div>
 
@@ -102,9 +102,9 @@ export default function VerifyCertificatesPage() {
                     <div>
                       <div className="font-display font-black text-xl text-[var(--text-primary)] mb-1">{cert.title}</div>
                       {cert.description && <div className="text-[13px] font-medium text-[var(--text-secondary)] mb-2">{cert.description}</div>}
-                      {cert.issuedBy && <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">Issued by: <strong className="text-slate-600">{cert.issuedBy}</strong></div>}
+                      {cert.issuedBy && <div className="text-[11px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Issued by: <strong className="text-[var(--text-primary)]">{cert.issuedBy}</strong></div>}
                     </div>
-                    <span className="bg-orange-50 text-orange-600 border border-orange-200 text-[10px] px-3 py-1.5 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
+                    <span className="bg-orange-500/10 text-orange-600 border border-orange-500/20 text-[10px] px-3 py-1.5 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
                       <Loader2 size={12} className="animate-spin" /> Pending
                     </span>
                   </div>

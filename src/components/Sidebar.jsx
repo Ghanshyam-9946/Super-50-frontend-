@@ -229,10 +229,10 @@ const NavItem = ({ link, onClick, collapsed }) => (
     to={link.to}
     onClick={onClick}
     className={({ isActive }) => `
-      group relative flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-300
+      group relative flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300
       ${isActive
-        ? 'text-[var(--primary)]'
-        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+        ? 'text-white font-bold'
+        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
       }
       ${collapsed ? 'justify-center' : ''}
     `}
@@ -243,20 +243,20 @@ const NavItem = ({ link, onClick, collapsed }) => (
         {isActive && (
           <motion.div 
             layoutId="sidebarActiveBg" 
-            className="absolute inset-0 bg-[var(--primary)] opacity-10 rounded-xl" 
+            className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-xl shadow-md shadow-[rgba(139,92,246,0.15)]" 
             initial={false} 
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
         )}
         <link.icon
           size={18}
-          className={`relative z-10 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}
+          className={`relative z-10 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}
         />
         {!collapsed && (
           <>
             <span className="relative z-10 font-bold text-sm tracking-tight">{link.label}</span>
             {isActive && (
-              <motion.div layoutId="activePill" className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[var(--primary)] shadow-[0_0_10px_var(--primary)]" />
+              <motion.div layoutId="activePill" className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-white shadow-[0_0_8px_white]" />
             )}
           </>
         )}
