@@ -57,12 +57,24 @@ export default function AttendancePage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
         className="bg-blue-50 border border-blue-200 shadow-sm rounded-2xl p-6 flex gap-4">
         <Info size={24} className="text-blue-500 shrink-0" />
-        <div className="text-[13px] text-blue-900 leading-relaxed font-medium">
+        <div className="text-[13px] text-blue-900 leading-relaxed font-medium w-full">
           <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Expected Excel columns</p>
-          <code className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm mr-2">EnrollmentNumber</code> 
-          <code className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm mr-2">Name</code> 
-          <code className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm">Attendance%</code>
-          <div className="mt-2 text-blue-800/80">The system will automatically filter only Super 50 students and update their attendance scores.</div>
+          <code className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm mr-2">RollNo</code> 
+          <code className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm mr-2">StudentName</code> 
+          <code className="bg-white px-2 py-0.5 rounded text-blue-700 font-bold border border-blue-100 shadow-sm">Overall Total - Present %</code>
+          <div className="mt-3 text-blue-800/80 mb-4">The system will automatically filter only Super 50 students and update their attendance scores.</div>
+
+          <div className="border-t border-blue-200/50 pt-4 mt-2">
+            <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Sample Excel Format</p>
+            <a 
+              href="/upload/Book1.xlsx" 
+              download="Book1.xlsx"
+              className="inline-flex items-center gap-2 bg-white border border-blue-200 hover:border-blue-400 text-blue-700 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
+            >
+              <FileSpreadsheet size={18} />
+              Download Sample Excel File
+            </a>
+          </div>
         </div>
       </motion.div>
 
