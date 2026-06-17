@@ -148,7 +148,7 @@ const EditStudentModal = ({ open, onClose, student, onSaved }) => {
       setForm({
         name: student.name || '',
         email: student.email || '',
-        mobile: student.mobile || '',
+        mobile: student.mobile || student.mobileNumber || '',
         whatsapp: student.whatsapp || '',
         semester: String(student.semester || '5'),
         password: '',
@@ -194,7 +194,7 @@ const EditStudentModal = ({ open, onClose, student, onSaved }) => {
         </div>
         <div>
           <label className="form-label">Enrollment</label>
-          <input className="form-input bg-slate-50" value={student.enrollmentNo} disabled />
+          <input className="form-input bg-slate-50" value={student.enrollmentNo || student.enrollmentNumber || ''} disabled />
         </div>
         <div>
           <label className="form-label">Email</label>
@@ -424,8 +424,9 @@ const Students = () => {
     if (semFilter && String(s.semester) !== semFilter) return false;
     if (search) {
       const q = search.toLowerCase();
-      return s.name.toLowerCase().includes(q)
-        || s.enrollmentNo.toLowerCase().includes(q)
+      const enr = (s.enrollmentNo || s.enrollmentNumber || '').toLowerCase();
+      return (s.name || '').toLowerCase().includes(q)
+        || enr.includes(q)
         || (s.email || '').toLowerCase().includes(q);
     }
     return true;
@@ -480,51 +481,55 @@ const Students = () => {
       >
         {loading ? <div className="py-10 flex justify-center"><Spinner /></div>
           : filtered.length === 0 ? <EmptyState icon={UserX} title="No students" message="Try changing filters or add a new student." />
-          : (
-            <div className="overflow-x-auto">
-              <table className="data-table">
-                <thead>
-                  <tr><th>Student</th><th>Enrollment</th><th>Mobile</th><th>Sem</th><th>Status</th><th className="text-right">Actions</th></tr>
-                </thead>
-                <tbody>
-                  {filtered.map((s) => (
-                    <tr key={s._id}>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-semibold text-xs">
-                            {getInitial(s.name)}
+            : (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr><th>Student</th><th>Enrollment</th><th>Contact (Mobile/Email)</th><th>Sem / Batch</th><th>Status</th><th className="text-right">Actions</th></tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((s) => (
+                      <tr key={s._id}>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-semibold text-xs">
+                              {getInitial(s.name)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-semibold truncate">{s.name}</div>
+                              <div className="text-xs text-slate-400 truncate">{s.email || '—'}</div>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <div className="font-semibold truncate">{s.name}</div>
-                            <div className="text-xs text-slate-400 truncate">{s.email || '—'}</div>
+                        </td>
+                        <td className="font-semibold">{s.enrollmentNo || s.enrollmentNumber || '—'}</td>
+                        <td className="text-sm">
+                          <div className="flex flex-col">
+                            <span>{s.mobile || s.mobileNumber || s.email || '—'}</span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="font-semibold">{s.enrollmentNo}</td>
-                      <td className="text-sm">{s.mobile || '—'}</td>
-                      <td><span className="badge-info">{s.semester}th</span></td>
-                      <td>
-                        {s.isActive ? <span className="badge-success">Active</span> : <span className="badge-secondary">Inactive</span>}
-                      </td>
-                      <td className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <button onClick={() => setEditStudent(s)} className="btn-outline btn-sm" title="Edit / Reset password">
-                            <Edit3 className="w-3 h-3" />
-                          </button>
-                          <button onClick={() => toggle(s._id)} className="btn-secondary btn-sm">
-                            {s.isActive ? 'Deactivate' : 'Activate'}
-                          </button>
-                          <button onClick={() => handleDelete(s._id, s.name)} className="btn-secondary btn-sm text-red-600">
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                        </td>
+                        <td><span className="badge-info whitespace-nowrap">{s.semester ? `${s.semester}th` : (s.batch || '—')}</span></td>
+                        <td>
+                          {s.isActive ? <span className="badge-success">Active</span> : <span className="badge-secondary">Inactive</span>}
+                        </td>
+                        <td className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => setEditStudent(s)} className="btn-outline btn-sm" title="Edit / Reset password">
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button onClick={() => toggle(s._id)} className="btn-secondary btn-sm">
+                              {s.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button onClick={() => handleDelete(s._id, s.name)} className="btn-secondary btn-sm text-red-600">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
       </Card>
 
       <AddStudentModal open={addOpen} onClose={() => setAddOpen(false)} onSaved={fetchData} />
