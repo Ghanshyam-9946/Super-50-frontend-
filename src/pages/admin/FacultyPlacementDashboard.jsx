@@ -1,19 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchFacultyPlacementDashboard, clearPlacementError } from '../../features/placement/placementSlice';
+import { 
+  fetchFacultyPlacementDashboard, 
+  clearPlacementError,
+  fetchAllFeedbacks 
+} from '../../features/placement/placementSlice';
 import { motion } from 'framer-motion';
-import { Upload, Filter, Search, BarChart3, Users, Briefcase, AlertCircle, Clock, CheckCircle, ChevronRight } from 'lucide-react';
+import { 
+  Upload, 
+  Filter, 
+  Search, 
+  BarChart3, 
+  Users, 
+  Briefcase, 
+  AlertCircle, 
+  Clock, 
+  CheckCircle, 
+  ChevronRight,
+  User,
+  Calendar,
+  HelpCircle,
+  ArrowRight,
+  MessageSquare
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import FeedbackDetailModal from '../../components/FeedbackDetailModal';
 
 const FacultyPlacementDashboard = () => {
   const dispatch = useDispatch();
-  const { drives, stats, selections, loading, error } = useSelector((state) => state.placement);
+  const { drives, stats, selections, feedbacks, loading, error } = useSelector((state) => state.placement);
   const [activeTab, setActiveTab] = useState('drives');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Single feedback detail modal
+  const [selectedFeedback, setSelectedFeedback] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchFacultyPlacementDashboard());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (activeTab === 'feedback') {
+      dispatch(fetchAllFeedbacks());
+    }
+  }, [activeTab, dispatch]);
 
   useEffect(() => {
     if (error) {
@@ -41,12 +73,19 @@ const FacultyPlacementDashboard = () => {
     }
   };
 
-  if (loading && drives.length === 0) return (
+  if (loading && drives.length === 0 && feedbacks.length === 0) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
       <div className="w-12 h-12 border-4 border-purple-500/20 border-t-[var(--primary)] rounded-full animate-spin"></div>
       <p className="text-[var(--text-secondary)] font-medium">Loading placement analytics...</p>
     </div>
   );
+
+  const filteredFeedbacks = feedbacks?.filter(f => 
+    f.drive?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    f.experience?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    f.interviewQuestions?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    f.student?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -132,7 +171,7 @@ const FacultyPlacementDashboard = () => {
       {/* Main Content */}
       <div className="space-y-8 mt-4">
         <div className="flex items-center gap-8 border-b border-[var(--border-light)] px-2">
-          {['drives', 'analytics', 'selections'].map((tab) => (
+          {['drives', 'feedback', 'selections'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -140,7 +179,7 @@ const FacultyPlacementDashboard = () => {
                 activeTab === tab ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {tab}
+              {tab === 'feedback' ? 'Experiences' : tab}
               {activeTab === tab && (
                 <motion.div layoutId="activeTabDashboard" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--primary)] rounded-t-full" />
               )}
@@ -201,6 +240,125 @@ const FacultyPlacementDashboard = () => {
           </motion.div>
         )}
 
+        {/* Global Interview Experiences Tab (Faculty View) */}
+        {activeTab === 'feedback' && (
+          <div className="space-y-6 animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="relative max-w-md w-full">
+                <Search className="absolute left-4 top-3.5 text-[var(--text-secondary)] opacity-60" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Search company, student or topics..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium"
+                />
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider">
+                Showing {filteredFeedbacks.length} experiences
+              </p>
+            </div>
+
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+              {filteredFeedbacks.map((f) => (
+                <motion.div
+                  key={f._id}
+                  variants={itemVariants}
+                  onClick={() => {
+                    setSelectedFeedback(f);
+                    setIsDetailOpen(true);
+                  }}
+                  className="glass-card p-6 flex flex-col justify-between border-[var(--border-light)] hover:border-[var(--primary)] cursor-pointer transition-all duration-300 group relative hover:shadow-[var(--shadow-hover)]"
+                >
+                  <div className="space-y-4">
+                    {/* Company Info */}
+                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border-light)]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-[var(--bg-app)] flex items-center justify-center border border-[var(--border-light)] text-[var(--primary)] font-display font-black text-sm">
+                          {f.drive?.companyName?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h4 className="text-base font-black text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
+                            {f.drive?.companyName}
+                          </h4>
+                          <span className="text-[11px] font-bold text-[var(--primary-dark)] dark:text-[var(--primary)] bg-purple-500/5 px-2 py-0.5 rounded-md mt-0.5 inline-block">
+                            {f.drive?.package}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${
+                          f.difficultyLevel === 'Easy' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                          f.difficultyLevel === 'Medium' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                          'bg-red-50 text-red-600 border-red-200'
+                        }`}>
+                          {f.difficultyLevel}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Snippet Experience */}
+                    <div>
+                      <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed bg-[var(--bg-app)] p-3.5 rounded-xl border border-[var(--border-light)] line-clamp-3">
+                        {f.experience}
+                      </p>
+                    </div>
+
+                    {/* Highlights tag */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] px-2.5 py-1 rounded-lg bg-[var(--primary)]/5 text-[var(--primary)] font-bold border border-[var(--primary)]/10">
+                        Outcome: {f.statusAtDrive}
+                      </span>
+                      {f.interviewQuestions && (
+                        <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold flex items-center gap-1">
+                          <HelpCircle size={12} /> Questions shared
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Reviewer info */}
+                  <div className="mt-5 pt-4 border-t border-[var(--border-light)] flex items-center justify-between text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[var(--bg-app)] flex items-center justify-center text-[var(--text-secondary)] border border-[var(--border-light)]">
+                        <User size={13} />
+                      </div>
+                      <div>
+                        <span className="font-bold text-[var(--text-primary)] block">
+                          {f.student?.name}
+                        </span>
+                        <span className="text-[9px] text-[var(--text-secondary)] block">
+                          {f.student?.department} • {f.student?.batch}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] text-[var(--primary)] font-bold group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+                      Read Details <ArrowRight size={12} />
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+
+              {filteredFeedbacks.length === 0 && (
+                <div className="col-span-full py-16 text-center bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl">
+                  <MessageSquare size={48} className="mx-auto mb-4 text-[#CBD5E1]" />
+                  <h4 className="text-lg font-black text-[var(--text-primary)]">No interview experiences found</h4>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium mt-1">
+                    Try searching for a different keyword or company.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+
         {activeTab === 'selections' && (
           <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {selections?.map((selection, idx) => (
@@ -245,6 +403,15 @@ const FacultyPlacementDashboard = () => {
           </motion.div>
         )}
       </div>
+
+      <FeedbackDetailModal 
+        isOpen={isDetailOpen} 
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedFeedback(null);
+        }} 
+        feedback={selectedFeedback} 
+      />
     </div>
   );
 };

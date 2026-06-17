@@ -13,6 +13,7 @@ import { Workflow } from "@/components/Workflow";
 import { Footer } from "@/components/Footer";
 import { BackToTop } from "@/components/BackToTop";
 import { ProjectShowcase } from "@/components/ProjectShowcase";
+import SelectionFormSection from "@/components/SelectionFormSection";
 
 export default function LandingPage() {
   return (
@@ -30,6 +31,7 @@ export default function LandingPage() {
         <LeaderboardPage limit={5} />
         <Stats />
         <Workflow />
+        <SelectionFormSection />
         <Footer />
       </main>
       <BackToTop />
