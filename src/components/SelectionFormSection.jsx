@@ -121,8 +121,8 @@ export default function SelectionFormSection() {
   const handleCertificatePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('File size too large. Please upload a certificate photo smaller than 5MB.');
+      if (file.size > 1 * 1024 * 1024) {
+        toast.error('File size too large. Please upload a certificate photo smaller than 1MB.');
         return;
       }
       const reader = new FileReader();
@@ -214,6 +214,26 @@ export default function SelectionFormSection() {
             <h2 className="text-3xl font-display font-black text-[var(--text-primary)]">
               Super 50 Selection Form
             </h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-2 mb-4">Fill out the details carefully to apply for the elite Super 50 cohort.</p>
+            
+            {openForm && (formSettings.startDate || formSettings.endDate) && (
+              <div className="flex flex-wrap items-center gap-4 font-bold mt-2">
+                {formSettings.startDate && (
+                  <div className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl flex items-baseline gap-2 shadow-lg shadow-emerald-500/30">
+                    <Clock size={16} className="relative top-0.5 opacity-90" />
+                    <span className="uppercase tracking-widest opacity-90 text-[10px] mr-1">Starts</span>
+                    <span className="text-[15px] tracking-wide font-black">{new Date(formSettings.startDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                  </div>
+                )}
+                {formSettings.endDate && (
+                  <div className="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl flex items-baseline gap-2 shadow-lg shadow-rose-500/30">
+                    <Clock size={16} className="relative top-0.5 opacity-90" />
+                    <span className="uppercase tracking-widest opacity-90 text-[10px] mr-1">Ends</span>
+                    <span className="text-[15px] tracking-wide font-black">{new Date(formSettings.endDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -351,15 +371,23 @@ export default function SelectionFormSection() {
                 <div className="space-y-1.5">
                   <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Closed</h3>
                   <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider mt-1">
-                    👉 “Registrations are currently closed”
+                    👉 "Registrations are currently closed"
                   </p>
                 </div>
 
-                {formSettings.endDate && (
-                  <p className="text-[10px] text-[var(--text-secondary)] opacity-70">
-                    Closed on {new Date(formSettings.endDate).toLocaleString()}
-                  </p>
-                )}
+                {(() => {
+                  const now = new Date();
+                  if (!formSettings.formEnabled) {
+                    return <p className="text-[10px] text-[var(--text-secondary)] opacity-70">Form has been manually disabled by Admin.</p>;
+                  }
+                  if (formSettings.startDate && new Date(formSettings.startDate) > now) {
+                    return <p className="text-[10px] text-[var(--text-secondary)] opacity-70">Opens on {new Date(formSettings.startDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>;
+                  }
+                  if (formSettings.endDate && new Date(formSettings.endDate) < now) {
+                    return <p className="text-[10px] text-[var(--text-secondary)] opacity-70">Closed on {new Date(formSettings.endDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>;
+                  }
+                  return null;
+                })()}
               </div>
             ) : (
               // FORM CARD
@@ -477,7 +505,7 @@ export default function SelectionFormSection() {
 
                       {/* Certificate Photo File Upload */}
                       <div className="space-y-1.5 col-span-full">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Certificate Image (Max 5MB)</label>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Certificate Image (Max 1MB)</label>
                         <div className="flex items-center gap-4">
                           <input
                             type="file"
