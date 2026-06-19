@@ -26,6 +26,7 @@ import toast from 'react-hot-toast';
 import FeedbackModal from '../../components/FeedbackModal';
 import DriveFeedbacksModal from '../../components/DriveFeedbacksModal';
 import FeedbackDetailModal from '../../components/FeedbackDetailModal';
+import ApplyForDriveModal from '../../components/ApplyForDriveModal';
 
 const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
   const dispatch = useDispatch();
@@ -38,7 +39,8 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
   const [selectedDrive, setSelectedDrive] = useState(null);
   const [isFeedbackFormOpen, setIsFeedbackFormOpen] = useState(false);
   const [isFeedbacksOpen, setIsFeedbacksOpen] = useState(false);
-  
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+
   // Single feedback detail modal
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -175,15 +177,17 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
 
                 <div className="flex flex-col items-end gap-2">
                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all duration-500 ${
+                    app.status === 'not-applied' ? 'bg-amber-50 text-amber-600 border-amber-200' :
                     app.status === 'eligible' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
                     app.status === 'not-eligible' ? 'bg-red-50 text-red-600 border-red-200' :
                     app.status === 'selected' ? 'bg-purple-50 text-[var(--primary-dark)] border-purple-200 shadow-[0_4px_10px_rgba(139,92,246,0.1)]' :
                     'bg-blue-50 text-blue-600 border-blue-200'
                   }`}>
-                    {app.status === 'eligible' && <CheckCircle size={14} className="animate-pulse" />}
+                    {app.status === 'not-applied' && <AlertCircle size={14} className="animate-pulse" />}
+                    {app.status === 'eligible' && <CheckCircle size={14} />}
                     {app.status === 'not-eligible' && <XCircle size={14} />}
                     {app.status === 'selected' && <Award size={14} className="animate-bounce" />}
-                    {app.status === 'not-eligible' ? 'Not Eligible' : app.status}
+                    {app.status === 'not-eligible' ? 'Not Eligible' : app.status === 'not-applied' ? 'Not Applied' : app.status}
                   </div>
                   {app.finalResult === 'selected' && (
                     <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1.5 rounded-xl text-[10px] font-black border border-amber-500/30 shadow-md shadow-orange-500/20 mt-1">
@@ -198,37 +202,44 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
                 <h4 className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] opacity-80">Recruitment Timeline</h4>
                 
                 <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-[var(--border-light)]">
-                  {app.roundsProgress?.map((round, idx) => (
-                    <div key={idx} className="relative">
-                      <div className={`absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[var(--bg-card)] z-10 ${
-                        round.status === 'cleared' ? 'bg-emerald-500' : 
-                        round.status === 'eliminated' ? 'bg-red-500' : 'bg-slate-300'
-                      }`}></div>
-                      
-                      <div className="flex flex-col">
-                        <span className={`text-[15px] font-bold ${
-                          round.status === 'cleared' ? 'text-emerald-600' : 
-                          round.status === 'eliminated' ? 'text-red-600' : 'text-[var(--text-secondary)]'
-                        }`}>
-                          {round.roundName}
-                        </span>
-                        <div className="mt-1.5 flex items-center gap-1.5">
-                          {round.status === 'cleared' && <CheckCircle size={14} className="text-emerald-500" />}
-                          {round.status === 'eliminated' && <XCircle size={14} className="text-red-500" />}
-                          <span className={`text-[10px] uppercase tracking-widest font-black ${
-                            round.status === 'cleared' ? 'text-emerald-600' : 
-                            round.status === 'eliminated' ? 'text-red-600' : 'text-slate-400'
+                  {app.status !== 'not-applied' && app.status !== 'eligible' && app.drive?.rounds?.map((round, idx) => {
+                    const progress = app.roundsProgress?.find(p => p.roundName === round.name);
+                    const status = progress?.status || 'pending';
+                    const feedback = progress?.feedback;
+                    
+                    return (
+                      <div key={idx} className="relative">
+                        <div className={`absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[var(--bg-card)] z-10 ${
+                          status === 'cleared' ? 'bg-emerald-500' : 
+                          status === 'eliminated' ? 'bg-red-500' : 'bg-slate-300'
+                        }`}></div>
+                        
+                        <div className="flex flex-col">
+                          <span className={`text-[15px] font-bold ${
+                            status === 'cleared' ? 'text-emerald-600' : 
+                            status === 'eliminated' ? 'text-red-600' : 'text-[var(--text-secondary)]'
                           }`}>
-                            {round.status === 'cleared' ? 'Shortlisted' : 
-                             round.status === 'eliminated' ? 'Not Shortlisted' : 'Pending'}
+                            {round.name}
                           </span>
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            {status === 'cleared' && <CheckCircle size={14} className="text-emerald-500" />}
+                            {status === 'eliminated' && <XCircle size={14} className="text-red-500" />}
+                            {status === 'pending' && <Clock size={14} className="text-slate-400" />}
+                            <span className={`text-[10px] uppercase tracking-widest font-black ${
+                              status === 'cleared' ? 'text-emerald-600' : 
+                              status === 'eliminated' ? 'text-red-600' : 'text-slate-400'
+                            }`}>
+                              {status === 'cleared' ? 'Selected' : 
+                               status === 'eliminated' ? 'Not Selected' : 'Upcoming'}
+                            </span>
+                          </div>
+                          {feedback && <p className="text-[13px] font-medium text-[var(--text-secondary)] mt-2 bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-light)]">{feedback}</p>}
                         </div>
-                        {round.feedback && <p className="text-[13px] font-medium text-[var(--text-secondary)] mt-2 bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-light)]">{round.feedback}</p>}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
-                  {app.status === 'eligible' && (
+                  {(app.status === 'not-applied' || app.status === 'eligible') && (
                     <div className="relative">
                       <div className="absolute -left-[27px] top-1 w-4 h-4 rounded-full border-4 border-[var(--bg-card)] z-10 bg-[var(--primary)] animate-pulse shadow-[0_0_10px_rgba(139,92,246,0.5)]"></div>
                       <span className="text-[15px] font-bold text-[var(--primary-dark)]">Apply Now</span>
@@ -238,8 +249,14 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
                 </div>
               </div>
 
-              {app.status === 'eligible' && (
-                <button className="mt-10 w-full btn-premium py-4 rounded-xl text-[15px] flex items-center justify-center gap-2 group-hover:shadow-[0_8px_25px_rgba(139,92,246,0.3)] transition-all duration-300">
+              {(app.status === 'not-applied' || app.status === 'eligible') && (
+                <button 
+                  onClick={() => {
+                    setSelectedDrive(app.drive);
+                    setIsApplyModalOpen(true);
+                  }}
+                  className="mt-10 w-full btn-premium py-4 rounded-xl text-[15px] flex items-center justify-center gap-2 group-hover:shadow-[0_8px_25px_rgba(139,92,246,0.3)] transition-all duration-300"
+                >
                   Register for Drive <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </button>
               )}
@@ -434,6 +451,16 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
           setSelectedFeedback(null);
         }} 
         feedback={selectedFeedback} 
+      />
+
+      <ApplyForDriveModal
+        isOpen={isApplyModalOpen}
+        onClose={() => {
+          setIsApplyModalOpen(false);
+          setSelectedDrive(null);
+        }}
+        drive={selectedDrive}
+        onRefresh={() => dispatch(fetchStudentPlacementStatus())}
       />
     </div>
   );

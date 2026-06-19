@@ -31,6 +31,9 @@ import Super50SelectionPage from './pages/admin/Super50SelectionPage';
 import DriveEligibilityPage from './pages/admin/DriveEligibilityPage';
 import DriveResultUpload from './pages/admin/DriveResultUpload';
 import FacultyPlacementDashboard from './pages/admin/FacultyPlacementDashboard';
+import EnrollStudentsPage from './pages/admin/EnrollStudentsPage';
+import CreateDrivePage from './pages/admin/CreateDrivePage';
+import DriveDetailsPage from './pages/admin/DriveDetailsPage';
 import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
 
 // New Features
@@ -55,7 +58,7 @@ const RoleGuard = ({ children, allowed }) => {
                    user.role === 'guide' ? '/pms/guide' : 
                    user.role === 'admin' ? '/leaderboard' :
                    user.role === 'super50_admin' ? '/admin/dashboard' :
-                   user.role === 'tp_admin' ? '/admin/drive-eligibility' :
+                   user.role === 'tp_admin' ? '/tp/enroll-students' :
                    user.role === 'pms_admin' ? '/pms/admin' : '/login';
     return <Navigate to={fallback} replace />;
   }
@@ -143,6 +146,15 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/faculty/placement" element={
           <RoleGuard allowed={['admin', 'teacher', 'tp_admin']}><FacultyPlacementDashboard /></RoleGuard>
+        } />
+        <Route path="/tp/enroll-students" element={
+          <RoleGuard allowed={['admin', 'tp_admin']}><EnrollStudentsPage /></RoleGuard>
+        } />
+        <Route path="/tp/create-drive" element={
+          <RoleGuard allowed={['admin', 'tp_admin']}><CreateDrivePage /></RoleGuard>
+        } />
+        <Route path="/tp/drives/:id" element={
+          <RoleGuard allowed={['admin', 'tp_admin', 'teacher']}><DriveDetailsPage /></RoleGuard>
         } />
 
         {/* Teacher routes (shared admin pages, read/write but no bulk-create) */}

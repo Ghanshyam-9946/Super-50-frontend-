@@ -74,9 +74,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const tpAdminLinks = [
-    { to: '/admin/drive-eligibility', icon: Briefcase, label: 'Drive Eligibility' },
-    { to: '/admin/drive-results', icon: ClipboardList, label: 'Drive Results' },
-    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+    { to: '/tp/enroll-students', icon: UserPlus, label: 'Enroll Students' },
+    { to: '/tp/create-drive', icon: Briefcase, label: 'Create Drive' },
+    { to: '/faculty/placement', icon: ClipboardList, label: 'View Drives' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 

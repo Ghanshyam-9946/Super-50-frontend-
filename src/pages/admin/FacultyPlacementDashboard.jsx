@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   fetchFacultyPlacementDashboard, 
   clearPlacementError,
@@ -21,18 +22,367 @@ import {
   Calendar,
   HelpCircle,
   ArrowRight,
-  MessageSquare
+  MessageSquare,
+  UserPlus,
+  Plus,
+  X,
+  Loader2,
+  FileSpreadsheet,
+  Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import FeedbackDetailModal from '../../components/FeedbackDetailModal';
 
+function EnrollStudentsModal({ onClose, onRefresh }) {
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!file) return toast.error('Please select an Excel file');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploading(true);
+    const toastId = toast.loading('Enrolling students for placements...');
+    try {
+      const response = await api.post('/placement/enroll-students', formData);
+      toast.success(response.data.message || 'Students enrolled successfully!', { id: toastId });
+      onRefresh();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to enroll students', { id: toastId });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
+          <X size={20} />
+        </button>
+        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 mb-4 shadow-sm">
+          <UserPlus size={24} />
+        </div>
+        <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Enroll Students for T&P</h2>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Upload Excel containing: Name, Enrollment Number, Email, Mobile</p>
+        
+        <form onSubmit={handleUpload} className="space-y-6">
+          <div className="border-2 border-dashed border-[var(--border-light)] rounded-2xl p-8 text-center bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 transition-colors cursor-pointer" onClick={() => document.getElementById('enroll-file').click()}>
+            <input type="file" id="enroll-file" accept=".xlsx, .xls" className="hidden" onChange={(e) => setFile(e.target.files[0])} />
+            {file ? (
+              <div className="space-y-2">
+                <FileSpreadsheet className="text-emerald-500 mx-auto animate-bounce" size={32} />
+                <p className="text-sm font-bold text-[var(--text-primary)]">{file.name}</p>
+                <p className="text-xs text-[var(--text-secondary)] uppercase">Click to change</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload className="text-slate-400 mx-auto" size={32} />
+                <p className="text-sm font-bold text-[var(--text-primary)]">Select Excel file</p>
+                <p className="text-xs text-[var(--text-secondary)]">Only .xlsx or .xls files</p>
+              </div>
+            )}
+          </div>
+          
+          <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2" disabled={uploading || !file}>
+            {uploading ? 'Processing...' : 'Upload & Enroll Students'}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function CreateDriveModal({ onClose, onRefresh }) {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    companyName: '',
+    package: '',
+    deadline: '',
+    batch: '2023-27',
+    eligibilityCriteria: {
+      minAttendance: 0,
+      minPerformanceScore: 0,
+      departments: []
+    }
+  });
+  
+  // Rounds management
+  const [rounds, setRounds] = useState([
+    { name: 'Aptitude', description: 'Initial Aptitude Test' },
+    { name: 'Technical', description: 'Technical Coding & Core Concepts Interview' },
+    { name: 'HR', description: 'Human Resources & Alignment Round' }
+  ]);
+  
+  const handleAddRound = () => {
+    setRounds([...rounds, { name: '', description: '' }]);
+  };
+  
+  const handleRemoveRound = (idx) => {
+    setRounds(rounds.filter((_, i) => i !== idx));
+  };
+  
+  const handleRoundChange = (idx, field, val) => {
+    const updated = rounds.map((r, i) => i === idx ? { ...r, [field]: val } : r);
+    setRounds(updated);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (rounds.some(r => !r.name.trim())) {
+      return toast.error('Please enter names for all rounds');
+    }
+    
+    setLoading(true);
+    const toastId = toast.loading('Creating placement drive...');
+    try {
+      await api.post('/placement/drives', {
+        ...form,
+        rounds
+      });
+      toast.success('Placement drive created successfully!', { id: toastId });
+      onRefresh();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create drive', { id: toastId });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative overflow-y-auto max-h-[90vh]" style={{ width: '90%', maxWidth: 580, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
+          <X size={20} />
+        </button>
+        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center border border-purple-500/20 mb-4 shadow-sm">
+          <Briefcase size={24} />
+        </div>
+        <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Create Placement Drive</h2>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Centrally publish a new company hiring drive</p>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Company Name *</label>
+              <input 
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                type="text"
+                placeholder="e.g., Centylitics"
+                value={form.companyName}
+                onChange={(e) => setForm({ ...form, companyName: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Target Batch *</label>
+              <input 
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                type="text"
+                placeholder="e.g., 2023-27"
+                value={form.batch}
+                onChange={(e) => setForm({ ...form, batch: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Package Details *</label>
+              <input 
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                type="text"
+                placeholder="e.g., 6.5 LPA"
+                value={form.package}
+                onChange={(e) => setForm({ ...form, package: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Application Deadline *</label>
+              <input 
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                type="date"
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="border-t border-[var(--border-light)] pt-4 mt-2">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Hiring Rounds</span>
+              <button type="button" onClick={handleAddRound} className="text-xs text-[var(--primary)] font-black uppercase tracking-wider hover:opacity-80 flex items-center gap-1">
+                <Plus size={14} /> Add Round
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {rounds.map((round, index) => (
+                <div key={index} className="flex gap-3 items-start bg-[var(--bg-input)]/20 p-3 rounded-2xl border border-[var(--border-light)]">
+                  <div className="flex-1 space-y-2">
+                    <input 
+                      className="w-full bg-white border border-[var(--border-light)] rounded-lg py-1.5 px-3 text-[12px] font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                      type="text"
+                      placeholder={`Round ${index + 1} Name`}
+                      value={round.name}
+                      onChange={(e) => handleRoundChange(index, 'name', e.target.value)}
+                      required
+                    />
+                    <input 
+                      className="w-full bg-white border border-[var(--border-light)] rounded-lg py-1.5 px-3 text-[12px] font-medium text-[var(--text-secondary)] focus:outline-none focus:border-[var(--primary)]"
+                      type="text"
+                      placeholder="Brief description (optional)"
+                      value={round.description}
+                      onChange={(e) => handleRoundChange(index, 'description', e.target.value)}
+                    />
+                  </div>
+                  {rounds.length > 1 && (
+                    <button type="button" onClick={() => handleRemoveRound(index)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <button type="submit" className="btn-premium w-full py-3.5 mt-6 flex items-center justify-center gap-2" disabled={loading}>
+            {loading ? 'Creating...' : 'Create Placement Drive'}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function UploadResultsModal({ drives, onClose, onRefresh }) {
+  const [driveId, setDriveId] = useState('');
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const selectedDrive = drives.find(d => d._id === driveId);
+  const roundNames = selectedDrive?.rounds?.map(r => r.name) || [];
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!driveId) return toast.error('Please select a drive');
+    if (!file) return toast.error('Please select an Excel file');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('driveId', driveId);
+    if (roundNames.length > 0) {
+      formData.append('headings', JSON.stringify(roundNames));
+    }
+
+    setUploading(true);
+    const toastId = toast.loading('Uploading round results & sending emails...');
+    try {
+      const response = await api.post('/placement/results/dynamic-upload', formData);
+      const { updated, notFound } = response.data.data || {};
+      toast.success(
+        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}. Emails sent!`,
+        { id: toastId, duration: 5000 }
+      );
+      onRefresh();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Upload failed', { id: toastId });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 500, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
+          <X size={20} />
+        </button>
+        <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20 mb-4 shadow-sm">
+          <Upload size={24} />
+        </div>
+        <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload Round Results</h2>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Excel columns should match the round names. Emails will be sent automatically.</p>
+
+        <form onSubmit={handleUpload} className="space-y-5">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Select Drive *</label>
+            <select
+              value={driveId}
+              onChange={(e) => setDriveId(e.target.value)}
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
+              required
+            >
+              <option value="">-- Choose a placement drive --</option>
+              {drives.map(d => (
+                <option key={d._id} value={d._id}>{d.companyName} ({d.batch || 'All'})</option>
+              ))}
+            </select>
+          </div>
+
+          {roundNames.length > 0 && (
+            <div className="bg-[var(--bg-input)]/30 border border-[var(--border-light)] rounded-xl p-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Expected Excel Columns (Round Names)</p>
+              <div className="flex flex-wrap gap-2">
+                {roundNames.map((r, i) => (
+                  <span key={i} className="text-[11px] font-bold bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 px-2.5 py-1 rounded-lg">{r}</span>
+                ))}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-2">Also include: <strong>Enrollment No</strong> or <strong>Email</strong> column to identify students.</p>
+            </div>
+          )}
+
+          <div className="border-2 border-dashed border-[var(--border-light)] rounded-2xl p-6 text-center bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 transition-colors cursor-pointer" onClick={() => document.getElementById('results-file').click()}>
+            <input type="file" id="results-file" accept=".xlsx, .xls" className="hidden" onChange={(e) => setFile(e.target.files[0])} />
+            {file ? (
+              <div className="space-y-1">
+                <FileSpreadsheet className="text-blue-500 mx-auto animate-bounce" size={28} />
+                <p className="text-sm font-bold text-[var(--text-primary)]">{file.name}</p>
+                <p className="text-xs text-[var(--text-secondary)] uppercase">Click to change</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <Upload className="text-slate-400 mx-auto" size={28} />
+                <p className="text-sm font-bold text-[var(--text-primary)]">Select Excel file</p>
+                <p className="text-xs text-[var(--text-secondary)]">Only .xlsx or .xls</p>
+              </div>
+            )}
+          </div>
+
+          <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2" disabled={uploading || !file || !driveId}>
+            {uploading ? 'Uploading...' : 'Upload Results & Notify Students'}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 const FacultyPlacementDashboard = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { drives, stats, selections, feedbacks, loading, error } = useSelector((state) => state.placement);
   const [activeTab, setActiveTab] = useState('drives');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Modal state
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [showCreateDriveModal, setShowCreateDriveModal] = useState(false);
+  const [showUploadResultsModal, setShowUploadResultsModal] = useState(false);
+
   // Single feedback detail modal
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -40,6 +390,18 @@ const FacultyPlacementDashboard = () => {
   useEffect(() => {
     dispatch(fetchFacultyPlacementDashboard());
   }, [dispatch]);
+
+  // Auto-open modal based on ?modal= query param
+  const location = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const modal = params.get('modal');
+    if (modal === 'enroll') {
+      setShowEnrollModal(true);
+    } else if (modal === 'create-drive') {
+      setShowCreateDriveModal(true);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (activeTab === 'feedback') {
@@ -53,25 +415,6 @@ const FacultyPlacementDashboard = () => {
       dispatch(clearPlacementError());
     }
   }, [error, dispatch]);
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const toastId = toast.loading('Uploading round data...');
-
-    try {
-      const response = await api.post('/placement/rounds/upload', formData);
-
-      toast.success(response.data.message || 'Upload successful!', { id: toastId });
-      dispatch(fetchFacultyPlacementDashboard());
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Upload failed', { id: toastId });
-    }
-  };
 
   if (loading && drives.length === 0 && feedbacks.length === 0) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
@@ -102,32 +445,7 @@ const FacultyPlacementDashboard = () => {
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <header className="glass-card p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
-          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">Placement Management</h1>
-          <p className="text-[var(--text-secondary)] font-medium mt-2">Manage drives, track rounds, and monitor student selections.</p>
-        </motion.div>
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }} 
-          animate={{ opacity: 1, scale: 1 }} 
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex items-center gap-3"
-        >
-          <input
-            type="file"
-            id="round-upload"
-            className="hidden"
-            accept=".xlsx, .xls"
-            onChange={handleFileUpload}
-          />
-          <button
-            onClick={() => document.getElementById('round-upload').click()}
-            className="btn-outline-premium px-6 py-3 flex items-center gap-2"
-          >
-            <Upload size={18} /> Round Data
-          </button>
-        </motion.div>
-      </header>
+
 
       {error && (
         <div className="bg-red-50 border border-red-200 p-4 rounded-xl flex items-center gap-3 text-red-600 shadow-sm">
@@ -193,6 +511,7 @@ const FacultyPlacementDashboard = () => {
               <motion.div
                 key={drive._id}
                 variants={itemVariants}
+                onClick={() => navigate(`/tp/drives/${drive._id}`)}
                 className="glass-card p-6 flex flex-col md:flex-row md:items-center justify-between hover:border-[var(--primary)] transition-all duration-300 cursor-pointer group"
               >
                 <div className="flex items-center gap-5">
@@ -412,6 +731,28 @@ const FacultyPlacementDashboard = () => {
         }} 
         feedback={selectedFeedback} 
       />
+
+      {showEnrollModal && (
+        <EnrollStudentsModal
+          onClose={() => setShowEnrollModal(false)}
+          onRefresh={() => dispatch(fetchFacultyPlacementDashboard())}
+        />
+      )}
+
+      {showCreateDriveModal && (
+        <CreateDriveModal
+          onClose={() => setShowCreateDriveModal(false)}
+          onRefresh={() => dispatch(fetchFacultyPlacementDashboard())}
+        />
+      )}
+
+      {showUploadResultsModal && (
+        <UploadResultsModal
+          drives={drives}
+          onClose={() => setShowUploadResultsModal(false)}
+          onRefresh={() => dispatch(fetchFacultyPlacementDashboard())}
+        />
+      )}
     </div>
   );
 };
