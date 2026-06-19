@@ -104,7 +104,7 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mx-auto mt-6 max-w-3xl text-xl text-muted-foreground/80 md:text-2xl font-medium leading-relaxed"
+          className="mx-auto mt-6 max-w-3xl text-xl text-pink-500 dark:text-pink-400 md:text-2xl font-semibold leading-relaxed"
         >
           Empowering the next generation of innovators. Track placements, compete in the
           Super 50, and showcase your professional portfolio — all in one unified workspace.
