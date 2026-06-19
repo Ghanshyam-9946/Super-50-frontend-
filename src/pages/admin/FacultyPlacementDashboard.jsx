@@ -101,6 +101,7 @@ function EnrollStudentsModal({ onClose, onRefresh }) {
 
 function CreateDriveModal({ onClose, onRefresh }) {
   const [loading, setLoading] = useState(false);
+  const [targetFile, setTargetFile] = useState(null);
   const [form, setForm] = useState({
     companyName: '',
     package: '',
@@ -138,13 +139,26 @@ function CreateDriveModal({ onClose, onRefresh }) {
     if (rounds.some(r => !r.name.trim())) {
       return toast.error('Please enter names for all rounds');
     }
+    if (!targetFile) {
+      return toast.error('Please upload an eligible students list file (Excel/PDF)');
+    }
     
     setLoading(true);
     const toastId = toast.loading('Creating placement drive...');
     try {
-      await api.post('/placement/drives', {
-        ...form,
-        rounds
+      const formData = new FormData();
+      formData.append('companyName', form.companyName);
+      formData.append('package', form.package);
+      formData.append('deadline', form.deadline);
+      formData.append('batch', form.batch);
+      formData.append('rounds', JSON.stringify(rounds));
+      formData.append('eligibilityCriteria', JSON.stringify(form.eligibilityCriteria));
+      formData.append('file', targetFile);
+
+      await api.post('/placement/drives', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
       toast.success('Placement drive created successfully!', { id: toastId });
       onRefresh();
@@ -216,6 +230,27 @@ function CreateDriveModal({ onClose, onRefresh }) {
                 onChange={(e) => setForm({ ...form, deadline: e.target.value })}
                 required
               />
+            </div>
+          </div>
+
+          {/* Target Enrollment File (Required) */}
+          <div className="border-t border-[var(--border-light)] pt-4 mt-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Eligible Students List (Excel/PDF) *</label>
+            <div className="border-2 border-dashed border-[var(--border-light)] rounded-2xl p-6 text-center bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 transition-colors cursor-pointer" onClick={() => document.getElementById('target-excel-file').click()}>
+              <input type="file" id="target-excel-file" accept=".xlsx, .xls, .pdf" className="hidden" onChange={(e) => setTargetFile(e.target.files[0])} required />
+              {targetFile ? (
+                <div className="space-y-1">
+                  <FileSpreadsheet className="text-[var(--primary)] mx-auto animate-bounce" size={24} />
+                  <p className="text-xs font-bold text-[var(--text-primary)]">{targetFile.name}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)] uppercase">Click to change</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <Upload className="text-slate-400 mx-auto" size={24} />
+                  <p className="text-xs font-bold text-[var(--text-primary)]">Select student list file</p>
+                  <p className="text-[10px] text-[var(--text-secondary)]">Only .xlsx, .xls, or .pdf</p>
+                </div>
+              )}
             </div>
           </div>
           

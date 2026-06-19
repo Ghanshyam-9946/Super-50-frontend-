@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, UserPlus, FileSpreadsheet, Users, ChevronDown, ChevronUp,
-  Search, X, CheckCircle, Mail, Phone, BookOpen, GraduationCap, RefreshCw
+  Search, X, CheckCircle, Mail, Phone, BookOpen, GraduationCap, RefreshCw, Trash2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -32,6 +32,19 @@ const EnrollStudentsPage = () => {
   useEffect(() => {
     fetchEnrolledStudents();
   }, []);
+
+  const handleUnenroll = async (studentId, studentName) => {
+    if (!window.confirm(`Are you sure you want to remove ${studentName} from placement enrollment?`)) return;
+    
+    const toastId = toast.loading('Removing student from placement...');
+    try {
+      await api.delete(`/placement/enrolled-students/${studentId}`);
+      toast.success('Student removed from placements successfully', { id: toastId });
+      fetchEnrolledStudents();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove student', { id: toastId });
+    }
+  };
 
   const handleUpload = async (e) => {
     e.preventDefault();
@@ -269,6 +282,7 @@ const EnrollStudentsPage = () => {
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Department</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Mobile</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Status</th>
+                                <th className="text-right px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-[var(--border-light)]">
@@ -299,6 +313,15 @@ const EnrollStudentsPage = () => {
                                     <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg w-fit">
                                       <CheckCircle size={12} /> Enrolled
                                     </span>
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <button 
+                                      onClick={() => handleUnenroll(student._id, student.name)} 
+                                      className="text-red-500 hover:text-red-700 bg-red-500/5 hover:bg-red-500/10 p-2 rounded-xl border border-red-500/10 hover:border-red-500/20 transition-all"
+                                      title="Remove from Placements"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
                                   </td>
                                 </tr>
                               ))}
