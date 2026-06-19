@@ -127,7 +127,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['admin', 'super50_admin']}><VerifyCertificatesPage /></RoleGuard>
         } />
         <Route path="/admin/guides" element={
-          <RoleGuard allowed={['admin']}><VerifyGuidesPage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'super50_admin']}><VerifyGuidesPage /></RoleGuard>
         } />
         <Route path="/admin/attendance" element={
           <RoleGuard allowed={['admin']}><AttendancePage /></RoleGuard>

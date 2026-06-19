@@ -113,7 +113,7 @@ export default function VerifyGuidesPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
-                      {guide.role === 'guide' ? 'Project Guide' : guide.role === 'pms_admin' ? 'PMS Admin' : guide.role === 'super50_admin' ? 'Super 50 Admin' : 'T&P Admin'}
+                      {guide.role === 'teacher' ? 'Faculty' : guide.role === 'guide' ? 'Project Guide' : guide.role === 'pms_admin' ? 'PMS Admin' : guide.role === 'super50_admin' ? 'Super 50 Admin' : 'T&P Admin'}
                     </span>
                   </td>
                   <td className="px-6 py-4 font-bold text-[var(--text-primary)]">

@@ -45,6 +45,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
+    { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
   ];
 
   const guideLinks = [
@@ -69,7 +70,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const super50AdminLinks = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
-    { to: '/admin/students', icon: Users, label: 'Super 50 Students' },
+    { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
+    { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Guides' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 

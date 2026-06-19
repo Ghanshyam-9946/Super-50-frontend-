@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchMyProfile } from '../../features/students/studentsSlice';
@@ -19,6 +19,7 @@ import { Award, Zap, Calendar, TrendingUp, Link as RouterLink } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import Super50Card from '../../components/Super50Card';
 import CertificateCard from '../../components/CertificateCard';
+import Super50AttendanceHistoryModal from '../../components/Super50AttendanceHistoryModal';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
@@ -49,6 +50,7 @@ export default function StudentDashboard() {
   const dispatch = useDispatch();
   const { myProfile, loading } = useSelector((state) => state.students);
   const { user } = useSelector((state) => state.auth);
+  const [showAttendanceHistory, setShowAttendanceHistory] = useState(false);
 
   useEffect(() => {
     dispatch(fetchMyProfile());
@@ -149,7 +151,8 @@ export default function StudentDashboard() {
           <motion.div
             key={label}
             variants={itemVariants}
-            className="glass-card p-6 flex flex-col justify-between group"
+            onClick={() => label === 'Attendance' && setShowAttendanceHistory(true)}
+            className={`glass-card p-6 flex flex-col justify-between group ${label === 'Attendance' ? 'cursor-pointer hover:border-[var(--primary)] transition-all' : ''}`}
           >
             <div className="flex items-center justify-between mb-6">
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110" style={{ background: bg, color }}>
@@ -265,6 +268,11 @@ export default function StudentDashboard() {
           </div>
         )}
       </motion.div>
+      <Super50AttendanceHistoryModal 
+        isOpen={showAttendanceHistory} 
+        onClose={() => setShowAttendanceHistory(false)} 
+        student={student} 
+      />
     </div>
   );
 }

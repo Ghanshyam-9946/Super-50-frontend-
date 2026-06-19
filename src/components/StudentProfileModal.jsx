@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User } from 'lucide-react';
+import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -9,12 +9,33 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [attendanceLogs, setAttendanceLogs] = useState([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
 
   useEffect(() => {
     if (isOpen && studentId) {
+      setActiveTab('profile');
       fetchStudentData();
     }
   }, [isOpen, studentId]);
+
+  const fetchAttendanceLogs = async () => {
+    setLoadingAttendance(true);
+    try {
+      const res = await api.get(`/attendance/super50/student/${studentId}`);
+      setAttendanceLogs(res.data.data);
+    } catch (err) {
+      toast.error('Failed to load attendance logs');
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'attendance' && studentId) {
+      fetchAttendanceLogs();
+    }
+  }, [activeTab, studentId]);
 
   const fetchStudentData = async () => {
     setLoading(true);
@@ -92,7 +113,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
               { id: 'profile', icon: User, label: 'Overview' },
               { id: 'activities', icon: Activity, label: 'Activities' },
               { id: 'certificates', icon: Award, label: 'Certificates' },
-              { id: 'placements', icon: Building2, label: 'Placements' }
+              { id: 'placements', icon: Building2, label: 'Placements' },
+              ...(data?.student?.isSuper50 ? [{ id: 'attendance', icon: ClipboardList, label: 'Super 50 Attendance' }] : [])
             ].map(tab => (
               <button
                 key={tab.id}
@@ -273,6 +295,68 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                           )}
                         </div>
                       ))
+                    )}
+                  </div>
+                )}
+
+                {/* Super 50 Attendance Tab */}
+                {activeTab === 'attendance' && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                      <div>
+                        <h4 className="font-bold text-slate-900">Cohort Class Attendance</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">Logs of individual Super 50 class sessions.</p>
+                      </div>
+                      <div className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3.5 py-2 rounded-xl border border-indigo-100 shadow-sm">
+                        Overall Attendance: <span className="font-black text-sm">{Math.round(data?.student?.attendancePercentage || 0)}%</span>
+                      </div>
+                    </div>
+
+                    {loadingAttendance ? (
+                      <div className="flex flex-col justify-center items-center py-20 gap-3 text-slate-500">
+                        <Loader2 size={32} className="animate-spin text-indigo-500" />
+                        <span className="text-[11px] font-black uppercase tracking-widest">Loading history...</span>
+                      </div>
+                    ) : attendanceLogs.length === 0 ? (
+                      <div className="text-center py-16 bg-white border rounded-2xl border-slate-200">
+                        <ClipboardList size={36} className="text-slate-300 mx-auto mb-2" />
+                        <p className="font-bold text-slate-500 text-sm">No class attendance logs recorded for this student.</p>
+                      </div>
+                    ) : (
+                      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-xs font-medium">
+                            <thead className="text-[9px] uppercase bg-slate-50 text-slate-500 font-black tracking-widest border-b border-slate-200">
+                              <tr>
+                                <th className="p-4">Date</th>
+                                <th className="p-4">Class Topic</th>
+                                <th className="p-4">Recorded By</th>
+                                <th className="p-4 text-right">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {attendanceLogs.map((log) => (
+                                <tr key={log._id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="p-4 font-bold text-slate-900">
+                                    {new Date(log.classDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </td>
+                                  <td className="p-4 font-bold text-slate-900 text-sm">{log.className}</td>
+                                  <td className="p-4 text-slate-500">{log.uploadedBy}</td>
+                                  <td className="p-4 text-right">
+                                    <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider ${
+                                      log.status === 'present' 
+                                        ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' 
+                                        : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                    }`}>
+                                      {log.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
