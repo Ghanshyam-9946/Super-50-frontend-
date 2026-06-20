@@ -406,6 +406,50 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
   );
 }
 
+function ViewStudentsModal({ group, onClose }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative flex flex-col" style={{ width: '90%', maxWidth: 600, maxHeight: '85vh', padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
+          <X size={20} />
+        </button>
+        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 mb-4 shadow-sm shrink-0">
+          <Users size={24} />
+        </div>
+        <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1 shrink-0">
+          Selected Students
+        </h2>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6 shrink-0">
+          {group.drive.companyName} • {group.drive.package}
+        </p>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+          {group.students.map((student, idx) => (
+            <div key={student._id || idx} className="p-4 rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)]/20 flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-bold">
+                    {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
+                  </div>
+                  <div>
+                    <p className="font-bold text-[14px] text-[var(--text-primary)]">{student.name || 'Unknown Student'}</p>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{student.email || 'N/A'} • {student.department || 'N/A'}</p>
+                  </div>
+               </div>
+               <div className="text-right">
+                  <p className="text-[12px] font-bold text-[var(--text-primary)]">{student.enrollmentNumber || 'N/A'}</p>
+               </div>
+            </div>
+          ))}
+          {group.students.length === 0 && (
+             <div className="text-center py-8 text-slate-400 text-sm font-medium">No students found</div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 const FacultyPlacementDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -417,6 +461,7 @@ const FacultyPlacementDashboard = () => {
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [showCreateDriveModal, setShowCreateDriveModal] = useState(false);
   const [showUploadResultsModal, setShowUploadResultsModal] = useState(false);
+  const [selectedDriveGroup, setSelectedDriveGroup] = useState(null);
 
   // Single feedback detail modal
   const [selectedFeedback, setSelectedFeedback] = useState(null);
@@ -464,6 +509,25 @@ const FacultyPlacementDashboard = () => {
     f.interviewQuestions?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.student?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
+
+  const groupedSelections = React.useMemo(() => {
+    if (!selections) return [];
+    const map = {};
+    selections.forEach(sel => {
+      const dId = sel.drive?._id;
+      if (!dId) return;
+      if (!map[dId]) {
+        map[dId] = {
+          drive: sel.drive,
+          students: []
+        };
+      }
+      if (sel.student) {
+        map[dId].students.push(sel.student);
+      }
+    });
+    return Object.values(map);
+  }, [selections]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -714,38 +778,40 @@ const FacultyPlacementDashboard = () => {
         )}
 
         {activeTab === 'selections' && (
-          <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {selections?.map((selection, idx) => (
+          <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {groupedSelections.map((group, idx) => (
               <motion.div
-                key={selection._id}
+                key={group.drive._id}
                 variants={itemVariants}
-                className="glass-card p-6 flex flex-col gap-4 group hover:border-emerald-300 transition-all duration-300 relative overflow-hidden"
+                className="glass-card p-6 flex flex-col justify-between group hover:border-emerald-300 transition-all duration-300 relative overflow-hidden min-h-[160px]"
               >
                 <div className="absolute -right-10 -top-10 w-32 h-32 blur-[40px] opacity-20 rounded-full bg-emerald-500 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
                 
-                <div className="flex items-start gap-4 relative z-10">
-                  <div className="w-12 h-12 rounded-[1rem] bg-emerald-50 flex items-center justify-center border border-emerald-200 shrink-0 shadow-sm">
-                    <CheckCircle className="text-emerald-500" size={24} />
+                <div className="flex items-start justify-between relative z-10 mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-[1rem] bg-emerald-50 flex items-center justify-center border border-emerald-200 shrink-0 shadow-sm">
+                      <Briefcase className="text-emerald-500" size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{group.drive.companyName}</h3>
+                      <p className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1 inline-block">{group.drive.package}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0 pt-1">
-                    <h3 className="text-lg font-display font-black text-[var(--text-primary)] truncate">{selection.student?.name}</h3>
-                    <p className="text-[13px] text-[var(--text-secondary)] font-medium truncate mt-0.5">{selection.student?.email} • {selection.student?.department}</p>
+                  <div className="text-right">
+                     <span className="text-3xl font-black text-[var(--text-primary)]">{group.students.length}</span>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Selected</p>
                   </div>
                 </div>
                 
-                <div className="mt-2 p-4 bg-[var(--bg-app)] rounded-xl border border-[var(--border-light)] flex items-center justify-between relative z-10">
-                  <div>
-                    <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80">Company</p>
-                    <p className="font-bold text-[var(--text-primary)] mt-1">{selection.drive?.companyName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80">Package</p>
-                    <p className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1">{selection.drive?.package}</p>
-                  </div>
-                </div>
+                <button 
+                  onClick={() => setSelectedDriveGroup(group)}
+                  className="w-full py-2.5 mt-auto rounded-xl bg-[var(--bg-input)] hover:bg-[var(--primary)] hover:text-white text-[13px] font-bold text-[var(--text-primary)] border border-[var(--border-light)] transition-all flex items-center justify-center gap-2 relative z-10"
+                >
+                  <Users size={16} /> View Students
+                </button>
               </motion.div>
             ))}
-            {(!selections || selections.length === 0) && (
+            {groupedSelections.length === 0 && (
               <motion.div variants={itemVariants} className="col-span-full glass-card p-16 text-center border-dashed">
                 <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
                   <Users className="text-emerald-300" size={36} />
@@ -786,6 +852,13 @@ const FacultyPlacementDashboard = () => {
           drives={drives}
           onClose={() => setShowUploadResultsModal(false)}
           onRefresh={() => dispatch(fetchFacultyPlacementDashboard())}
+        />
+      )}
+
+      {selectedDriveGroup && (
+        <ViewStudentsModal
+          group={selectedDriveGroup}
+          onClose={() => setSelectedDriveGroup(null)}
         />
       )}
     </div>

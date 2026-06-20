@@ -64,7 +64,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
     { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
-    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Admins' },
+    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
   ];
 
   const super50AdminLinks = [
@@ -72,7 +72,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Guides' },
+    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 

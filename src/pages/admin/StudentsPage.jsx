@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { fetchAllStudents, toggleStudentStatus, createStudent } from '../../features/students/studentsSlice';
+import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent } from '../../features/students/studentsSlice';
 import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
@@ -71,14 +71,15 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [checklistSearch, setChecklistSearch] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState('All');
   const [file, setFile] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const studentsRes = await api.get('/admin/students', { params: { isSuper50: 'true' } });
-        const allSuper50 = studentsRes.data.data.filter(s => s.isActive);
+        const studentsRes = await api.get('/admin/students', { params: { isSuper50: 'true', limit: 1000 } });
+        const allSuper50 = studentsRes.data.data;
 
         if (classId) {
           const classRes = await api.get(`/attendance/super50/class/${classId}`);
@@ -97,6 +98,7 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
             _id: s._id,
             name: s.name,
             enrollmentNumber: s.enrollmentNumber,
+            batch: s.batch,
             status: recordsMap[s._id] || 'present'
           }));
           setStudents(merged);
@@ -105,6 +107,7 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
             _id: s._id,
             name: s.name,
             enrollmentNumber: s.enrollmentNumber,
+            batch: s.batch,
             status: 'present'
           }));
           setStudents(list);
@@ -126,7 +129,8 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
   };
 
   const handleMarkAll = (status) => {
-    setStudents(prev => prev.map(s => ({ ...s, status })));
+    const filteredIds = new Set(filteredStudents.map(s => s._id));
+    setStudents(prev => prev.map(s => filteredIds.has(s._id) ? { ...s, status } : s));
   };
 
   const handleSubmit = async (e) => {
@@ -171,12 +175,15 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
   };
 
   const filteredStudents = students.filter(s => 
-    s.name.toLowerCase().includes(checklistSearch.toLowerCase()) ||
-    s.enrollmentNumber.toLowerCase().includes(checklistSearch.toLowerCase())
+    (selectedBatch === 'All' || s.batch === selectedBatch) &&
+    (s.name.toLowerCase().includes(checklistSearch.toLowerCase()) ||
+    (s.enrollmentNumber && s.enrollmentNumber.toLowerCase().includes(checklistSearch.toLowerCase())))
   );
 
-  const presentCount = students.filter(s => s.status === 'present').length;
-  const absentCount = students.length - presentCount;
+  const presentCount = filteredStudents.filter(s => s.status === 'present').length;
+  const absentCount = filteredStudents.length - presentCount;
+  
+  const availableBatches = ['All', ...new Set(students.map(s => s.batch).filter(Boolean))].sort();
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
@@ -272,15 +279,24 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
           ) : (
             <div className="flex-1 flex flex-col min-h-0 border border-[var(--border-light)] rounded-2xl p-4 bg-slate-50/5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-                <div className="relative flex-1">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    type="text"
-                    placeholder="Search students..."
-                    value={checklistSearch}
-                    onChange={(e) => setChecklistSearch(e.target.value)}
-                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 pl-9 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
-                  />
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="relative flex-1">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text"
+                      placeholder="Search students..."
+                      value={checklistSearch}
+                      onChange={(e) => setChecklistSearch(e.target.value)}
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 pl-9 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                    />
+                  </div>
+                  <select 
+                    value={selectedBatch} 
+                    onChange={(e) => setSelectedBatch(e.target.value)}
+                    className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] shrink-0 w-24"
+                  >
+                    {availableBatches.map(b => <option key={b} value={b}>{b === 'All' ? 'All Batches' : b}</option>)}
+                  </select>
                 </div>
                 <div className="flex gap-2 text-[10px] font-black uppercase tracking-wider shrink-0">
                   <button type="button" onClick={() => handleMarkAll('present')} className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg">Mark All Present</button>
@@ -322,10 +338,9 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
                   ))
                 )}
               </div>
-
-              <div className="flex justify-between items-center mt-3 pt-3 border-t border-[var(--border-light)] text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">
-                <div>Total: {students.length} students</div>
-                <div className="flex gap-3">
+              <div className="flex items-center justify-between pt-4 border-t border-[var(--border-light)] mt-2 shrink-0">
+                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Total: {filteredStudents.length} Students</div>
+                <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
                   <span className="text-emerald-500">{presentCount} Present</span>
                   <span className="text-rose-500">{absentCount} Absent</span>
                 </div>
@@ -349,8 +364,8 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [search, setSearch] = useState('');
   const [dept, setDept] = useState('');
   const [batch, setBatch] = useState('');
-  const [sortField, setSortField] = useState('performanceScore');
-  const [sortDir, setSortDir] = useState('desc');
+  const [sortField, setSortField] = useState('batch');
+  const [sortDir, setSortDir] = useState('asc');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
@@ -570,13 +585,21 @@ export default function StudentsPage({ isSuper50 = false }) {
                               <Eye size={14} /> Profile
                             </button>
                             {user?.role === 'admin' && (
-                              <button 
-                                onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
-                                className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
-                                id={`toggle-${student._id}`}
-                              >
-                                {student.isActive ? 'Deactivate' : 'Activate'}
-                              </button>
+                              <>
+                                <button 
+                                  onClick={() => dispatch(toggleStudentSuper50(student._id)).then(r => !r.error && toast.success(`Super 50 status updated`))}
+                                  className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isSuper50 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20 hover:bg-slate-500/20'}`}
+                                >
+                                  {student.isSuper50 ? '- Super 50' : '+ Super 50'}
+                                </button>
+                                <button 
+                                  onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
+                                  className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+                                  id={`toggle-${student._id}`}
+                                >
+                                  {student.isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>

@@ -55,6 +55,15 @@ export const toggleStudentStatus = createAsyncThunk('students/toggleStatus', asy
   }
 });
 
+export const toggleStudentSuper50 = createAsyncThunk('students/toggleSuper50', async (id, { rejectWithValue }) => {
+  try {
+    const { data } = await api.patch(`/admin/students/${id}/toggle-super50`);
+    return { id, isSuper50: data.data.isSuper50 };
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Failed to toggle Super 50 status');
+  }
+});
+
 const studentsSlice = createSlice({
   name: 'students',
   initialState: {
@@ -98,6 +107,10 @@ const studentsSlice = createSlice({
       .addCase(toggleStudentStatus.fulfilled, (state, action) => {
         const student = state.allStudents.find((s) => s._id === action.payload.id);
         if (student) student.isActive = action.payload.isActive;
+      })
+      .addCase(toggleStudentSuper50.fulfilled, (state, action) => {
+        const student = state.allStudents.find((s) => s._id === action.payload.id);
+        if (student) student.isSuper50 = action.payload.isSuper50;
       });
   },
 });

@@ -54,12 +54,12 @@ export default function VerifyGuidesPage() {
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-[var(--primary)] text-[11px] font-black uppercase tracking-widest w-max mb-2 shadow-sm">
             <UserPlus size={14} />
-            <span>Guide Management</span>
+            <span>Faculty & Admin Management</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
-            Verify Admins & Guides
+            Verify Faculty & Admins
           </h1>
-          <p className="text-[var(--text-secondary)] font-medium mt-1">Approve or revoke access for administrators and project guides across the ecosystem.</p>
+          <p className="text-[var(--text-secondary)] font-medium mt-1">Approve or revoke access for faculty, administrators and project guides across the ecosystem.</p>
         </motion.div>
       </header>
 
