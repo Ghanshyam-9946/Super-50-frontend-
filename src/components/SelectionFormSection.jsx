@@ -58,7 +58,9 @@ export default function SelectionFormSection() {
     hackathonParticipation: 'No',
     hackathonDetails: '',
     skills: '',
-    certificateImage: ''
+    certificateImage: '',
+    projectLiveLink: '',
+    projectDescription: ''
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -186,7 +188,9 @@ export default function SelectionFormSection() {
         hackathonParticipation: 'No',
         hackathonDetails: '',
         skills: '',
-        certificateImage: ''
+        certificateImage: '',
+        projectLiveLink: '',
+        projectDescription: ''
       });
       setFormErrors({});
       
@@ -391,15 +395,20 @@ export default function SelectionFormSection() {
               </div>
             ) : (
               // FORM CARD
-              <div className="glass-card p-8 border-[var(--border-light)] space-y-6">
+              <div className="glass p-8 sm:p-12 border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(139,92,246,0.15)] space-y-8 relative overflow-hidden backdrop-blur-2xl bg-[#0a0a0f]/80">
+                <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-70"></div>
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 blur-[100px] rounded-full pointer-events-none"></div>
                 <form onSubmit={handleFormSubmit} className="space-y-6">
                   <div className="space-y-4">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] border-b border-[var(--border-light)] pb-2">Mandatory Info</h4>
+                    <div className="flex items-center gap-4 pb-4">
+                      <h4 className="text-xs font-black uppercase tracking-widest bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Mandatory Info</h4>
+                      <div className="h-px bg-gradient-to-r from-purple-500/30 to-transparent flex-1"></div>
+                    </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Name */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Full Name *</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Full Name *</label>
                         <div className="relative">
                           <User className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
                           <input
@@ -407,7 +416,7 @@ export default function SelectionFormSection() {
                             value={formData.fullName}
                             onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                             placeholder="Name"
-                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 text-[var(--text-primary)] border ${formErrors.fullName ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all`}
+                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.fullName ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all`}
                           />
                         </div>
                         {formErrors.fullName && <p className="text-[10px] text-red-500 font-bold">{formErrors.fullName}</p>}
@@ -415,7 +424,7 @@ export default function SelectionFormSection() {
 
                       {/* Enrolment */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Enrolment Number *</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Enrolment Number *</label>
                         <div className="relative">
                           <Hash className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
                           <input
@@ -423,7 +432,7 @@ export default function SelectionFormSection() {
                             value={formData.enrollmentNumber}
                             onChange={(e) => setFormData({ ...formData, enrollmentNumber: e.target.value })}
                             placeholder="Enrollment ID"
-                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 text-[var(--text-primary)] border ${formErrors.enrollmentNumber ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all uppercase`}
+                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.enrollmentNumber ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all uppercase`}
                           />
                         </div>
                         {formErrors.enrollmentNumber && <p className="text-[10px] text-red-500 font-bold">{formErrors.enrollmentNumber}</p>}
@@ -431,7 +440,7 @@ export default function SelectionFormSection() {
 
                       {/* Mobile */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Mobile Number *</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Mobile Number *</label>
                         <div className="relative">
                           <Phone className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
                           <input
@@ -439,7 +448,7 @@ export default function SelectionFormSection() {
                             value={formData.mobileNumber}
                             onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
                             placeholder="Mobile"
-                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 text-[var(--text-primary)] border ${formErrors.mobileNumber ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all`}
+                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.mobileNumber ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all`}
                           />
                         </div>
                         {formErrors.mobileNumber && <p className="text-[10px] text-red-500 font-bold">{formErrors.mobileNumber}</p>}
@@ -447,7 +456,7 @@ export default function SelectionFormSection() {
 
                       {/* Section */}
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Section *</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Section *</label>
                         <div className="relative">
                           <Layers className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
                           <input
@@ -455,7 +464,7 @@ export default function SelectionFormSection() {
                             value={formData.section}
                             onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                             placeholder="Section (e.g. A)"
-                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 text-[var(--text-primary)] border ${formErrors.section ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all uppercase`}
+                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.section ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all uppercase`}
                           />
                         </div>
                         {formErrors.section && <p className="text-[10px] text-red-500 font-bold">{formErrors.section}</p>}
@@ -463,13 +472,13 @@ export default function SelectionFormSection() {
 
                       {/* Branch */}
                       <div className="space-y-1.5 col-span-full">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Branch *</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Branch *</label>
                         <div className="relative">
                           <BookOpen className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
                           <select
                             value={formData.branch}
                             onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                            className={`w-full pl-10 pr-4 py-2.5 bg-[#111116] text-[var(--text-primary)] border ${formErrors.branch ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all`}
+                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.branch ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all`}
                           >
                             <option value="">-- Choose Branch --</option>
                             {BRANCHES.map((b) => (
@@ -484,12 +493,15 @@ export default function SelectionFormSection() {
 
                   {/* Optional Fields */}
                   <div className="space-y-4 pt-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-[var(--primary)] border-b border-[var(--border-light)] pb-2">Optional Info</h4>
+                    <div className="flex items-center gap-4 pb-4">
+                      <h4 className="text-xs font-black uppercase tracking-widest bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Optional Info</h4>
+                      <div className="h-px bg-gradient-to-r from-purple-500/30 to-transparent flex-1"></div>
+                    </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* GitHub Profile */}
                       <div className="space-y-1.5 col-span-full">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">GitHub URL</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">GitHub URL</label>
                         <div className="relative">
                           <Github className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
                           <input
@@ -497,7 +509,7 @@ export default function SelectionFormSection() {
                             value={formData.githubProfile}
                             onChange={(e) => setFormData({ ...formData, githubProfile: e.target.value })}
                             placeholder="GitHub profile Link"
-                            className={`w-full pl-10 pr-4 py-2.5 bg-black/40 text-[var(--text-primary)] border ${formErrors.githubProfile ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all`}
+                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.githubProfile ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all`}
                           />
                         </div>
                         {formErrors.githubProfile && <p className="text-[10px] text-red-500 font-bold">{formErrors.githubProfile}</p>}
@@ -505,7 +517,7 @@ export default function SelectionFormSection() {
 
                       {/* Certificate Photo File Upload */}
                       <div className="space-y-1.5 col-span-full">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Certificate Image (Max 1MB)</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Certificate Image (Max 1MB)</label>
                         <div className="flex items-center gap-4">
                           <input
                             type="file"
@@ -517,7 +529,7 @@ export default function SelectionFormSection() {
                           <button
                             type="button"
                             onClick={() => document.getElementById('cert-photo-upload').click()}
-                            className="btn-outline-premium text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5"
+                            className="btn-outline-premium text-xs px-5 py-3 rounded-xl flex items-center gap-2 bg-white/[0.03] hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/50 transition-all text-purple-100 shadow-inner"
                           >
                             <Award size={14} /> Upload Photo
                           </button>
@@ -538,7 +550,7 @@ export default function SelectionFormSection() {
 
                       {/* Technical Skills */}
                       <div className="space-y-1.5 col-span-full">
-                        <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Skills / Programming Languages</label>
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Skills / Programming Languages</label>
                         <div className="relative">
                           <Code className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
                           <input
@@ -546,13 +558,13 @@ export default function SelectionFormSection() {
                             value={formData.skills}
                             onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
                             placeholder="Languages/Skills"
-                            className="w-full pl-10 pr-4 py-2.5 bg-black/40 text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all"
+                            className="w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all"
                           />
                         </div>
                       </div>
 
                       {/* Hackathon Radio Option */}
-                      <div className="col-span-full glass p-4 rounded-xl border-[var(--border-light)] flex items-center justify-between">
+                      <div className="col-span-full bg-white/[0.02] p-5 rounded-2xl border border-white/10 flex items-center justify-between shadow-inner">
                         <div>
                           <h5 className="text-xs font-bold text-[var(--text-primary)]">Hackathon Participation</h5>
                           <p className="text-[9px] text-[var(--text-secondary)] mt-0.5">Participated in a hackathon before?</p>
@@ -592,24 +604,52 @@ export default function SelectionFormSection() {
                           exit={{ opacity: 0, height: 0 }}
                           className="col-span-full space-y-1.5"
                         >
-                          <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Hackathon Details</label>
+                          <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Hackathon Details</label>
                           <textarea
                             value={formData.hackathonDetails}
                             onChange={(e) => setFormData({ ...formData, hackathonDetails: e.target.value })}
                             placeholder="Mention name and achievements..."
                             rows={3}
-                            className="w-full bg-black/40 text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl p-3.5 text-xs font-medium focus:outline-none focus:border-[var(--primary)] transition-all resize-none"
+                            className="w-full bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl p-4 text-xs font-medium focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all resize-none"
                           />
                         </motion.div>
                       )}
+
+                      {/* Project Live Link */}
+                      <div className="space-y-1.5 col-span-full">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Project Live Link</label>
+                        <div className="relative">
+                          <Code className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
+                          <input
+                            type="url"
+                            value={formData.projectLiveLink}
+                            onChange={(e) => setFormData({ ...formData, projectLiveLink: e.target.value })}
+                            placeholder="Link to your live project (e.g., Vercel, Netlify)"
+                            className="w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Project Description */}
+                      <div className="col-span-full space-y-1.5">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Project Description</label>
+                        <textarea
+                          value={formData.projectDescription}
+                          onChange={(e) => setFormData({ ...formData, projectDescription: e.target.value })}
+                          placeholder="Briefly describe what your project does..."
+                          rows={3}
+                          className="w-full bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl p-4 text-xs font-medium focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all resize-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 rounded-xl text-xs font-black btn-premium hover:shadow-[0_8px_25px_rgba(139,92,246,0.3)] transition-all duration-300"
+                    className="w-full py-4 mt-4 rounded-xl text-sm font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 relative overflow-hidden group"
                   >
-                    Submit Registration
+                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <span className="relative z-10">Submit Registration</span>
                   </button>
                 </form>
               </div>

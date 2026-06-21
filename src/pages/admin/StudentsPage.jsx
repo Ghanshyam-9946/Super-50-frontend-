@@ -33,7 +33,7 @@ function AddStudentModal({ onClose }) {
         </div>
         <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Add Student</h2>
         <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Account will be created and credentials emailed automatically</p>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
             { key: 'name', label: 'Full Name *', placeholder: 'e.g., Priya Sharma' },
@@ -44,14 +44,14 @@ function AddStudentModal({ onClose }) {
           ].map(({ key, label, placeholder, type = 'text' }) => (
             <div key={key}>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">{label}</label>
-              <input 
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
-                type={type} 
-                value={form[key]} 
+              <input
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400"
+                type={type}
+                value={form[key]}
                 placeholder={placeholder}
-                onChange={(e) => setForm({ ...form, [key]: e.target.value })} 
-                required 
-                id={`add-student-${key}`} 
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                required
+                id={`add-student-${key}`}
               />
             </div>
           ))}
@@ -122,8 +122,8 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
   }, [classId]);
 
   const toggleStudentStatus = (id) => {
-    setStudents(prev => prev.map(s => s._id === id 
-      ? { ...s, status: s.status === 'present' ? 'absent' : 'present' } 
+    setStudents(prev => prev.map(s => s._id === id
+      ? { ...s, status: s.status === 'present' ? 'absent' : 'present' }
       : s
     ));
   };
@@ -174,22 +174,22 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
     }
   };
 
-  const filteredStudents = students.filter(s => 
+  const filteredStudents = students.filter(s =>
     (selectedBatch === 'All' || s.batch === selectedBatch) &&
     (s.name.toLowerCase().includes(checklistSearch.toLowerCase()) ||
-    (s.enrollmentNumber && s.enrollmentNumber.toLowerCase().includes(checklistSearch.toLowerCase())))
+      (s.enrollmentNumber && s.enrollmentNumber.toLowerCase().includes(checklistSearch.toLowerCase())))
   );
 
   const presentCount = filteredStudents.filter(s => s.status === 'present').length;
   const absentCount = filteredStudents.length - presentCount;
-  
+
   const availableBatches = ['All', ...new Set(students.map(s => s.batch).filter(Boolean))].sort();
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative flex flex-col" style={{ width: '90%', maxWidth: 640, height: '80vh', padding: 32 }}>
-        
+
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors z-10">
           <X size={20} />
         </button>
@@ -208,23 +208,23 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
           <div className="grid grid-cols-2 gap-4 shrink-0">
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Class / Topic Name *</label>
-              <input 
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
-                type="text" 
-                value={className} 
+              <input
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400"
+                type="text"
+                value={className}
                 placeholder="e.g., DSA Lecture 1"
-                onChange={(e) => setClassName(e.target.value)} 
-                required 
+                onChange={(e) => setClassName(e.target.value)}
+                required
               />
             </div>
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Class Date *</label>
-              <input 
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm" 
-                type="date" 
-                value={classDate} 
-                onChange={(e) => setClassDate(e.target.value)} 
-                required 
+              <input
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                type="date"
+                value={classDate}
+                onChange={(e) => setClassDate(e.target.value)}
+                required
               />
             </div>
           </div>
@@ -235,21 +235,21 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
                 Or upload attendance via Excel (.xlsx, .xls)
               </label>
               <div className="flex items-center gap-3 w-full">
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   accept=".xlsx, .xls"
                   onChange={(e) => setFile(e.target.files[0])}
-                  className="hidden" 
+                  className="hidden"
                   id="super50-attendance-file"
                 />
-                <label 
+                <label
                   htmlFor="super50-attendance-file"
                   className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] hover:border-[var(--primary)] rounded-xl py-2.5 px-4 text-[12px] font-bold text-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer transition-all shadow-sm"
                 >
                   {file ? `Selected: ${file.name}` : 'Choose Excel File'}
                 </label>
                 {file && (
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setFile(null)}
                     className="px-3 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 rounded-xl text-xs font-bold transition-all border border-rose-500/20"
@@ -268,9 +268,9 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
               <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm">
                 Attendance will be parsed from <strong>{file.name}</strong>. Manual checklist selections are ignored.
               </p>
-              <button 
-                type="button" 
-                onClick={() => setFile(null)} 
+              <button
+                type="button"
+                onClick={() => setFile(null)}
                 className="mt-4 px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-rose-500/20 transition-all"
               >
                 Switch to Manual Checklist
@@ -282,7 +282,7 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
                 <div className="flex items-center gap-2 flex-1">
                   <div className="relative flex-1">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
+                    <input
                       type="text"
                       placeholder="Search students..."
                       value={checklistSearch}
@@ -290,8 +290,8 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
                       className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 pl-9 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
                     />
                   </div>
-                  <select 
-                    value={selectedBatch} 
+                  <select
+                    value={selectedBatch}
                     onChange={(e) => setSelectedBatch(e.target.value)}
                     className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] shrink-0 w-24"
                   >
@@ -314,23 +314,21 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
                   <div className="text-center py-8 text-slate-400 font-bold text-xs uppercase tracking-wider">No students found</div>
                 ) : (
                   filteredStudents.map(student => (
-                    <div 
+                    <div
                       key={student._id}
                       onClick={() => toggleStudentStatus(student._id)}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${
-                        student.status === 'present' 
-                          ? 'bg-emerald-500/5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10' 
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${student.status === 'present'
+                          ? 'bg-emerald-500/5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
                           : 'bg-rose-500/5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10'
-                      }`}
+                        }`}
                     >
                       <div>
                         <div className="font-bold text-xs text-[var(--text-primary)]">{student.name}</div>
                         <div className="text-[10px] font-black uppercase text-slate-400 mt-0.5 tracking-wider">{student.enrollmentNumber}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${
-                          student.status === 'present' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-                        }`}>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${student.status === 'present' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                          }`}>
                           {student.status}
                         </span>
                       </div>
@@ -407,10 +405,10 @@ export default function StudentsPage({ isSuper50 = false }) {
   };
 
   useEffect(() => {
-    dispatch(fetchAllStudents({ 
-      department: dept || undefined, 
-      batch: batch || undefined, 
-      search: search || undefined, 
+    dispatch(fetchAllStudents({
+      department: dept || undefined,
+      batch: batch || undefined,
+      search: search || undefined,
       sort: `${sortDir === 'desc' ? '-' : ''}${sortField}`,
       isSuper50: isSuper50 ? 'true' : undefined
     }));
@@ -446,9 +444,8 @@ export default function StudentsPage({ isSuper50 = false }) {
         <div className="flex border-b border-[var(--border-light)] gap-8">
           <button
             onClick={() => setSubTab('cohort')}
-            className={`pb-4 text-sm font-black uppercase tracking-wider transition-all relative ${
-              subTab === 'cohort' ? 'text-[var(--primary)] font-black' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
+            className={`pb-4 text-sm font-black uppercase tracking-wider transition-all relative ${subTab === 'cohort' ? 'text-[var(--primary)] font-black' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
           >
             Cohort Directory
             {subTab === 'cohort' && (
@@ -457,9 +454,8 @@ export default function StudentsPage({ isSuper50 = false }) {
           </button>
           <button
             onClick={() => setSubTab('attendance')}
-            className={`pb-4 text-sm font-black uppercase tracking-wider transition-all relative ${
-              subTab === 'attendance' ? 'text-[var(--primary)] font-black' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
+            className={`pb-4 text-sm font-black uppercase tracking-wider transition-all relative ${subTab === 'attendance' ? 'text-[var(--primary)] font-black' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
           >
             Class Attendance Sheets
             {subTab === 'attendance' && (
@@ -475,23 +471,23 @@ export default function StudentsPage({ isSuper50 = false }) {
           <div className="flex flex-wrap gap-4">
             <div className="relative flex-1 min-w-[200px]">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
+              <input
                 className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
                 placeholder="Search students by name or enrollment..."
-                value={search} onChange={(e) => setSearch(e.target.value)} id="students-search" 
+                value={search} onChange={(e) => setSearch(e.target.value)} id="students-search"
               />
             </div>
             <div className="relative">
               <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <select 
-                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[150px]" 
+              <select
+                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer min-w-[150px]"
                 value={batch} onChange={(e) => setBatch(e.target.value)} id="students-batch-filter"
               >
                 <option value="">All Batches</option>
                 {filters.batches?.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                 <ChevronDown size={14} />
+                <ChevronDown size={14} />
               </div>
             </div>
           </div>
@@ -500,7 +496,7 @@ export default function StudentsPage({ isSuper50 = false }) {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             {loading ? (
               <div className="p-6 flex flex-col gap-3">
-                {[1,2,3,4,5].map(i => <div key={i} className="animate-pulse bg-[var(--bg-hover)] rounded-xl h-16" />)}
+                {[1, 2, 3, 4, 5].map(i => <div key={i} className="animate-pulse bg-[var(--bg-hover)] rounded-xl h-16" />)}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -578,7 +574,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
-                            <button 
+                            <button
                               onClick={() => setSelectedStudentId(student._id)}
                               className="btn-outline-premium text-xs py-1.5 px-3 flex items-center gap-1.5 shadow-sm"
                             >
@@ -586,13 +582,13 @@ export default function StudentsPage({ isSuper50 = false }) {
                             </button>
                             {user?.role === 'admin' && (
                               <>
-                                <button 
+                                <button
                                   onClick={() => dispatch(toggleStudentSuper50(student._id)).then(r => !r.error && toast.success(`Super 50 status updated`))}
                                   className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isSuper50 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20 hover:bg-slate-500/20'}`}
                                 >
                                   {student.isSuper50 ? '- Super 50' : '+ Super 50'}
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
                                   className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
                                   id={`toggle-${student._id}`}
@@ -709,16 +705,16 @@ export default function StudentsPage({ isSuper50 = false }) {
       )}
 
       {showAddModal && <AddStudentModal onClose={() => setShowAddModal(false)} />}
-      <StudentProfileModal 
-        isOpen={!!selectedStudentId} 
-        onClose={() => setSelectedStudentId(null)} 
-        studentId={selectedStudentId} 
+      <StudentProfileModal
+        isOpen={!!selectedStudentId}
+        onClose={() => setSelectedStudentId(null)}
+        studentId={selectedStudentId}
       />
       {showAttendanceModal && (
-        <Super50ClassAttendanceModal 
-          onClose={() => setShowAttendanceModal(false)} 
-          classId={editingClassId} 
-          onSuccess={fetchClasses} 
+        <Super50ClassAttendanceModal
+          onClose={() => setShowAttendanceModal(false)}
+          classId={editingClassId}
+          onSuccess={fetchClasses}
         />
       )}
     </div>
