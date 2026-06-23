@@ -496,13 +496,6 @@ const FacultyPlacementDashboard = () => {
     }
   }, [error, dispatch]);
 
-  if (loading && drives.length === 0 && feedbacks.length === 0) return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-      <div className="w-12 h-12 border-4 border-purple-500/20 border-t-[var(--primary)] rounded-full animate-spin"></div>
-      <p className="text-[var(--text-secondary)] font-medium">Loading placement analytics...</p>
-    </div>
-  );
-
   const filteredFeedbacks = feedbacks?.filter(f => 
     f.drive?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     f.experience?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -528,6 +521,13 @@ const FacultyPlacementDashboard = () => {
     });
     return Object.values(map);
   }, [selections]);
+
+  if (loading && drives.length === 0 && feedbacks.length === 0) return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
+      <div className="w-12 h-12 border-4 border-purple-500/20 border-t-[var(--primary)] rounded-full animate-spin"></div>
+      <p className="text-[var(--text-secondary)] font-medium">Loading placement analytics...</p>
+    </div>
+  );
 
   const containerVariants = {
     hidden: { opacity: 0 },
