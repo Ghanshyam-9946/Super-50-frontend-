@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Loader2, User, Phone, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
+import api from '../services/api';
 import { updateUser } from '../features/auth/authSlice';
 
 const ProfileEditModal = ({ isOpen, onClose }) => {
@@ -74,13 +74,7 @@ const ProfileEditModal = ({ isOpen, onClose }) => {
         data.append('profileImage', profileImage);
       }
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const res = await axios.put(`${API_URL}/api/auth/profile`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const res = await api.put('/auth/profile', data);
 
       if (res.data.success) {
         toast.success('Profile updated successfully');
