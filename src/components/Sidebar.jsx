@@ -9,6 +9,7 @@ import {
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileEditModal from './ProfileEditModal';
+import { getImageUrl } from '../utils/imageUrl';
 
 const Sidebar = ({ theme, toggleTheme }) => {
   const { user } = useSelector((state) => state.auth);
@@ -181,7 +182,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--bg-app)] to-[var(--bg-app)] border border-[var(--border-light)] flex items-center justify-center text-sm font-bold text-[var(--text-primary)] shadow-sm shrink-0 overflow-hidden group-hover:border-[var(--primary)] transition-colors">
               {user?.profileImage ? (
                 <img 
-                  src={user.profileImage} 
+                  src={getImageUrl(user.profileImage)} 
                   alt="Profile" 
                   className="w-full h-full object-cover" 
                 />

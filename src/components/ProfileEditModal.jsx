@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 import { updateUser } from '../features/auth/authSlice';
+import { getImageUrl } from '../utils/imageUrl';
 
 const ProfileEditModal = ({ isOpen, onClose }) => {
   const { user, token } = useSelector((state) => state.auth);
@@ -33,7 +34,7 @@ const ProfileEditModal = ({ isOpen, onClose }) => {
       });
       // Set existing image preview if available
       if (user.profileImage) {
-        setImagePreview(user.profileImage);
+        setImagePreview(getImageUrl(user.profileImage));
       } else {
         setImagePreview(null);
       }

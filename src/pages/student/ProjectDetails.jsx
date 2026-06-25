@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { getImageUrl } from '../../utils/imageUrl';
 import { fetchProjectById } from '../../features/project/projectSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -80,7 +81,7 @@ const ProjectDetails = () => {
               {currentProject.teamMembers.map((m, i) => (
                 <img 
                   key={i} 
-                  src={m.profileImage || `https://ui-avatars.com/api/?name=${m.name}&background=random`}
+                  src={m.profileImage ? getImageUrl(m.profileImage) : `https://ui-avatars.com/api/?name=${m.name}&background=random`}
                   className="w-10 h-10 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-black/5 relative hover:z-10 hover:scale-110 transition-transform" 
                   title={m.name}
                   alt={m.name}

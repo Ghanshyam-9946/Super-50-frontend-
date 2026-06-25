@@ -4,6 +4,7 @@ import { fetchMyProjects } from '../../features/project/projectSlice';
 import { motion } from 'framer-motion';
 import { Plus, Layout, CheckCircle2, Circle, Calendar, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const ProjectDashboard = () => {
   const dispatch = useDispatch();
@@ -70,7 +71,7 @@ const ProjectDashboard = () => {
                 {project.teamMembers.slice(0, 3).map((member, i) => (
                   <img
                     key={i}
-                    src={member.profileImage || `https://ui-avatars.com/api/?name=${member.name}&background=random`}
+                    src={member.profileImage ? getImageUrl(member.profileImage) : `https://ui-avatars.com/api/?name=${member.name}&background=random`}
                     className="w-10 h-10 rounded-full border-2 border-white shadow-sm ring-1 ring-black/5 relative z-10 hover:z-20 hover:scale-110 transition-transform"
                     alt={member.name}
                     title={member.name}
