@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
                   <input
                     type="email"
                     required
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 pl-12 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 pl-12 text-gray-900 focus:outline-none focus:border-purple-500/50 transition-colors placeholder:text-gray-400"
                     placeholder="name@university.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

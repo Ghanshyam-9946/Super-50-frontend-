@@ -116,10 +116,21 @@ const EnrollStudentsPage = () => {
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
         className="glass-card p-8"
       >
-        <h2 className="text-lg font-display font-black text-[var(--text-primary)] mb-1">Upload Enrollment Excel</h2>
-        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
-          Excel should have columns: <span className="font-bold text-[var(--text-primary)]">Name, Enrollment No, Email, Mobile</span> (batch & department optional)
-        </p>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-lg font-display font-black text-[var(--text-primary)] mb-1">Upload Enrollment Excel</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium">
+              Excel should have columns: <span className="font-bold text-[var(--text-primary)]">Name, Enrollment No, Email, Mobile</span> (batch & department optional)
+            </p>
+          </div>
+          <a
+            href="/upload/enroll%20for%20drive.xlsx"
+            download="enroll_for_drive.xlsx"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
+          >
+            <FileSpreadsheet size={16} /> Download Template
+          </a>
+        </div>
 
         <form onSubmit={handleUpload} className="space-y-6">
           {/* Drop Zone */}

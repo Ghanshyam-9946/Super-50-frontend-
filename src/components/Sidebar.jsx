@@ -3,11 +3,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
-  ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X,
+  ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ProfileEditModal from './ProfileEditModal';
 
 const Sidebar = ({ theme, toggleTheme }) => {
   const { user } = useSelector((state) => state.auth);
@@ -15,6 +16,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Core Links (All Students)
   const commonStudentLinks = [
@@ -38,6 +40,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/projects', icon: Layout, label: 'Projects' },
     { to: '/activities', icon: Zap, label: 'Activities' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
+    { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
   ];
 
   const teacherLinks = [
@@ -71,8 +74,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
+    { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
@@ -147,7 +150,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
         )}
 
         {/* PMS Section (Students Only) */}
-        {user?.role === 'student' && (
+        {user?.role === 'student' && user?.enrollmentNo && (
           <div className="space-y-1.5">
             {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4 mt-6">Academics</p>}
             {pmsStudentLinks.map((link) => (
@@ -170,13 +173,25 @@ const Sidebar = ({ theme, toggleTheme }) => {
       {/* Footer / User Profile */}
       <div className="p-4 mt-auto border-t border-[var(--border-light)]">
         <div className={`flex flex-col gap-3 ${collapsed ? 'items-center' : ''}`}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--bg-app)] to-[var(--bg-app)] border border-[var(--border-light)] flex items-center justify-center text-sm font-bold text-[var(--text-primary)] shadow-sm shrink-0">
-              {user?.name?.[0]}
+          <div 
+            className="flex items-center gap-3 cursor-pointer group p-1.5 -ml-1.5 rounded-xl hover:bg-[var(--bg-hover)] transition-colors"
+            onClick={() => setIsProfileModalOpen(true)}
+            title="Edit Profile"
+          >
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--bg-app)] to-[var(--bg-app)] border border-[var(--border-light)] flex items-center justify-center text-sm font-bold text-[var(--text-primary)] shadow-sm shrink-0 overflow-hidden group-hover:border-[var(--primary)] transition-colors">
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover" 
+                />
+              ) : (
+                user?.name?.[0]
+              )}
             </div>
             {!collapsed && (
               <div className="overflow-hidden">
-                <div className="font-bold text-sm text-[var(--text-primary)] truncate">{user?.name}</div>
+                <div className="font-bold text-sm text-[var(--text-primary)] truncate group-hover:text-[var(--primary)] transition-colors">{user?.name}</div>
                 <div className="text-[10px] text-[var(--text-secondary)] truncate uppercase tracking-widest">{user?.isSuper50 ? 'Super 50 Member' : user?.role}</div>
               </div>
             )}
@@ -223,6 +238,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
           </>
         )}
       </AnimatePresence>
+
+      <ProfileEditModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+      />
     </>
   );
 };

@@ -127,9 +127,18 @@ const DriveDetailsPage = () => {
 
       {/* Rounds Overview */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass-card p-8">
-        <h2 className="text-lg font-display font-black text-[var(--text-primary)] mb-6 flex items-center gap-2">
-          <Layers className="text-[var(--primary)]" size={20} /> Hiring Rounds Pipeline
-        </h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-display font-black text-[var(--text-primary)] flex items-center gap-2">
+            <Layers className="text-[var(--primary)]" size={20} /> Hiring Rounds Pipeline
+          </h2>
+          <a
+            href="/upload/round%20result.xlsx"
+            download="round_result.xlsx"
+            className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
+          >
+            <FileSpreadsheet size={14} /> Download Template
+          </a>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {drive.rounds?.map((round, idx) => {
             const isLocked = idx > 0 && !applications.some(app => app.roundsProgress?.some(p => p.roundName === drive.rounds[idx - 1].name));

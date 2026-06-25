@@ -50,8 +50,8 @@ export default function SelectionFormSection() {
   const [formData, setFormData] = useState({
     fullName: '',
     enrollmentNumber: '',
+    email: '',
     mobileNumber: '',
-    branch: '',
     section: '',
     certifications: '',
     githubProfile: '',
@@ -142,6 +142,14 @@ export default function SelectionFormSection() {
     if (!formData.fullName.trim()) errors.fullName = 'Full Name is required';
     if (!formData.enrollmentNumber.trim()) errors.enrollmentNumber = 'Enrolment Number is required';
     
+    // Email Validation
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!emailRegex.test(formData.email.trim())) {
+      errors.email = 'Please enter a valid email';
+    }
+    
     // Mobile Validation (10 digits)
     const mobileRegex = /^[0-9]{10}$/;
     if (!formData.mobileNumber.trim()) {
@@ -150,7 +158,6 @@ export default function SelectionFormSection() {
       errors.mobileNumber = 'Please enter a valid 10-digit mobile number';
     }
 
-    if (!formData.branch) errors.branch = 'Branch selection is required';
     if (!formData.section.trim()) errors.section = 'Section is required';
 
     // GitHub URL validation if provided
@@ -180,8 +187,8 @@ export default function SelectionFormSection() {
       setFormData({
         fullName: '',
         enrollmentNumber: '',
+        email: '',
         mobileNumber: '',
-        branch: '',
         section: '',
         certifications: '',
         githubProfile: '',
@@ -301,12 +308,16 @@ export default function SelectionFormSection() {
                       <span className="text-sm font-bold mt-0.5 block text-[var(--text-primary)]">{userSubmission?.enrollmentNumber}</span>
                     </div>
                     <div>
+                      <span className="text-[var(--text-secondary)] uppercase block tracking-wider text-[8px] font-black">Email Address</span>
+                      <span className="text-sm font-bold mt-0.5 block text-[var(--text-primary)]">{userSubmission?.email}</span>
+                    </div>
+                    <div>
                       <span className="text-[var(--text-secondary)] uppercase block tracking-wider text-[8px] font-black">Mobile Number</span>
                       <span className="text-sm font-bold mt-0.5 block text-[var(--text-primary)]">{userSubmission?.mobileNumber}</span>
                     </div>
                     <div>
-                      <span className="text-[var(--text-secondary)] uppercase block tracking-wider text-[8px] font-black">Branch & Section</span>
-                      <span className="text-sm font-bold mt-0.5 block text-[var(--text-primary)]">{userSubmission?.branch} - Sec {userSubmission?.section}</span>
+                      <span className="text-[var(--text-secondary)] uppercase block tracking-wider text-[8px] font-black">Section</span>
+                      <span className="text-sm font-bold mt-0.5 block text-[var(--text-primary)]">Sec {userSubmission?.section}</span>
                     </div>
                     {userSubmission?.githubProfile && (
                       <div className="col-span-full">
@@ -438,6 +449,22 @@ export default function SelectionFormSection() {
                         {formErrors.enrollmentNumber && <p className="text-[10px] text-red-500 font-bold">{formErrors.enrollmentNumber}</p>}
                       </div>
 
+                      {/* Email */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Email Address *</label>
+                        <div className="relative">
+                          <User className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
+                          <input
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="Email Address"
+                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.email ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all`}
+                          />
+                        </div>
+                        {formErrors.email && <p className="text-[10px] text-red-500 font-bold">{formErrors.email}</p>}
+                      </div>
+
                       {/* Mobile */}
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Mobile Number *</label>
@@ -455,7 +482,7 @@ export default function SelectionFormSection() {
                       </div>
 
                       {/* Section */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 col-span-full">
                         <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Section *</label>
                         <div className="relative">
                           <Layers className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
@@ -468,25 +495,6 @@ export default function SelectionFormSection() {
                           />
                         </div>
                         {formErrors.section && <p className="text-[10px] text-red-500 font-bold">{formErrors.section}</p>}
-                      </div>
-
-                      {/* Branch */}
-                      <div className="space-y-1.5 col-span-full">
-                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Branch *</label>
-                        <div className="relative">
-                          <BookOpen className="absolute left-4 top-3.5 text-[var(--text-secondary)]" size={14} />
-                          <select
-                            value={formData.branch}
-                            onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-                            className={`w-full pl-10 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.06] text-[var(--text-primary)] border ${formErrors.branch ? 'border-red-500' : 'border-[var(--border-light)]'} rounded-xl text-sm focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 transition-all`}
-                          >
-                            <option value="">-- Choose Branch --</option>
-                            {BRANCHES.map((b) => (
-                              <option key={b} value={b}>{b}</option>
-                            ))}
-                          </select>
-                        </div>
-                        {formErrors.branch && <p className="text-[10px] text-red-500 font-bold">{formErrors.branch}</p>}
                       </div>
                     </div>
                   </div>

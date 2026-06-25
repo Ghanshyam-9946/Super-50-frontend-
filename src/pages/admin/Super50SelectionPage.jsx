@@ -121,6 +121,26 @@ const Super50SelectionPage = () => {
     }
   };
 
+  // Bulk Approve Registrations
+  const handleBulkApprove = async () => {
+    const pendingIds = submissions.filter(s => s.status === 'pending' || !s.status).map(s => s._id || s.id);
+    if (pendingIds.length === 0) {
+      toast.error('No pending requests to approve.');
+      return;
+    }
+    
+    if (window.confirm(`Are you sure you want to approve ${pendingIds.length} pending requests?`)) {
+      const toastId = toast.loading('Approving requests...');
+      try {
+        await api.post('/selection-form/submissions/bulk-approve', { ids: pendingIds });
+        toast.success(`Successfully approved ${pendingIds.length} requests!`, { id: toastId });
+        fetchSettingsAndSubmissions(true);
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to bulk approve', { id: toastId });
+      }
+    }
+  };
+
   // Excel Exporter
   const exportToExcel = () => {
     if (submissions.length === 0) {
@@ -130,6 +150,7 @@ const Super50SelectionPage = () => {
     const data = submissions.map(s => ({
       'Full Name': s.fullName,
       'Enrollment Number': s.enrollmentNumber,
+      'Email': s.email,
       'Mobile Number': s.mobileNumber,
       'Branch': s.branch,
       'Section': s.section,
@@ -374,6 +395,13 @@ const Super50SelectionPage = () => {
                     <Download size={16} /> Export Excel
                   </button>
                   <button
+                    onClick={handleBulkApprove}
+                    disabled={submissions.filter(s => s.status === 'pending' || !s.status).length === 0}
+                    className="btn-premium text-xs px-3.5 py-2 flex items-center gap-1.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    <CheckCircle size={13} /> Bulk Approve
+                  </button>
+                  <button
                     onClick={handleClearSubmissions}
                     disabled={submissions.length === 0}
                     className="btn-danger text-xs px-3.5 py-2 flex items-center gap-1.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
@@ -450,6 +478,7 @@ const Super50SelectionPage = () => {
                             <div className="flex flex-col">
                               <span className="font-bold text-sm text-[var(--text-primary)]">{sub.fullName}</span>
                               <span className="text-[10px] font-black uppercase text-[var(--primary)] tracking-wide mt-0.5">{sub.enrollmentNumber}</span>
+                              <span className="text-[10px] text-[var(--text-secondary)] mt-0.5">{sub.email}</span>
                             </div>
                           </td>
                           {/* Branch & Section */}

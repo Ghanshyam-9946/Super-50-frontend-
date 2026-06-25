@@ -36,10 +36,11 @@ import CreateDrivePage from './pages/admin/CreateDrivePage';
 import DriveDetailsPage from './pages/admin/DriveDetailsPage';
 import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
 
-// New Features
 import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
 import ProjectDashboard from './pages/student/ProjectDashboard';
 import ProjectDetails from './pages/student/ProjectDetails';
+import PodAIMarksUploadPage from './pages/admin/PodAIMarksUploadPage';
+import PodAIMarksPage from './pages/student/PodAIMarksPage';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -112,6 +113,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/certificates" element={
           <Super50Guard><CertificatesPage /></Super50Guard>
         } />
+        <Route path="/student/podai-marks" element={
+          <Super50Guard><PodAIMarksPage /></Super50Guard>
+        } />
 
         {/* Admin routes */}
         <Route path="/admin/dashboard" element={
@@ -137,6 +141,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/super50-selection" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><Super50SelectionPage /></RoleGuard>
+        } />
+        <Route path="/admin/podai-upload" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksUploadPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>

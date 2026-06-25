@@ -126,9 +126,18 @@ const DriveResultUpload = () => {
           className="space-y-8"
         >
           <div className="glass-card p-8 space-y-8 shadow-sm">
-            <h3 className="text-xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
-              <Upload size={24} className="text-[var(--primary)]" /> Upload Excel Sheet
-            </h3>
+            <div className="flex justify-between items-start">
+              <h3 className="text-xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
+                <Upload size={24} className="text-[var(--primary)]" /> Upload Excel Sheet
+              </h3>
+              <a
+                href="/upload/round%20result.xlsx"
+                download="round_result.xlsx"
+                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
+              >
+                <FileSpreadsheet size={14} /> Download Template
+              </a>
+            </div>
 
             {/* Drive Selection */}
             <div>

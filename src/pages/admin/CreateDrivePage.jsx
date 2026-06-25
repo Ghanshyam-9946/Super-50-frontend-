@@ -191,7 +191,16 @@ const CreateDrivePage = () => {
 
         {/* Target Enrollment File (Required) */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="glass-card p-8 space-y-4">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Eligible Students List (Excel/PDF) *</label>
+          <div className="flex justify-between items-start mb-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Eligible Students List (Excel/PDF) *</label>
+            <a
+              href="/upload/to%20register.xlsx"
+              download="to_register.xlsx"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-[10px] font-bold whitespace-nowrap shrink-0 uppercase tracking-widest"
+            >
+              <FileSpreadsheet size={14} /> Download Template
+            </a>
+          </div>
           <div
             className="border-2 border-dashed border-[var(--border-light)] rounded-2xl p-10 text-center bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 transition-colors cursor-pointer"
             onClick={() => document.getElementById('target-excel-file').click()}
