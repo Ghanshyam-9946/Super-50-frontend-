@@ -164,7 +164,7 @@ export default function PodAIMarksSheetPage() {
                         
                         <td className="px-6 py-3.5 text-center">
                           <div className="inline-flex items-center justify-center bg-[var(--primary)]/10 text-[var(--primary)] font-display font-black text-sm px-3 py-1 rounded-lg border border-[var(--primary)]/20 shadow-sm min-w-[4rem]">
-                            {totalMarks}
+                            {Number(totalMarks.toFixed(2))}
                           </div>
                         </td>
                       </tr>

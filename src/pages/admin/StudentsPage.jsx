@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent, deleteAllStudents } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit } from 'lucide-react';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
@@ -57,6 +57,71 @@ function AddStudentModal({ onClose }) {
           ))}
           <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2" disabled={loading} id="add-student-submit">
             {loading ? <><Loader2 size={16} className="animate-spin" /> Creating...</> : <><UserPlus size={16} /> Create Account & Send Email</>}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function EditStudentModal({ student, onClose, onSuccess }) {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    name: student?.name || '',
+    department: student?.department || '',
+    batch: student?.batch || '',
+    enrollmentNumber: student?.enrollmentNumber || '',
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api.put(`/admin/students/${student._id}`, form);
+      toast.success('Student updated successfully!');
+      onSuccess();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update student');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
+          <X size={20} />
+        </button>
+        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center border border-indigo-500/20 mb-4 shadow-sm">
+          <Edit size={24} />
+        </div>
+        <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Edit Student</h2>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Update basic information</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {[
+            { key: 'name', label: 'Full Name *', placeholder: 'e.g., Priya Sharma' },
+            { key: 'enrollmentNumber', label: 'Enrollment Number *', placeholder: 'e.g., 0201CS221001' },
+            { key: 'department', label: 'Department *', placeholder: 'e.g., Computer Science' },
+            { key: 'batch', label: 'Batch *', placeholder: 'e.g., 2023-27' },
+          ].map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">{label}</label>
+              <input
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400"
+                type="text"
+                value={form[key]}
+                placeholder={placeholder}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                required
+              />
+            </div>
+          ))}
+          <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2" disabled={loading}>
+            {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><Edit size={16} /> Save Changes</>}
           </button>
         </form>
       </motion.div>
@@ -231,9 +296,18 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
 
           {!classId && (
             <div className="border border-dashed border-[var(--border-light)] rounded-2xl p-4 bg-slate-50/5 flex flex-col items-center justify-center shrink-0">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 text-center w-full">
-                Or upload attendance via Excel (.xlsx, .xls)
-              </label>
+              <div className="flex justify-between w-full mb-2 items-center">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                  Or upload attendance via Excel (.xlsx, .xls)
+                </label>
+                <a 
+                  href="/upload/super 50.xlsx" 
+                  download="super 50.xlsx"
+                  className="text-[10px] text-[var(--primary)] hover:text-[var(--primary-light)] font-bold flex items-center gap-1 bg-[var(--primary)]/10 px-2 py-1 rounded"
+                >
+                  <Download size={12} /> Template
+                </a>
+              </div>
               <div className="flex items-center gap-3 w-full">
                 <input
                   type="file"
@@ -365,6 +439,7 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [sortField, setSortField] = useState('batch');
   const [sortDir, setSortDir] = useState('asc');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   // Super 50 Class Attendance States
@@ -599,6 +674,11 @@ export default function StudentsPage({ isSuper50 = false }) {
                                 {student.isSuper50 ? '- Super 50' : '+ Super 50'}
                               </button>
                             )}
+                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+                              <button onClick={() => setEditingStudent(student)} className="p-2 text-indigo-500 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 rounded-lg transition-colors" title="Edit Student">
+                                <Edit size={16} />
+                              </button>
+                            )}
                             {user?.role === 'admin' && (
                               <>
                                 <button
@@ -729,6 +809,13 @@ export default function StudentsPage({ isSuper50 = false }) {
       )}
 
       {showAddModal && <AddStudentModal onClose={() => setShowAddModal(false)} />}
+      {editingStudent && (
+        <EditStudentModal
+          student={editingStudent}
+          onClose={() => setEditingStudent(null)}
+          onSuccess={() => dispatch(fetchAllStudents({}))}
+        />
+      )}
       <StudentProfileModal
         isOpen={!!selectedStudentId}
         onClose={() => setSelectedStudentId(null)}

@@ -26,8 +26,9 @@ export default function LeaderboardPage({ limit }) {
     )
     : leaderboard;
 
-  // When a limit is provided (e.g., on the landing page), show only the first `limit` entries
-  const displayed = typeof limit === 'number' ? filtered.slice(0, limit) : filtered;
+  // When a limit is provided (e.g., on the landing page), show only the first `limit` entries. Otherwise default to top 10.
+  const displayLimit = typeof limit === 'number' ? limit : 10;
+  const displayed = filtered.slice(0, displayLimit);
 
   const myRank = leaderboard.findIndex((s) => s._id === user?._id) + 1;
 
@@ -117,7 +118,9 @@ export default function LeaderboardPage({ limit }) {
       <motion.div className="glass-card overflow-hidden"
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <div className="p-6 border-b border-[var(--border-light)] flex justify-between items-center bg-[var(--bg-app)]">
-          <span className="font-display font-black text-lg text-[var(--text-primary)]">All Students ({filtered.length})</span>
+          <span className="font-display font-black text-lg text-[var(--text-primary)]">
+            Top {displayLimit} Students
+          </span>
         </div>
 
         {loading ? (

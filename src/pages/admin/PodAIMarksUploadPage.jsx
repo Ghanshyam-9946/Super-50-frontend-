@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
-import { Upload, FileSpreadsheet, CheckCircle, Loader2, Info, FileText, Trash2, ChevronDown, ChevronUp, AlertCircle, RefreshCw } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, Loader2, Info, FileText, Trash2, ChevronDown, ChevronUp, AlertCircle, RefreshCw, Download } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ const PodAIMarksUploadPage = () => {
   const [history, setHistory] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [fetchingHistory, setFetchingHistory] = useState(true);
+  const [selectedUploads, setSelectedUploads] = useState([]);
   
   const fetchHistoryAndAnalytics = async () => {
     setFetchingHistory(true);
@@ -70,8 +71,43 @@ const PodAIMarksUploadPage = () => {
       await api.delete('/podai/upload', { data: { testName, testDate } });
       toast.success('Upload deleted successfully');
       fetchHistoryAndAnalytics();
+      setSelectedUploads(selectedUploads.filter(u => !(u.testName === testName && u.testDate === testDate)));
     } catch (error) {
       toast.error('Failed to delete upload');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUploads.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedUploads.length} selected upload(s)?`)) return;
+
+    setLoading(true);
+    try {
+      await api.post('/podai/upload/bulk-delete', { uploads: selectedUploads });
+      toast.success(`${selectedUploads.length} uploads deleted successfully`);
+      setSelectedUploads([]);
+      fetchHistoryAndAnalytics();
+    } catch (error) {
+      toast.error('Failed to delete selected uploads');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSelection = (upload) => {
+    const isSelected = selectedUploads.some(u => u.testName === upload._id.testName && u.testDate === upload._id.testDate);
+    if (isSelected) {
+      setSelectedUploads(selectedUploads.filter(u => !(u.testName === upload._id.testName && u.testDate === upload._id.testDate)));
+    } else {
+      setSelectedUploads([...selectedUploads, { testName: upload._id.testName, testDate: upload._id.testDate }]);
+    }
+  };
+
+  const toggleAll = () => {
+    if (selectedUploads.length === history.length) {
+      setSelectedUploads([]);
+    } else {
+      setSelectedUploads(history.map(h => ({ testName: h._id.testName, testDate: h._id.testDate })));
     }
   };
 
@@ -109,9 +145,18 @@ const PodAIMarksUploadPage = () => {
         {/* Upload Section */}
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
           <div className="glass-card p-8 space-y-8 shadow-sm">
-            <h3 className="text-xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
-              <FileSpreadsheet size={24} className="text-[var(--primary)]" /> Upload Excel Sheet
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
+                <FileSpreadsheet size={24} className="text-[var(--primary)]" /> Upload Excel Sheet
+              </h3>
+              <a 
+                href="/upload/pod.xlsx" 
+                download
+                className="btn-outline-premium text-[12px] py-1.5 px-3 flex items-center gap-2 rounded-lg"
+              >
+                <Download size={14} /> Template
+              </a>
+            </div>
 
             <div 
               {...getRootProps()} 
@@ -213,9 +258,20 @@ const PodAIMarksUploadPage = () => {
           <div className="glass-card p-8">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Upload History</h3>
-              <button onClick={fetchHistoryAndAnalytics} className="btn-outline-premium p-2 rounded-lg">
-                <RefreshCw size={14} className={fetchingHistory ? 'animate-spin' : ''} />
-              </button>
+              <div className="flex items-center gap-3">
+                {selectedUploads.length > 0 && (
+                  <button 
+                    onClick={handleBulkDelete} 
+                    disabled={loading}
+                    className="btn-outline-premium p-2 text-red-500 border-red-200 hover:bg-red-50 flex items-center gap-2 text-sm rounded-lg"
+                  >
+                    <Trash2 size={16} /> <span className="hidden sm:inline">Delete Selected ({selectedUploads.length})</span>
+                  </button>
+                )}
+                <button onClick={fetchHistoryAndAnalytics} className="btn-outline-premium p-2 rounded-lg">
+                  <RefreshCw size={14} className={fetchingHistory ? 'animate-spin' : ''} />
+                </button>
+              </div>
             </div>
 
             {fetchingHistory ? (
@@ -227,14 +283,33 @@ const PodAIMarksUploadPage = () => {
               </div>
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                {history.map((h, i) => (
-                  <div key={i} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                      <h4 className="font-bold text-[var(--text-primary)]">{h._id.testName}</h4>
-                      <div className="text-[11px] text-[var(--text-secondary)] font-medium mt-1 flex gap-3">
-                        <span>{new Date(h._id.testDate).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span>{h.totalStudents} Students</span>
+                <div className="flex items-center gap-3 mb-2 px-2">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
+                    checked={history.length > 0 && selectedUploads.length === history.length}
+                    onChange={toggleAll}
+                  />
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Select All</span>
+                </div>
+                {history.map((h, i) => {
+                  const isSelected = selectedUploads.some(u => u.testName === h._id.testName && u.testDate === h._id.testDate);
+                  return (
+                  <div key={i} className={`bg-[var(--bg-input)] border ${isSelected ? 'border-[var(--primary)] bg-purple-50/20' : 'border-[var(--border-light)]'} rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors`}>
+                    <div className="flex items-start gap-4">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 mt-1 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer shrink-0"
+                        checked={isSelected}
+                        onChange={() => toggleSelection(h)}
+                      />
+                      <div>
+                        <h4 className="font-bold text-[var(--text-primary)]">{h._id.testName}</h4>
+                        <div className="text-[11px] text-[var(--text-secondary)] font-medium mt-1 flex gap-3">
+                          <span>{new Date(h._id.testDate).toLocaleDateString()}</span>
+                          <span>•</span>
+                          <span>{h.totalStudents} Students</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
@@ -251,7 +326,7 @@ const PodAIMarksUploadPage = () => {
                       </button>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>
