@@ -134,7 +134,7 @@ const PodAIMarksUploadPage = () => {
                     <FileSpreadsheet size={32} className="text-slate-400" />
                   </div>
                   <p className="text-[var(--text-primary)] font-display font-black text-xl">Drop Excel here or click</p>
-                  <p className="text-[11px] text-[var(--text-secondary)] uppercase tracking-widest font-black">Requires columns: Enrollment Number, Marks, Test Name</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] uppercase tracking-widest font-black">Requires columns: Enrollment Number, [Assessment] Test Name</p>
                 </div>
               )}
             </div>
@@ -154,11 +154,10 @@ const PodAIMarksUploadPage = () => {
             <div className="text-[13px] text-fuchsia-900 leading-relaxed font-medium">
               <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-fuchsia-600">Expected Columns</p>
               <ul className="list-disc pl-4 space-y-1 opacity-90 text-fuchsia-800">
-                <li><strong>Enrollment Number / Roll Number</strong></li>
-                <li><strong>Student Name</strong> (Optional, for mismatch checks)</li>
-                <li><strong>Marks</strong> (Numeric)</li>
-                <li><strong>Test Name</strong> (e.g. Assessment 1)</li>
-                <li><strong>Date</strong> (Optional, defaults to today)</li>
+                <li><strong>Enrollment Number</strong> (or Enrollment No)</li>
+                <li><strong>First Name / Name</strong> (Optional, for mismatch checks)</li>
+                <li><strong>[Assessment] Test Name</strong> (Any column starting with "[Assessment]" or containing "Practice Test" will be treated as a test)</li>
+                <li><strong>Marks</strong> (Numeric values under the respective test columns. "Absent" or empty cells will be skipped)</li>
               </ul>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent } from '../../features/students/studentsSlice';
+import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent, deleteAllStudents } from '../../features/students/studentsSlice';
 import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
@@ -423,6 +423,14 @@ export default function StudentsPage({ isSuper50 = false }) {
     ? (sortDir === 'desc' ? <ChevronDown size={14} className="text-[var(--primary)]" /> : <ChevronUp size={14} className="text-[var(--primary)]" />)
     : <ChevronDown size={14} className="text-slate-300 opacity-50 group-hover:opacity-100" />;
 
+  const handleDeleteAllStudents = async () => {
+    if (window.confirm('Are you absolutely sure you want to delete ALL students? This action cannot be undone.')) {
+      const result = await dispatch(deleteAllStudents());
+      if (!result.error) toast.success('All students deleted successfully');
+      else toast.error('Failed to delete all students');
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
@@ -431,7 +439,10 @@ export default function StudentsPage({ isSuper50 = false }) {
           <p className="text-[var(--text-secondary)] font-medium">Manage {total} students, view profiles, and update status.</p>
         </motion.div>
         {user?.role === 'admin' && (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="flex gap-3">
+            <button className="text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 bg-rose-500/5 rounded-xl flex items-center gap-2 px-6 py-3 font-bold text-[13px] shadow-sm transition-all" onClick={handleDeleteAllStudents}>
+              <Trash2 size={18} /> Delete All
+            </button>
             <button className="btn-premium flex items-center gap-2 px-6 py-3" onClick={() => setShowAddModal(true)} id="add-student-btn">
               <UserPlus size={18} /> Add Student
             </button>
@@ -580,20 +591,33 @@ export default function StudentsPage({ isSuper50 = false }) {
                             >
                               <Eye size={14} /> Profile
                             </button>
+                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+                              <button
+                                onClick={() => dispatch(toggleStudentSuper50(student._id)).then(r => !r.error && toast.success(`Super 50 status updated`))}
+                                className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isSuper50 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20 hover:bg-slate-500/20'}`}
+                              >
+                                {student.isSuper50 ? '- Super 50' : '+ Super 50'}
+                              </button>
+                            )}
                             {user?.role === 'admin' && (
                               <>
-                                <button
-                                  onClick={() => dispatch(toggleStudentSuper50(student._id)).then(r => !r.error && toast.success(`Super 50 status updated`))}
-                                  className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isSuper50 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20 hover:bg-slate-500/20'}`}
-                                >
-                                  {student.isSuper50 ? '- Super 50' : '+ Super 50'}
-                                </button>
                                 <button
                                   onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
                                   className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
                                   id={`toggle-${student._id}`}
                                 >
                                   {student.isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm('Are you sure you want to delete this student?')) {
+                                      dispatch(deleteStudent(student._id)).then(r => !r.error ? toast.success('Student deleted') : toast.error('Failed to delete student'));
+                                    }
+                                  }}
+                                  className="p-1.5 text-rose-500 hover:text-rose-700 bg-rose-500/10 rounded-lg border border-rose-500/20 transition-all shadow-sm flex items-center justify-center"
+                                  title="Delete Student"
+                                >
+                                  <Trash2 size={16} />
                                 </button>
                               </>
                             )}

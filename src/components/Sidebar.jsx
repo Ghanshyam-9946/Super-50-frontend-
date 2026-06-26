@@ -69,6 +69,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
+    { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
   ];
 
   const super50AdminLinks = [
@@ -76,6 +77,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
     { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
+    { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];

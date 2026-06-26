@@ -64,6 +64,24 @@ export const toggleStudentSuper50 = createAsyncThunk('students/toggleSuper50', a
   }
 });
 
+export const deleteStudent = createAsyncThunk('students/delete', async (id, { rejectWithValue }) => {
+  try {
+    await api.delete(`/admin/students/${id}`);
+    return id;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Failed to delete student');
+  }
+});
+
+export const deleteAllStudents = createAsyncThunk('students/deleteAll', async (_, { rejectWithValue }) => {
+  try {
+    await api.delete('/admin/students');
+    return true;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Failed to delete all students');
+  }
+});
+
 const studentsSlice = createSlice({
   name: 'students',
   initialState: {
@@ -111,6 +129,14 @@ const studentsSlice = createSlice({
       .addCase(toggleStudentSuper50.fulfilled, (state, action) => {
         const student = state.allStudents.find((s) => s._id === action.payload.id);
         if (student) student.isSuper50 = action.payload.isSuper50;
+      })
+      .addCase(deleteStudent.fulfilled, (state, action) => {
+        state.allStudents = state.allStudents.filter(s => s._id !== action.payload);
+        state.total -= 1;
+      })
+      .addCase(deleteAllStudents.fulfilled, (state) => {
+        state.allStudents = [];
+        state.total = 0;
       });
   },
 });
