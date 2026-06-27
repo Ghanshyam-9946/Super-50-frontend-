@@ -213,6 +213,25 @@ export default function SelectionFormSection() {
 
   const openForm = isFormOpen();
 
+  const getSubmitButtonProps = () => {
+    if (!formSettings.formEnabled) {
+      return { disabled: true, text: 'Registrations Disabled' };
+    }
+    const now = new Date();
+    if (formSettings.startDate && new Date(formSettings.startDate) > now) {
+      return { 
+        disabled: true, 
+        text: `Opens on ${new Date(formSettings.startDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}` 
+      };
+    }
+    if (formSettings.endDate && new Date(formSettings.endDate) < now) {
+      return { disabled: true, text: 'Registrations Closed' };
+    }
+    return { disabled: false, text: 'Submit Registration' };
+  };
+
+  const submitBtn = getSubmitButtonProps();
+
   return (
     <section id="selection-form" className="py-24 relative overflow-hidden bg-black/30 border-t border-[var(--border-light)]">
       {/* Background radial highlight */}
@@ -227,7 +246,7 @@ export default function SelectionFormSection() {
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mt-2 mb-4">Fill out the details carefully to apply for the elite Super 50 cohort.</p>
             
-            {openForm && (formSettings.startDate || formSettings.endDate) && (
+            {(formSettings.startDate || formSettings.endDate) && (
               <div className="flex flex-wrap items-center gap-4 font-bold mt-2">
                 {formSettings.startDate && (
                   <div className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl flex items-baseline gap-2 shadow-lg shadow-emerald-500/30">
@@ -374,42 +393,13 @@ export default function SelectionFormSection() {
                   </button>
                 </div>
               </div>
-            ) : !openForm ? (
-              // REGISTRATIONS CLOSED
-              <div className="glass-card p-12 border-[var(--border-light)] text-center space-y-5 max-w-md mx-auto relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-[4px] bg-red-500"></div>
-                
-                <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
-                  <Lock size={24} />
-                </div>
-
-                <div className="space-y-1.5">
-                  <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Closed</h3>
-                  <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider mt-1">
-                    👉 "Registrations are currently closed"
-                  </p>
-                </div>
-
-                {(() => {
-                  const now = new Date();
-                  if (!formSettings.formEnabled) {
-                    return <p className="text-[10px] text-[var(--text-secondary)] opacity-70">Form has been manually disabled by Admin.</p>;
-                  }
-                  if (formSettings.startDate && new Date(formSettings.startDate) > now) {
-                    return <p className="text-[10px] text-[var(--text-secondary)] opacity-70">Opens on {new Date(formSettings.startDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>;
-                  }
-                  if (formSettings.endDate && new Date(formSettings.endDate) < now) {
-                    return <p className="text-[10px] text-[var(--text-secondary)] opacity-70">Closed on {new Date(formSettings.endDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</p>;
-                  }
-                  return null;
-                })()}
-              </div>
             ) : (
               // FORM CARD
               <div className="glass p-8 sm:p-12 border border-white/10 rounded-3xl shadow-[0_0_50px_rgba(139,92,246,0.15)] space-y-8 relative overflow-hidden backdrop-blur-2xl bg-[#0a0a0f]/80">
                 <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-70"></div>
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 blur-[100px] rounded-full pointer-events-none"></div>
                 <form onSubmit={handleFormSubmit} className="space-y-6">
+                  <fieldset disabled={submitBtn.disabled} className="space-y-6 group/fieldset border-0 p-0 m-0">
                   <div className="space-y-4">
                     <div className="flex items-center gap-4 pb-4">
                       <h4 className="text-xs font-black uppercase tracking-widest bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Mandatory Info</h4>
@@ -654,11 +644,13 @@ export default function SelectionFormSection() {
 
                   <button
                     type="submit"
-                    className="w-full py-4 mt-4 rounded-xl text-sm font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 relative overflow-hidden group"
+                    disabled={submitBtn.disabled}
+                    className={`w-full py-4 mt-4 rounded-xl text-sm font-black text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all duration-300 relative overflow-hidden group ${submitBtn.disabled ? 'bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-700' : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] hover:scale-[1.01] active:scale-[0.99]'}`}
                   >
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                    <span className="relative z-10">Submit Registration</span>
+                    {!submitBtn.disabled && <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>}
+                    <span className="relative z-10">{submitBtn.text}</span>
                   </button>
+                  </fieldset>
                 </form>
               </div>
             )}

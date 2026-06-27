@@ -129,107 +129,23 @@ function EditStudentModal({ student, onClose, onSuccess }) {
   );
 }
 
-function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
-  const [className, setClassName] = useState('');
-  const [classDate, setClassDate] = useState(new Date().toISOString().substring(0, 10));
-  const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [checklistSearch, setChecklistSearch] = useState('');
-  const [selectedBatch, setSelectedBatch] = useState('All');
+function Super50ClassAttendanceModal({ onClose, onSuccess }) {
   const [file, setFile] = useState(null);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const studentsRes = await api.get('/admin/students', { params: { isSuper50: 'true', limit: 1000 } });
-        const allSuper50 = studentsRes.data.data;
-
-        if (classId) {
-          const classRes = await api.get(`/attendance/super50/class/${classId}`);
-          const classData = classRes.data.data;
-          setClassName(classData.className);
-          setClassDate(new Date(classData.classDate).toISOString().substring(0, 10));
-
-          const recordsMap = {};
-          classData.records.forEach(r => {
-            if (r.student) {
-              recordsMap[r.student._id || r.student] = r.status;
-            }
-          });
-
-          const merged = allSuper50.map(s => ({
-            _id: s._id,
-            name: s.name,
-            enrollmentNumber: s.enrollmentNumber,
-            batch: s.batch,
-            status: recordsMap[s._id] || 'present'
-          }));
-          setStudents(merged);
-        } else {
-          const list = allSuper50.map(s => ({
-            _id: s._id,
-            name: s.name,
-            enrollmentNumber: s.enrollmentNumber,
-            batch: s.batch,
-            status: 'present'
-          }));
-          setStudents(list);
-        }
-      } catch (err) {
-        toast.error('Failed to load students list');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [classId]);
-
-  const toggleStudentStatus = (id) => {
-    setStudents(prev => prev.map(s => s._id === id
-      ? { ...s, status: s.status === 'present' ? 'absent' : 'present' }
-      : s
-    ));
-  };
-
-  const handleMarkAll = (status) => {
-    const filteredIds = new Set(filteredStudents.map(s => s._id));
-    setStudents(prev => prev.map(s => filteredIds.has(s._id) ? { ...s, status } : s));
-  };
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!className.trim()) return toast.error('Class Name is required');
+    if (!file) return toast.error('Please upload an Excel file for attendance');
 
     setSubmitting(true);
     try {
-      if (file && !classId) {
-        const formData = new FormData();
-        formData.append('className', className);
-        formData.append('classDate', classDate);
-        formData.append('file', file);
+      const formData = new FormData();
+      formData.append('attendance', file);
 
-        await api.post('/attendance/super50/upload-excel', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        toast.success('Attendance sheet recorded successfully via Excel');
-      } else {
-        const records = students.map(s => ({
-          studentId: s._id,
-          status: s.status
-        }));
-
-        const body = { className, classDate, records };
-
-        if (classId) {
-          await api.put(`/attendance/super50/class/${classId}`, body);
-          toast.success('Attendance record updated successfully');
-        } else {
-          await api.post('/attendance/super50', body);
-          toast.success('Attendance sheet recorded successfully');
-        }
-      }
+      await api.post('/attendance/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Bulk attendance updated successfully via Excel');
       onSuccess();
       onClose();
     } catch (err) {
@@ -239,189 +155,67 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
     }
   };
 
-  const filteredStudents = students.filter(s =>
-    (selectedBatch === 'All' || s.batch === selectedBatch) &&
-    (s.name.toLowerCase().includes(checklistSearch.toLowerCase()) ||
-      (s.enrollmentNumber && s.enrollmentNumber.toLowerCase().includes(checklistSearch.toLowerCase())))
-  );
-
-  const presentCount = filteredStudents.filter(s => s.status === 'present').length;
-  const absentCount = filteredStudents.length - presentCount;
-
-  const availableBatches = ['All', ...new Set(students.map(s => s.batch).filter(Boolean))].sort();
-
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative flex flex-col" style={{ width: '90%', maxWidth: 640, height: '80vh', padding: 32 }}>
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative flex flex-col" style={{ width: '90%', maxWidth: 500, padding: 32 }}>
 
         <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors z-10">
           <X size={20} />
         </button>
 
-        <div className="shrink-0 mb-4">
+        <div className="shrink-0 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center border border-purple-500/20 mb-4 shadow-sm">
             <ClipboardList size={24} />
           </div>
           <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">
-            {classId ? 'Edit Class Attendance' : 'Record Class Attendance'}
+            Upload Bulk Attendance
           </h2>
-          <p className="text-[13px] text-[var(--text-secondary)] font-medium">Input date, topic, and mark present/absent for Super 50 students.</p>
+          <p className="text-[13px] text-[var(--text-secondary)] font-medium">Upload Excel to directly update overall attendance percentage for Super 50 students.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 space-y-4">
-          <div className="grid grid-cols-2 gap-4 shrink-0">
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Class / Topic Name *</label>
-              <input
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400"
-                type="text"
-                value={className}
-                placeholder="e.g., DSA Lecture 1"
-                onChange={(e) => setClassName(e.target.value)}
-                required
-              />
+          <div className="border border-dashed border-[var(--border-light)] rounded-2xl p-6 bg-slate-50/5 flex flex-col items-center justify-center shrink-0">
+            <div className="flex justify-between w-full mb-4 items-center">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                UPLOAD ATTENDANCE VIA EXCEL (.XLSX, .XLS)
+              </label>
+              <a 
+                href="/upload/super50_attendance.xlsx" 
+                download="super50_attendance.xlsx"
+                className="text-[10px] text-[var(--primary)] hover:text-[var(--primary-light)] font-bold flex items-center gap-1 bg-[var(--primary)]/10 px-2 py-1 rounded"
+              >
+                <Download size={12} /> Template
+              </a>
             </div>
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Class Date *</label>
+            <div className="flex items-center gap-3 w-full">
               <input
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
-                type="date"
-                value={classDate}
-                onChange={(e) => setClassDate(e.target.value)}
-                required
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="hidden"
+                id="super50-attendance-file"
               />
+              <label
+                htmlFor="super50-attendance-file"
+                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] hover:border-[var(--primary)] rounded-xl py-3 px-4 text-[12px] font-bold text-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer transition-all shadow-sm truncate"
+              >
+                {file ? `Selected: ${file.name}` : 'Choose Excel File'}
+              </label>
+              {file && (
+                <button
+                  type="button"
+                  onClick={() => setFile(null)}
+                  className="px-4 py-3 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 rounded-xl text-xs font-bold transition-all border border-rose-500/20"
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 
-          {!classId && (
-            <div className="border border-dashed border-[var(--border-light)] rounded-2xl p-4 bg-slate-50/5 flex flex-col items-center justify-center shrink-0">
-              <div className="flex justify-between w-full mb-2 items-center">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
-                  Or upload attendance via Excel (.xlsx, .xls)
-                </label>
-                <a 
-                  href="/upload/super 50.xlsx" 
-                  download="super 50.xlsx"
-                  className="text-[10px] text-[var(--primary)] hover:text-[var(--primary-light)] font-bold flex items-center gap-1 bg-[var(--primary)]/10 px-2 py-1 rounded"
-                >
-                  <Download size={12} /> Template
-                </a>
-              </div>
-              <div className="flex items-center gap-3 w-full">
-                <input
-                  type="file"
-                  accept=".xlsx, .xls"
-                  onChange={(e) => setFile(e.target.files[0])}
-                  className="hidden"
-                  id="super50-attendance-file"
-                />
-                <label
-                  htmlFor="super50-attendance-file"
-                  className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] hover:border-[var(--primary)] rounded-xl py-2.5 px-4 text-[12px] font-bold text-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer transition-all shadow-sm"
-                >
-                  {file ? `Selected: ${file.name}` : 'Choose Excel File'}
-                </label>
-                {file && (
-                  <button
-                    type="button"
-                    onClick={() => setFile(null)}
-                    className="px-3 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 rounded-xl text-xs font-bold transition-all border border-rose-500/20"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {file ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-purple-500/5 rounded-2xl border border-purple-500/20">
-              <ClipboardList size={48} className="text-[var(--primary)] mb-4 animate-bounce" />
-              <h4 className="font-display font-black text-sm text-[var(--text-primary)]">Excel Upload Mode Active</h4>
-              <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm">
-                Attendance will be parsed from <strong>{file.name}</strong>. Manual checklist selections are ignored.
-              </p>
-              <button
-                type="button"
-                onClick={() => setFile(null)}
-                className="mt-4 px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-rose-500/20 transition-all"
-              >
-                Switch to Manual Checklist
-              </button>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col min-h-0 border border-[var(--border-light)] rounded-2xl p-4 bg-slate-50/5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-                <div className="flex items-center gap-2 flex-1">
-                  <div className="relative flex-1">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search students..."
-                      value={checklistSearch}
-                      onChange={(e) => setChecklistSearch(e.target.value)}
-                      className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 pl-9 pr-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
-                    />
-                  </div>
-                  <select
-                    value={selectedBatch}
-                    onChange={(e) => setSelectedBatch(e.target.value)}
-                    className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] shrink-0 w-24"
-                  >
-                    {availableBatches.map(b => <option key={b} value={b}>{b === 'All' ? 'All Batches' : b}</option>)}
-                  </select>
-                </div>
-                <div className="flex gap-2 text-[10px] font-black uppercase tracking-wider shrink-0">
-                  <button type="button" onClick={() => handleMarkAll('present')} className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-lg">Mark All Present</button>
-                  <button type="button" onClick={() => handleMarkAll('absent')} className="px-2.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/20 rounded-lg">Mark All Absent</button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar min-h-0 space-y-1.5">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400">
-                    <Loader2 size={24} className="animate-spin text-[var(--primary)]" />
-                    <span className="text-[11px] font-black uppercase tracking-widest">Loading checklist...</span>
-                  </div>
-                ) : filteredStudents.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400 font-bold text-xs uppercase tracking-wider">No students found</div>
-                ) : (
-                  filteredStudents.map(student => (
-                    <div
-                      key={student._id}
-                      onClick={() => toggleStudentStatus(student._id)}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none ${student.status === 'present'
-                          ? 'bg-emerald-500/5 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-                          : 'bg-rose-500/5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10'
-                        }`}
-                    >
-                      <div>
-                        <div className="font-bold text-xs text-[var(--text-primary)]">{student.name}</div>
-                        <div className="text-[10px] font-black uppercase text-slate-400 mt-0.5 tracking-wider">{student.enrollmentNumber}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${student.status === 'present' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-                          }`}>
-                          {student.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="flex items-center justify-between pt-4 border-t border-[var(--border-light)] mt-2 shrink-0">
-                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Total: {filteredStudents.length} Students</div>
-                <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest">
-                  <span className="text-emerald-500">{presentCount} Present</span>
-                  <span className="text-rose-500">{absentCount} Absent</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2 shrink-0" disabled={submitting}>
-            {submitting ? <><Loader2 size={16} className="animate-spin" /> Submitting...</> : <><ClipboardList size={16} /> Save Attendance</>}
+          <button type="submit" className="btn-premium w-full py-4 mt-2 flex items-center justify-center gap-2 shrink-0" disabled={submitting || !file}>
+            {submitting ? <><Loader2 size={16} className="animate-spin" /> Uploading...</> : <><ClipboardList size={16} /> Update Attendance</>}
           </button>
         </form>
       </motion.div>
@@ -680,26 +474,26 @@ export default function StudentsPage({ isSuper50 = false }) {
                               </button>
                             )}
                             {user?.role === 'admin' && (
-                              <>
-                                <button
-                                  onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
-                                  className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
-                                  id={`toggle-${student._id}`}
-                                >
-                                  {student.isActive ? 'Deactivate' : 'Activate'}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    if (window.confirm('Are you sure you want to delete this student?')) {
-                                      dispatch(deleteStudent(student._id)).then(r => !r.error ? toast.success('Student deleted') : toast.error('Failed to delete student'));
-                                    }
-                                  }}
-                                  className="p-1.5 text-rose-500 hover:text-rose-700 bg-rose-500/10 rounded-lg border border-rose-500/20 transition-all shadow-sm flex items-center justify-center"
-                                  title="Delete Student"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </>
+                              <button
+                                onClick={() => dispatch(toggleStudentStatus(student._id)).then(r => !r.error && toast.success('Status updated'))}
+                                className={`text-xs py-1.5 px-3 rounded-lg font-black uppercase tracking-widest shadow-sm transition-all border flex items-center gap-1.5 ${student.isActive ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+                                id={`toggle-${student._id}`}
+                              >
+                                {student.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                            )}
+                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this student?')) {
+                                    dispatch(deleteStudent(student._id)).then(r => !r.error ? toast.success('Student deleted') : toast.error('Failed to delete student'));
+                                  }
+                                }}
+                                className="p-1.5 text-rose-500 hover:text-rose-700 bg-rose-500/10 rounded-lg border border-rose-500/20 transition-all shadow-sm flex items-center justify-center"
+                                title="Delete Student"
+                              >
+                                <Trash2 size={16} />
+                              </button>
                             )}
                           </div>
                         </td>

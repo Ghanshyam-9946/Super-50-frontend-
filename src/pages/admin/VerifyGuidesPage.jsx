@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { UserPlus, Search, ShieldCheck, ShieldAlert, Check, X, Loader2 } from 'lucide-react';
+import { UserPlus, Search, ShieldCheck, ShieldAlert, Check, X, Loader2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -140,6 +140,23 @@ export default function VerifyGuidesPage() {
                       }`}
                     >
                       {guide.isActive ? <><X size={14} /> Revoke Access</> : <><Check size={14} /> Approve User</>}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (window.confirm('Are you sure you want to delete this user?')) {
+                          try {
+                            await api.delete(`/admin/guides/${guide._id}`);
+                            toast.success('User deleted successfully');
+                            setGuides(guides.filter(g => g._id !== guide._id));
+                          } catch (error) {
+                            toast.error('Failed to delete user');
+                          }
+                        }
+                      }}
+                      className="ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border bg-slate-500/10 text-slate-500 border-slate-500/20 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/20"
+                      title="Delete User"
+                    >
+                      <Trash2 size={14} /> Delete
                     </button>
                   </td>
                 </motion.tr>
