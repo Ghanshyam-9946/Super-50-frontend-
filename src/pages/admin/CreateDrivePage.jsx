@@ -18,6 +18,8 @@ const CreateDrivePage = () => {
   const [form, setForm] = useState({
     companyName: '',
     package: '',
+    driveType: 'campus drive',
+    jobDescription: '',
     deadline: '',
     batch: '2023-27',
   });
@@ -46,6 +48,8 @@ const CreateDrivePage = () => {
       const formData = new FormData();
       formData.append('companyName', form.companyName);
       formData.append('package', form.package);
+      formData.append('driveType', form.driveType);
+      formData.append('jobDescription', form.jobDescription);
       formData.append('deadline', form.deadline);
       formData.append('batch', form.batch);
       formData.append('rounds', JSON.stringify(rounds));
@@ -86,7 +90,8 @@ const CreateDrivePage = () => {
           <div className="bg-[var(--bg-input)]/30 border border-[var(--border-light)] rounded-2xl p-6 text-left space-y-3 mb-8">
             {[
               { label: 'Company', value: createdDrive.companyName },
-              { label: 'Package', value: createdDrive.package },
+              { label: 'Drive Type', value: createdDrive.driveType ? createdDrive.driveType.toUpperCase() : 'N/A' },
+              { label: 'Package', value: createdDrive.package || 'N/A' },
               { label: 'Batch', value: createdDrive.batch },
               { label: 'Deadline', value: new Date(createdDrive.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) },
               { label: 'Rounds', value: `${createdDrive.rounds?.length || rounds.length} rounds configured` },
@@ -100,7 +105,7 @@ const CreateDrivePage = () => {
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', deadline: '', batch: '2023-27' }); setTargetFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
+              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'campus drive', jobDescription: '', deadline: '', batch: '2023-27' }); setTargetFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
               className="btn-outline-premium flex-1 py-3"
             >
               Create Another Drive
@@ -154,15 +159,27 @@ const CreateDrivePage = () => {
               />
             </div>
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Package Offered *</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Package Offered</label>
               <input
                 type="text"
                 className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
-                placeholder="e.g., 6.5 LPA, 8 LPA"
+                placeholder="e.g., 6.5 LPA, 8 LPA (optional)"
                 value={form.package}
                 onChange={(e) => setForm({ ...form, package: e.target.value })}
-                required
               />
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Drive Type *</label>
+              <select
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
+                value={form.driveType}
+                onChange={(e) => setForm({ ...form, driveType: e.target.value })}
+                required
+              >
+                <option value="internship">Internship</option>
+                <option value="internship+ppo">Internship + PPO</option>
+                <option value="campus drive">Campus Drive</option>
+              </select>
             </div>
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Target Batch *</label>
@@ -187,6 +204,17 @@ const CreateDrivePage = () => {
               />
             </div>
           </div>
+        </motion.div>
+
+        {/* Job Description (JD) */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="glass-card p-8 space-y-4">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Job Description (JD)</label>
+          <textarea
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all min-h-[120px]"
+            placeholder="Enter job roles, responsibilities, skills required, etc."
+            value={form.jobDescription}
+            onChange={(e) => setForm({ ...form, jobDescription: e.target.value })}
+          />
         </motion.div>
 
         {/* Target Enrollment File (Required) */}

@@ -168,7 +168,13 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
                   <div>
                     <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{app.drive?.companyName || 'Unknown Company'}</h3>
                     <div className="flex items-center gap-3 mt-1.5 text-[13px] font-medium">
-                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md">{app.drive?.package || 'N/A'}</span>
+                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{app.drive?.driveType || 'Campus Drive'}</span>
+                      {app.drive?.package && (
+                        <>
+                          <span className="text-[var(--text-secondary)] opacity-50">•</span>
+                          <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md">{app.drive.package}</span>
+                        </>
+                      )}
                       <span className="text-[var(--text-secondary)] opacity-50">•</span>
                       <span className="text-[var(--text-secondary)]">Deadline: {app.drive?.deadline ? new Date(app.drive.deadline).toLocaleDateString() : 'TBA'}</span>
                     </div>
@@ -196,6 +202,16 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
                   )}
                 </div>
               </div>
+
+              {/* Job Description (JD) */}
+              {app.drive?.jobDescription && (
+                <div className="mt-6 bg-[var(--bg-input)]/30 border border-[var(--border-light)] rounded-2xl p-4 relative z-10">
+                  <h4 className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] mb-2 opacity-80">Job Description</h4>
+                  <p className="text-[13px] font-medium text-[var(--text-primary)] whitespace-pre-line leading-relaxed max-h-[150px] overflow-y-auto custom-scrollbar">
+                    {app.drive.jobDescription}
+                  </p>
+                </div>
+              )}
 
               {/* Timeline UI */}
               <div className="mt-10 space-y-6 relative z-10">

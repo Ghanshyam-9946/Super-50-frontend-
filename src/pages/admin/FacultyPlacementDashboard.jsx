@@ -105,6 +105,8 @@ function CreateDriveModal({ onClose, onRefresh }) {
   const [form, setForm] = useState({
     companyName: '',
     package: '',
+    driveType: 'campus drive',
+    jobDescription: '',
     deadline: '',
     batch: '2023-27',
     eligibilityCriteria: {
@@ -149,6 +151,8 @@ function CreateDriveModal({ onClose, onRefresh }) {
       const formData = new FormData();
       formData.append('companyName', form.companyName);
       formData.append('package', form.package);
+      formData.append('driveType', form.driveType);
+      formData.append('jobDescription', form.jobDescription);
       formData.append('deadline', form.deadline);
       formData.append('batch', form.batch);
       formData.append('rounds', JSON.stringify(rounds));
@@ -211,16 +215,31 @@ function CreateDriveModal({ onClose, onRefresh }) {
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Package Details *</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Package Details</label>
               <input 
                 className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
                 type="text"
-                placeholder="e.g., 6.5 LPA"
+                placeholder="e.g., 6.5 LPA (optional)"
                 value={form.package}
                 onChange={(e) => setForm({ ...form, package: e.target.value })}
-                required
               />
             </div>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Drive Type *</label>
+              <select
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                value={form.driveType}
+                onChange={(e) => setForm({ ...form, driveType: e.target.value })}
+                required
+              >
+                <option value="internship">Internship</option>
+                <option value="internship+ppo">Internship + PPO</option>
+                <option value="campus drive">Campus Drive</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Application Deadline *</label>
               <input 
@@ -231,6 +250,17 @@ function CreateDriveModal({ onClose, onRefresh }) {
                 required
               />
             </div>
+          </div>
+
+          {/* Job Description (JD) */}
+          <div className="border-t border-[var(--border-light)] pt-4 mt-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Job Description (JD)</label>
+            <textarea 
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm min-h-[80px]"
+              placeholder="Enter job roles, responsibilities, etc."
+              value={form.jobDescription}
+              onChange={(e) => setForm({ ...form, jobDescription: e.target.value })}
+            />
           </div>
 
           {/* Target Enrollment File (Required) */}
@@ -620,7 +650,13 @@ const FacultyPlacementDashboard = () => {
                   <div>
                     <h3 className="text-lg font-display font-black text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">{drive.companyName}</h3>
                     <div className="flex items-center gap-3 text-[13px] font-medium text-[var(--text-secondary)] mt-1.5">
-                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md">{drive.package}</span>
+                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{drive.driveType || 'Campus Drive'}</span>
+                      {drive.package && (
+                        <>
+                          <span className="opacity-50">•</span>
+                          <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md">{drive.package}</span>
+                        </>
+                      )}
                       <span className="opacity-50">•</span>
                       <span>{drive.rounds?.length || 0} Rounds</span>
                     </div>

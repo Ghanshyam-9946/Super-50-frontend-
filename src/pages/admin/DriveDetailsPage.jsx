@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Briefcase, ArrowLeft, Users, CheckCircle, Clock, X, Upload,
-  FileSpreadsheet, Mail, RefreshCw, ChevronRight, Layers, BarChart
+  FileSpreadsheet, Mail, RefreshCw, ChevronRight, Layers, BarChart,
+  Trash2, GripVertical
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -18,6 +19,57 @@ const DriveDetailsPage = () => {
   const [selectedRoundName, setSelectedRoundName] = useState('');
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [roundsList, setRoundsList] = useState([]);
+  const [draggedIdx, setDraggedIdx] = useState(null);
+
+  useEffect(() => {
+    if (drive?.rounds) {
+      setRoundsList(drive.rounds);
+    }
+  }, [drive]);
+
+  const handleDragStart = (e, index) => {
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e, targetIdx) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === targetIdx) return;
+
+    const list = [...roundsList];
+    const draggedItem = list[draggedIdx];
+    list.splice(draggedIdx, 1);
+    list.splice(targetIdx, 0, draggedItem);
+
+    setRoundsList(list);
+    setDraggedIdx(null);
+    await saveRounds(list);
+  };
+
+  const handleDeleteRound = async (roundIdx) => {
+    const roundToDelete = roundsList[roundIdx];
+    if (!window.confirm(`Are you sure you want to delete the round "${roundToDelete.name}"?`)) return;
+
+    const list = roundsList.filter((_, idx) => idx !== roundIdx);
+    setRoundsList(list);
+    await saveRounds(list);
+  };
+
+  const saveRounds = async (updatedRounds) => {
+    const toastId = toast.loading('Updating rounds...');
+    try {
+      await api.patch(`/placement/drives/${id}/rounds`, { rounds: updatedRounds });
+      toast.success('Rounds updated successfully!', { id: toastId });
+      fetchDriveDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update rounds', { id: toastId });
+    }
+  };
 
   const fetchDriveDetails = async () => {
     setLoading(true);
@@ -108,7 +160,13 @@ const DriveDetailsPage = () => {
             <div>
               <h1 className="text-3xl font-display font-black text-[var(--text-primary)] tracking-tight">{drive.companyName}</h1>
               <div className="flex items-center gap-3 text-sm font-semibold text-[var(--text-secondary)] mt-1.5">
-                <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10">{drive.package}</span>
+                <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10 capitalize">{drive.driveType || 'Campus Drive'}</span>
+                {drive.package && (
+                  <>
+                    <span>•</span>
+                    <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10">{drive.package}</span>
+                  </>
+                )}
                 <span>•</span>
                 <span>Batch: {drive.batch || 'All'}</span>
                 <span>•</span>
@@ -140,12 +198,29 @@ const DriveDetailsPage = () => {
           </a>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {drive.rounds?.map((round, idx) => {
-            const isLocked = idx > 0 && !applications.some(app => app.roundsProgress?.some(p => p.roundName === drive.rounds[idx - 1].name));
+          {roundsList?.map((round, idx) => {
+            const isLocked = idx > 0 && !applications.some(app => app.roundsProgress?.some(p => p.roundName === (roundsList[idx - 1]?.name)));
             return (
-              <div key={idx} className={`bg-[var(--bg-input)]/20 border border-[var(--border-light)] rounded-2xl p-5 relative overflow-hidden group ${isLocked ? 'opacity-50 grayscale' : ''}`}>
-                <div className="absolute right-3 top-3 w-8 h-8 rounded-lg bg-[var(--primary)]/5 text-[var(--primary)] font-black text-xs flex items-center justify-center border border-[var(--primary)]/10">
-                  R{idx + 1}
+              <div 
+                key={round._id || idx} 
+                draggable={true}
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, idx)}
+                className={`bg-[var(--bg-input)]/20 border border-[var(--border-light)] rounded-2xl p-5 relative overflow-hidden group transition-all duration-200 cursor-grab active:cursor-grabbing hover:border-[var(--primary)]/50 ${isLocked ? 'opacity-50 grayscale' : ''} ${draggedIdx === idx ? 'border-dashed border-[var(--primary)] opacity-40' : ''}`}
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-1.5 text-slate-400">
+                    <GripVertical size={16} className="text-slate-400 cursor-grab" />
+                    <span className="text-xs font-black text-slate-400 bg-[var(--primary)]/5 px-2 py-0.5 rounded border border-[var(--primary)]/10">R{idx + 1}</span>
+                  </div>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); handleDeleteRound(idx); }}
+                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete Round"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 </div>
                 <h3 className="font-black text-[var(--text-primary)] pr-8 text-base">{round.name}</h3>
                 <p className="text-[12px] text-[var(--text-secondary)] mt-2 mb-4 font-medium leading-relaxed">{round.description || 'No description provided.'}</p>
