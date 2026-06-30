@@ -22,6 +22,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Core Links (All Students)
   const commonStudentLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
   ];
 
   // Training & Placement Section (ALL students)
@@ -70,6 +71,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
+    { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
   ];
 
   const super50AdminLinks = [

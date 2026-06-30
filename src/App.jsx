@@ -42,6 +42,8 @@ import ProjectDetails from './pages/student/ProjectDetails';
 import PodAIMarksUploadPage from './pages/admin/PodAIMarksUploadPage';
 import PodAIMarksPage from './pages/student/PodAIMarksPage';
 import PodAIMarksSheetPage from './pages/admin/PodAIMarksSheetPage';
+import AdminAMCATPage from './pages/admin/AdminAMCATPage';
+import StudentAMCATPage from './pages/student/StudentAMCATPage';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -117,6 +119,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/podai-marks" element={
           <Super50Guard><PodAIMarksPage /></Super50Guard>
         } />
+        <Route path="/student/amcat" element={
+          <RoleGuard allowed={['student']}><StudentAMCATPage /></RoleGuard>
+        } />
 
         {/* Admin routes */}
         <Route path="/admin/dashboard" element={
@@ -148,6 +153,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/podai-marks" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksSheetPage /></RoleGuard>
+        } />
+        <Route path="/admin/amcat" element={
+          <RoleGuard allowed={['admin']}><AdminAMCATPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
