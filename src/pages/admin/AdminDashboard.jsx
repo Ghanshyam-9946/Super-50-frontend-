@@ -173,8 +173,8 @@ export default function AdminDashboard() {
                   >
                     <div className="flex items-center gap-4">
                       <img
-                        src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                        className="w-10 h-10 rounded-full border border-[var(--border-light)]"
+                        src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                        className="w-10 h-10 rounded-full border border-[var(--border-light)] object-cover"
                         alt={student.name}
                       />
                       <div>
@@ -413,8 +413,8 @@ export default function AdminDashboard() {
               <div key={student._id} className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all group hover:border-[var(--primary)]">
                 <div className="flex items-center gap-4">
                   <img
-                    src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                    className="w-12 h-12 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)]"
+                    src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                    className="w-12 h-12 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)] object-cover"
                     alt={student.name}
                   />
                   <div>
@@ -497,8 +497,8 @@ export default function AdminDashboard() {
                       #{i + 1}
                     </div>
                     <img
-                      src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                      className="w-10 h-10 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)] group-hover:scale-110 transition-transform"
+                      src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                      className="w-10 h-10 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)] group-hover:scale-110 transition-transform object-cover"
                       alt={student.name}
                     />
                     <div className="flex-1 min-w-0">
@@ -652,8 +652,8 @@ export default function AdminDashboard() {
                       <div key={student._id} className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-4 flex items-center justify-between group hover:border-[var(--primary)] transition-all cursor-pointer" onClick={() => setSelectedStudentForHistory(student)}>
                         <div className="flex items-center gap-4">
                           <img
-                            src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                            className="w-10 h-10 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)]"
+                            src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                            className="w-10 h-10 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)] object-cover"
                             alt={student.name}
                           />
                           <div>

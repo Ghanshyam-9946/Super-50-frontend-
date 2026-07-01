@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList } from 'lucide-react';
+import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { updateUser } from '../features/auth/authSlice';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
 export default function StudentProfileModal({ isOpen, onClose, studentId }) {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('profile');
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
@@ -53,6 +57,39 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
     }
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    const fd = new FormData();
+    fd.append('image', file);
+
+    const loadToast = toast.loading('Uploading profile image...');
+    try {
+      const res = await api.post('/students/profile-image', fd);
+      toast.success('Profile image updated!', { id: loadToast });
+      
+      // Update local data state
+      setData(prev => ({
+        ...prev,
+        student: {
+          ...prev.student,
+          profileImage: res.data.data.profileImage
+        }
+      }));
+
+      // Update Redux state
+      dispatch(updateUser({ profileImage: res.data.data.profileImage }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload profile image', { id: loadToast });
+    }
+  };
+
   if (!isOpen || !studentId) return null;
 
   return (
@@ -77,11 +114,19 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
             <div className="flex items-center gap-4">
               {data?.student && (
                 <>
-                  <img 
-                    src={`https://ui-avatars.com/api/?name=${data.student.name}&background=random`} 
-                    alt={data.student.name}
-                    className="w-12 h-12 rounded-full border-2 border-slate-200" 
-                  />
+                  <div className="relative group">
+                    <img 
+                      src={data.student.profileImage || `https://ui-avatars.com/api/?name=${data.student.name}&background=random`} 
+                      alt={data.student.name}
+                      className="w-12 h-12 rounded-full border-2 border-slate-200 object-cover" 
+                    />
+                    {user?._id === data.student._id && (
+                      <label className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera size={16} className="text-white" />
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      </label>
+                    )}
+                  </div>
                   <div>
                     <h3 className="text-xl font-bold text-slate-900">{data.student.name}</h3>
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-600 uppercase tracking-widest mt-1">

@@ -114,7 +114,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <Super50Guard><ActivitiesPage /></Super50Guard>
         } />
         <Route path="/certificates" element={
-          <Super50Guard><CertificatesPage /></Super50Guard>
+          <RoleGuard allowed={['student']}><CertificatesPage /></RoleGuard>
         } />
         <Route path="/student/podai-marks" element={
           <Super50Guard><PodAIMarksPage /></Super50Guard>

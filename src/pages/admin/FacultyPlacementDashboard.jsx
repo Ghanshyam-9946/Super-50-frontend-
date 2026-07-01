@@ -28,7 +28,9 @@ import {
   X,
   Loader2,
   FileSpreadsheet,
-  Trash2
+  Trash2,
+  FileText,
+  Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -436,6 +438,7 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
   );
 }
 
+<<<<<<< HEAD
 function ViewStudentsModal({ group, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
@@ -475,6 +478,83 @@ function ViewStudentsModal({ group, onClose }) {
              <div className="text-center py-8 text-slate-400 text-sm font-medium">No students found</div>
           )}
         </div>
+=======
+function UploadQuestionModal({ onClose, onRefresh }) {
+  const [file, setFile] = useState(null);
+  const [companyName, setCompanyName] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    if (!companyName.trim()) return toast.error('Please enter the company name');
+    if (!file) return toast.error('Please select a file');
+
+    const formData = new FormData();
+    formData.append('companyName', companyName.trim());
+    formData.append('file', file);
+
+    setUploading(true);
+    const toastId = toast.loading('Uploading question file...');
+    try {
+      const response = await api.post('/placement/questions', formData);
+      toast.success(response.data.message || 'File uploaded successfully!', { id: toastId });
+      onRefresh();
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload question file', { id: toastId });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justify: 'center', zIndex: 1100 }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
+          <X size={20} />
+        </button>
+        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center border border-purple-500/20 mb-4 shadow-sm">
+          <Upload size={24} />
+        </div>
+        <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload PYQ Document</h2>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Upload Word or PDF document of previous year questions</p>
+        
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Company Name *</label>
+            <input 
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+              type="text"
+              placeholder="e.g., TCS"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="border-2 border-dashed border-[var(--border-light)] rounded-2xl p-8 text-center bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 transition-colors cursor-pointer" onClick={() => document.getElementById('pyq-file').click()}>
+            <input type="file" id="pyq-file" accept=".docx, .doc, .pdf" className="hidden" onChange={(e) => setFile(e.target.files[0])} />
+            {file ? (
+              <div className="space-y-2">
+                <FileText className="text-[var(--primary)] mx-auto animate-bounce" size={32} />
+                <p className="text-sm font-bold text-[var(--text-primary)]">{file.name}</p>
+                <p className="text-xs text-[var(--text-secondary)] uppercase">Click to change</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload className="text-slate-400 mx-auto" size={32} />
+                <p className="text-sm font-bold text-[var(--text-primary)]">Select Word/PDF file</p>
+                <p className="text-xs text-[var(--text-secondary)]">Only .doc, .docx, or .pdf</p>
+              </div>
+            )}
+          </div>
+          
+          <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2 mt-6" disabled={uploading || !file || !companyName.trim()}>
+            {uploading ? 'Processing...' : 'Upload PYQ Document'}
+          </button>
+        </form>
+>>>>>>> 20d8fdd (changes done)
       </motion.div>
     </div>
   );
@@ -496,6 +576,41 @@ const FacultyPlacementDashboard = () => {
   // Single feedback detail modal
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Past Questions state and functions
+  const [questions, setQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [showUploadQuestionModal, setShowUploadQuestionModal] = useState(false);
+
+  const fetchQuestions = async () => {
+    setLoadingQuestions(true);
+    try {
+      const res = await api.get('/placement/questions');
+      setQuestions(res.data.data);
+    } catch (err) {
+      toast.error('Failed to load past questions');
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this file?')) return;
+    const toastId = toast.loading('Deleting question file...');
+    try {
+      const res = await api.delete(`/placement/questions/${id}`);
+      toast.success(res.data.message || 'Deleted successfully', { id: toastId });
+      fetchQuestions();
+    } catch (err) {
+      toast.error('Failed to delete question file', { id: toastId });
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'questions') {
+      fetchQuestions();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     dispatch(fetchFacultyPlacementDashboard());
@@ -618,7 +733,7 @@ const FacultyPlacementDashboard = () => {
       {/* Main Content */}
       <div className="space-y-8 mt-4">
         <div className="flex items-center gap-8 border-b border-[var(--border-light)] px-2">
-          {['drives', 'feedback', 'selections'].map((tab) => (
+          {['drives', 'feedback', 'selections', 'questions'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -626,7 +741,7 @@ const FacultyPlacementDashboard = () => {
                 activeTab === tab ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {tab === 'feedback' ? 'Experiences' : tab}
+              {tab === 'feedback' ? 'Experiences' : tab === 'questions' ? 'Past Questions' : tab}
               {activeTab === tab && (
                 <motion.div layoutId="activeTabDashboard" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--primary)] rounded-t-full" />
               )}
@@ -858,6 +973,85 @@ const FacultyPlacementDashboard = () => {
             )}
           </motion.div>
         )}
+
+        {activeTab === 'questions' && (
+          <div className="space-y-6 animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="relative max-w-md w-full">
+                <Search className="absolute left-4 top-3.5 text-[var(--text-secondary)] opacity-60" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Search company name..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium"
+                />
+              </div>
+              <button 
+                onClick={() => setShowUploadQuestionModal(true)}
+                className="btn-premium py-2.5 px-5 flex items-center gap-2 text-xs"
+              >
+                <Plus size={16} /> Upload PYQ Document
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {questions
+                .filter(q => q.companyName.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((q) => (
+                  <div key={q._id} className="glass-card p-6 flex flex-col justify-between border-[var(--border-light)] hover:border-[var(--primary)] transition-all duration-300 relative group">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-[var(--border-light)]">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-[var(--primary)] font-display font-black text-sm shrink-0">
+                            <FileText size={20} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-base font-black text-[var(--text-primary)] truncate">{q.companyName}</h4>
+                            <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-bold truncate">{q.fileName}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => handleDeleteQuestion(q._id)}
+                          className="text-slate-400 hover:text-red-500 p-1.5 rounded-lg transition-colors shrink-0"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+                        <div>
+                          <span className="font-bold">Uploaded By:</span> {q.uploadedBy?.name || 'Admin'}
+                        </div>
+                        <div>
+                          {new Date(q.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <a 
+                      href={q.fileUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="btn-premium text-center w-full py-2.5 mt-5 flex items-center justify-center gap-2 text-xs"
+                    >
+                      <Download size={14} className="inline" /> Download Document
+                    </a>
+                  </div>
+                ))}
+
+              {questions.filter(q => q.companyName.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+                <div className="col-span-full py-16 text-center bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl animate-fade-in">
+                  <FileText size={48} className="mx-auto mb-4 text-[#CBD5E1]" />
+                  <h4 className="text-lg font-black text-[var(--text-primary)]">No past questions found</h4>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium mt-1">
+                    Try searching for a different company or check back later.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <FeedbackDetailModal 
@@ -891,10 +1085,17 @@ const FacultyPlacementDashboard = () => {
         />
       )}
 
+<<<<<<< HEAD
       {selectedDriveGroup && (
         <ViewStudentsModal
           group={selectedDriveGroup}
           onClose={() => setSelectedDriveGroup(null)}
+=======
+      {showUploadQuestionModal && (
+        <UploadQuestionModal
+          onClose={() => setShowUploadQuestionModal(false)}
+          onRefresh={fetchQuestions}
+>>>>>>> 20d8fdd (changes done)
         />
       )}
     </div>

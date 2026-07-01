@@ -162,8 +162,8 @@ export default function LeaderboardPage({ limit }) {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <img
-                            src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                            className="w-10 h-10 rounded-full border border-[var(--border-light)] shadow-sm"
+                            src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                            className="w-10 h-10 rounded-full border border-[var(--border-light)] shadow-sm object-cover"
                             alt={student.name}
                           />
                           <div>
@@ -224,8 +224,8 @@ function PodiumCard({ student, rank, height }) {
       <div className="absolute -top-6 text-4xl drop-shadow-md">{rankEmojis[rank]}</div>
       
       <img
-        src={`https://ui-avatars.com/api/?name=${student.name}&background=random`}
-        className="w-16 h-16 rounded-full border-[3px] shadow-sm z-10 bg-[var(--bg-modal)]"
+        src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
+        className="w-16 h-16 rounded-full border-[3px] shadow-sm z-10 bg-[var(--bg-modal)] object-cover"
         style={{ borderColor: color }}
         alt={student.name}
       />

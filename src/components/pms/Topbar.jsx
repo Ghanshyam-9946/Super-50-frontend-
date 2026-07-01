@@ -146,9 +146,17 @@ const Topbar = ({ onToggleSidebar, pageTitle }) => {
             onClick={() => setUserOpen((p) => !p)}
             className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50"
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 text-white flex items-center justify-center font-semibold text-sm">
-              {getInitial(user.name)}
-            </div>
+            {user?.profileImage ? (
+              <img 
+                src={user.profileImage} 
+                alt={user.name} 
+                className="w-8 h-8 rounded-full object-cover border border-slate-200"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-purple-600 text-white flex items-center justify-center font-semibold text-sm">
+                {getInitial(user.name)}
+              </div>
+            )}
             <div className="hidden sm:block text-left leading-tight">
               <div className="text-sm font-semibold">{user.name}</div>
               <div className="text-[10px] text-slate-500 capitalize">{user.role}</div>

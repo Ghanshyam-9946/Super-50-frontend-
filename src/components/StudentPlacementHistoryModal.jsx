@@ -49,9 +49,9 @@ export default function StudentPlacementHistoryModal({ isOpen, onClose, student 
           <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
             <div className="flex items-center gap-4">
               <img 
-                src={`https://ui-avatars.com/api/?name=${student.name}&background=random`} 
+                src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`} 
                 alt={student.name}
-                className="w-12 h-12 rounded-full border-2 border-slate-200" 
+                className="w-12 h-12 rounded-full border-2 border-slate-200 object-cover" 
               />
               <div>
                 <h3 className="text-xl font-bold text-slate-900">{student.name}</h3>

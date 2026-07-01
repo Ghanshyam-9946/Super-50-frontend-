@@ -20,9 +20,12 @@ import {
   User, 
   Calendar,
   HelpCircle,
-  ArrowRight
+  ArrowRight,
+  FileText,
+  Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../../services/api';
 import FeedbackModal from '../../components/FeedbackModal';
 import DriveFeedbacksModal from '../../components/DriveFeedbacksModal';
 import FeedbackDetailModal from '../../components/FeedbackDetailModal';
@@ -44,6 +47,28 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
   // Single feedback detail modal
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Past Questions state and functions
+  const [questions, setQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+
+  const fetchQuestions = async () => {
+    setLoadingQuestions(true);
+    try {
+      const res = await api.get('/placement/questions');
+      setQuestions(res.data.data);
+    } catch (err) {
+      toast.error('Failed to load past questions');
+    } finally {
+      setLoadingQuestions(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'questions') {
+      fetchQuestions();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     dispatch(fetchStudentPlacementStatus());
@@ -132,6 +157,16 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
             }`}
           >
             Interview Experiences
+          </button>
+          <button
+            onClick={() => setActiveTab('questions')}
+            className={`pb-4 text-sm font-bold border-b-2 transition-all ${
+              activeTab === 'questions'
+                ? 'border-[var(--primary)] text-[var(--text-primary)] font-black'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            Past Questions
           </button>
         </div>
       )}
@@ -435,6 +470,71 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
               </div>
             )}
           </motion.div>
+        </div>
+      )}
+
+      {activeTab === 'questions' && (
+        <div className="space-y-6 animate-fade-in-up">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="relative max-w-md w-full">
+              <Search className="absolute left-4 top-3.5 text-[var(--text-secondary)] opacity-60" size={18} />
+              <input 
+                type="text" 
+                placeholder="Search company name..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium"
+              />
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider">
+              Showing {questions.filter(q => q.companyName.toLowerCase().includes(searchQuery.toLowerCase())).length} documents
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {questions
+              .filter(q => q.companyName.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((q) => (
+                <div key={q._id} className="glass-card p-6 flex flex-col justify-between border-[var(--border-light)] hover:border-[var(--primary)] transition-all duration-300 relative group">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pb-3 border-b border-[var(--border-light)]">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-[var(--primary)] font-display font-black text-sm shrink-0">
+                        <FileText size={20} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-base font-black text-[var(--text-primary)] truncate">{q.companyName}</h4>
+                        <p className="text-[10px] text-[var(--text-secondary)] mt-0.5 font-bold truncate">{q.fileName}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+                      <div>
+                        Shared: {new Date(q.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <a 
+                    href={q.fileUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn-premium text-center w-full py-2.5 mt-5 flex items-center justify-center gap-2 text-xs"
+                  >
+                    <Download size={14} className="inline" /> Download Document
+                  </a>
+                </div>
+              ))}
+
+            {questions.filter(q => q.companyName.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
+              <div className="col-span-full py-16 text-center bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl animate-fade-in">
+                <FileText size={48} className="mx-auto mb-4 text-[#CBD5E1]" />
+                <h4 className="text-lg font-black text-[var(--text-primary)]">No past questions found</h4>
+                <p className="text-xs text-[var(--text-secondary)] font-medium mt-1">
+                  Try searching for a different company or check back later.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
