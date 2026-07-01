@@ -110,12 +110,24 @@ export default function SelectionFormSection() {
     }
   };
 
+  // Helper to parse date safely, defaulting to IST (+05:30) if no timezone offset is specified
+  const parseDateSafe = (dateStr) => {
+    if (!dateStr) return null;
+    const hasTimezone = /Z|([+-]\d{2}:\d{2})$/.test(dateStr);
+    if (!hasTimezone && dateStr.includes('T')) {
+      return new Date(`${dateStr}+05:30`);
+    }
+    return new Date(dateStr);
+  };
+
   // Helper to determine if registration is open
   const isFormOpen = () => {
     if (!formSettings.formEnabled) return false;
     const now = new Date();
-    if (formSettings.startDate && new Date(formSettings.startDate) > now) return false;
-    if (formSettings.endDate && new Date(formSettings.endDate) < now) return false;
+    const startDate = parseDateSafe(formSettings.startDate);
+    const endDate = parseDateSafe(formSettings.endDate);
+    if (startDate && startDate > now) return false;
+    if (endDate && endDate < now) return false;
     return true;
   };
 

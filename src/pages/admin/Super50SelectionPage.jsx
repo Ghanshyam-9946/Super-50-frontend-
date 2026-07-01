@@ -233,6 +233,23 @@ const Super50SelectionPage = () => {
     rejected: submissions.filter(s => s.status === 'rejected').length
   };
 
+  const parseDateSafe = (dateStr) => {
+    if (!dateStr) return null;
+    const hasTimezone = /Z|([+-]\d{2}:\d{2})$/.test(dateStr);
+    if (!hasTimezone && dateStr.includes('T')) {
+      return new Date(`${dateStr}+05:30`);
+    }
+    return new Date(dateStr);
+  };
+
+  const toLocalDateTimeString = (isoString) => {
+    if (!isoString) return '';
+    const parsedDate = parseDateSafe(isoString);
+    if (!parsedDate || isNaN(parsedDate.getTime())) return '';
+    const tzOffset = parsedDate.getTimezoneOffset() * 60000;
+    return new Date(parsedDate.getTime() - tzOffset).toISOString().slice(0, 16);
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -352,7 +369,7 @@ const Super50SelectionPage = () => {
                   <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">Start DateTime</label>
                   <input
                     type="datetime-local"
-                    value={formSettings.startDate ? formSettings.startDate.substring(0, 16) : ''}
+                    value={toLocalDateTimeString(formSettings.startDate)}
                     onChange={(e) => saveFormSettings({ ...formSettings, startDate: e.target.value })}
                     className="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:border-[var(--primary)]"
                   />
@@ -363,7 +380,7 @@ const Super50SelectionPage = () => {
                   <label className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">End DateTime</label>
                   <input
                     type="datetime-local"
-                    value={formSettings.endDate ? formSettings.endDate.substring(0, 16) : ''}
+                    value={toLocalDateTimeString(formSettings.endDate)}
                     onChange={(e) => saveFormSettings({ ...formSettings, endDate: e.target.value })}
                     className="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:border-[var(--primary)]"
                   />
