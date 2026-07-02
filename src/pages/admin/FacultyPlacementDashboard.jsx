@@ -438,7 +438,6 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
   );
 }
 
-<<<<<<< HEAD
 function ViewStudentsModal({ group, onClose }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
@@ -478,7 +477,10 @@ function ViewStudentsModal({ group, onClose }) {
              <div className="text-center py-8 text-slate-400 text-sm font-medium">No students found</div>
           )}
         </div>
-=======
+      </motion.div>
+    </div>
+  );
+}
 function UploadQuestionModal({ onClose, onRefresh }) {
   const [file, setFile] = useState(null);
   const [companyName, setCompanyName] = useState('');
@@ -554,7 +556,6 @@ function UploadQuestionModal({ onClose, onRefresh }) {
             {uploading ? 'Processing...' : 'Upload PYQ Document'}
           </button>
         </form>
->>>>>>> 20d8fdd (changes done)
       </motion.div>
     </div>
   );
@@ -1085,17 +1086,17 @@ const FacultyPlacementDashboard = () => {
         />
       )}
 
-<<<<<<< HEAD
       {selectedDriveGroup && (
         <ViewStudentsModal
           group={selectedDriveGroup}
           onClose={() => setSelectedDriveGroup(null)}
-=======
+        />
+      )}
+
       {showUploadQuestionModal && (
         <UploadQuestionModal
           onClose={() => setShowUploadQuestionModal(false)}
           onRefresh={fetchQuestions}
->>>>>>> 20d8fdd (changes done)
         />
       )}
     </div>

@@ -181,10 +181,14 @@ const Sidebar = ({ theme, toggleTheme }) => {
       <div className="p-4 mt-auto border-t border-[var(--border-light)]">
         <div className={`flex flex-col gap-3 ${collapsed ? 'items-center' : ''}`}>
           <div 
-<<<<<<< HEAD
-            className="flex items-center gap-3 cursor-pointer group p-1.5 -ml-1.5 rounded-xl hover:bg-[var(--bg-hover)] transition-colors"
-            onClick={() => setIsProfileModalOpen(true)}
-            title="Edit Profile"
+            onClick={() => {
+              if (user?.role === 'student') {
+                setIsProfileOpen(true);
+              } else {
+                setIsProfileModalOpen(true);
+              }
+            }}
+            className={`flex items-center gap-3 cursor-pointer group p-1.5 -ml-1.5 rounded-xl hover:bg-[var(--bg-hover)] transition-colors`}
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--bg-app)] to-[var(--bg-app)] border border-[var(--border-light)] flex items-center justify-center text-sm font-bold text-[var(--text-primary)] shadow-sm shrink-0 overflow-hidden group-hover:border-[var(--primary)] transition-colors">
               {user?.profileImage ? (
@@ -197,22 +201,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
                 user?.name?.[0]
               )}
             </div>
-=======
-            onClick={() => user?.role === 'student' && setIsProfileOpen(true)}
-            className={`flex items-center gap-3 ${user?.role === 'student' ? 'cursor-pointer hover:bg-[var(--bg-hover)] p-1.5 rounded-xl transition-all' : ''}`}
-          >
-            {user?.profileImage ? (
-              <img 
-                src={user.profileImage} 
-                alt={user.name} 
-                className="w-10 h-10 rounded-xl object-cover border border-[var(--border-light)] shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--bg-app)] to-[var(--bg-app)] border border-[var(--border-light)] flex items-center justify-center text-sm font-bold text-[var(--text-primary)] shadow-sm shrink-0">
-                {user?.name?.[0]}
-              </div>
-            )}
->>>>>>> 20d8fdd (changes done)
             {!collapsed && (
               <div className="overflow-hidden">
                 <div className="font-bold text-sm text-[var(--text-primary)] truncate group-hover:text-[var(--primary)] transition-colors">{user?.name}</div>
@@ -263,12 +251,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
         )}
       </AnimatePresence>
 
-<<<<<<< HEAD
       <ProfileEditModal 
         isOpen={isProfileModalOpen} 
         onClose={() => setIsProfileModalOpen(false)} 
       />
-=======
       {user?.role === 'student' && (
         <StudentProfileModal 
           isOpen={isProfileOpen} 
@@ -276,7 +262,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
           studentId={user._id} 
         />
       )}
->>>>>>> 20d8fdd (changes done)
     </>
   );
 };
