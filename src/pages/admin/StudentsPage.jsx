@@ -76,8 +76,10 @@ function EditStudentModal({ student, onClose, onSuccess }) {
   const { user } = useSelector((state) => state.auth);
   const [mentors, setMentors] = useState([]);
 
+  const canAssignMentor = ['admin', 'super50_admin'].includes(user?.role);
+
   useEffect(() => {
-    if (user?.role === 'super50_admin') {
+    if (canAssignMentor) {
       const fetchMentors = async () => {
         try {
           const { data } = await api.get('/admin/mentors');
@@ -138,7 +140,7 @@ function EditStudentModal({ student, onClose, onSuccess }) {
             </div>
           ))}
 
-          {user?.role === 'super50_admin' && (
+          {canAssignMentor && (
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mentor</label>
               <select
