@@ -16,6 +16,12 @@ const AdminAMCATPage = () => {
   const [studentResults, setStudentResults] = useState([]);
   const [fetchingData, setFetchingData] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // New Filters
+  const [filterBatch, setFilterBatch] = useState('');
+  const [filterSem, setFilterSem] = useState('');
+  const BATCHES = ['2023', '2024', '2025', '2026', '2027', '2028'];
+  const SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
   const fetchData = async () => {
     setFetchingData(true);
@@ -99,7 +105,10 @@ const AdminAMCATPage = () => {
     const studentName = res.studentId?.name?.toLowerCase() || '';
     const enroll = (res.studentId?.enrollmentNumber || res.studentId?.enrollmentNo || '').toLowerCase();
     const query = searchQuery.toLowerCase();
-    return studentName.includes(query) || enroll.includes(query);
+    const matchesSearch = studentName.includes(query) || enroll.includes(query);
+    const matchesBatch = filterBatch ? res.studentId?.batch === filterBatch : true;
+    const matchesSem = filterSem ? String(res.semester) === String(filterSem) : true;
+    return matchesSearch && matchesBatch && matchesSem;
   });
 
   return (
@@ -262,13 +271,38 @@ const AdminAMCATPage = () => {
           <div className="glass-card p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <h3 className="text-lg font-bold text-[var(--text-primary)]">Student Scores List</h3>
-              <input
-                type="text"
-                placeholder="Search student or enrollment..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs w-full sm:w-64 focus:outline-none focus:border-indigo-500 text-[var(--text-primary)]"
-              />
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <select
+                  value={filterBatch}
+                  onChange={(e) => setFilterBatch(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-primary)]"
+                >
+                  <option value="">All Batches</option>
+                  {BATCHES.map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={filterSem}
+                  onChange={(e) => setFilterSem(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-primary)]"
+                >
+                  <option value="">All Semesters</option>
+                  {SEMESTERS.map(s => (
+                    <option key={s} value={s}>Semester {s}</option>
+                  ))}
+                </select>
+
+                <input
+                  type="text"
+                  placeholder="Search student or enrollment..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs w-full sm:w-64 focus:outline-none focus:border-indigo-500 text-[var(--text-primary)]"
+                />
+              </div>
             </div>
 
             {fetchingData ? (

@@ -59,6 +59,7 @@ export default function SelectionFormSection() {
     hackathonDetails: '',
     skills: '',
     certificateImage: '',
+    certificateImages: [],
     projectLiveLink: '',
     projectDescription: ''
   });
@@ -131,20 +132,41 @@ export default function SelectionFormSection() {
     return true;
   };
 
-  // Handle Certificate Image File selection & convert to base64 string
+  // Handle Certificate Image File selection & convert to base64 strings (multiple files, max 200kb each)
   const handleCertificatePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 1 * 1024 * 1024) {
-        toast.error('File size too large. Please upload a certificate photo smaller than 1MB.');
-        return;
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      let oversized = false;
+      let validFiles = [];
+      files.forEach(file => {
+        if (file.size > 200 * 1024) {
+          oversized = true;
+        } else {
+          validFiles.push(file);
+        }
+      });
+
+      if (oversized) {
+        toast.error('Some files were ignored because they exceed the 200KB limit.');
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, certificateImage: reader.result }));
-        toast.success('Certificate photo successfully attached!');
-      };
-      reader.readAsDataURL(file);
+
+      if (validFiles.length > 0) {
+        const promises = validFiles.map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+          });
+        });
+
+        Promise.all(promises).then(base64Strings => {
+          setFormData(prev => ({ 
+            ...prev, 
+            certificateImages: [...prev.certificateImages, ...base64Strings] 
+          }));
+          toast.success(`${base64Strings.length} certificate(s) successfully attached!`);
+        });
+      }
     }
   };
 
@@ -527,11 +549,12 @@ export default function SelectionFormSection() {
 
                       {/* Certificate Photo File Upload */}
                       <div className="space-y-1.5 col-span-full">
-                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Certificate Image (Max 1MB)</label>
-                        <div className="flex items-center gap-4">
+                        <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Certificate Images (Max 200KB each)</label>
+                        <div className="flex flex-wrap items-center gap-4">
                           <input
                             type="file"
                             accept="image/*"
+                            multiple
                             onChange={handleCertificatePhotoChange}
                             className="hidden"
                             id="cert-photo-upload"
@@ -541,8 +564,28 @@ export default function SelectionFormSection() {
                             onClick={() => document.getElementById('cert-photo-upload').click()}
                             className="btn-outline-premium text-xs px-5 py-3 rounded-xl flex items-center gap-2 bg-white/[0.03] hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/50 transition-all text-purple-100 shadow-inner"
                           >
-                            <Award size={14} /> Upload Photo
+                            <Award size={14} /> Upload Photos
                           </button>
+                          
+                          {/* Preview multiple images */}
+                          {formData.certificateImages && formData.certificateImages.map((imgStr, idx) => (
+                            <div key={idx} className="relative w-12 h-12 rounded-lg border border-[var(--border-light)] overflow-hidden shrink-0 group">
+                              <img src={imgStr} alt="Preview" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newImages = [...formData.certificateImages];
+                                  newImages.splice(idx, 1);
+                                  setFormData({ ...formData, certificateImages: newImages });
+                                }}
+                                className="absolute inset-0 bg-red-600/80 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+
+                          {/* Fallback for legacy single image if it exists */}
                           {formData.certificateImage && (
                             <div className="relative w-12 h-12 rounded-lg border border-[var(--border-light)] overflow-hidden shrink-0 group">
                               <img src={formData.certificateImage} alt="Preview" className="w-full h-full object-cover" />

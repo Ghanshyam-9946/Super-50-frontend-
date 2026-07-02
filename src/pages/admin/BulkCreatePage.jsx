@@ -138,6 +138,13 @@ export default function BulkCreatePage() {
             ))}
           </div>
           <p className="text-[var(--text-secondary)] mb-4">Each student will automatically receive a welcome email with their secure login credentials. They must change password on first login.</p>
+          <div className="bg-indigo-50 border border-indigo-200 shadow-sm rounded-2xl p-5 mb-4 text-xs text-indigo-900 leading-relaxed font-medium">
+            <p className="font-black mb-1 uppercase tracking-widest text-[9px] text-indigo-600">Important Columns</p>
+            <ul className="list-disc pl-4 space-y-1">
+              <li><strong>Name, Enrollment Number, Email, Department, Batch</strong> are required.</li>
+              <li>You can optionally add a <strong>Mentor</strong> column with the mentor's email address to auto-assign mentors during registration.</li>
+            </ul>
+          </div>
           <div className="border-t border-[var(--border-light)] pt-4">
             <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-500">Sample Excel Format</p>
             <a 

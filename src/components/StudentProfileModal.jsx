@@ -140,6 +140,11 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                         </>
                       )}
                     </div>
+                    {data.student.mentor && (
+                      <div className="text-xs font-bold text-indigo-600 mt-1">
+                        Mentor: {data.student.mentor?.name}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -159,6 +164,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
               { id: 'activities', icon: Activity, label: 'Activities' },
               { id: 'certificates', icon: Award, label: 'Certificates' },
               { id: 'placements', icon: Building2, label: 'Placements' },
+              { id: 'remarks', icon: ClipboardList, label: 'Remarks' },
               ...(data?.student?.isSuper50 ? [{ id: 'attendance', icon: ClipboardList, label: 'Super 50 Attendance' }] : [])
             ].map(tab => (
               <button
@@ -341,6 +347,64 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                         </div>
                       ))
                     )}
+                  </div>
+                )}
+
+                {/* Remarks Tab */}
+                {activeTab === 'remarks' && (
+                  <div className="space-y-6">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                      <h4 className="font-bold text-slate-900 mb-4">Add Remark</h4>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const text = e.target.remark.value;
+                        if (!text.trim()) return;
+                        
+                        try {
+                          const res = await api.post(`/admin/students/${studentId}/remarks`, { text });
+                          setData(prev => ({
+                            ...prev,
+                            student: {
+                              ...prev.student,
+                              remarks: res.data.data.remarks
+                            }
+                          }));
+                          e.target.reset();
+                          toast.success('Remark added successfully');
+                        } catch (err) {
+                          toast.error('Failed to add remark');
+                        }
+                      }}>
+                        <textarea 
+                          name="remark"
+                          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none mb-3"
+                          rows="3"
+                          placeholder="Type your remark here..."
+                        />
+                        <div className="flex justify-end">
+                          <button type="submit" className="btn-premium px-6 py-2 text-xs font-bold rounded-xl shadow-sm">
+                            Add Remark
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-slate-900">Previous Remarks</h4>
+                      {(!data.student.remarks || data.student.remarks.length === 0) ? (
+                        <div className="text-center py-10 text-slate-500">No remarks found.</div>
+                      ) : (
+                        data.student.remarks.slice().reverse().map(remark => (
+                          <div key={remark._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <p className="text-sm font-medium text-slate-800 mb-3 whitespace-pre-wrap">{remark.text}</p>
+                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 border-t border-slate-100 pt-3">
+                              <span>By: {remark.addedBy?.name || 'Unknown'}</span>
+                              <span>{new Date(remark.addedAt).toLocaleString('en-IN')}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
 

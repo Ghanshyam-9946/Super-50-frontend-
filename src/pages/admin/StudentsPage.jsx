@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent, deleteAllStudents } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download } from 'lucide-react';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
@@ -71,7 +71,24 @@ function EditStudentModal({ student, onClose, onSuccess }) {
     department: student?.department || '',
     batch: student?.batch || '',
     enrollmentNumber: student?.enrollmentNumber || '',
+    mentor: student?.mentor?._id || student?.mentor || '',
   });
+  const { user } = useSelector((state) => state.auth);
+  const [mentors, setMentors] = useState([]);
+
+  useEffect(() => {
+    if (user?.role === 'super50_admin') {
+      const fetchMentors = async () => {
+        try {
+          const { data } = await api.get('/admin/mentors');
+          setMentors(data.data || []);
+        } catch (error) {
+          console.error("Failed to fetch mentors", error);
+        }
+      };
+      fetchMentors();
+    }
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,6 +137,22 @@ function EditStudentModal({ student, onClose, onSuccess }) {
               />
             </div>
           ))}
+
+          {user?.role === 'super50_admin' && (
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mentor</label>
+              <select
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                value={form.mentor}
+                onChange={(e) => setForm({ ...form, mentor: e.target.value })}
+              >
+                <option value="">Unassigned</option>
+                {mentors.map(m => (
+                  <option key={m._id} value={m._id}>{m.name} ({m.email})</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2" disabled={loading}>
             {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><Edit size={16} /> Save Changes</>}
           </button>
@@ -480,6 +513,24 @@ export default function StudentsPage({ isSuper50 = false }) {
                                 id={`toggle-${student._id}`}
                               >
                                 {student.isActive ? 'Deactivate' : 'Activate'}
+                              </button>
+                            )}
+                            {user?.role === 'super50_admin' && (
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm('Are you sure you want to resend credentials to this student?')) {
+                                    try {
+                                      await api.post(`/admin/students/${student._id}/resend-credentials`);
+                                      toast.success('Credentials sent successfully');
+                                    } catch(err) {
+                                      toast.error('Failed to resend credentials');
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 text-blue-500 hover:text-blue-700 bg-blue-500/10 rounded-lg border border-blue-500/20 transition-all shadow-sm flex items-center justify-center"
+                                title="Resend Credentials"
+                              >
+                                <RefreshCw size={16} />
                               </button>
                             )}
                             {(user?.role === 'admin' || user?.role === 'super50_admin') && (
