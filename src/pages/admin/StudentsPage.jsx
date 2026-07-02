@@ -420,6 +420,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                       <th className="px-6 py-4">Student</th>
                       <th className="px-6 py-4">Department</th>
                       <th className="px-6 py-4">Batch</th>
+                      <th className="px-6 py-4">Mentor</th>
                       <th onClick={() => handleSort('attendancePercentage')} className="px-6 py-4 cursor-pointer hover:text-slate-700 transition-colors group">
                         <span className="flex items-center gap-1.5">Attendance <SortIcon field="attendancePercentage" /></span>
                       </th>
@@ -450,6 +451,15 @@ export default function StudentsPage({ isSuper50 = false }) {
                         </td>
                         <td className="px-6 py-4 font-bold">{student.department}</td>
                         <td className="px-6 py-4 font-bold">{student.batch}</td>
+                        <td className="px-6 py-4 font-bold">
+                          {student.mentor ? (
+                            <span className="text-[12px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-1 rounded-md border border-[var(--primary)]/20 whitespace-nowrap">
+                              {student.mentor?.name || student.mentor}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs italic">Unassigned</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex-1 h-2 bg-[var(--bg-input)] rounded-full min-w-[60px] overflow-hidden border border-[var(--border-light)]">

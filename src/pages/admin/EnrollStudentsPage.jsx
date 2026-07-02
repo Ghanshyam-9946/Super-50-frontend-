@@ -290,6 +290,7 @@ const EnrollStudentsPage = () => {
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Name</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Enrollment No</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Email</th>
+                                <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Mentor</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Department</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Mobile</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Status</th>
@@ -313,6 +314,15 @@ const EnrollStudentsPage = () => {
                                     <a href={`mailto:${student.email}`} className={`text-[13px] font-bold ${color.text} flex items-center gap-1 hover:opacity-80`}>
                                       <Mail size={12} /> {student.email}
                                     </a>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    {student.mentor ? (
+                                      <span className={`text-[10px] bg-[var(--bg-input)] ${color.text} px-2 py-1 rounded border border-[var(--border-light)] whitespace-nowrap`}>
+                                        {student.mentor.name || student.mentor}
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-400 text-xs italic">Unassigned</span>
+                                    )}
                                   </td>
                                   <td className="px-6 py-4 text-[13px] font-medium text-[var(--text-secondary)]">{student.department || '—'}</td>
                                   <td className="px-6 py-4 text-[13px] font-medium text-[var(--text-secondary)]">

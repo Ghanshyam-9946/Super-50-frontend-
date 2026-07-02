@@ -468,8 +468,15 @@ function ViewStudentsModal({ group, onClose }) {
                     <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{student.email || 'N/A'} • {student.department || 'N/A'}</p>
                   </div>
                </div>
-               <div className="text-right">
+               <div className="text-right flex flex-col items-end gap-1">
                   <p className="text-[12px] font-bold text-[var(--text-primary)]">{student.enrollmentNumber || 'N/A'}</p>
+                  {student.mentor ? (
+                    <span className="text-[9px] bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
+                      Mentor: {student.mentor.name || student.mentor}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-[9px] italic">No Mentor</span>
+                  )}
                </div>
             </div>
           ))}

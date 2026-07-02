@@ -478,6 +478,7 @@ const Super50SelectionPage = () => {
                       <tr className="border-b border-[var(--border-light)] text-[9px] font-black uppercase tracking-wider text-[var(--text-secondary)] bg-[#111116]">
                         <th className="p-4">Student Info</th>
                         <th className="p-4">Branch & Section</th>
+                        <th className="p-4">Mentor</th>
                         <th className="p-4">Mobile</th>
                         <th className="p-4">GitHub</th>
                         <th className="p-4">Certifications</th>
@@ -504,6 +505,15 @@ const Super50SelectionPage = () => {
                               <span className="text-[var(--text-primary)]">{sub.branch?.split(' ')[0]}</span>
                               <span className="text-[10px] text-[var(--text-secondary)] font-bold uppercase mt-0.5">Section {sub.section}</span>
                             </div>
+                          </td>
+                          <td className="p-4">
+                            {sub.mentor ? (
+                              <span className="text-[10px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-1 rounded border border-[var(--primary)]/20 whitespace-nowrap">
+                                {sub.mentor.name || sub.mentor}
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 text-[10px] italic">Unassigned</span>
+                            )}
                           </td>
                           {/* Mobile */}
                           <td className="p-4 text-[var(--text-secondary)] text-[11px] font-mono">{sub.mobileNumber}</td>

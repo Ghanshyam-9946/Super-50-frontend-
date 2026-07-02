@@ -260,6 +260,7 @@ const DriveDetailsPage = () => {
               <tr className="bg-[var(--bg-input)]/30 border-b border-[var(--border-light)]">
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Student Info</th>
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Enrollment No</th>
+                <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Mentor</th>
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Current Round</th>
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Round-by-Round Clearance</th>
                 <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Final Outcome</th>
@@ -287,6 +288,15 @@ const DriveDetailsPage = () => {
                     </td>
                     <td className="px-6 py-4 text-[13px] font-bold text-[var(--text-primary)]">
                       {app.student?.enrollmentNumber || '—'}
+                    </td>
+                    <td className="px-6 py-4">
+                      {app.student?.mentor ? (
+                        <span className="text-[12px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-1 rounded border border-[var(--primary)]/20 whitespace-nowrap">
+                          {app.student.mentor.name || app.student.mentor}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">Unassigned</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-[12px] font-bold text-[var(--text-primary)] bg-[var(--bg-app)] border border-[var(--border-light)] px-3 py-1 rounded-lg">
