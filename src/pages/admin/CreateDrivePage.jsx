@@ -19,7 +19,8 @@ const CreateDrivePage = () => {
   const [form, setForm] = useState({
     companyName: '',
     package: '',
-    driveType: 'campus drive',
+    driveType: 'placement drive',
+    campusType: 'on campus',
     jobDescription: '',
     deadline: '',
     batch: '2023-27',
@@ -50,6 +51,7 @@ const CreateDrivePage = () => {
       formData.append('companyName', form.companyName);
       formData.append('package', form.package);
       formData.append('driveType', form.driveType);
+      formData.append('campusType', form.campusType);
       formData.append('jobDescription', form.jobDescription);
       formData.append('deadline', form.deadline);
       formData.append('batch', form.batch);
@@ -109,7 +111,7 @@ const CreateDrivePage = () => {
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'campus drive', jobDescription: '', deadline: '', batch: '2023-27' }); setTargetFile(null); setJdFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
+              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'placement drive', campusType: 'on campus', jobDescription: '', deadline: '', batch: '2023-27' }); setTargetFile(null); setJdFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
               className="btn-outline-premium flex-1 py-3"
             >
               Create Another Drive
@@ -172,21 +174,34 @@ const CreateDrivePage = () => {
                 onChange={(e) => setForm({ ...form, package: e.target.value })}
               />
             </div>
-            <div>
+            <div className="md:col-span-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Drive Type *</label>
               <select
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
                 value={form.driveType}
                 onChange={(e) => setForm({ ...form, driveType: e.target.value })}
                 required
               >
                 <option value="internship">Internship</option>
                 <option value="internship+ppo">Internship + PPO</option>
-                <option value="campus drive">Campus Drive</option>
+                <option value="placement drive">Placement Drive</option>
+              </select>
+            </div>
+            
+            <div className="md:col-span-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Campus Type *</label>
+              <select
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
+                value={form.campusType}
+                onChange={(e) => setForm({ ...form, campusType: e.target.value })}
+                required
+              >
+                <option value="on campus">On Campus</option>
                 <option value="off campus">Off Campus</option>
               </select>
             </div>
-            <div>
+            
+            <div className="md:col-span-1">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Target Batch *</label>
               <input
                 type="text"
@@ -196,7 +211,7 @@ const CreateDrivePage = () => {
                 onChange={(e) => setForm({ ...form, batch: e.target.value })}
                 required
               />
-              <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">Only matching students from this batch will be added to the drive.</p>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">Only matching students from this batch will be added.</p>
             </div>
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Application Deadline *</label>
@@ -246,8 +261,8 @@ const CreateDrivePage = () => {
           <div className="flex justify-between items-start mb-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Eligible Students List (Excel/PDF) *</label>
             <a
-              href="/upload/to%20register.xlsx"
-              download="to_register.xlsx"
+              href="/upload/Eligible%20Students.xlsx"
+              download="Eligible_Students.xlsx"
               className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-[10px] font-bold whitespace-nowrap shrink-0 uppercase tracking-widest"
             >
               <FileSpreadsheet size={14} /> Download Template

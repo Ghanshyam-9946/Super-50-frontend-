@@ -139,6 +139,19 @@ const DriveDetailsPage = () => {
     }
   };
 
+  const handleDeleteDrive = async () => {
+    if (!window.confirm(`Are you sure you want to delete the drive "${drive.companyName}"? This action cannot be undone.`)) return;
+    
+    const toastId = toast.loading('Deleting drive...');
+    try {
+      await api.delete(`/placement/drives/${id}`);
+      toast.success('Drive deleted successfully!', { id: toastId });
+      navigate('/faculty/placement');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete drive', { id: toastId });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
@@ -175,7 +188,10 @@ const DriveDetailsPage = () => {
             <div>
               <h1 className="text-3xl font-display font-black text-[var(--text-primary)] tracking-tight">{drive.companyName}</h1>
               <div className="flex items-center gap-3 text-sm font-semibold text-[var(--text-secondary)] mt-1.5">
-                <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10 capitalize">{drive.driveType || 'Campus Drive'}</span>
+                <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10 capitalize">{drive.driveType || 'Placement Drive'}</span>
+                {drive.campusType && (
+                  <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 capitalize">{drive.campusType}</span>
+                )}
                 {drive.package && (
                   <>
                     <span>•</span>
@@ -189,7 +205,7 @@ const DriveDetailsPage = () => {
                 {drive.jobDescriptionFile && (
                   <>
                     <span>•</span>
-                    <a href={`${import.meta.env.VITE_API_URL.replace('/api', '')}${drive.jobDescriptionFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[var(--primary)] hover:underline bg-[var(--primary)]/10 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/20">
+                    <a href={`${(import.meta.env.VITE_API_URL || '').replace('/api', '')}${drive.jobDescriptionFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[var(--primary)] hover:underline bg-[var(--primary)]/10 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/20">
                       <FileSpreadsheet size={14} /> View JD
                     </a>
                   </>
@@ -199,6 +215,13 @@ const DriveDetailsPage = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button 
+              onClick={handleDeleteDrive} 
+              className="p-3 rounded-xl border border-red-200 text-red-500 bg-red-50 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm"
+              title="Delete Drive"
+            >
+              <Trash2 size={18} />
+            </button>
             <button onClick={fetchDriveDetails} className="btn-outline-premium p-3 rounded-xl">
               <RefreshCw size={18} />
             </button>

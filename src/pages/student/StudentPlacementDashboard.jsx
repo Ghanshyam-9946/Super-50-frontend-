@@ -94,14 +94,15 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
     </div>
   );
 
+  const validApplications = studentApplications.filter(app => app.drive);
   const displayedApps = showOnlyResults 
-    ? studentApplications.filter(app => 
+    ? validApplications.filter(app => 
         app.status === 'selected' || 
         app.status === 'rejected' ||
         app.status === 'not-eligible' || 
         app.roundsProgress?.length > 0
       )
-    : studentApplications;
+    : validApplications;
 
   const filteredFeedbacks = feedbacks.filter(f => 
     f.drive?.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -203,7 +204,10 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
                   <div>
                     <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{app.drive?.companyName || 'Unknown Company'}</h3>
                     <div className="flex items-center gap-3 mt-1.5 text-[13px] font-medium">
-                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{app.drive?.driveType || 'Campus Drive'}</span>
+                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{app.drive?.driveType || 'Placement Drive'}</span>
+                      {app.drive?.campusType && (
+                        <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md capitalize">{app.drive.campusType}</span>
+                      )}
                       {app.drive?.package && (
                         <>
                           <span className="text-[var(--text-secondary)] opacity-50">•</span>

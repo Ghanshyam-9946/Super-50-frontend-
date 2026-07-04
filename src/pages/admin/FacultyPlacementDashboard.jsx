@@ -107,7 +107,8 @@ function CreateDriveModal({ onClose, onRefresh }) {
   const [form, setForm] = useState({
     companyName: '',
     package: '',
-    driveType: 'campus drive',
+    driveType: 'placement drive',
+    campusType: 'on campus',
     jobDescription: '',
     deadline: '',
     batch: '2023-27',
@@ -154,6 +155,7 @@ function CreateDriveModal({ onClose, onRefresh }) {
       formData.append('companyName', form.companyName);
       formData.append('package', form.package);
       formData.append('driveType', form.driveType);
+      formData.append('campusType', form.campusType);
       formData.append('jobDescription', form.jobDescription);
       formData.append('deadline', form.deadline);
       formData.append('batch', form.batch);
@@ -236,12 +238,24 @@ function CreateDriveModal({ onClose, onRefresh }) {
               >
                 <option value="internship">Internship</option>
                 <option value="internship+ppo">Internship + PPO</option>
-                <option value="campus drive">Campus Drive</option>
+                <option value="placement drive">Placement Drive</option>
               </select>
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Campus Type *</label>
+              <select
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                value={form.campusType}
+                onChange={(e) => setForm({ ...form, campusType: e.target.value })}
+                required
+              >
+                <option value="on campus">On Campus</option>
+                <option value="off campus">Off Campus</option>
+              </select>
+            </div>
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Application Deadline *</label>
               <input 
@@ -773,7 +787,10 @@ const FacultyPlacementDashboard = () => {
                   <div>
                     <h3 className="text-lg font-display font-black text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">{drive.companyName}</h3>
                     <div className="flex items-center gap-3 text-[13px] font-medium text-[var(--text-secondary)] mt-1.5">
-                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{drive.driveType || 'Campus Drive'}</span>
+                      <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{drive.driveType || 'Placement Drive'}</span>
+                      {drive.campusType && (
+                        <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md capitalize">{drive.campusType}</span>
+                      )}
                       {drive.package && (
                         <>
                           <span className="opacity-50">•</span>
