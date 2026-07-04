@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileSpreadsheet, CheckCircle, Loader2, Info, FileText, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
@@ -6,6 +7,7 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const AdminAMCATPage = () => {
+  const { user } = useSelector((state) => state.auth);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [semester, setSemester] = useState('5');
@@ -141,6 +143,7 @@ const AdminAMCATPage = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Upload Section */}
+        {user?.role === 'admin' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-1 space-y-8">
           <div className="glass-card p-8 space-y-6 shadow-sm">
             <h3 className="text-xl font-display font-black text-[var(--text-primary)] flex items-center gap-3">
@@ -217,9 +220,10 @@ const AdminAMCATPage = () => {
             </div>
           </div>
         </motion.div>
+        )}
 
         {/* Upload History & Results List */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-2 space-y-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={user?.role === 'admin' ? "lg:col-span-2 space-y-8" : "lg:col-span-3 space-y-8"}>
           {/* Upload Result Feedback */}
           {result && (
             <div className="glass-card border-[2px] border-emerald-400 shadow-sm rounded-3xl p-6 space-y-4 bg-emerald-50/10">
@@ -249,6 +253,7 @@ const AdminAMCATPage = () => {
           )}
 
           {/* Upload History */}
+          {user?.role === 'admin' && (
           <div className="glass-card p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-[var(--text-primary)]">Upload History</h3>
@@ -282,6 +287,7 @@ const AdminAMCATPage = () => {
               </div>
             )}
           </div>
+          )}
 
           {/* Students AMCAT Scores Table */}
           <div className="glass-card p-6">

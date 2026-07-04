@@ -14,6 +14,7 @@ const CreateDrivePage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [createdDrive, setCreatedDrive] = useState(null);
   const [targetFile, setTargetFile] = useState(null);
+  const [jdFile, setJdFile] = useState(null);
 
   const [form, setForm] = useState({
     companyName: '',
@@ -54,6 +55,9 @@ const CreateDrivePage = () => {
       formData.append('batch', form.batch);
       formData.append('rounds', JSON.stringify(rounds));
       formData.append('file', targetFile);
+      if (jdFile) {
+        formData.append('jdFile', jdFile);
+      }
 
       const res = await api.post('/placement/drives', formData, {
         headers: {
@@ -105,7 +109,7 @@ const CreateDrivePage = () => {
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'campus drive', jobDescription: '', deadline: '', batch: '2023-27' }); setTargetFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
+              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'campus drive', jobDescription: '', deadline: '', batch: '2023-27' }); setTargetFile(null); setJdFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
               className="btn-outline-premium flex-1 py-3"
             >
               Create Another Drive
@@ -179,6 +183,7 @@ const CreateDrivePage = () => {
                 <option value="internship">Internship</option>
                 <option value="internship+ppo">Internship + PPO</option>
                 <option value="campus drive">Campus Drive</option>
+                <option value="off campus">Off Campus</option>
               </select>
             </div>
             <div>
@@ -215,6 +220,25 @@ const CreateDrivePage = () => {
             value={form.jobDescription}
             onChange={(e) => setForm({ ...form, jobDescription: e.target.value })}
           />
+
+          <div className="pt-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Or Upload JD File (Optional)</label>
+            <div className="border border-dashed border-[var(--border-light)] rounded-xl p-4 text-center bg-[var(--bg-input)]/10 hover:bg-[var(--bg-input)]/30 transition-colors cursor-pointer" onClick={() => document.getElementById('jd-file-upload').click()}>
+              <input type="file" id="jd-file-upload" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => setJdFile(e.target.files[0])} />
+              {jdFile ? (
+                <div className="flex flex-col items-center gap-2">
+                   <CheckCircle className="text-emerald-500" size={24} />
+                   <p className="text-sm font-bold text-[var(--text-primary)]">{jdFile.name}</p>
+                   <p className="text-[10px] text-[var(--text-secondary)] uppercase">Click to change</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                   <Upload size={20} />
+                   <p className="text-xs font-bold text-[var(--text-primary)]">Upload JD Document (.pdf, .doc)</p>
+                </div>
+              )}
+            </div>
+          </div>
         </motion.div>
 
         {/* Target Enrollment File (Required) */}

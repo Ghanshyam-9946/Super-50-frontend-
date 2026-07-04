@@ -53,6 +53,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/admin/amcat', icon: FileText, label: 'AMCAT Scores' },
   ];
 
   const guideLinks = [

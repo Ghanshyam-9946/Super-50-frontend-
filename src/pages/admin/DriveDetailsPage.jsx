@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Briefcase, ArrowLeft, Users, CheckCircle, Clock, X, Upload,
   FileSpreadsheet, Mail, RefreshCw, ChevronRight, Layers, BarChart,
-  Trash2, GripVertical
+  Trash2, GripVertical, Plus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -21,6 +21,10 @@ const DriveDetailsPage = () => {
   const [uploading, setUploading] = useState(false);
   const [roundsList, setRoundsList] = useState([]);
   const [draggedIdx, setDraggedIdx] = useState(null);
+  
+  const [showAddRoundModal, setShowAddRoundModal] = useState(false);
+  const [newRoundName, setNewRoundName] = useState('');
+  const [newRoundDesc, setNewRoundDesc] = useState('');
 
   useEffect(() => {
     if (drive?.rounds) {
@@ -58,6 +62,17 @@ const DriveDetailsPage = () => {
     const list = roundsList.filter((_, idx) => idx !== roundIdx);
     setRoundsList(list);
     await saveRounds(list);
+  };
+
+  const handleAddRound = async (e) => {
+    e.preventDefault();
+    if (!newRoundName.trim()) return toast.error('Round name is required');
+    const list = [...roundsList, { name: newRoundName, description: newRoundDesc }];
+    setRoundsList(list);
+    await saveRounds(list);
+    setShowAddRoundModal(false);
+    setNewRoundName('');
+    setNewRoundDesc('');
   };
 
   const saveRounds = async (updatedRounds) => {
@@ -171,6 +186,14 @@ const DriveDetailsPage = () => {
                 <span>Batch: {drive.batch || 'All'}</span>
                 <span>•</span>
                 <span>Deadline: {new Date(drive.deadline).toLocaleDateString()}</span>
+                {drive.jobDescriptionFile && (
+                  <>
+                    <span>•</span>
+                    <a href={`${import.meta.env.VITE_API_URL.replace('/api', '')}${drive.jobDescriptionFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[var(--primary)] hover:underline bg-[var(--primary)]/10 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/20">
+                      <FileSpreadsheet size={14} /> View JD
+                    </a>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -189,13 +212,21 @@ const DriveDetailsPage = () => {
           <h2 className="text-lg font-display font-black text-[var(--text-primary)] flex items-center gap-2">
             <Layers className="text-[var(--primary)]" size={20} /> Hiring Rounds Pipeline
           </h2>
-          <a
-            href="/upload/round%20result.xlsx"
-            download="round_result.xlsx"
-            className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
-          >
-            <FileSpreadsheet size={14} /> Download Template
-          </a>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddRoundModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 transition-all text-xs font-bold whitespace-nowrap shrink-0 shadow-sm"
+            >
+              <Plus size={14} /> Add Round
+            </button>
+            <a
+              href="/upload/round%20result.xlsx"
+              download="round_result.xlsx"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
+            >
+              <FileSpreadsheet size={14} /> Download Template
+            </a>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {roundsList?.map((round, idx) => {
@@ -389,6 +420,49 @@ const DriveDetailsPage = () => {
 
               <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2" disabled={uploading || !file}>
                 {uploading ? 'Processing...' : 'Upload Results & Notify Students'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Add Round Modal */}
+      {showAddRoundModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 450, padding: 32 }}>
+            <button onClick={() => setShowAddRoundModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/50 p-2 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 mb-4 shadow-sm">
+              <Plus size={24} />
+            </div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Add New Round</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Create a new hiring round for this drive pipeline.</p>
+
+            <form onSubmit={handleAddRound} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Round Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newRoundName}
+                  onChange={(e) => setNewRoundName(e.target.value)}
+                  placeholder="e.g., Technical Interview"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Description (Optional)</label>
+                <textarea
+                  value={newRoundDesc}
+                  onChange={(e) => setNewRoundDesc(e.target.value)}
+                  placeholder="e.g., Coding test on HackerRank"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none h-24"
+                />
+              </div>
+              <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2">
+                <Plus size={16} /> Create Round
               </button>
             </form>
           </motion.div>

@@ -155,7 +155,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksSheetPage /></RoleGuard>
         } />
         <Route path="/admin/amcat" element={
-          <RoleGuard allowed={['admin']}><AdminAMCATPage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'teacher']}><AdminAMCATPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>

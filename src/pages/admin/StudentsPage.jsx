@@ -388,7 +388,7 @@ export default function StudentsPage({ isSuper50 = false }) {
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
-                placeholder="Search students by name or enrollment..."
+                placeholder="Search students by name, enrollment, or mentor..."
                 value={search} onChange={(e) => setSearch(e.target.value)} id="students-search"
               />
             </div>
