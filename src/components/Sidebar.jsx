@@ -25,6 +25,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const commonStudentLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
+    { to: '/student/mst', icon: FileText, label: 'MST Result' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
   ];
 
@@ -54,6 +55,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Scores' },
+    { to: '/admin/mst', icon: FileText, label: 'MST Scores' },
   ];
 
   const guideLinks = [
@@ -75,6 +77,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
+    { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
   ];
 
   const super50AdminLinks = [
