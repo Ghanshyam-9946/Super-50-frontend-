@@ -17,11 +17,8 @@ const AdminAMCATPage = () => {
   const [fetchingData, setFetchingData] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // New Filters
   const [filterBatch, setFilterBatch] = useState('');
   const [filterSem, setFilterSem] = useState('');
-  const BATCHES = ['2023', '2024', '2025', '2026', '2027', '2028'];
-  const SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
   const fetchData = async () => {
     setFetchingData(true);
@@ -101,6 +98,25 @@ const AdminAMCATPage = () => {
 
   const uniqueSubjects = getUniqueSubjects();
 
+  const getUniqueBatches = () => {
+    const batches = new Set();
+    studentResults.forEach(r => {
+      if (r.studentId?.batch) batches.add(r.studentId.batch);
+    });
+    return Array.from(batches).sort();
+  };
+
+  const getUniqueSemesters = () => {
+    const sems = new Set();
+    studentResults.forEach(r => {
+      if (r.semester) sems.add(r.semester);
+    });
+    return Array.from(sems).sort((a,b) => a - b);
+  };
+
+  const dynamicBatches = getUniqueBatches();
+  const dynamicSemesters = getUniqueSemesters();
+
   const filteredResults = studentResults.filter(res => {
     const studentName = res.studentId?.name?.toLowerCase() || '';
     const enroll = (res.studentId?.enrollmentNumber || res.studentId?.enrollmentNo || '').toLowerCase();
@@ -137,10 +153,10 @@ const AdminAMCATPage = () => {
                 <select
                   value={semester}
                   onChange={(e) => setSemester(e.target.value)}
-                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-light)] rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500"
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
-                    <option key={sem} value={sem}>Semester {sem}</option>
+                    <option className="bg-[var(--bg-app)] text-[var(--text-primary)]" key={sem} value={sem}>Semester {sem}</option>
                   ))}
                 </select>
               </div>
@@ -278,9 +294,9 @@ const AdminAMCATPage = () => {
                   onChange={(e) => setFilterBatch(e.target.value)}
                   className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-primary)]"
                 >
-                  <option value="">All Batches</option>
-                  {BATCHES.map(b => (
-                    <option key={b} value={b}>{b}</option>
+                  <option className="bg-[var(--bg-app)] text-[var(--text-primary)]" value="">All Batches</option>
+                  {dynamicBatches.map(b => (
+                    <option className="bg-[var(--bg-app)] text-[var(--text-primary)]" key={b} value={b}>{b}</option>
                   ))}
                 </select>
 
@@ -289,9 +305,9 @@ const AdminAMCATPage = () => {
                   onChange={(e) => setFilterSem(e.target.value)}
                   className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-primary)]"
                 >
-                  <option value="">All Semesters</option>
-                  {SEMESTERS.map(s => (
-                    <option key={s} value={s}>Semester {s}</option>
+                  <option className="bg-[var(--bg-app)] text-[var(--text-primary)]" value="">All Semesters</option>
+                  {dynamicSemesters.map(s => (
+                    <option className="bg-[var(--bg-app)] text-[var(--text-primary)]" key={s} value={s}>Semester {s}</option>
                   ))}
                 </select>
 

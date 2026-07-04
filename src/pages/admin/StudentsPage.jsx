@@ -670,7 +670,13 @@ export default function StudentsPage({ isSuper50 = false }) {
         <EditStudentModal
           student={editingStudent}
           onClose={() => setEditingStudent(null)}
-          onSuccess={() => dispatch(fetchAllStudents({}))}
+          onSuccess={() => dispatch(fetchAllStudents({
+            department: dept || undefined,
+            batch: batch || undefined,
+            search: search || undefined,
+            sort: `${sortDir === 'desc' ? '-' : ''}${sortField}`,
+            isSuper50: isSuper50 ? 'true' : undefined
+          }))}
         />
       )}
       <StudentProfileModal

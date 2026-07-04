@@ -34,6 +34,16 @@ export default function VerifyGuidesPage() {
     }
   };
 
+  const changeRole = async (id, newRole) => {
+    try {
+      const { data } = await api.patch(`/admin/guides/${id}/role`, { role: newRole });
+      toast.success(data.message);
+      setGuides(guides.map(g => g._id === id ? { ...g, role: data.data.role } : g));
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update role');
+    }
+  };
+
   const filteredGuides = guides.filter(g =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     g.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -112,9 +122,18 @@ export default function VerifyGuidesPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm">
-                      {guide.role === 'teacher' ? 'Faculty' : guide.role === 'guide' ? 'Project Guide' : guide.role === 'pms_admin' ? 'PMS Admin' : guide.role === 'super50_admin' ? 'Super 50 Admin' : 'T&P Admin'}
-                    </span>
+                    <select
+                      className="bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                      value={guide.role}
+                      onChange={(e) => changeRole(guide._id, e.target.value)}
+                    >
+                      <option value="teacher">Faculty</option>
+                      <option value="admin">Admin</option>
+                      <option value="guide">Project Guide</option>
+                      <option value="pms_admin">PMS Admin</option>
+                      <option value="super50_admin">Super 50 Admin</option>
+                      <option value="tp_admin">T&P Admin</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 font-bold text-[var(--text-primary)]">
                     {guide.department || 'N/A'}
