@@ -527,7 +527,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                                 {student.isActive ? 'Deactivate' : 'Activate'}
                               </button>
                             )}
-                            {user?.role === 'super50_admin' && (
+                            {(user?.role === 'admin' || user?.role === 'super50_admin' || user?.role === 'teacher') && (
                               <button
                                 onClick={async () => {
                                   if (window.confirm('Are you sure you want to resend credentials to this student?')) {

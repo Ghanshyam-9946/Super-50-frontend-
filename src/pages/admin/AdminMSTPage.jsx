@@ -90,7 +90,10 @@ const AdminMSTPage = () => {
   // Find all unique subjects across loaded student results for dynamic headers
   const getUniqueSubjects = () => {
     const subjects = new Set();
-    studentResults.forEach(r => {
+    const targetResults = filterSem 
+      ? studentResults.filter(r => String(r.semester) === String(filterSem)) 
+      : studentResults;
+    targetResults.forEach(r => {
       if (r.scores) {
         Object.keys(r.scores).forEach(sub => subjects.add(sub));
       }
