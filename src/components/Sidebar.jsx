@@ -4,7 +4,7 @@ import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,6 +50,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
@@ -66,6 +67,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const adminLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },

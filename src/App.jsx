@@ -35,6 +35,7 @@ import EnrollStudentsPage from './pages/admin/EnrollStudentsPage';
 import CreateDrivePage from './pages/admin/CreateDrivePage';
 import DriveDetailsPage from './pages/admin/DriveDetailsPage';
 import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
+import FacultyTasksPage from './pages/faculty/FacultyTasksPage';
 
 import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
 import ProjectDashboard from './pages/student/ProjectDashboard';
@@ -196,6 +197,14 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/teacher/placement" element={
           <RoleGuard allowed={['teacher']}><FacultyPlacementDashboard /></RoleGuard>
+        } />
+        <Route path="/teacher/tasks" element={
+          <RoleGuard allowed={['teacher']}><FacultyTasksPage /></RoleGuard>
+        } />
+
+        {/* Faculty Task Manager (shared across staff roles) */}
+        <Route path="/faculty/tasks" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><FacultyTasksPage /></RoleGuard>
         } />
       </Route>
 
