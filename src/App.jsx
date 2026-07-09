@@ -44,9 +44,9 @@ import PodAIMarksUploadPage from './pages/admin/PodAIMarksUploadPage';
 import PodAIMarksPage from './pages/student/PodAIMarksPage';
 import PodAIMarksSheetPage from './pages/admin/PodAIMarksSheetPage';
 import AdminAMCATPage from './pages/admin/AdminAMCATPage';
-import AdminMSTPage from './pages/admin/AdminMSTPage';
 import StudentAMCATPage from './pages/student/StudentAMCATPage';
-import StudentMSTPage from './pages/student/StudentMSTPage';
+import TimetableManagePage from './pages/admin/TimetableManagePage';
+import StudentTimetablePage from './pages/student/StudentTimetablePage';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -117,7 +117,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <Super50Guard><ActivitiesPage /></Super50Guard>
         } />
         <Route path="/certificates" element={
-          <RoleGuard allowed={['student']}><CertificatesPage /></RoleGuard>
+          <Super50Guard><CertificatesPage /></Super50Guard>
         } />
         <Route path="/student/podai-marks" element={
           <Super50Guard><PodAIMarksPage /></Super50Guard>
@@ -125,8 +125,8 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/amcat" element={
           <RoleGuard allowed={['student']}><StudentAMCATPage /></RoleGuard>
         } />
-        <Route path="/student/mst" element={
-          <RoleGuard allowed={['student']}><StudentMSTPage /></RoleGuard>
+        <Route path="/student/timetable" element={
+          <RoleGuard allowed={['student']}><StudentTimetablePage /></RoleGuard>
         } />
 
         {/* Admin routes */}
@@ -157,9 +157,15 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/podai-upload" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksUploadPage /></RoleGuard>
         } />
-        <Route path="/admin/podai-marks" element={<RoleGuard allowed={['admin', 'teacher', 'super50_admin']}><PodAIMarksSheetPage /></RoleGuard>} />
-        <Route path="/admin/amcat" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminAMCATPage /></RoleGuard>} />
-        <Route path="/admin/mst" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminMSTPage /></RoleGuard>} />
+        <Route path="/admin/podai-marks" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksSheetPage /></RoleGuard>
+        } />
+        <Route path="/admin/amcat" element={
+          <RoleGuard allowed={['admin']}><AdminAMCATPage /></RoleGuard>
+        } />
+        <Route path="/admin/timetable" element={
+          <RoleGuard allowed={['admin']}><TimetableManagePage /></RoleGuard>
+        } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
         } />
