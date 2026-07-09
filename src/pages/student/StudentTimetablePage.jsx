@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { CalendarClock, Download, Loader2, Info, Users2 } from 'lucide-react';
+import { CalendarClock, Download, Info, Users2, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import TimetableGrid from '../../components/timetable/TimetableGrid';
-import { downloadTimetablePdf } from '../../utils/timetablePdf';
+import { getImageUrl } from '../../utils/imageUrl';
 
 export default function StudentTimetablePage() {
   const { user } = useSelector((s) => s.auth);
@@ -13,7 +12,6 @@ export default function StudentTimetablePage() {
   const [timetable, setTimetable] = useState(null); // the one currently displayed
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
 
   const storageKey = user?.semester ? `scope_timetable_section_sem${user.semester}` : null;
 
@@ -48,18 +46,7 @@ export default function StudentTimetablePage() {
     if (storageKey) localStorage.setItem(storageKey, id);
   };
 
-  const downloadPdf = async () => {
-    setDownloading(true);
-    try {
-      await downloadTimetablePdf(timetable);
-      toast.success('Timetable downloaded');
-    } catch (err) {
-      console.error('Timetable PDF export failed:', err);
-      toast.error('Could not generate PDF');
-    } finally {
-      setDownloading(false);
-    }
-  };
+  const pdfUrl = timetable ? getImageUrl(timetable.pdfUrl) : '';
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
@@ -73,13 +60,13 @@ export default function StudentTimetablePage() {
           </p>
         </div>
         {timetable && (
-          <button
-            onClick={downloadPdf}
-            disabled={downloading}
-            className="btn-premium flex items-center gap-2 text-xs self-start md:self-auto disabled:opacity-60"
+          <a
+            href={pdfUrl}
+            download={timetable.pdfFileName || 'Timetable.pdf'}
+            className="btn-premium flex items-center gap-2 text-xs self-start md:self-auto"
           >
-            {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} Download PDF
-          </button>
+            <Download size={16} /> Download PDF
+          </a>
         )}
       </header>
 
@@ -117,11 +104,17 @@ export default function StudentTimetablePage() {
             </div>
           )}
 
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <div className="glass-card p-3 md:p-5 rounded-3xl overflow-x-auto">
-              <div className="min-w-[900px]">
-                <TimetableGrid data={timetable} />
-              </div>
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)] px-1">
+              <FileText size={14} /> {timetable.pdfFileName || 'Timetable.pdf'}
+            </div>
+            <div className="glass-card p-2 md:p-3 rounded-3xl overflow-hidden">
+              <iframe
+                src={pdfUrl}
+                title="Timetable"
+                className="w-full rounded-2xl border-0"
+                style={{ height: '80vh' }}
+              />
             </div>
           </motion.div>
         </>
