@@ -4,7 +4,7 @@ import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +24,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
     { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
   ];
 
   // Training & Placement Section (ALL students)
@@ -49,6 +50,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
+    { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
@@ -57,6 +59,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const guideLinks = [
     { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
+    { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
@@ -65,6 +68,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues & Mentors' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },

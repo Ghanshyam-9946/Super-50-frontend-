@@ -47,6 +47,9 @@ import AdminAMCATPage from './pages/admin/AdminAMCATPage';
 import StudentAMCATPage from './pages/student/StudentAMCATPage';
 import TimetableManagePage from './pages/admin/TimetableManagePage';
 import StudentTimetablePage from './pages/student/StudentTimetablePage';
+import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
+import NoDuesPage from './pages/faculty/NoDuesPage';
+import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -128,6 +131,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/timetable" element={
           <RoleGuard allowed={['student']}><StudentTimetablePage /></RoleGuard>
         } />
+        <Route path="/student/no-dues" element={
+          <RoleGuard allowed={['student']}><StudentNoDuesPage /></RoleGuard>
+        } />
 
         {/* Admin routes */}
         <Route path="/admin/dashboard" element={
@@ -165,6 +171,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/timetable" element={
           <RoleGuard allowed={['admin']}><TimetableManagePage /></RoleGuard>
+        } />
+        <Route path="/admin/no-dues" element={
+          <RoleGuard allowed={['admin']}><NoDuesAdminPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
@@ -211,6 +220,11 @@ function AppRoutes({ theme, toggleTheme }) {
         {/* Faculty Task Manager (shared across staff roles) */}
         <Route path="/faculty/tasks" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><FacultyTasksPage /></RoleGuard>
+        } />
+
+        {/* No Dues — mentor (TG) view, shared across staff roles */}
+        <Route path="/faculty/no-dues" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><NoDuesPage /></RoleGuard>
         } />
       </Route>
 
