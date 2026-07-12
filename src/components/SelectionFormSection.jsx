@@ -266,6 +266,11 @@ export default function SelectionFormSection() {
 
   const submitBtn = getSubmitButtonProps();
 
+  // If form is closed and the student hasn't submitted any response, hide the entire section completely
+  if (!isFormOpen() && !hasSubmitted) {
+    return null;
+  }
+
   return (
     <section id="selection-form" className="py-24 relative overflow-hidden bg-black/30 border-t border-[var(--border-light)]">
       {/* Background radial highlight */}

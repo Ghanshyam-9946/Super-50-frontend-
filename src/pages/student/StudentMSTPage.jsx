@@ -140,7 +140,16 @@ const StudentMSTPage = () => {
                   scoreEntries.map(([subject, score], idx) => {
                     const numericScore = Number(score);
                     const isTotal = subject.toLowerCase().includes('total');
-                    const isPercentage = !isTotal && !isNaN(numericScore) && numericScore <= 100 && numericScore >= 0;
+                    
+                    const testNameLower = (activeResult?.testName || '').toLowerCase();
+                    let maxMarks = 100;
+                    if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                      maxMarks = 28;
+                    } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                      maxMarks = 42;
+                    }
+                    
+                    const isPercentage = !isTotal && !isNaN(numericScore) && numericScore <= maxMarks && numericScore >= 0;
                     
                     return (
                       <div 
@@ -159,7 +168,7 @@ const StudentMSTPage = () => {
                             <div className="w-24 bg-slate-100 h-2.5 rounded-full overflow-hidden shrink-0 hidden sm:block">
                               <div 
                                 className="bg-indigo-500 h-full rounded-full" 
-                                style={{ width: `${numericScore}%` }}
+                                style={{ width: `${Math.min((numericScore / maxMarks) * 100, 100)}%` }}
                               />
                             </div>
                           )}
@@ -167,8 +176,8 @@ const StudentMSTPage = () => {
                             <span className="font-black text-lg text-[var(--text-primary)]">
                               {score}
                             </span>
-                            {!isTotal && !isNaN(numericScore) && numericScore <= 100 && (
-                              <span className="text-[10px] text-[var(--text-secondary)] font-bold ml-1">/ 100</span>
+                            {!isTotal && !isNaN(numericScore) && (
+                              <span className="text-[10px] text-[var(--text-secondary)] font-bold ml-1">/ {maxMarks}</span>
                             )}
                           </div>
                         </div>
