@@ -4,13 +4,12 @@ import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileEditModal from './ProfileEditModal';
 import { getImageUrl } from '../utils/imageUrl';
-import StudentProfileModal from './StudentProfileModal';
 
 const Sidebar = ({ theme, toggleTheme }) => {
   const { user } = useSelector((state) => state.auth);
@@ -19,16 +18,20 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Core Links (All Students)
   const commonStudentLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
+<<<<<<< HEAD
     { to: '/student/mst', icon: FileText, label: 'MST Result' },
     { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
     { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
+=======
+    { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
+>>>>>>> ff798bcb5973eb1875b9d132525c34fb5e1cab87
   ];
 
   // Training & Placement Section (ALL students)
@@ -47,22 +50,23 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Super 50 Portal' },
     { to: '/projects', icon: Layout, label: 'Projects' },
     { to: '/activities', icon: Zap, label: 'Activities' },
+    { to: '/certificates', icon: Award, label: 'Certificates' },
     { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
   ];
 
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
+    { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/admin/amcat', icon: FileText, label: 'AMCAT Scores' },
-    { to: '/admin/mst', icon: FileText, label: 'MST Scores' },
   ];
 
   const guideLinks = [
     { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
+    { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
@@ -70,6 +74,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
+    { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues & Mentors' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
@@ -84,8 +90,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/all-student-podai', icon: FileText, label: 'All Student Pod AI Sheet' },
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
+<<<<<<< HEAD
     { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
     { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
+=======
+>>>>>>> ff798bcb5973eb1875b9d132525c34fb5e1cab87
   ];
 
   const super50AdminLinks = [
@@ -194,14 +203,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
       <div className="p-4 mt-auto border-t border-[var(--border-light)]">
         <div className={`flex flex-col gap-3 ${collapsed ? 'items-center' : ''}`}>
           <div 
-            onClick={() => {
-              if (user?.role === 'student') {
-                setIsProfileOpen(true);
-              } else {
-                setIsProfileModalOpen(true);
-              }
-            }}
-            className={`flex items-center gap-3 cursor-pointer group p-1.5 -ml-1.5 rounded-xl hover:bg-[var(--bg-hover)] transition-colors`}
+            className="flex items-center gap-3 cursor-pointer group p-1.5 -ml-1.5 rounded-xl hover:bg-[var(--bg-hover)] transition-colors"
+            onClick={() => setIsProfileModalOpen(true)}
+            title="Edit Profile"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--bg-app)] to-[var(--bg-app)] border border-[var(--border-light)] flex items-center justify-center text-sm font-bold text-[var(--text-primary)] shadow-sm shrink-0 overflow-hidden group-hover:border-[var(--primary)] transition-colors">
               {user?.profileImage ? (
@@ -268,13 +272,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
         isOpen={isProfileModalOpen} 
         onClose={() => setIsProfileModalOpen(false)} 
       />
-      {user?.role === 'student' && (
-        <StudentProfileModal 
-          isOpen={isProfileOpen} 
-          onClose={() => setIsProfileOpen(false)} 
-          studentId={user._id} 
-        />
-      )}
     </>
   );
 };
