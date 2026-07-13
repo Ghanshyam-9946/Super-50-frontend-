@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardList, PlayCircle, PauseCircle, XCircle, CheckCircle2, Share2,
   Plus, Search, Users, Calendar, FileText, Paperclip, Flag, Loader2, X,
-  ChevronRight, Send, AlertTriangle, Trash2, UserCircle2, Filter, Inbox,
+  ChevronRight, Send, AlertTriangle, Trash2, UserCircle2, Filter, Inbox, Pencil, Save, Link as LinkIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, isValid } from 'date-fns';
@@ -60,6 +60,11 @@ const fmtDate = (d) => {
   if (!d) return null;
   const date = new Date(d);
   return isValid(date) ? format(date, 'dd MMM yyyy') : null;
+};
+
+const fmtDateInput = (d) => {
+  const date = new Date(d);
+  return isValid(date) ? format(date, 'yyyy-MM-dd') : '';
 };
 
 /* ─────────────────────────────  PAGE  ───────────────────────────── */
@@ -274,14 +279,22 @@ function AssignedTasks({ tasks, faculty, onChange }) {
 }
 
 function TaskCard({ task, faculty, onChange }) {
+  const { user } = useSelector((s) => s.auth);
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState(null); // 'started' | 'pending' | 'completed' | 'rejected' | 'forward'
+  const [mode, setMode] = useState(null); // 'started' | 'pending' | 'completed' | 'rejected' | 'forward' | 'edit'
   const [comment, setComment] = useState('');
   const [forwardId, setForwardId] = useState('');
+  const [editForm, setEditForm] = useState(null);
+  const [editSearch, setEditSearch] = useState('');
 
   const status = STATUS_META[task.status] || STATUS_META.open;
   const deadline = fmtDate(task.deadline);
   const StatusIcon = status.icon;
+
+  // Only the task's creator (or an admin) may edit its details / add more
+  // faculty later — not every assignee, so the brief can't be rewritten by
+  // just anyone it was handed to.
+  const canEdit = !!user && (task.createdBy?._id === user._id || user.role === 'admin');
 
   // Only the statuses that are a VALID next step from where the task is
   // right now are ever offered — this is what stops anyone from acting out
@@ -295,6 +308,68 @@ function TaskCard({ task, faculty, onChange }) {
     setMode(null);
     setComment('');
     setForwardId('');
+    setEditForm(null);
+    setEditSearch('');
+  };
+
+  const startEdit = () => {
+    setEditForm({
+      title: task.title,
+      description: task.description || '',
+      priority: task.priority,
+      deadline: task.deadline ? fmtDateInput(task.deadline) : '',
+      referenceUrl: task.referenceUrl || '',
+      assignedTo: task.assignedTo.map((f) => f._id),
+    });
+    setMode('edit');
+  };
+
+  const toggleEditFaculty = (id) => {
+    setEditForm((f) => ({
+      ...f,
+      assignedTo: f.assignedTo.includes(id) ? f.assignedTo.filter((x) => x !== id) : [...f.assignedTo, id],
+    }));
+  };
+
+  const editFilteredFaculty = faculty.filter((f) => f.name.toLowerCase().includes(editSearch.toLowerCase()));
+  const editAllFilteredSelected =
+    editFilteredFaculty.length > 0 && editForm && editFilteredFaculty.every((f) => editForm.assignedTo.includes(f._id));
+  const toggleEditSelectAll = () => {
+    const ids = editFilteredFaculty.map((f) => f._id);
+    setEditForm((f) => ({
+      ...f,
+      assignedTo: editAllFilteredSelected
+        ? f.assignedTo.filter((id) => !ids.includes(id))
+        : [...new Set([...f.assignedTo, ...ids])],
+    }));
+  };
+
+  const saveEdit = async () => {
+    if (!editForm.title.trim()) return toast.error('Task title is required');
+    if (editForm.assignedTo.length === 0) return toast.error('Assign the task to at least one faculty');
+    if (editForm.referenceUrl.trim() && !/^https?:\/\/.+/i.test(editForm.referenceUrl.trim())) {
+      return toast.error('Please enter a valid URL (starting with http:// or https://)');
+    }
+    setBusy(true);
+    try {
+      const { data } = await api.put(`/tasks/${task._id}`, {
+        title: editForm.title.trim(),
+        description: editForm.description.trim(),
+        priority: editForm.priority,
+        deadline: editForm.deadline || undefined,
+        referenceUrl: editForm.referenceUrl.trim(),
+        assignedTo: editForm.assignedTo,
+      });
+      if (data.success) {
+        toast.success(data.message || 'Task updated');
+        closePanel();
+        await onChange();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Update failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const confirmStatus = async (newStatus) => {
@@ -347,6 +422,16 @@ function TaskCard({ task, faculty, onChange }) {
             <span className={`badge border ${status.ring} ${status.color}`}>
               <StatusIcon size={12} /> {status.label}
             </span>
+            {canEdit && (
+              <button
+                onClick={() => (mode === 'edit' ? closePanel() : startEdit())}
+                disabled={busy}
+                className="flex items-center gap-1 text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--primary)] transition-colors disabled:opacity-40"
+                title="Edit task details / add more faculty"
+              >
+                <Pencil size={12} /> Edit
+              </button>
+            )}
           </div>
           {task.description && (
             <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{task.description}</p>
@@ -370,6 +455,16 @@ function TaskCard({ task, faculty, onChange }) {
                 className="flex items-center gap-1.5 text-[var(--primary)] hover:underline"
               >
                 <Paperclip size={14} /> {task.referenceFileName || 'Reference file'}
+              </a>
+            )}
+            {task.referenceUrl && (
+              <a
+                href={task.referenceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-[var(--primary)] hover:underline"
+              >
+                <LinkIcon size={14} /> Reference link
               </a>
             )}
           </div>
@@ -497,6 +592,110 @@ function TaskCard({ task, faculty, onChange }) {
             </div>
           </motion.div>
         )}
+
+        {mode === 'edit' && editForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-4 pt-4 border-t border-[var(--border-light)] space-y-3">
+              <input
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                placeholder="Task title"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-4 py-2.5 text-sm font-bold text-[var(--text-primary)] outline-none focus:border-[var(--primary)] transition-colors"
+              />
+              <textarea
+                rows={2}
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                placeholder="Description"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] transition-colors resize-none"
+              />
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex gap-2 flex-1">
+                  {['high', 'medium', 'low'].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setEditForm({ ...editForm, priority: p })}
+                      className={`flex-1 px-3 py-2 rounded-lg border text-xs font-bold transition-all ${
+                        editForm.priority === p ? PRIORITY_META[p].ring : 'border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                      }`}
+                    >
+                      {PRIORITY_META[p].label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="date"
+                  value={editForm.deadline}
+                  onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                />
+              </div>
+
+              <input
+                type="url"
+                value={editForm.referenceUrl}
+                onChange={(e) => setEditForm({ ...editForm, referenceUrl: e.target.value })}
+                placeholder="Reference URL (optional) — https://…"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] transition-colors"
+              />
+
+              {/* Faculty multi-select — add more faculty to this task at any time */}
+              <div className="border border-[var(--border-light)] rounded-xl overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-[var(--border-light)] bg-[var(--bg-input)]">
+                  <Search size={13} className="text-[var(--text-secondary)]" />
+                  <input
+                    value={editSearch}
+                    onChange={(e) => setEditSearch(e.target.value)}
+                    placeholder="Search faculty to add…"
+                    className="flex-1 bg-transparent outline-none text-xs text-[var(--text-primary)]"
+                  />
+                  {editFilteredFaculty.length > 0 && (
+                    <button onClick={toggleEditSelectAll} className="text-[10px] font-bold text-[var(--primary)] hover:underline shrink-0">
+                      {editAllFilteredSelected ? 'Clear all' : 'Select all'}
+                    </button>
+                  )}
+                  <span className="text-[10px] font-bold text-[var(--text-secondary)]">{editForm.assignedTo.length} selected</span>
+                </div>
+                <div className="max-h-36 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
+                  {editFilteredFaculty
+                    .map((f) => {
+                      const on = editForm.assignedTo.includes(f._id);
+                      return (
+                        <button
+                          key={f._id}
+                          onClick={() => toggleEditFaculty(f._id)}
+                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all ${
+                            on ? 'bg-[var(--primary)]/10 border border-[var(--primary)]/30' : 'hover:bg-[var(--bg-hover)] border border-transparent'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${on ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border-light)]'}`}>
+                            {on && <CheckCircle2 size={11} className="text-white" />}
+                          </div>
+                          <span className="text-xs font-semibold text-[var(--text-primary)] truncate">{f.name}</span>
+                          <span className="text-[10px] text-[var(--text-secondary)] shrink-0 ml-auto">{f.role}</span>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <button onClick={closePanel} className="px-4 py-2 rounded-xl border border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)]">
+                  Cancel
+                </button>
+                <button onClick={saveEdit} disabled={busy} className="btn-premium px-4 py-2 text-xs flex items-center gap-2 disabled:opacity-40">
+                  {busy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Changes
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
@@ -505,7 +704,7 @@ function TaskCard({ task, faculty, onChange }) {
 /* ─────────────────────────────  ADD TASK  ───────────────────────────── */
 
 function AddTaskForm({ faculty, onCreated }) {
-  const [form, setForm] = useState({ title: '', description: '', priority: 'medium', deadline: '' });
+  const [form, setForm] = useState({ title: '', description: '', priority: 'medium', deadline: '', referenceUrl: '' });
   const [selected, setSelected] = useState([]);
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState('');
@@ -518,9 +717,22 @@ function AddTaskForm({ faculty, onCreated }) {
     [faculty, search]
   );
 
+  const allFilteredSelected = filtered.length > 0 && filtered.every((f) => selected.includes(f._id));
+  const toggleSelectAll = () => {
+    const filteredIds = filtered.map((f) => f._id);
+    if (allFilteredSelected) {
+      setSelected((prev) => prev.filter((id) => !filteredIds.includes(id)));
+    } else {
+      setSelected((prev) => [...new Set([...prev, ...filteredIds])]);
+    }
+  };
+
   const submit = async () => {
     if (!form.title.trim()) return toast.error('Task title is required');
     if (selected.length === 0) return toast.error('Assign the task to at least one faculty');
+    if (form.referenceUrl.trim() && !/^https?:\/\/.+/i.test(form.referenceUrl.trim())) {
+      return toast.error('Please enter a valid URL (starting with http:// or https://)');
+    }
 
     setSubmitting(true);
     try {
@@ -529,13 +741,14 @@ function AddTaskForm({ faculty, onCreated }) {
       fd.append('description', form.description.trim());
       fd.append('priority', form.priority);
       if (form.deadline) fd.append('deadline', form.deadline);
+      if (form.referenceUrl.trim()) fd.append('referenceUrl', form.referenceUrl.trim());
       fd.append('assignedTo', JSON.stringify(selected));
       if (file) fd.append('referenceFile', file);
 
       const { data } = await api.post('/tasks', fd);
       if (data.success) {
         toast.success(data.message || 'Task allocated');
-        setForm({ title: '', description: '', priority: 'medium', deadline: '' });
+        setForm({ title: '', description: '', priority: 'medium', deadline: '', referenceUrl: '' });
         setSelected([]);
         setFile(null);
         await onCreated();
@@ -566,6 +779,14 @@ function AddTaskForm({ faculty, onCreated }) {
                 placeholder="Search faculty…"
                 className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)]"
               />
+              {filtered.length > 0 && (
+                <button
+                  onClick={toggleSelectAll}
+                  className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0"
+                >
+                  {allFilteredSelected ? 'Clear all' : 'Select all'}
+                </button>
+              )}
               {selected.length > 0 && (
                 <span className="badge badge-approved">{selected.length} selected</span>
               )}
@@ -631,6 +852,17 @@ function AddTaskForm({ faculty, onCreated }) {
         <div>
           <label className={labelCls}>Task Deadline</label>
           <input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className={inputCls} />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={labelCls}>Reference URL <span className="opacity-60 normal-case tracking-normal font-medium">(link to a doc, drive, form — optional)</span></label>
+          <input
+            type="url"
+            value={form.referenceUrl}
+            onChange={(e) => setForm({ ...form, referenceUrl: e.target.value })}
+            placeholder="https://…"
+            className={inputCls}
+          />
         </div>
 
         <div className="md:col-span-2">
