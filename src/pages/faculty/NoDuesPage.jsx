@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck2, Users2, Plus, ClipboardList, ListChecks,
-  Loader2, X, ChevronRight, PartyPopper, Circle, Save,
+  Loader2, X, ChevronRight, PartyPopper, Circle, Save, Check, Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -18,28 +18,39 @@ export default function NoDuesPage() {
   const [faculty, setFaculty] = useState([]);
   const [myForms, setMyForms] = useState([]);
   const [checklistForms, setChecklistForms] = useState([]);
+  const [studentsError, setStudentsError] = useState('');
   const [loading, setLoading] = useState(true);
   const [preselectedStudent, setPreselectedStudent] = useState(null);
   const [openFormId, setOpenFormId] = useState(null);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    try {
-      const [s, f, mf, cf] = await Promise.all([
-        api.get('/no-dues/my-students'),
-        api.get('/no-dues/faculty-list'),
-        api.get('/no-dues/mine'),
-        api.get('/no-dues/assigned-to-me'),
-      ]);
-      if (s.data.success) setStudents(s.data.data);
-      if (f.data.success) setFaculty(f.data.data);
-      if (mf.data.success) setMyForms(mf.data.data);
-      if (cf.data.success) setChecklistForms(cf.data.data);
-    } catch (err) {
-      toast.error('Failed to load No Dues data');
-    } finally {
-      setLoading(false);
+    const results = await Promise.allSettled([
+      api.get('/no-dues/my-students'),
+      api.get('/no-dues/faculty-list'),
+      api.get('/no-dues/mine'),
+      api.get('/no-dues/assigned-to-me'),
+    ]);
+    const [s, f, mf, cf] = results;
+
+    if (s.status === 'fulfilled' && s.value.data.success) {
+      setStudents(s.value.data.data);
+      setStudentsError('');
+    } else {
+      setStudents([]);
+      setStudentsError(s.status === 'rejected' ? s.reason?.response?.data?.message || s.reason?.message || 'Request failed' : '');
     }
+
+    if (f.status === 'fulfilled' && f.value.data.success) setFaculty(f.value.data.data);
+    else toast.error('Failed to load faculty list');
+
+    if (mf.status === 'fulfilled' && mf.value.data.success) setMyForms(mf.value.data.data);
+    else toast.error('Failed to load forms you created');
+
+    if (cf.status === 'fulfilled' && cf.value.data.success) setChecklistForms(cf.value.data.data);
+    else toast.error('Failed to load your subject checklist');
+
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -47,9 +58,9 @@ export default function NoDuesPage() {
   }, [loadAll]);
 
   const refreshForms = useCallback(async () => {
-    const [mf, cf] = await Promise.all([api.get('/no-dues/mine'), api.get('/no-dues/assigned-to-me')]);
-    if (mf.data.success) setMyForms(mf.data.data);
-    if (cf.data.success) setChecklistForms(cf.data.data);
+    const [mf, cf] = await Promise.allSettled([api.get('/no-dues/mine'), api.get('/no-dues/assigned-to-me')]);
+    if (mf.status === 'fulfilled' && mf.value.data.success) setMyForms(mf.value.data.data);
+    if (cf.status === 'fulfilled' && cf.value.data.success) setChecklistForms(cf.value.data.data);
   }, []);
 
   const handleFormChanged = async (updated) => {
@@ -123,6 +134,8 @@ export default function NoDuesPage() {
             {tab === 'students' && (
               <MyStudentsTab
                 students={students}
+                user={user}
+                error={studentsError}
                 onCreateFor={(student) => {
                   setPreselectedStudent(student);
                   setTab('create');
@@ -172,13 +185,89 @@ export default function NoDuesPage() {
 
 /* ─────────────────────────────  MY TG STUDENTS  ───────────────────────────── */
 
-function MyStudentsTab({ students, onCreateFor }) {
+function MyStudentsTab({ students, user, error, onCreateFor }) {
+  const [debug, setDebug] = useState(null);
+  const [debugLoading, setDebugLoading] = useState(false);
+
+  const runDiagnostic = async () => {
+    setDebugLoading(true);
+    try {
+      const { data } = await api.get('/no-dues/debug-mentor-check');
+      if (data.success) setDebug(data.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Diagnostic failed');
+    } finally {
+      setDebugLoading(false);
+    }
+  };
+
   if (students.length === 0) {
     return (
-      <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">
-        <Users2 size={40} className="text-[var(--text-secondary)] opacity-50" />
-        <p className="text-[var(--text-primary)] font-bold">No students assigned to your TG group yet</p>
-        <p className="text-[var(--text-secondary)] text-sm">Ask the admin to assign students to you as their mentor.</p>
+      <div className="space-y-4">
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/25 text-red-500 rounded-2xl px-4 py-3 text-sm font-semibold">
+            Couldn't load your TG students: {error}
+          </div>
+        )}
+        <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">
+          <Users2 size={40} className="text-[var(--text-secondary)] opacity-50" />
+          <p className="text-[var(--text-primary)] font-bold">No students assigned to your TG group yet</p>
+          <p className="text-[var(--text-secondary)] text-sm max-w-md">
+            Ask the admin to assign students to you as their mentor on the "Assign Mentor (TG)" page.
+          </p>
+          <button
+            onClick={runDiagnostic}
+            disabled={debugLoading}
+            className="mt-2 flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline"
+          >
+            {debugLoading ? <Loader2 size={13} className="animate-spin" /> : null}
+            Run diagnostic — show exactly what the backend sees
+          </button>
+
+          {debug && (
+            <div className="w-full max-w-xl mt-3 bg-[var(--bg-hover)] rounded-xl px-4 py-4 text-xs text-left space-y-3">
+              <div>
+                <p className="font-bold text-[var(--text-primary)]">You are logged in as:</p>
+                <p className="text-[var(--text-secondary)]">{debug.loggedInAs.name} · {debug.loggedInAs.email} · role: {debug.loggedInAs.role}</p>
+                <p className="text-[var(--text-secondary)] font-mono">ID: {debug.loggedInAs.id}</p>
+              </div>
+              <div>
+                <p className="font-bold text-[var(--text-primary)]">Students assigned to YOU: {debug.studentsAssignedToMe.length}</p>
+                {debug.studentsAssignedToMe.length > 0 ? (
+                  <ul className="list-disc list-inside text-[var(--text-secondary)]">
+                    {debug.studentsAssignedToMe.map((s, i) => <li key={i}>{s.name} ({s.email})</li>)}
+                  </ul>
+                ) : (
+                  <p className="text-[var(--text-secondary)] italic">None — see below for who they actually got assigned to.</p>
+                )}
+              </div>
+              <div>
+                <p className="font-bold text-[var(--text-primary)]">
+                  All students with ANY mentor assigned (system-wide): {debug.studentsWithAnyMentorAssigned.length} of {debug.totalStudentsInSystem}
+                </p>
+                {debug.studentsWithAnyMentorAssigned.length > 0 ? (
+                  <div className="max-h-40 overflow-y-auto custom-scrollbar mt-1">
+                    <table className="w-full">
+                      <thead><tr className="text-[var(--text-secondary)]"><th className="text-left font-bold">Student</th><th className="text-left font-bold">Assigned mentorId</th></tr></thead>
+                      <tbody>
+                        {debug.studentsWithAnyMentorAssigned.map((s, i) => (
+                          <tr key={i} className={s.mentorId === debug.loggedInAs.id ? 'text-emerald-500 font-bold' : 'text-[var(--text-secondary)]'}>
+                            <td>{s.name}</td>
+                            <td className="font-mono">{s.mentorId}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-[var(--text-secondary)] italic">
+                    Nobody has a mentor assigned at all yet — the assignment from the admin page didn't actually save. Try re-assigning after making sure the backend server was fully restarted.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -217,12 +306,30 @@ function MyStudentsTab({ students, onCreateFor }) {
 /* ─────────────────────────────  CREATE FORM  ───────────────────────────── */
 
 function CreateFormView({ students, faculty, preselected, onCreated }) {
-  const [studentId, setStudentId] = useState(preselected?._id || '');
+  const [studentIds, setStudentIds] = useState(preselected?._id ? [preselected._id] : []);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [semesterFilter, setSemesterFilter] = useState('');
   const [session, setSession] = useState('');
   const [semester, setSemester] = useState(preselected?.semester || 1);
   const [section, setSection] = useState('');
   const [subjects, setSubjects] = useState([{ subjectCode: '', subjectName: '', faculty: '', items: [...DEFAULT_SUBJECT_ITEMS] }]);
   const [submitting, setSubmitting] = useState(false);
+
+  const filteredStudents = students.filter((s) => {
+    const matchesSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || (s.enrollmentNumber || '').toLowerCase().includes(studentSearch.toLowerCase());
+    const matchesSemester = !semesterFilter || String(s.semester) === String(semesterFilter);
+    return matchesSearch && matchesSemester;
+  });
+
+  const toggleStudent = (id) => setStudentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const allFilteredSelected = filteredStudents.length > 0 && filteredStudents.every((s) => studentIds.includes(s._id));
+  const toggleSelectAll = () => {
+    const ids = filteredStudents.map((s) => s._id);
+    setStudentIds((prev) => (allFilteredSelected ? prev.filter((id) => !ids.includes(id)) : [...new Set([...prev, ...ids])]));
+  };
+
+  // Semesters present among the mentor's own TG students, for quick "whole semester" selection
+  const availableSemesters = [...new Set(students.map((s) => s.semester).filter(Boolean))].sort((a, b) => a - b);
 
   const setSubject = (idx, patch) => {
     const next = [...subjects];
@@ -239,15 +346,15 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
   };
 
   const submit = async () => {
-    if (!studentId) return toast.error('Select a student');
+    if (studentIds.length === 0) return toast.error('Select at least one student');
     if (!session.trim()) return toast.error('Session is required (e.g. JAN-JUNE 2026)');
     if (subjects.some((s) => !s.subjectName.trim())) return toast.error('Every subject needs a name');
     if (subjects.some((s) => !s.faculty)) return toast.error('Assign a faculty for every subject');
 
     setSubmitting(true);
     try {
-      const { data } = await api.post('/no-dues', {
-        studentId,
+      const { data } = await api.post('/no-dues/bulk', {
+        studentIds,
         session: session.trim(),
         semester,
         section: section.trim(),
@@ -259,11 +366,14 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
         })),
       });
       if (data.success) {
-        toast.success(data.message || 'No Dues form created');
+        toast.success(data.message || 'No Dues forms created');
+        if (data.skipped?.length) {
+          data.skipped.forEach((sk) => toast.error(`Skipped ${sk.name || sk.studentId}: ${sk.reason}`));
+        }
         await onCreated();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create form');
+      toast.error(err.response?.data?.message || 'Failed to create forms');
     } finally {
       setSubmitting(false);
     }
@@ -275,22 +385,71 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
 
   return (
     <div className="glass-card p-6 rounded-3xl space-y-6">
-      <div className="grid md:grid-cols-2 gap-5">
-        <div>
-          <label className={labelCls}>Student <span className="opacity-60 normal-case font-medium">(your TG group only)</span></label>
-          <select value={studentId} onChange={(e) => setStudentId(e.target.value)} className={inputCls}>
-            <option value="">Select a student…</option>
-            {students.map((s) => (
-              <option key={s._id} value={s._id}>{s.name} — {s.enrollmentNumber}</option>
-            ))}
-          </select>
+      <div>
+        <label className={labelCls}>
+          Students <span className="opacity-60 normal-case font-medium">(your TG group only — pick individually, filter by semester, or select all)</span>
+        </label>
+        <div className="border border-[var(--border-light)] rounded-2xl overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-3 py-2.5 border-b border-[var(--border-light)] bg-[var(--bg-input)]">
+            <div className="flex items-center gap-2 flex-1">
+              <Search size={14} className="text-[var(--text-secondary)] shrink-0" />
+              <input
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                placeholder="Search by name or enrollment…"
+                className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)] min-w-0"
+              />
+            </div>
+            {availableSemesters.length > 1 && (
+              <select
+                value={semesterFilter}
+                onChange={(e) => setSemesterFilter(e.target.value)}
+                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none shrink-0"
+              >
+                <option value="">All semesters</option>
+                {availableSemesters.map((s) => <option key={s} value={s}>Semester {s}</option>)}
+              </select>
+            )}
+            {filteredStudents.length > 0 && (
+              <button onClick={toggleSelectAll} className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0 whitespace-nowrap">
+                {allFilteredSelected ? 'Clear all' : `Select all (${filteredStudents.length})`}
+              </button>
+            )}
+            {studentIds.length > 0 && <span className="badge badge-approved shrink-0">{studentIds.length} selected</span>}
+          </div>
+          <div className="max-h-56 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
+            {filteredStudents.length === 0 && (
+              <p className="text-sm text-[var(--text-secondary)] text-center py-6">No students found.</p>
+            )}
+            {filteredStudents.map((s) => {
+              const on = studentIds.includes(s._id);
+              return (
+                <button
+                  key={s._id}
+                  onClick={() => toggleStudent(s._id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${
+                    on ? 'bg-[var(--primary)]/10 border border-[var(--primary)]/30' : 'hover:bg-[var(--bg-hover)] border border-transparent'
+                  }`}
+                >
+                  <div className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center shrink-0 ${on ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border-light)]'}`}>
+                    {on && <Check size={12} className="text-white" />}
+                  </div>
+                  <span className="text-sm font-bold text-[var(--text-primary)] truncate">{s.name}</span>
+                  <span className="text-[11px] text-[var(--text-secondary)] shrink-0 ml-auto">{s.enrollmentNumber}{s.semester ? ` · Sem ${s.semester}` : ''}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
         <div>
           <label className={labelCls}>Session</label>
           <input value={session} onChange={(e) => setSession(e.target.value)} placeholder="JAN-JUNE 2026" className={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Semester</label>
+          <label className={labelCls}>Semester <span className="opacity-60 normal-case font-medium">(applied to every selected student's form)</span></label>
           <select value={semester} onChange={(e) => setSemester(Number(e.target.value))} className={inputCls}>
             {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
               <option key={s} value={s}>Semester {s}</option>

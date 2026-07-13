@@ -99,9 +99,10 @@ function AssignMentorTab() {
 
   const assign = async () => {
     if (selected.length === 0) return toast.error('Select at least one student');
+    if (!mentorId) return toast.error('Please select a mentor from the dropdown first');
     setAssigning(true);
     try {
-      const { data } = await api.patch('/admin/assign-mentor', { studentIds: selected, mentorId: mentorId || null });
+      const { data } = await api.patch('/admin/assign-mentor', { studentIds: selected, mentorId });
       if (data.success) {
         toast.success(data.message);
         setSelected([]);
@@ -109,6 +110,24 @@ function AssignMentorTab() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to assign mentor');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const unassign = async () => {
+    if (selected.length === 0) return toast.error('Select at least one student');
+    if (!window.confirm(`Unassign the mentor for ${selected.length} student(s)?`)) return;
+    setAssigning(true);
+    try {
+      const { data } = await api.patch('/admin/assign-mentor', { studentIds: selected, mentorId: null });
+      if (data.success) {
+        toast.success(data.message);
+        setSelected([]);
+        await load();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to unassign mentor');
     } finally {
       setAssigning(false);
     }
@@ -127,12 +146,15 @@ function AssignMentorTab() {
           <option value="">All semesters</option>
           {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => <option key={s} value={s}>Semester {s}</option>)}
         </select>
-        <select value={mentorId} onChange={(e) => setMentorId(e.target.value)} className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] outline-none min-w-[180px]">
-          <option value="">Unassign mentor</option>
+        <select value={mentorId} onChange={(e) => setMentorId(e.target.value)} className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] outline-none min-w-[200px]">
+          <option value="">Select a mentor…</option>
           {mentors.map((m) => <option key={m._id} value={m._id}>{m.name} ({m.role})</option>)}
         </select>
-        <button onClick={assign} disabled={assigning || selected.length === 0} className="btn-premium text-xs px-4 py-2.5 flex items-center gap-2 disabled:opacity-40">
+        <button onClick={assign} disabled={assigning || selected.length === 0 || !mentorId} className="btn-premium text-xs px-4 py-2.5 flex items-center gap-2 disabled:opacity-40" title={!mentorId ? 'Select a mentor first' : ''}>
           {assigning ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Assign ({selected.length})
+        </button>
+        <button onClick={unassign} disabled={assigning || selected.length === 0} className="text-xs px-4 py-2.5 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold transition-all disabled:opacity-40">
+          Unassign
         </button>
       </div>
 
