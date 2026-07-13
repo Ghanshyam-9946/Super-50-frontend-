@@ -48,18 +48,16 @@ import PodAIMarksPage from './pages/student/PodAIMarksPage';
 import PodAIMarksSheetPage from './pages/admin/PodAIMarksSheetPage';
 import AllStudentPodAIUploadPage from './pages/admin/AllStudentPodAIUploadPage';
 import AdminAMCATPage from './pages/admin/AdminAMCATPage';
+import AdminMSTPage from './pages/admin/AdminMSTPage';
 import StudentAMCATPage from './pages/student/StudentAMCATPage';
-<<<<<<< HEAD
 import StudentMSTPage from './pages/student/StudentMSTPage';
 import AdminRGPVPage from './pages/admin/AdminRGPVPage';
 import StudentRGPVPage from './pages/student/StudentRGPVPage';
-=======
 import TimetableManagePage from './pages/admin/TimetableManagePage';
 import StudentTimetablePage from './pages/student/StudentTimetablePage';
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
->>>>>>> ff798bcb5973eb1875b9d132525c34fb5e1cab87
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -188,27 +186,18 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/podai-upload" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksUploadPage /></RoleGuard>
         } />
-<<<<<<< HEAD
         <Route path="/admin/all-student-podai" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><AllStudentPodAIUploadPage /></RoleGuard>
         } />
         <Route path="/admin/podai-marks" element={<RoleGuard allowed={['admin', 'teacher', 'super50_admin']}><PodAIMarksSheetPage /></RoleGuard>} />
         <Route path="/admin/amcat" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminAMCATPage /></RoleGuard>} />
         <Route path="/admin/mst" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminMSTPage /></RoleGuard>} />
-=======
-        <Route path="/admin/podai-marks" element={
-          <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksSheetPage /></RoleGuard>
-        } />
-        <Route path="/admin/amcat" element={
-          <RoleGuard allowed={['admin']}><AdminAMCATPage /></RoleGuard>
-        } />
         <Route path="/admin/timetable" element={
           <RoleGuard allowed={['admin']}><TimetableManagePage /></RoleGuard>
         } />
         <Route path="/admin/no-dues" element={
           <RoleGuard allowed={['admin']}><NoDuesAdminPage /></RoleGuard>
         } />
->>>>>>> ff798bcb5973eb1875b9d132525c34fb5e1cab87
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
         } />

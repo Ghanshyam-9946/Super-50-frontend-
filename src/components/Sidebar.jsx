@@ -23,15 +23,12 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const commonStudentLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
-<<<<<<< HEAD
     { to: '/student/mst', icon: FileText, label: 'MST Result' },
     { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
     { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
-=======
     { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
     { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
->>>>>>> ff798bcb5973eb1875b9d132525c34fb5e1cab87
   ];
 
   // Training & Placement Section (ALL students)
@@ -90,11 +87,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/all-student-podai', icon: FileText, label: 'All Student Pod AI Sheet' },
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
-<<<<<<< HEAD
     { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
     { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
-=======
->>>>>>> ff798bcb5973eb1875b9d132525c34fb5e1cab87
   ];
 
   const super50AdminLinks = [
