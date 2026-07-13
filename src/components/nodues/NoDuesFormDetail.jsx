@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Circle, Loader2, PartyPopper, MessageSquare, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, PartyPopper, MessageSquare, Trash2, Percent, Save, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -21,6 +21,60 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   const isAdmin = currentUser?.role === 'admin';
   const isCreator = form.createdBy?._id === uid;
   const canEditRemarks = isCreator || isAdmin;
+  // Only the Academic Coordinator who released this form (or admin) manages
+  // the attendance-upgrade criteria — same gate as remarks/extra items.
+  const canEditAttendance = canEditRemarks;
+
+  const upgrade = form.attendanceUpgrade || {};
+  const attendanceSummary = form.attendanceSummary || {
+    baseAttendancePercentage: 0,
+    totalBoostPercent: 0,
+    adjustedAttendancePercentage: 0,
+  };
+
+  const [medicalEnabled, setMedicalEnabled] = useState(upgrade.medical?.enabled || false);
+  const [medicalHours, setMedicalHours] = useState(upgrade.medical?.hoursClaimed || 0);
+  const [rgpvEnabled, setRgpvEnabled] = useState(upgrade.otherRgpvQp?.enabled || false);
+  const [rgpvHours, setRgpvHours] = useState(upgrade.otherRgpvQp?.hoursClaimed || 0);
+  const [certEnabled, setCertEnabled] = useState(upgrade.certification?.enabled || false);
+  const [savingAttendance, setSavingAttendance] = useState(false);
+
+  const [duesFees, setDuesFees] = useState(form.student?.duesFees ?? 0);
+  const [savingDuesFees, setSavingDuesFees] = useState(false);
+
+  const saveDuesFees = async () => {
+    setSavingDuesFees(true);
+    try {
+      const { data } = await api.patch(`/no-dues/students/${form.student._id}/dues-fees`, { duesFees });
+      if (data.success) {
+        toast.success('Dues fees updated');
+        await onChange({ ...form, student: { ...form.student, duesFees: data.data.duesFees } });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update dues fees');
+    } finally {
+      setSavingDuesFees(false);
+    }
+  };
+
+  const saveAttendanceCriteria = async () => {
+    setSavingAttendance(true);
+    try {
+      const { data } = await api.patch(`/no-dues/${form._id}/attendance-criteria`, {
+        medical: { enabled: medicalEnabled, hoursClaimed: medicalHours },
+        otherRgpvQp: { enabled: rgpvEnabled, hoursClaimed: rgpvHours },
+        certification: { enabled: certEnabled },
+      });
+      if (data.success) {
+        toast.success('Attendance criteria saved');
+        await onChange(data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save attendance criteria');
+    } finally {
+      setSavingAttendance(false);
+    }
+  };
 
   const toggleSubjectItem = async (subjectIndex, itemIndex, nextChecked) => {
     const key = `s${subjectIndex}-${itemIndex}`;
@@ -83,6 +137,97 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
         <InfoBox label="Session" value={form.session} />
         <InfoBox label="Semester / Section" value={`Sem ${form.semester}${form.section ? ` — ${form.section}` : ''}`} />
         <InfoBox label="Mentor (TG)" value={form.createdBy?.name} />
+      </div>
+
+      {/* Attendance + upgrade criteria */}
+      <div className="glass-card rounded-2xl p-4 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h4 className="font-display font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
+            <Percent size={15} className="text-[var(--primary)]" /> Attendance
+          </h4>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-[var(--text-secondary)]">Base: <strong className="text-[var(--text-primary)]">{attendanceSummary.baseAttendancePercentage}%</strong></span>
+            {attendanceSummary.totalBoostPercent > 0 && (
+              <span className="text-emerald-500 font-bold">+{attendanceSummary.totalBoostPercent}%</span>
+            )}
+            <span className="text-[var(--text-secondary)]">Adjusted: <strong className="text-emerald-500">{attendanceSummary.adjustedAttendancePercentage}%</strong></span>
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-3">
+          <AttendanceCriterionBox
+            label="Medical"
+            hint="Up to 60 hrs → up to +10%. Needs base ≥ 50%."
+            eligible={attendanceSummary.baseAttendancePercentage >= 50}
+            editable={canEditAttendance}
+            enabled={medicalEnabled}
+            onToggle={setMedicalEnabled}
+            hours={medicalHours}
+            onHoursChange={setMedicalHours}
+            maxHours={60}
+            boostPercent={upgrade.medical?.boostPercent || 0}
+            showHours
+          />
+          <AttendanceCriterionBox
+            label="Other RGPV QP"
+            hint="Up to 40 hrs → up to +6.67%. Needs base > 60%."
+            eligible={attendanceSummary.baseAttendancePercentage > 60}
+            editable={canEditAttendance}
+            enabled={rgpvEnabled}
+            onToggle={setRgpvEnabled}
+            hours={rgpvHours}
+            onHoursChange={setRgpvHours}
+            maxHours={40}
+            boostPercent={upgrade.otherRgpvQp?.boostPercent || 0}
+            showHours
+          />
+          <AttendanceCriterionBox
+            label="Certification"
+            hint="2% per approved certificate, max 3 (6%). Needs base ≥ 50%."
+            eligible={attendanceSummary.baseAttendancePercentage >= 50}
+            editable={canEditAttendance}
+            enabled={certEnabled}
+            onToggle={setCertEnabled}
+            boostPercent={upgrade.certification?.boostPercent || 0}
+            extraNote={
+              upgrade.certification?.certificatesCounted
+                ? `${upgrade.certification.certificatesCounted} certificate(s) counted`
+                : 'Auto-counted from the student\'s approved certificates'
+            }
+          />
+        </div>
+
+        {canEditAttendance && (
+          <button onClick={saveAttendanceCriteria} disabled={savingAttendance} className="btn-premium text-xs px-4 py-2 flex items-center gap-2">
+            {savingAttendance ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Attendance Criteria
+          </button>
+        )}
+      </div>
+
+      {/* Dues fees */}
+      <div className="glass-card rounded-2xl p-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h4 className="font-display font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
+            <Wallet size={15} className="text-[var(--primary)]" /> Dues Fees
+          </h4>
+          {canEditAttendance ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--text-secondary)]">₹</span>
+              <input
+                type="number"
+                min={0}
+                value={duesFees}
+                onChange={(e) => setDuesFees(Math.max(0, Number(e.target.value) || 0))}
+                className="w-28 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
+              />
+              <button onClick={saveDuesFees} disabled={savingDuesFees} className="btn-premium text-xs px-3 py-1.5 flex items-center gap-1.5">
+                {savingDuesFees ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
+              </button>
+            </div>
+          ) : (
+            <span className="text-sm font-bold text-[var(--text-primary)]">₹{form.student?.duesFees ?? 0}</span>
+          )}
+        </div>
       </div>
 
       {/* Subject-wise checklist */}
@@ -224,6 +369,46 @@ function InfoBox({ label, value, sub }) {
       <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">{label}</div>
       <div className="text-sm font-bold text-[var(--text-primary)] truncate mt-0.5">{value || '—'}</div>
       {sub && <div className="text-[10px] text-[var(--text-secondary)]">{sub}</div>}
+    </div>
+  );
+}
+
+function AttendanceCriterionBox({
+  label, hint, eligible, editable, enabled, onToggle, hours, onHoursChange, maxHours, boostPercent, showHours, extraNote,
+}) {
+  const disabled = !editable || !eligible;
+  return (
+    <div className={`rounded-xl border p-3 space-y-2 ${enabled ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-[var(--border-light)]'}`}>
+      <div className="flex items-center justify-between gap-2">
+        <label className={`flex items-center gap-2 text-xs font-bold text-[var(--text-primary)] ${disabled ? 'opacity-50' : 'cursor-pointer'}`}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            disabled={disabled}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="w-3.5 h-3.5 accent-[var(--primary)]"
+          />
+          {label}
+        </label>
+        {boostPercent > 0 && <span className="text-[11px] font-bold text-emerald-500 shrink-0">+{boostPercent}%</span>}
+      </div>
+      <p className="text-[10px] text-[var(--text-secondary)] leading-snug">{hint}</p>
+      {!eligible && <p className="text-[10px] text-amber-500 font-semibold">Not eligible at current attendance</p>}
+      {showHours && editable && eligible && (
+        <input
+          type="number"
+          min={0}
+          max={maxHours}
+          value={hours}
+          onChange={(e) => onHoursChange(Math.min(maxHours, Math.max(0, Number(e.target.value) || 0)))}
+          placeholder={`Hours claimed (max ${maxHours})`}
+          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
+        />
+      )}
+      {showHours && !editable && enabled && (
+        <p className="text-[10px] text-[var(--text-secondary)]">{hours} hrs claimed</p>
+      )}
+      {extraNote && <p className="text-[10px] text-[var(--text-secondary)] italic">{extraNote}</p>}
     </div>
   );
 }

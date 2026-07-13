@@ -283,6 +283,11 @@ function OverviewTab({ user }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    {form.attendanceSummary && (
+                      <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                        Attendance: {form.attendanceSummary.adjustedAttendancePercentage}%
+                      </span>
+                    )}
                     <span className={`badge ${form.isCompleted ? 'badge-approved' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
                       {form.isCompleted ? 'Completed' : 'In Progress'}
                     </span>
