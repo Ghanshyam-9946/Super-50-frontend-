@@ -351,28 +351,35 @@ const AdminMSTPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredResults.map((r, i) => (
-                      <tr key={i} className="border-b border-[var(--border-light)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]">
-                        <td className="py-3 px-2 font-semibold">{r.studentId?.name || 'N/A'}</td>
-                        <td className="py-3 px-2 font-medium">{r.studentId?.enrollmentNumber || r.studentId?.enrollmentNo || 'N/A'}</td>
-                        <td className="py-3 px-2">Sem {r.semester}</td>
-                        <td className="py-3 px-2">
-                          {r.studentId?.mentor ? (
-                            <span className="text-[10px] bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 rounded border border-[var(--primary)]/20 whitespace-nowrap">
-                              {r.studentId.mentor.name || r.studentId.mentor}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 text-[10px] italic">Unassigned</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-2 text-[var(--text-secondary)]">{r.testName}</td>
-                        {uniqueSubjects.map(sub => (
-                          <td key={sub} className="py-3 px-2 text-center font-bold">
-                            {r.scores && r.scores[sub] !== undefined ? r.scores[sub] : '-'}
+                    {(() => {
+                      const sortedResults = [...filteredResults].sort((a, b) => {
+                        const nameA = a.studentId?.name?.toLowerCase() || '';
+                        const nameB = b.studentId?.name?.toLowerCase() || '';
+                        return nameA.localeCompare(nameB);
+                      });
+                      return sortedResults.map((r, i) => (
+                        <tr key={i} className="border-b border-[var(--border-light)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]">
+                          <td className="py-3 px-2 font-semibold">{r.studentId?.name || 'N/A'}</td>
+                          <td className="py-3 px-2 font-medium">{r.studentId?.enrollmentNumber || r.studentId?.enrollmentNo || 'N/A'}</td>
+                          <td className="py-3 px-2">Sem {r.semester}</td>
+                          <td className="py-3 px-2">
+                            {r.studentId?.mentor ? (
+                              <span className="text-[10px] bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 rounded border border-[var(--primary)]/20 whitespace-nowrap">
+                                {r.studentId.mentor.name || r.studentId.mentor}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-[10px] italic">Unassigned</span>
+                            )}
                           </td>
-                        ))}
-                      </tr>
-                    ))}
+                          <td className="py-3 px-2 text-[var(--text-secondary)]">{r.testName}</td>
+                          {uniqueSubjects.map(sub => (
+                            <td key={sub} className="py-3 px-2 text-center font-bold">
+                              {r.scores && r.scores[sub] !== undefined ? r.scores[sub] : '-'}
+                            </td>
+                          ))}
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>

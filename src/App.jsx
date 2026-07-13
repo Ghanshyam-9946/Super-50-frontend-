@@ -28,6 +28,8 @@ import VerifyCertificatesPage from './pages/admin/VerifyCertificatesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import BulkCreatePage from './pages/admin/BulkCreatePage';
 import Super50SelectionPage from './pages/admin/Super50SelectionPage';
+import GeneralFormsPage from './pages/admin/GeneralFormsPage';
+import GeneralFormSubmissionsPage from './pages/admin/GeneralFormSubmissionsPage';
 import DriveEligibilityPage from './pages/admin/DriveEligibilityPage';
 import DriveResultUpload from './pages/admin/DriveResultUpload';
 import FacultyPlacementDashboard from './pages/admin/FacultyPlacementDashboard';
@@ -159,6 +161,12 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/super50-selection" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><Super50SelectionPage /></RoleGuard>
+        } />
+        <Route path="/admin/general-forms" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><GeneralFormsPage /></RoleGuard>
+        } />
+        <Route path="/admin/general-forms/:id" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><GeneralFormSubmissionsPage /></RoleGuard>
         } />
         <Route path="/admin/podai-upload" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><PodAIMarksUploadPage /></RoleGuard>

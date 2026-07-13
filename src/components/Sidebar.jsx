@@ -77,6 +77,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
     { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+    { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
@@ -85,6 +86,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const super50AdminLinks = [
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+    { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
     { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },

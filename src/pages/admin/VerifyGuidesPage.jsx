@@ -34,13 +34,13 @@ export default function VerifyGuidesPage() {
     }
   };
 
-  const changeRole = async (id, newRole) => {
+  const changeRole = async (id, updatedRoles) => {
     try {
-      const { data } = await api.patch(`/admin/guides/${id}/role`, { role: newRole });
-      toast.success(data.message);
-      setGuides(guides.map(g => g._id === id ? { ...g, role: data.data.role } : g));
+      const { data } = await api.patch(`/admin/guides/${id}/role`, { roles: updatedRoles });
+      toast.success(data.message || 'Roles updated successfully');
+      setGuides(guides.map(g => g._id === id ? { ...g, role: data.data.role, roles: data.data.roles } : g));
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update role');
+      toast.error(error.response?.data?.message || 'Failed to update roles');
     }
   };
 
@@ -122,18 +122,44 @@ export default function VerifyGuidesPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <select
-                      className="bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)] text-[10px] px-2.5 py-1 rounded-md uppercase font-black tracking-widest shadow-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
-                      value={guide.role}
-                      onChange={(e) => changeRole(guide._id, e.target.value)}
-                    >
-                      <option value="teacher">Faculty</option>
-                      <option value="admin">Admin</option>
-                      <option value="guide">Project Guide</option>
-                      <option value="pms_admin">PMS Admin</option>
-                      <option value="super50_admin">Super 50 Admin</option>
-                      <option value="tp_admin">T&P Admin</option>
-                    </select>
+                    <div className="flex flex-wrap gap-1.5 max-w-[280px]">
+                      {[
+                        { value: 'teacher', label: 'Faculty' },
+                        { value: 'admin', label: 'Admin' },
+                        { value: 'guide', label: 'Guide' },
+                        { value: 'pms_admin', label: 'PMS' },
+                        { value: 'super50_admin', label: 'Super50' },
+                        { value: 'tp_admin', label: 'T&P' }
+                      ].map((roleObj) => {
+                        const userRoles = guide.roles && guide.roles.length > 0 ? guide.roles : [guide.role];
+                        const isActive = userRoles.includes(roleObj.value);
+                        return (
+                          <button
+                            key={roleObj.value}
+                            onClick={() => {
+                              let updatedRoles;
+                              if (isActive) {
+                                if (userRoles.length <= 1) {
+                                  toast.error('User must have at least one role');
+                                  return;
+                                }
+                                updatedRoles = userRoles.filter(r => r !== roleObj.value);
+                              } else {
+                                updatedRoles = [...userRoles, roleObj.value];
+                              }
+                              changeRole(guide._id, updatedRoles);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg text-[9px] uppercase font-black tracking-wider border transition-all duration-200 shadow-sm ${
+                              isActive
+                                ? 'bg-purple-500/10 text-[var(--primary)] border-purple-500/30'
+                                : 'bg-transparent text-slate-400 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            {roleObj.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </td>
                   <td className="px-6 py-4 font-bold text-[var(--text-primary)]">
                     {guide.department || 'N/A'}

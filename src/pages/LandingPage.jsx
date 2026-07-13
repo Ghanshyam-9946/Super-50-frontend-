@@ -14,6 +14,7 @@ import { Footer } from "@/components/Footer";
 import { BackToTop } from "@/components/BackToTop";
 import { ProjectShowcase } from "@/components/ProjectShowcase";
 import SelectionFormSection from "@/components/SelectionFormSection";
+import GeneralFormsSection from "@/components/GeneralFormsSection";
 
 export default function LandingPage() {
   return (
@@ -32,6 +33,7 @@ export default function LandingPage() {
         <Stats />
         <Workflow />
         <SelectionFormSection />
+        <GeneralFormsSection />
         <Footer />
       </main>
       <BackToTop />
