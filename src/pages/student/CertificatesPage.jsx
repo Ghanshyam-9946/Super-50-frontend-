@@ -14,8 +14,14 @@ function UploadModal({ onClose }) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'application/pdf': ['.pdf'], 'image/*': ['.jpg', '.jpeg', '.png', '.webp'] },
-    maxSize: 10485760,
-    onDrop: (accepted) => setFile(accepted[0]),
+    maxSize: 100 * 1024,
+    onDrop: (accepted, rejected) => {
+      if (rejected && rejected.length > 0) {
+        toast.error('File size exceeds the 100KB limit!');
+        return;
+      }
+      setFile(accepted[0]);
+    },
     multiple: false,
   });
 
@@ -63,7 +69,7 @@ function UploadModal({ onClose }) {
                   <Upload size={32} className="text-slate-400" />
                 </div>
                 <p className="text-[var(--text-primary)] font-display font-black text-xl">{isDragActive ? 'Drop here!' : 'Drag & drop file here'}</p>
-                <p className="text-[11px] text-[var(--text-secondary)] uppercase tracking-widest font-black">PDF or Image (max 10MB)</p>
+                <p className="text-[11px] text-[var(--text-secondary)] uppercase tracking-widest font-black">PDF or Image (max 100KB)</p>
               </div>
             )}
           </div>

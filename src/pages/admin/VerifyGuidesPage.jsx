@@ -1,13 +1,29 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { UserPlus, Search, ShieldCheck, ShieldAlert, Check, X, Loader2, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { UserPlus, Search, ShieldCheck, ShieldAlert, Check, X, Loader2, Trash2, Award, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+
+const PRESET_RESPONSIBILITIES = [
+  'Class Coordinator',
+  'HOD',
+  'T&P Head',
+  'Super 50 Mentor',
+  'Academic Coordinator',
+  'Placement Coordinator',
+  'Exam Coordinator',
+  'Club Coordinator'
+];
 
 export default function VerifyGuidesPage() {
   const [guides, setGuides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Responsibility Modal state
+  const [selectedGuide, setSelectedGuide] = useState(null);
+  const [guideResps, setGuideResps] = useState([]);
+  const [customResp, setCustomResp] = useState('');
 
   const fetchGuides = async () => {
     try {
@@ -44,6 +60,49 @@ export default function VerifyGuidesPage() {
     }
   };
 
+  // Open modal handler
+  const handleOpenRespModal = (guide) => {
+    setSelectedGuide(guide);
+    setGuideResps(guide.responsibilities || []);
+    setCustomResp('');
+  };
+
+  // Toggle responsibility chip in state
+  const toggleResp = (resp) => {
+    if (guideResps.includes(resp)) {
+      setGuideResps(guideResps.filter(r => r !== resp));
+    } else {
+      setGuideResps([...guideResps, resp]);
+    }
+  };
+
+  // Add custom typed responsibility
+  const addCustomResp = (e) => {
+    e.preventDefault();
+    if (!customResp.trim()) return;
+    if (guideResps.includes(customResp.trim())) {
+      toast.error('Responsibility already added');
+      return;
+    }
+    setGuideResps([...guideResps, customResp.trim()]);
+    setCustomResp('');
+  };
+
+  // Save responsibilities to database
+  const saveResponsibilities = async () => {
+    const toastId = toast.loading('Saving responsibilities...');
+    try {
+      const { data } = await api.patch(`/admin/guides/${selectedGuide._id}/responsibilities`, {
+        responsibilities: guideResps
+      });
+      toast.success(data.message || 'Responsibilities saved successfully', { id: toastId });
+      setGuides(guides.map(g => g._id === selectedGuide._id ? { ...g, responsibilities: data.data.responsibilities } : g));
+      setSelectedGuide(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to save responsibilities', { id: toastId });
+    }
+  };
+
   const filteredGuides = guides.filter(g =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     g.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -69,7 +128,7 @@ export default function VerifyGuidesPage() {
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
             Verify Faculty & Admins
           </h1>
-          <p className="text-[var(--text-secondary)] font-medium mt-1">Approve or revoke access for faculty, administrators and project guides across the ecosystem.</p>
+          <p className="text-[var(--text-secondary)] font-medium mt-1">Approve, verify roles, and assign custom responsibilities to faculty across the ecosystem.</p>
         </motion.div>
       </header>
 
@@ -82,7 +141,7 @@ export default function VerifyGuidesPage() {
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
           />
         </div>
       </div>
@@ -118,6 +177,16 @@ export default function VerifyGuidesPage() {
                       <div>
                         <div className="text-[14px] font-bold text-[var(--text-primary)]">{guide.name}</div>
                         <div className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 mt-0.5">{guide.email}</div>
+                        {/* Display assigned responsibilities */}
+                        {guide.responsibilities && guide.responsibilities.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {guide.responsibilities.map((resp, rIdx) => (
+                              <span key={rIdx} className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 border border-blue-500/20 text-[9px] uppercase font-black">
+                                {resp}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -139,11 +208,11 @@ export default function VerifyGuidesPage() {
                             onClick={() => {
                               let updatedRoles;
                               if (isActive) {
-                                if (userRoles.length <= 1) {
-                                  toast.error('User must have at least one role');
-                                  return;
-                                }
-                                updatedRoles = userRoles.filter(r => r !== roleObj.value);
+                                  if (userRoles.length <= 1) {
+                                    toast.error('User must have at least one role');
+                                    return;
+                                  }
+                                  updatedRoles = userRoles.filter(r => r !== roleObj.value);
                               } else {
                                 updatedRoles = [...userRoles, roleObj.value];
                               }
@@ -177,14 +246,20 @@ export default function VerifyGuidesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
+                      onClick={() => handleOpenRespModal(guide)}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border bg-blue-500/5 text-blue-500 border-blue-500/20 hover:bg-blue-500/15 mr-2"
+                    >
+                      <Award size={13} /> Responsibilities
+                    </button>
+                    <button
                       onClick={() => toggleStatus(guide._id)}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border ${
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border ${
                         guide.isActive
                           ? 'bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20'
                           : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20'
                       }`}
                     >
-                      {guide.isActive ? <><X size={14} /> Revoke Access</> : <><Check size={14} /> Approve User</>}
+                      {guide.isActive ? <><X size={13} /> Revoke</> : <><Check size={13} /> Approve</>}
                     </button>
                     <button
                       onClick={async () => {
@@ -198,10 +273,10 @@ export default function VerifyGuidesPage() {
                           }
                         }
                       }}
-                      className="ml-2 inline-flex items-center gap-2 px-4 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border bg-slate-500/10 text-slate-500 border-slate-500/20 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/20"
+                      className="ml-2 inline-flex items-center gap-2 px-3 py-2 rounded-[0.8rem] text-[11px] uppercase font-black tracking-widest transition-all shadow-sm border bg-slate-500/10 text-slate-500 border-slate-500/20 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/20"
                       title="Delete User"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={13} /> Delete
                     </button>
                   </td>
                 </motion.tr>
@@ -218,6 +293,97 @@ export default function VerifyGuidesPage() {
           </table>
         </div>
       </motion.div>
+
+      {/* Give Responsibilities Modal */}
+      <AnimatePresence>
+        {selectedGuide && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[var(--bg-modal)] border border-[var(--border-light)] rounded-3xl shadow-xl w-full max-w-lg p-8 relative"
+            >
+              <button
+                onClick={() => setSelectedGuide(null)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors"
+              >
+                <X size={18} />
+              </button>
+
+              <h2 className="text-2xl font-display font-black text-[var(--text-primary)] mb-1">Assign Responsibilities</h2>
+              <p className="text-xs text-[var(--text-secondary)] font-medium mb-6">Assign coordinator role or administrative responsibilities to <strong className="text-[var(--text-primary)]">{selectedGuide.name}</strong>.</p>
+
+              {/* Selected Responsibilities View */}
+              <div className="space-y-2 mb-6">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Current Assigned Responsibilities</label>
+                {guideResps.length === 0 ? (
+                  <p className="text-xs italic text-[var(--text-secondary)]">No responsibilities assigned yet.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {guideResps.map((resp, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 text-[var(--primary)] border border-purple-500/20 text-xs font-bold">
+                        {resp}
+                        <button type="button" onClick={() => toggleResp(resp)} className="hover:text-red-500 transition-colors">
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Preset list selection */}
+              <div className="space-y-2 mb-6">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Preset Options (Click to toggle)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {PRESET_RESPONSIBILITIES.map((preset) => {
+                    const isSelected = guideResps.includes(preset);
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => toggleResp(preset)}
+                        className={`text-left px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
+                          isSelected
+                            ? 'bg-purple-500/10 text-[var(--primary)] border-purple-500/30 shadow-sm'
+                            : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)] hover:border-slate-300'
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Custom custom input form */}
+              <form onSubmit={addCustomResp} className="space-y-2 mb-6">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Add Custom Responsibility</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="e.g. Web Development Head, Cultural Incharge"
+                    value={customResp}
+                    onChange={(e) => setCustomResp(e.target.value)}
+                    className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-colors"
+                  />
+                  <button type="submit" className="btn-premium px-4 rounded-xl flex items-center justify-center">
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </form>
+
+              <button
+                onClick={saveResponsibilities}
+                className="btn-premium w-full py-3.5 mt-2 flex items-center justify-center gap-2"
+              >
+                Save All Responsibilities
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

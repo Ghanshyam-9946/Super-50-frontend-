@@ -26,6 +26,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
     { to: '/student/mst', icon: FileText, label: 'MST Result' },
+    { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
+    { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
   ];
 
@@ -70,6 +72,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
     { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
@@ -79,8 +82,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
+    { to: '/admin/all-student-podai', icon: FileText, label: 'All Student Pod AI Sheet' },
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
     { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
+    { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
   ];
 
   const super50AdminLinks = [

@@ -503,7 +503,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                               onClick={() => setSelectedStudentId(student._id)}
                               className="btn-outline-premium text-xs py-1.5 px-3 flex items-center gap-1.5 shadow-sm"
                             >
-                              <Eye size={14} /> Profile
+                              <Eye size={14} /> View Data
                             </button>
                             {(user?.role === 'admin' || user?.role === 'super50_admin') && (
                               <button
