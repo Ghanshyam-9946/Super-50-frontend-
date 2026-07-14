@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,6 +16,8 @@ import {
   Check,
   Search,
   Upload,
+  UserCheck,
+  ArrowRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -142,6 +144,7 @@ export default function NoDuesPage() {
       ? [
           { key: "students", label: "All Students", icon: Users2 },
           { key: "create", label: "Create No Dues Form", icon: Plus },
+          { key: "assign", label: "Assign Faculty", icon: UserCheck },
           { key: "forms", label: "Forms I Released", icon: ClipboardList },
         ]
       : []),
@@ -222,7 +225,6 @@ export default function NoDuesPage() {
             {tab === "create" && (
               <CreateFormView
                 students={students}
-                faculty={faculty}
                 preselected={preselectedStudent}
                 onCreated={async () => {
                   setPreselectedStudent(null);
@@ -231,6 +233,7 @@ export default function NoDuesPage() {
                 }}
               />
             )}
+            {tab === "assign" && <AssignFacultyTab faculty={faculty} students={students} />}
             {tab === "forms" && (
               <FormsList
                 forms={myForms}
@@ -264,7 +267,12 @@ export default function NoDuesPage() {
 
 function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
   const [search, setSearch] = useState("");
+  const [batchFilter, setBatchFilter] = useState("");
   const [uploadingFees, setUploadingFees] = useState(false);
+
+  const availableBatches = [
+    ...new Set(students.map((s) => s.batch).filter(Boolean)),
+  ].sort();
 
   const uploadFeesExcel = async (e) => {
     const file = e.target.files?.[0];
@@ -288,11 +296,13 @@ function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
     }
   };
 
-  const filtered = students.filter(
-    (s) =>
+  const filtered = students.filter((s) => {
+    const matchesSearch =
       s.name.toLowerCase().includes(search.toLowerCase()) ||
-      (s.enrollmentNumber || "").toLowerCase().includes(search.toLowerCase()),
-  );
+      (s.enrollmentNumber || "").toLowerCase().includes(search.toLowerCase());
+    const matchesBatch = !batchFilter || s.batch === batchFilter;
+    return matchesSearch && matchesBatch;
+  });
 
   if (students.length === 0) {
     return (
@@ -325,6 +335,20 @@ function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
           placeholder="Search by name or enrollment…"
           className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)]"
         />
+        {availableBatches.length > 0 && (
+          <select
+            value={batchFilter}
+            onChange={(e) => setBatchFilter(e.target.value)}
+            className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs font-bold text-[var(--text-primary)] outline-none shrink-0"
+          >
+            <option value="">All batches</option>
+            {availableBatches.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        )}
         <label className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0 whitespace-nowrap cursor-pointer flex items-center gap-1.5">
           {uploadingFees ? (
             <Loader2 size={13} className="animate-spin" />
@@ -401,20 +425,19 @@ function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
 
 /* ─────────────────────────────  CREATE FORM  ───────────────────────────── */
 
-function CreateFormView({ students, faculty, preselected, onCreated }) {
+function CreateFormView({ students, preselected, onCreated }) {
   const [studentIds, setStudentIds] = useState(
     preselected?._id ? [preselected._id] : [],
   );
   const [studentSearch, setStudentSearch] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
-  const [session, setSession] = useState("");
+  const [batch, setBatch] = useState("");
   const [semester, setSemester] = useState(preselected?.semester || 1);
   const [section, setSection] = useState("");
   const [subjects, setSubjects] = useState([
     {
       subjectCode: "",
       subjectName: "",
-      faculty: "",
       items: [...DEFAULT_SUBJECT_ITEMS],
     },
   ]);
@@ -428,7 +451,8 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
         .includes(studentSearch.toLowerCase());
     const matchesSemester =
       !semesterFilter || String(s.semester) === String(semesterFilter);
-    return matchesSearch && matchesSemester;
+    const matchesBatch = !batch || s.batch === batch;
+    return matchesSearch && matchesSemester && matchesBatch;
   });
 
   const toggleStudent = (id) =>
@@ -447,10 +471,13 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
     );
   };
 
-  // Semesters present among the loaded students, for quick "whole semester" selection
+  // Semesters/batches present among the loaded students, for quick "whole batch/semester" selection
   const availableSemesters = [
     ...new Set(students.map((s) => s.semester).filter(Boolean)),
   ].sort((a, b) => a - b);
+  const availableBatches = [
+    ...new Set(students.map((s) => s.batch).filter(Boolean)),
+  ].sort();
 
   const setSubject = (idx, patch) => {
     const next = [...subjects];
@@ -463,7 +490,6 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
       {
         subjectCode: "",
         subjectName: "",
-        faculty: "",
         items: [...DEFAULT_SUBJECT_ITEMS],
       },
     ]);
@@ -481,24 +507,21 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
   const submit = async () => {
     if (studentIds.length === 0)
       return toast.error("Select at least one student");
-    if (!session.trim())
-      return toast.error("Session is required (e.g. JAN-JUNE 2026)");
+    if (!batch)
+      return toast.error("Select a batch");
     if (subjects.some((s) => !s.subjectName.trim()))
       return toast.error("Every subject needs a name");
-    if (subjects.some((s) => !s.faculty))
-      return toast.error("Assign a faculty for every subject");
 
     setSubmitting(true);
     try {
       const { data } = await api.post("/no-dues/bulk", {
         studentIds,
-        session: session.trim(),
+        batch,
         semester,
         section: section.trim(),
         subjects: subjects.map((s) => ({
           subjectCode: s.subjectCode.trim(),
           subjectName: s.subjectName.trim(),
-          faculty: s.faculty,
           items: s.items,
         })),
       });
@@ -529,7 +552,7 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
         <label className={labelCls}>
           Students{" "}
           <span className="opacity-60 normal-case font-medium">
-            (any student — pick individually, filter by semester, or select all)
+            (any student — pick individually, filter by batch/semester, or select all)
           </span>
         </label>
         <div className="border border-[var(--border-light)] rounded-2xl overflow-hidden">
@@ -546,6 +569,20 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
                 className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)] min-w-0"
               />
             </div>
+            {availableBatches.length > 0 && (
+              <select
+                value={batch}
+                onChange={(e) => setBatch(e.target.value)}
+                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs font-bold text-[var(--text-primary)] outline-none shrink-0"
+              >
+                <option value="">Select batch…</option>
+                {availableBatches.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            )}
             {availableSemesters.length > 1 && (
               <select
                 value={semesterFilter}
@@ -615,15 +652,6 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
 
       <div className="grid md:grid-cols-2 gap-5">
         <div>
-          <label className={labelCls}>Session</label>
-          <input
-            value={session}
-            onChange={(e) => setSession(e.target.value)}
-            placeholder="JAN-JUNE 2026"
-            className={inputCls}
-          />
-        </div>
-        <div>
           <label className={labelCls}>
             Semester{" "}
             <span className="opacity-60 normal-case font-medium">
@@ -660,9 +688,14 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-display font-bold text-[var(--text-primary)]">
-            Subjects
-          </h3>
+          <div>
+            <h3 className="font-display font-bold text-[var(--text-primary)]">
+              Subjects
+            </h3>
+            <p className="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">
+              Faculty is assigned separately afterwards, from the "Assign Faculty" tab.
+            </p>
+          </div>
           <button
             onClick={addSubject}
             className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline"
@@ -693,18 +726,6 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
                 placeholder="Subject name"
                 className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
               />
-              <select
-                value={subj.faculty}
-                onChange={(e) => setSubject(idx, { faculty: e.target.value })}
-                className="w-48 bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
-              >
-                <option value="">Faculty…</option>
-                {faculty.map((f) => (
-                  <option key={f._id} value={f._id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
               {subjects.length > 1 && (
                 <button
                   onClick={() => removeSubject(idx)}
@@ -751,6 +772,446 @@ function CreateFormView({ students, faculty, preselected, onCreated }) {
           )}{" "}
           Create & Assign
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────  ASSIGN FACULTY  ───────────────────────────── */
+
+function AssignFacultyTab({ faculty, students }) {
+  const [batch, setBatch] = useState("");
+  const [semester, setSemester] = useState("");
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [openMentor, setOpenMentor] = useState(null); // mentorId currently expanded
+
+  const availableBatches = [
+    ...new Set(students.map((s) => s.batch).filter(Boolean)),
+  ].sort();
+
+  const load = async () => {
+    if (!batch || !semester) {
+      return toast.error("Pick a batch and a semester first");
+    }
+    setLoading(true);
+    try {
+      const { data } = await api.get("/no-dues/mentors-to-assign", {
+        params: { batch, semester },
+      });
+      if (data.success) setRows(data.data);
+      setLoaded(true);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load mentors");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputCls =
+    "w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-purple-500/10 transition-all";
+  const labelCls =
+    "block text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-1.5";
+
+  return (
+    <div className="space-y-4">
+      <div className="glass-card p-6 rounded-3xl">
+        <p className="text-[var(--text-secondary)] text-sm font-medium mb-4">
+          Select No Dues (batch + semester) → Select Mentor → Select Faculty
+          per subject → Assign. A mentor leads a section of students, so the
+          faculty you assign only gets that mentor's students — repeat for
+          every mentor to cover the whole subject. Students without a mentor
+          assigned yet are skipped here — assign them a mentor first from the
+          Students page.
+        </p>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label className={labelCls}>Batch</label>
+            <select
+              value={batch}
+              onChange={(e) => setBatch(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Select…</option>
+              {availableBatches.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Semester</label>
+            <select
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              className={inputCls}
+            >
+              <option value="">Select…</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                <option key={s} value={s}>
+                  Semester {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={load}
+              disabled={loading}
+              className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 w-full justify-center"
+            >
+              {loading ? (
+                <Loader2 size={15} className="animate-spin" />
+              ) : (
+                <Search size={15} />
+              )}
+              Find Mentors
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {loaded &&
+        (rows.length === 0 ? (
+          <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">
+            <UserCheck
+              size={40}
+              className="text-[var(--text-secondary)] opacity-50"
+            />
+            <p className="text-[var(--text-primary)] font-bold">
+              No mentor-led sections found for that batch/semester
+            </p>
+            <p className="text-[var(--text-secondary)] text-sm max-w-md">
+              Students need a mentor assigned (Students page) before they show up here.
+            </p>
+          </div>
+        ) : (
+          <div className="glass-card rounded-3xl overflow-hidden">
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border-light)] text-left">
+                    {["Mentor", "Role", "Students", ""].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-4 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => {
+                    const open = openMentor === row.mentorId;
+                    return (
+                      <Fragment key={row.mentorId}>
+                        <tr
+                          onClick={() => setOpenMentor(open ? null : row.mentorId)}
+                          className="border-b border-[var(--border-light)] last:border-0 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                        >
+                          <td className="px-5 py-4 font-bold text-[var(--text-primary)]">{row.mentorName}</td>
+                          <td className="px-5 py-4 text-[var(--text-secondary)]">{row.mentorRole}</td>
+                          <td className="px-5 py-4">
+                            <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                              {row.studentCount} student{row.studentCount !== 1 ? "s" : ""}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 text-right">
+                            <ChevronRight
+                              size={16}
+                              className={`text-[var(--text-secondary)] transition-transform ml-auto ${open ? "rotate-90" : ""}`}
+                            />
+                          </td>
+                        </tr>
+                        {open && (
+                          <tr className="border-b border-[var(--border-light)] last:border-0">
+                            <td colSpan={4} className="p-4 bg-[var(--bg-hover)]/30">
+                              <SubjectAssignPanel
+                                batch={batch}
+                                semester={semester}
+                                mentorId={row.mentorId}
+                                faculty={faculty}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+}
+
+// Step 3 of the flow: for the selected mentor, list every subject among that
+// mentor's students' forms — pick a faculty per subject and Assign. Only
+// that mentor's students get the faculty set for each subject.
+function SubjectAssignPanel({ batch, semester, mentorId, faculty }) {
+  const [subjectRows, setSubjectRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [picked, setPicked] = useState({}); // subjectName -> facultyId
+  const [assigning, setAssigning] = useState(null); // subjectName currently being assigned
+  const [openSubject, setOpenSubject] = useState(null); // subjectName currently split-view expanded
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get("/no-dues/mentor-subjects", {
+        params: { batch, semester, mentorId },
+      });
+      if (data.success) setSubjectRows(data.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load subjects");
+    } finally {
+      setLoading(false);
+    }
+  }, [batch, semester, mentorId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Quick path: assign one faculty to this subject for the mentor's WHOLE
+  // section at once (fine when only one teacher covers this subject here).
+  const assign = async (row) => {
+    const facultyId = picked[row.subjectName];
+    if (!facultyId) return toast.error("Pick a faculty first");
+    setAssigning(row.subjectName);
+    try {
+      const { data } = await api.patch("/no-dues/assign-faculty", {
+        batch,
+        semester,
+        subjectName: row.subjectName,
+        mentorId,
+        facultyId,
+      });
+      if (data.success) {
+        toast.success(data.message || "Faculty assigned");
+        await load();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to assign faculty");
+    } finally {
+      setAssigning(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <Loader2 size={18} className="animate-spin text-[var(--text-secondary)]" />
+      </div>
+    );
+  }
+
+  if (subjectRows.length === 0) {
+    return <p className="text-xs text-[var(--text-secondary)] italic py-2">No subjects found for this mentor's students.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {subjectRows.map((row) => {
+        const fullyAssigned = row.assigned === row.total;
+        const open = openSubject === row.subjectName;
+        return (
+          <div key={row.subjectName} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-3 py-2.5">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-xs font-bold text-[var(--text-primary)] truncate">
+                  {row.subjectCode ? `${row.subjectCode} — ` : ""}
+                  {row.subjectName}
+                </span>
+                <span
+                  className={`badge shrink-0 ${fullyAssigned ? "badge-approved" : "bg-amber-500/10 border-amber-500/20 text-amber-500"}`}
+                >
+                  {row.assigned}/{row.total}
+                </span>
+              </div>
+              <select
+                value={picked[row.subjectName] || ""}
+                onChange={(e) => setPicked((prev) => ({ ...prev, [row.subjectName]: e.target.value }))}
+                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none w-full sm:w-48 shrink-0"
+              >
+                <option value="">Faculty…</option>
+                {faculty.map((f) => (
+                  <option key={f._id} value={f._id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => assign(row)}
+                disabled={assigning === row.subjectName}
+                title="Assign this faculty to every student under this mentor for this subject"
+                className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 justify-center shrink-0"
+              >
+                {assigning === row.subjectName ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <ArrowRight size={13} />
+                )}
+                Assign All
+              </button>
+              <button
+                onClick={() => setOpenSubject(open ? null : row.subjectName)}
+                title="Split this subject across multiple faculty by picking specific students"
+                className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0 whitespace-nowrap flex items-center gap-1"
+              >
+                Split by student
+                <ChevronRight size={14} className={`transition-transform ${open ? "rotate-90" : ""}`} />
+              </button>
+            </div>
+            {open && (
+              <div className="border-t border-[var(--border-light)] p-3 bg-[var(--bg-hover)]/30">
+                <StudentAssignPanel
+                  batch={batch}
+                  semester={semester}
+                  mentorId={mentorId}
+                  subjectName={row.subjectName}
+                  faculty={faculty}
+                  onAssigned={load}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Step 4 (optional, when one subject is split across several teachers):
+// pick a subset of the mentor's students + one faculty, Assign — repeat
+// with a different subset/faculty to cover everyone.
+function StudentAssignPanel({ batch, semester, mentorId, subjectName, faculty, onAssigned }) {
+  const [studentRows, setStudentRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState([]);
+  const [facultyId, setFacultyId] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get("/no-dues/mentor-subject-students", {
+        params: { batch, semester, mentorId, subjectName },
+      });
+      if (data.success) setStudentRows(data.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to load students");
+    } finally {
+      setLoading(false);
+    }
+  }, [batch, semester, mentorId, subjectName]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const toggle = (id) =>
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const allSelected = studentRows.length > 0 && studentRows.every((s) => selected.includes(s.studentId));
+  const toggleSelectAll = () => {
+    const ids = studentRows.map((s) => s.studentId);
+    setSelected((prev) => (allSelected ? prev.filter((id) => !ids.includes(id)) : [...new Set([...prev, ...ids])]));
+  };
+
+  const assignSelected = async () => {
+    if (selected.length === 0) return toast.error("Select at least one student");
+    if (!facultyId) return toast.error("Pick a faculty first");
+    setAssigning(true);
+    try {
+      const { data } = await api.patch("/no-dues/assign-faculty", {
+        batch,
+        semester,
+        subjectName,
+        mentorId,
+        facultyId,
+        studentIds: selected,
+      });
+      if (data.success) {
+        toast.success(data.message || "Faculty assigned");
+        setSelected([]);
+        await load();
+        await onAssigned?.();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to assign faculty");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 size={16} className="animate-spin text-[var(--text-secondary)]" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        {studentRows.length > 0 && (
+          <button onClick={toggleSelectAll} className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0">
+            {allSelected ? "Clear all" : `Select all (${studentRows.length})`}
+          </button>
+        )}
+        {selected.length > 0 && <span className="badge badge-approved shrink-0">{selected.length} selected</span>}
+        <select
+          value={facultyId}
+          onChange={(e) => setFacultyId(e.target.value)}
+          className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none w-full sm:w-48 sm:ml-auto"
+        >
+          <option value="">Faculty…</option>
+          {faculty.map((f) => (
+            <option key={f._id} value={f._id}>
+              {f.name}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={assignSelected}
+          disabled={assigning}
+          className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 justify-center shrink-0"
+        >
+          {assigning ? <Loader2 size={13} className="animate-spin" /> : <ArrowRight size={13} />}
+          Assign Selected
+        </button>
+      </div>
+
+      <div className="max-h-56 overflow-y-auto custom-scrollbar space-y-1">
+        {studentRows.map((s) => {
+          const on = selected.includes(s.studentId);
+          return (
+            <button
+              key={s.studentId}
+              onClick={() => toggle(s.studentId)}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${
+                on ? "bg-[var(--primary)]/10 border border-[var(--primary)]/30" : "hover:bg-[var(--bg-hover)] border border-transparent"
+              }`}
+            >
+              <div
+                className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center shrink-0 ${on ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-light)]"}`}
+              >
+                {on && <Check size={12} className="text-white" />}
+              </div>
+              <span className="text-sm font-bold text-[var(--text-primary)] truncate">{s.studentName}</span>
+              <span className="text-[11px] text-[var(--text-secondary)] shrink-0">{s.enrollmentNumber}</span>
+              <span className="text-[11px] text-[var(--text-secondary)] shrink-0 ml-auto">
+                {s.currentFacultyName ? `→ ${s.currentFacultyName}` : "Unassigned"}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -806,7 +1267,7 @@ function FormsList({
                   <div className="font-bold text-sm text-[var(--text-primary)] truncate">
                     {form.student?.name}{" "}
                     <span className="text-[var(--text-secondary)] font-medium">
-                      — {form.session}
+                      — {form.batch}
                     </span>
                   </div>
                   <div className="text-[11px] text-[var(--text-secondary)]">
@@ -817,6 +1278,11 @@ function FormsList({
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                {form.forwarded && (
+                  <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                    Forwarded
+                  </span>
+                )}
                 <span
                   className={`badge ${form.isCompleted ? "badge-approved" : "bg-slate-500/10 border-slate-500/20 text-slate-500"}`}
                 >
