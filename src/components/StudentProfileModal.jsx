@@ -597,12 +597,17 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                             </div>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {Object.entries(amcat.scores || {}).map(([subject, score], sIdx) => (
-                              <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <span className="text-xs font-bold text-slate-700 capitalize truncate mr-2">{subject}</span>
-                                <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">{score} / 100</span>
-                              </div>
-                            ))}
+                            {Object.entries(amcat.scores || {}).map(([subject, score], sIdx) => {
+                              const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
+                              return (
+                                <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                  <span className="text-xs font-bold text-slate-700 capitalize truncate mr-2">{subject}</span>
+                                  <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">
+                                    {score} {!isIdKey && '/ 100'}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       ))

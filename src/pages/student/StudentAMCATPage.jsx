@@ -140,7 +140,8 @@ const StudentAMCATPage = () => {
                   scoreEntries.map(([subject, score], idx) => {
                     const numericScore = Number(score);
                     const isTotal = subject.toLowerCase().includes('total');
-                    const isPercentage = !isTotal && !isNaN(numericScore) && numericScore <= 100 && numericScore >= 0;
+                    const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
+                    const isPercentage = !isTotal && !isIdKey && !isNaN(numericScore) && numericScore <= 100 && numericScore >= 0;
                     
                     return (
                       <div 
@@ -167,7 +168,7 @@ const StudentAMCATPage = () => {
                             <span className="font-black text-lg text-[var(--text-primary)]">
                               {score}
                             </span>
-                            {!isTotal && !isNaN(numericScore) && numericScore <= 100 && (
+                            {!isTotal && !isIdKey && !isNaN(numericScore) && numericScore <= 100 && (
                               <span className="text-[10px] text-[var(--text-secondary)] font-bold ml-1">/ 100</span>
                             )}
                           </div>
