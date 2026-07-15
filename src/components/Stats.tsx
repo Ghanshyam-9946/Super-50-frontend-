@@ -1,13 +1,6 @@
 import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
-const stats = [
-  { value: 12480, label: "Total Students", suffix: "+" },
-  { value: 3214, label: "Projects Uploaded", suffix: "" },
-  { value: 94, label: "Placement Success", suffix: "%" },
-  { value: 50, label: "Active Super 50", suffix: "" },
-];
-
 function Counter({ to, suffix }) {
   const [v, setV] = useState(0);
   const ref = useRef(null);
@@ -32,11 +25,40 @@ function Counter({ to, suffix }) {
 }
 
 export function Stats() {
+  const [data, setData] = useState({
+    totalStudents: 12480,
+    projectsUploaded: 3214,
+    placementSuccess: 94,
+    activeSuper50: 50,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/students/public-stats');
+        const json = await res.json();
+        if (json.success && json.data) {
+          setData(json.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch public stats:', err);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const statsList = [
+    { value: data.totalStudents, label: "Total Students", suffix: "+" },
+    { value: data.projectsUploaded, label: "Projects Uploaded", suffix: "" },
+    { value: data.placementSuccess, label: "Placement Success", suffix: "%" },
+    { value: data.activeSuper50, label: "Active Super 50", suffix: "" },
+  ];
+
   return (
     <section id="stats" className="relative px-6 py-32">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {stats.map((s, i) => (
+          {statsList.map((s, i) => (
             <motion.div
               key={s.label}
               initial={{ opacity: 0, scale: 0.98 }}

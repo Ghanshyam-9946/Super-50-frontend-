@@ -38,7 +38,7 @@ export function Loader() {
                   transition={{ duration: 0.8, ease: "easeOut" }}
                   className="h-12 w-12"
                 >
-                  <img src="/upload/SISTec_Logo.png" alt="SCOPE Logo" className="h-12 w-12" />
+                  <img src="/upload/SISTec_Logo.png" alt="MILE Logo" className="h-12 w-12" />
                 </motion.div>
               </div>
             </div>
@@ -48,9 +48,9 @@ export function Loader() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="font-mono text-[11px] font-black tracking-[0.8em] text-brand-indigo uppercase pl-[0.8em]"
+                className="font-mono text-[13px] font-black tracking-[0.8em] text-brand-indigo uppercase pl-[0.8em]"
               >
-                SCOPE (SISTec CSE Operations &amp; Progress Engine)
+                MILE (Monitoring Individual Learning & Excellence)
               </motion.div>
               <motion.div
                 initial={{ opacity: 0 }}

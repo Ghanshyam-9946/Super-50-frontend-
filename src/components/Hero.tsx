@@ -3,39 +3,6 @@ import { useEffect, useState, useRef } from "react";
 import { ArrowRight, Sparkles, LogIn, Briefcase, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const phrases = ["Placements.", "Super 50.", "Projects.", "Everything."];
-
-function Typewriter() {
-  const [i, setI] = useState(0);
-  const [text, setText] = useState("");
-  const [del, setDel] = useState(false);
-
-  useEffect(() => {
-    const current = phrases[i];
-    const speed = del ? 50 : 110;
-    const t = setTimeout(() => {
-      if (!del && text === current) {
-        setTimeout(() => setDel(true), 1400);
-        return;
-      }
-      if (del && text === "") {
-        setDel(false);
-        setI((i + 1) % phrases.length);
-        return;
-      }
-      setText(del ? current.slice(0, text.length - 1) : current.slice(0, text.length + 1));
-    }, speed);
-    return () => clearTimeout(t);
-  }, [text, del, i]);
-
-  return (
-    <span className="text-gradient-brand drop-shadow-[0_0_20px_var(--brand-indigo)/20]">
-      {text}
-      <span className="ml-0.5 inline-block h-[0.9em] w-[4px] -mb-1 animate-pulse bg-brand-indigo rounded-full" />
-    </span>
-  );
-}
-
 export function Hero() {
   const navigate = useNavigate();
   const containerRef = useRef(null);
@@ -49,7 +16,8 @@ export function Hero() {
   const rotate = useTransform(scrollYProgress, [0, 1], [0, 5]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const titleWords = "One platform for".split(" ");
+  const titleWords = "One Platform for".split(" ");
+  const highlightWords = "Monitoring Individual Learning and Excellence".split(" ");
 
   return (
     <section ref={containerRef} className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 pt-24 pb-16">
@@ -77,8 +45,8 @@ export function Hero() {
           </span>
         </motion.div>
 
-        <h1 className="font-display text-6xl font-[900] leading-[1] tracking-tight text-black md:text-8xl lg:text-9xl mb-6">
-          <div className="flex flex-wrap justify-center gap-x-[0.2em]">
+        <h1 className="font-display text-5xl font-[900] leading-[1.15] tracking-tight text-black md:text-7xl lg:text-8xl mb-6">
+          <div className="flex flex-wrap justify-center gap-x-[0.2em] mb-4">
             {titleWords.map((word, idx) => (
               <motion.span
                 key={idx}
@@ -91,13 +59,39 @@ export function Hero() {
               </motion.span>
             ))}
           </div>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-          >
-            <Typewriter />
-          </motion.div>
+          <div className="flex flex-wrap justify-center gap-x-[0.25em] px-4 max-w-5xl mx-auto">
+            {highlightWords.map((word, idx) => (
+              <motion.span
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 + idx * 0.08, ease: [0.21, 0.45, 0.32, 0.9] }}
+                className="inline-block"
+              >
+                <motion.span
+                  className="inline-block text-gradient-brand drop-shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                  animate={{
+                    y: [0, -8, 0],
+                  }}
+                  transition={{
+                    repeat: Infinity,
+                    repeatType: "reverse",
+                    duration: 2.5,
+                    ease: "easeInOut",
+                    delay: 0.8 + idx * 0.15,
+                  }}
+                  whileHover={{
+                    scale: 1.12,
+                    y: -12,
+                    filter: "brightness(1.2) drop-shadow(0 0 35px rgba(99,102,241,0.55))",
+                    transition: { duration: 0.2, y: { duration: 0.1 } }
+                  }}
+                >
+                  {word}
+                </motion.span>
+              </motion.span>
+            ))}
+          </div>
         </h1>
 
         <motion.p

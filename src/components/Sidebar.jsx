@@ -47,8 +47,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/dashboard', icon: LayoutDashboard, label: 'Super 50 Portal' },
     { to: '/projects', icon: Layout, label: 'Projects' },
     { to: '/activities', icon: Zap, label: 'Activities' },
-    { to: '/certificates', icon: Award, label: 'Certificates' },
-    { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
   ];
 
   const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
@@ -133,7 +131,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
           </div>
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden">
-              <div className="font-display font-black text-xl text-[var(--text-primary)] tracking-tighter leading-none">SCOPE</div>
+              <div className="font-display font-black text-3xl text-[var(--text-primary)] tracking-widest leading-none">
+                MILE<span className="text-[var(--primary)]">.</span>
+              </div>
               <div className="text-[9px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mt-1.5 opacity-80">
                 {user?.role} Portal
               </div>

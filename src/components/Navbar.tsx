@@ -23,14 +23,14 @@ export function Navbar() {
       <nav className="flex items-center justify-between rounded-full bg-black/90 px-8 py-4 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.3)] border border-white/10">
         <div onClick={() => navigate('/')} className="flex items-center gap-3 group cursor-pointer">
           <div className="flex h-10 w-10 items-center justify-center">
-            <img src="/upload/SISTec_Logo.png" alt="SCOPE Logo" className="h-10 w-10" />
+            <img src="/upload/SISTec_Logo.png" alt="MILE Logo" className="h-10 w-10" />
           </div>
           <div className="flex flex-col">
-            <span className="font-display text-2xl font-black tracking-tight text-white leading-none">
-              SCOPE<span className="text-brand-orange">.</span>
+            <span className="font-display text-3xl font-black tracking-widest text-white leading-none">
+              MILE<span className="text-brand-orange">.</span>
             </span>
-            <span className="text-xs font-bold tracking-wider text-blue-500 uppercase mt-1">
-              SISTec CSE Operations & Progress Engine
+            <span className="text-sm font-bold tracking-wider text-blue-500 uppercase mt-1">
+              Every Milestone Matters
             </span>
           </div>
         </div>

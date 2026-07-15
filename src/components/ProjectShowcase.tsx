@@ -23,7 +23,7 @@ const projects = [
   },
   {
     id: 3,
-    title: "SCOPE Leaderboard",
+    title: "MILE Leaderboard",
     category: "Real-time · Elite",
     desc: "High-performance ranking engine with live socket updates and animated talent score visualization.",
     tags: ["TypeScript", "Node.js", "Redis", "Canvas"],

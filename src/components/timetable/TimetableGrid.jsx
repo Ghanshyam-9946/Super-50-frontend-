@@ -169,7 +169,7 @@ const TimetableGrid = forwardRef(({ data }, ref) => {
 
       <div className="flex justify-between text-[10px] mt-1" style={{ color: INK.grayText }}>
         <span>Timetable generated: {fmtDate(data.updatedAt || data.createdAt)}</span>
-        <span className="italic">SCOPE Timetables</span>
+        <span className="italic">MILE Timetables</span>
       </div>
 
       {/* Signatory boxes */}

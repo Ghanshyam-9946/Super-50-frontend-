@@ -133,13 +133,16 @@ function AppRoutes({ theme, toggleTheme }) {
           <Super50Guard><ActivitiesPage /></Super50Guard>
         } />
         <Route path="/certificates" element={
-          <Super50Guard><CertificatesPage /></Super50Guard>
+          <RoleGuard allowed={['student']}><CertificatesPage /></RoleGuard>
         } />
         <Route path="/student/podai-marks" element={
           <RoleGuard allowed={['student']}><PodAIMarksPage /></RoleGuard>
         } />
         <Route path="/student/amcat" element={
           <RoleGuard allowed={['student']}><StudentAMCATPage /></RoleGuard>
+        } />
+        <Route path="/student/mst" element={
+          <RoleGuard allowed={['student']}><StudentMSTPage /></RoleGuard>
         } />
         <Route path="/student/timetable" element={
           <RoleGuard allowed={['student']}><StudentTimetablePage /></RoleGuard>

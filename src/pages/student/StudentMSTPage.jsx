@@ -149,7 +149,8 @@ const StudentMSTPage = () => {
                       maxMarks = 42;
                     }
                     
-                    const isPercentage = !isTotal && !isNaN(numericScore) && numericScore <= maxMarks && numericScore >= 0;
+                    const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
+                    const isPercentage = !isTotal && !isIdKey && !isNaN(numericScore) && numericScore <= maxMarks && numericScore >= 0;
                     
                     return (
                       <div 
@@ -176,7 +177,7 @@ const StudentMSTPage = () => {
                             <span className="font-black text-lg text-[var(--text-primary)]">
                               {score}
                             </span>
-                            {!isTotal && !isNaN(numericScore) && (
+                            {!isTotal && !isIdKey && !isNaN(numericScore) && (
                               <span className="text-[10px] text-[var(--text-secondary)] font-bold ml-1">/ {maxMarks}</span>
                             )}
                           </div>

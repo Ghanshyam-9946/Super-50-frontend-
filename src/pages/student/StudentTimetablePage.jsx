@@ -13,7 +13,7 @@ export default function StudentTimetablePage() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const storageKey = user?.semester ? `scope_timetable_section_sem${user.semester}` : null;
+  const storageKey = user?.semester ? `mile_timetable_section_sem${user.semester}` : null;
 
   useEffect(() => {
     (async () => {
@@ -97,7 +97,7 @@ export default function StudentTimetablePage() {
               >
                 {options.map((o) => (
                   <option key={o._id} value={o._id}>
-                    {o.className || `Section ${o._id.slice(-4)}`}{o.session ? ` — ${o.session}` : ''}
+                    Sem {o.semester} — {o.className || `Section ${o._id.slice(-4)}`}{o.session ? ` (${o.session})` : ''}
                   </option>
                 ))}
               </select>

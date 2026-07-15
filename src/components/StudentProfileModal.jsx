@@ -561,10 +561,13 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                               } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
                                 maxMarks = 42;
                               }
+                              const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
                               return (
                                 <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                                   <span className="text-xs font-bold text-slate-700 capitalize truncate mr-2">{subject}</span>
-                                  <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">{score} / {maxMarks}</span>
+                                  <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">
+                                    {score} {!isIdKey && `/ ${maxMarks}`}
+                                  </span>
                                 </div>
                               );
                             })}

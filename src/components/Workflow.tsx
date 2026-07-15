@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { UserPlus, Award, Briefcase, FolderKanban, Trophy } from "lucide-react";
 
 const steps = [
-  { icon: UserPlus, title: "Register", desc: "Create your SCOPE identity in 30 seconds." },
+  { icon: UserPlus, title: "Register", desc: "Create your MILE identity in 30 seconds." },
   { icon: Award, title: "Upload Achievements", desc: "Certificates, POD AI marks, badges — all verified." },
   { icon: Briefcase, title: "Track Placement", desc: "Live company drives and offer pipeline." },
   { icon: FolderKanban, title: "Submit Projects", desc: "Minor + major showcase with mentor review." },

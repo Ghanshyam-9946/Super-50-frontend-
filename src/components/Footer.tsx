@@ -16,11 +16,11 @@ export function Footer() {
                 <img src="/upload/SISTec_Logo.png" alt="SISTec Logo" className="h-10 w-10 object-contain" />
               </div>
               <div>
-                <h3 className="text-2xl font-[900] tracking-tight text-white font-display leading-none">
-                  SCOPE<span className="text-blue-500">.</span>
+                <h3 className="text-3xl font-[900] tracking-widest text-white font-display leading-none">
+                  MILE<span className="text-blue-500">.</span>
                 </h3>
-                <span className="text-xs font-bold tracking-wider text-blue-500 uppercase block mt-1.5">
-                  SISTec CSE Operations & Progress Engine
+                <span className="text-sm font-bold tracking-wider text-blue-500 uppercase block mt-1.5">
+                  Every Milestone Matters
                 </span>
               </div>
             </div>
@@ -88,7 +88,7 @@ export function Footer() {
                   <Mail className="h-5 w-5" />
                 </div>
                 <a href="mailto:seogn@sistec.ac.in" className="text-sm text-slate-400 hover:text-white transition-colors duration-200 font-medium">
-                  scope@sistec.ac.in
+                  mile@sistec.ac.in
                 </a>
               </li>
             </ul>
