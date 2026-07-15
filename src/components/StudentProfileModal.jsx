@@ -268,9 +268,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                       <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Student Details</h4>
                       <div className="space-y-3 text-sm">
-                        <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-bold">{data.student.email}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-500">Batch:</span><span className="font-bold">{data.student.batch}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-500">CGPA:</span><span className="font-bold">{data.student.cgpa || 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-bold text-slate-900">{data.student.email}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Batch:</span><span className="font-bold text-slate-900">{data.student.batch}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">CGPA:</span><span className="font-bold text-slate-900">{data.student.cgpa || 'N/A'}</span></div>
                         <div className="flex justify-between"><span className="text-slate-500">Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
                         <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600">{Math.round(data.student.attendancePercentage || 0)}%</span></div>
                       </div>
@@ -278,9 +278,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                       <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Contact Info</h4>
                       <div className="space-y-3 text-sm">
-                        <div className="flex justify-between"><span className="text-slate-500">Phone:</span><span className="font-bold">{data.student.phone || 'N/A'}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-500">10th %:</span><span className="font-bold">{data.student.tenthPercentage || 'N/A'}</span></div>
-                        <div className="flex justify-between"><span className="text-slate-500">12th %:</span><span className="font-bold">{data.student.twelfthPercentage || 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">Phone:</span><span className="font-bold text-slate-900">{data.student.phone || 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">10th %:</span><span className="font-bold text-slate-900">{data.student.tenthPercentage || 'N/A'}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500">12th %:</span><span className="font-bold text-slate-900">{data.student.twelfthPercentage || 'N/A'}</span></div>
                       </div>
                     </div>
                   </div>
