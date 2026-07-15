@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck2, ChevronRight, PartyPopper, Circle,
-  Wallet, Percent, ArrowRightCircle,
+  Wallet, Percent, ArrowRightCircle, Download, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -51,6 +51,26 @@ function OverviewTab({ user }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [openFormId, setOpenFormId] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadForwarded = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get('/no-dues/forwarded/export', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `No-Dues-Forwarded-${Date.now()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download the forwarded students list');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -173,13 +193,20 @@ function OverviewTab({ user }) {
         </div>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Filter</span>
         <select value={filter} onChange={(e) => setFilter(e.target.value)} className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-xl px-4 py-2 text-sm text-[var(--text-primary)] outline-none">
           <option value="">All</option>
           <option value="true">Completed</option>
           <option value="false">In Progress</option>
         </select>
+        <button
+          onClick={downloadForwarded}
+          disabled={downloading}
+          className="ml-auto flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl border border-[var(--primary)]/30 text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all disabled:opacity-40"
+        >
+          {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Download Forwarded (Excel)
+        </button>
       </div>
 
       {loading ? (

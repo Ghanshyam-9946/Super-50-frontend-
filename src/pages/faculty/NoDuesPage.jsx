@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,11 +18,14 @@ import {
   Upload,
   UserCheck,
   ArrowRight,
+  Settings2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { fetchMe } from "../../features/auth/authSlice";
-import NoDuesFormDetail from "../../components/nodues/NoDuesFormDetail";
+import NoDuesFormDetail, {
+  ReassignStudentPanel,
+} from "../../components/nodues/NoDuesFormDetail";
 
 const DEFAULT_SUBJECT_ITEMS = [
   "Assignment",
@@ -146,6 +149,7 @@ export default function NoDuesPage() {
           { key: "create", label: "Create No Dues Form", icon: Plus },
           { key: "assign", label: "Assign Faculty", icon: UserCheck },
           { key: "forms", label: "Forms I Released", icon: ClipboardList },
+          { key: "manage", label: "Manage Forms", icon: Settings2 },
         ]
       : []),
     { key: "checklist", label: "My Subject Checklist", icon: ListChecks },
@@ -244,6 +248,9 @@ export default function NoDuesPage() {
                 onDelete={deleteForm}
                 emptyText="You haven't created any No Dues forms yet."
               />
+            )}
+            {tab === "manage" && (
+              <ManageFormsTab forms={myForms} onRefresh={refreshForms} />
             )}
             {tab === "checklist" && (
               <FormsList
@@ -504,6 +511,20 @@ function CreateFormView({ students, preselected, onCreated }) {
     setSubject(idx, { items: next });
   };
 
+  const [customItemDraft, setCustomItemDraft] = useState({}); // idx -> text
+  const addCustomItem = (idx) => {
+    const label = (customItemDraft[idx] || "").trim();
+    if (!label) return;
+    if (subjects[idx].items.includes(label)) {
+      setCustomItemDraft((prev) => ({ ...prev, [idx]: "" }));
+      return;
+    }
+    setSubject(idx, { items: [...subjects[idx].items, label] });
+    setCustomItemDraft((prev) => ({ ...prev, [idx]: "" }));
+  };
+  const removeCustomItem = (idx, item) =>
+    setSubject(idx, { items: subjects[idx].items.filter((i) => i !== item) });
+
   const submit = async () => {
     if (studentIds.length === 0)
       return toast.error("Select at least one student");
@@ -754,6 +775,40 @@ function CreateFormView({ students, preselected, onCreated }) {
                   </button>
                 );
               })}
+              {subj.items
+                .filter((item) => !DEFAULT_SUBJECT_ITEMS.concat(["Lab Record"]).includes(item))
+                .map((item) => (
+                  <span
+                    key={item}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-bold"
+                  >
+                    {item}
+                    <button onClick={() => removeCustomItem(idx, item)} className="hover:text-red-500">
+                      <X size={11} />
+                    </button>
+                  </span>
+                ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                value={customItemDraft[idx] || ""}
+                onChange={(e) => setCustomItemDraft((prev) => ({ ...prev, [idx]: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomItem(idx);
+                  }
+                }}
+                placeholder="Add a custom task for this subject…"
+                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+              />
+              <button
+                onClick={() => addCustomItem(idx)}
+                className="text-xs font-bold text-[var(--primary)] hover:underline shrink-0 flex items-center gap-1"
+              >
+                <Plus size={13} /> Add
+              </button>
             </div>
           </div>
         ))}
@@ -1213,6 +1268,426 @@ function StudentAssignPanel({ batch, semester, mentorId, subjectName, faculty, o
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────  MANAGE FORMS  ───────────────────────────── */
+
+// One row per RELEASE (a single or bulk create), not per student — every
+// student created together shares a releaseId. Edit batch/semester/subjects
+// once for the whole group, and add/remove/reassign which students are in it.
+function ManageFormsTab({ forms, onRefresh }) {
+  const [search, setSearch] = useState("");
+  const [openReleaseId, setOpenReleaseId] = useState(null);
+
+  const groups = useMemo(() => {
+    const map = {};
+    forms.forEach((f) => {
+      const key = f.releaseId || f._id; // legacy forms with no releaseId are their own singleton group
+      if (!map[key]) map[key] = { releaseId: key, members: [] };
+      map[key].members.push(f);
+    });
+    return Object.values(map)
+      .map((g) => {
+        const sample = g.members[0];
+        return {
+          ...g,
+          batch: sample.batch,
+          semester: sample.semester,
+          section: sample.section,
+          subjectNames: sample.subjects.map((s) => s.subjectName),
+          forwardedCount: g.members.filter((m) => m.forwarded).length,
+          completedCount: g.members.filter((m) => m.isCompleted).length,
+        };
+      })
+      .sort((a, b) => b.members.length - a.members.length);
+  }, [forms]);
+
+  const filtered = groups.filter((g) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      g.members.some((m) => m.student?.name?.toLowerCase().includes(q) || (m.student?.enrollmentNumber || "").toLowerCase().includes(q)) ||
+      g.subjectNames.some((n) => n.toLowerCase().includes(q))
+    );
+  });
+
+  if (forms.length === 0) {
+    return (
+      <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">
+        <Settings2 size={40} className="text-[var(--text-secondary)] opacity-50" />
+        <p className="text-[var(--text-primary)] font-bold">You haven't released any No Dues forms yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="glass-card p-4 rounded-2xl flex items-center gap-2">
+        <Search size={15} className="text-[var(--text-secondary)] shrink-0" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by subject, student name, or enrollment…"
+          className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)]"
+        />
+      </div>
+
+      <div className="glass-card rounded-3xl overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border-light)] text-left">
+                {["Subjects", "Batch", "Sem / Section", "Students", "Status", ""].map((h) => (
+                  <th key={h} className="px-5 py-4 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((group) => {
+                const open = openReleaseId === group.releaseId;
+                return (
+                  <Fragment key={group.releaseId}>
+                    <tr
+                      onClick={() => setOpenReleaseId(open ? null : group.releaseId)}
+                      className="border-b border-[var(--border-light)] last:border-0 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    >
+                      <td className="px-5 py-4 max-w-[220px]">
+                        <div className="font-bold text-[var(--text-primary)] truncate">{group.subjectNames.join(", ")}</div>
+                      </td>
+                      <td className="px-5 py-4 text-[var(--text-secondary)]">{group.batch}</td>
+                      <td className="px-5 py-4 text-[var(--text-secondary)]">
+                        Sem {group.semester}{group.section ? ` · ${group.section}` : ""}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                          {group.members.length} student{group.members.length !== 1 ? "s" : ""}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-[var(--text-secondary)] whitespace-nowrap">
+                        {group.forwardedCount > 0 && <span className="text-[var(--primary)] font-bold">{group.forwardedCount} forwarded</span>}
+                        {group.forwardedCount > 0 && " · "}
+                        {group.completedCount}/{group.members.length} completed
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-[11px] font-bold text-[var(--primary)] flex items-center gap-1 justify-end">
+                          Manage
+                          <ChevronRight size={14} className={`transition-transform ${open ? "rotate-90" : ""}`} />
+                        </span>
+                      </td>
+                    </tr>
+                    {open && (
+                      <tr className="border-b border-[var(--border-light)] last:border-0">
+                        <td colSpan={6} className="p-4 bg-[var(--bg-hover)]/30">
+                          <ManageReleaseGroup group={group} onRefresh={onRefresh} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-5 py-10 text-center text-[var(--text-secondary)]">
+                    No releases match your search.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ManageReleaseGroup({ group, onRefresh }) {
+  const [reassigningId, setReassigningId] = useState(null); // form._id currently showing the reassign search
+  const [removingId, setRemovingId] = useState(null);
+  const [addSearch, setAddSearch] = useState("");
+  const [addResults, setAddResults] = useState([]);
+  const [adding, setAdding] = useState(null); // studentId currently being added
+
+  useEffect(() => {
+    if (!addSearch.trim()) {
+      setAddResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      try {
+        const { data } = await api.get("/no-dues/all-students", { params: { search: addSearch.trim() } });
+        if (data.success) {
+          const memberIds = new Set(group.members.map((m) => m.student?._id));
+          setAddResults(data.data.filter((s) => !memberIds.has(s._id)));
+        }
+      } catch {
+        /* best-effort search */
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [addSearch, group.members]);
+
+  const removeMember = async (form) => {
+    if (!window.confirm(`Remove ${form.student?.name} from this release? Their No Dues form will be deleted.`)) return;
+    setRemovingId(form._id);
+    try {
+      const { data } = await api.delete(`/no-dues/${form._id}`);
+      if (data.success) {
+        toast.success("Student removed from release");
+        await onRefresh();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to remove student");
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const addMember = async (student) => {
+    setAdding(student._id);
+    try {
+      const { data } = await api.post(`/no-dues/releases/${group.releaseId}/students`, { studentId: student._id });
+      if (data.success) {
+        toast.success(data.message || "Student added");
+        setAddSearch("");
+        setAddResults([]);
+        await onRefresh();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to add student");
+    } finally {
+      setAdding(null);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <EditReleaseDetailsPanel group={group} onSaved={onRefresh} />
+
+      <div className="space-y-2">
+        <h5 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest">
+          Students in this release ({group.members.length})
+        </h5>
+        <div className="space-y-1.5">
+          {group.members.map((form) => {
+            const statusBadge = form.forwarded ? (
+              <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">Forwarded</span>
+            ) : (
+              <span className={`badge ${form.isCompleted ? "badge-approved" : "bg-slate-500/10 border-slate-500/20 text-slate-500"}`}>
+                {form.isCompleted ? "Completed" : "In Progress"}
+              </span>
+            );
+            return (
+              <div key={form._id} className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] px-3 py-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold text-[var(--text-primary)]">{form.student?.name}</span>
+                  <span className="text-[11px] text-[var(--text-secondary)]">{form.student?.enrollmentNumber}</span>
+                  {statusBadge}
+                  <div className="ml-auto flex items-center gap-3">
+                    <button
+                      onClick={() => setReassigningId(reassigningId === form._id ? null : form._id)}
+                      className="text-[11px] font-bold text-[var(--primary)] hover:underline"
+                    >
+                      Reassign
+                    </button>
+                    <button
+                      onClick={() => removeMember(form)}
+                      disabled={removingId === form._id}
+                      className="text-[11px] font-bold text-red-500 hover:underline disabled:opacity-40"
+                    >
+                      {removingId === form._id ? "Removing…" : "Remove"}
+                    </button>
+                  </div>
+                </div>
+                {reassigningId === form._id && (
+                  <div className="mt-2 pt-2 border-t border-[var(--border-light)]">
+                    <ReassignStudentPanel form={form} onChange={async () => { setReassigningId(null); await onRefresh(); }} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <h5 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest">Add a student to this release</h5>
+        <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2">
+          <Search size={13} className="text-[var(--text-secondary)] shrink-0" />
+          <input
+            value={addSearch}
+            onChange={(e) => setAddSearch(e.target.value)}
+            placeholder="Search a student by name or enrollment…"
+            className="flex-1 bg-transparent outline-none text-xs text-[var(--text-primary)]"
+          />
+        </div>
+        {addResults.length > 0 && (
+          <div className="border border-[var(--border-light)] rounded-xl overflow-hidden max-h-40 overflow-y-auto custom-scrollbar">
+            {addResults.map((s) => (
+              <button
+                key={s._id}
+                onClick={() => addMember(s)}
+                disabled={adding === s._id}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-[var(--bg-hover)] border-b border-[var(--border-light)] last:border-0 disabled:opacity-40"
+              >
+                <span className="font-bold text-[var(--text-primary)]">{s.name}</span>
+                <span className="text-[var(--text-secondary)]">{adding === s._id ? "Adding…" : s.enrollmentNumber}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Edits batch/semester/section/subjects for the WHOLE release at once —
+// same subject editor as the single-form version, seeded from one member
+// as a representative sample.
+function EditReleaseDetailsPanel({ group, onSaved }) {
+  const sample = group.members[0];
+  const [batch, setBatch] = useState(sample.batch || "");
+  const [semester, setSemester] = useState(sample.semester || 1);
+  const [section, setSection] = useState(sample.section || "");
+  const [subjects, setSubjects] = useState(
+    sample.subjects.map((s) => ({ subjectCode: s.subjectCode || "", subjectName: s.subjectName, items: s.items.map((i) => i.label) })),
+  );
+  const [customItemDraft, setCustomItemDraft] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const setSubject = (idx, patch) => {
+    const next = [...subjects];
+    next[idx] = { ...next[idx], ...patch };
+    setSubjects(next);
+  };
+  const addSubject = () => setSubjects([...subjects, { subjectCode: "", subjectName: "", items: [...DEFAULT_SUBJECT_ITEMS] }]);
+  const removeSubject = (idx) => setSubjects(subjects.filter((_, i) => i !== idx));
+  const toggleItem = (idx, item) => {
+    const current = subjects[idx].items;
+    setSubject(idx, { items: current.includes(item) ? current.filter((i) => i !== item) : [...current, item] });
+  };
+  const addCustomItem = (idx) => {
+    const label = (customItemDraft[idx] || "").trim();
+    if (!label || subjects[idx].items.includes(label)) return;
+    setSubject(idx, { items: [...subjects[idx].items, label] });
+    setCustomItemDraft((prev) => ({ ...prev, [idx]: "" }));
+  };
+
+  const save = async () => {
+    if (!batch.trim()) return toast.error("Batch is required");
+    if (subjects.some((s) => !s.subjectName.trim())) return toast.error("Every subject needs a name");
+    setSaving(true);
+    try {
+      const { data } = await api.put(`/no-dues/releases/${group.releaseId}`, {
+        batch: batch.trim(),
+        semester,
+        section: section.trim(),
+        subjects: subjects.map((s) => ({ subjectCode: s.subjectCode.trim(), subjectName: s.subjectName.trim(), items: s.items })),
+      });
+      if (data.success) {
+        toast.success(data.message || "Release updated");
+        await onSaved();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update release");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h5 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest">
+        Edit Release Details <span className="normal-case font-medium opacity-70">— applies to all {group.members.length} student(s)</span>
+      </h5>
+      <div className="grid sm:grid-cols-3 gap-2">
+        <input
+          value={batch}
+          onChange={(e) => setBatch(e.target.value)}
+          placeholder="Batch (2023-27)"
+          className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+        />
+        <select
+          value={semester}
+          onChange={(e) => setSemester(Number(e.target.value))}
+          className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+        >
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => <option key={s} value={s}>Semester {s}</option>)}
+        </select>
+        <input
+          value={section}
+          onChange={(e) => setSection(e.target.value)}
+          placeholder="Section (optional)"
+          className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold text-[var(--text-secondary)]">Subjects</span>
+          <button onClick={addSubject} className="text-[11px] font-bold text-[var(--primary)] hover:underline flex items-center gap-1">
+            <Plus size={12} /> Add Subject
+          </button>
+        </div>
+        {subjects.map((subj, idx) => (
+          <div key={idx} className="border border-[var(--border-light)] rounded-xl p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                value={subj.subjectCode}
+                onChange={(e) => setSubject(idx, { subjectCode: e.target.value })}
+                placeholder="Code"
+                className="w-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
+              />
+              <input
+                value={subj.subjectName}
+                onChange={(e) => setSubject(idx, { subjectName: e.target.value })}
+                placeholder="Subject name"
+                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
+              />
+              {subjects.length > 1 && (
+                <button onClick={() => removeSubject(idx)} className="text-[var(--text-secondary)] hover:text-red-500 shrink-0">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[...new Set([...DEFAULT_SUBJECT_ITEMS, "Lab Record", ...subj.items])].map((item) => {
+                const on = subj.items.includes(item);
+                return (
+                  <button
+                    key={item}
+                    onClick={() => toggleItem(idx, item)}
+                    className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all ${
+                      on ? "bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]" : "border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    }`}
+                  >
+                    {on ? "✓ " : "+ "}{item}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                value={customItemDraft[idx] || ""}
+                onChange={(e) => setCustomItemDraft((prev) => ({ ...prev, [idx]: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomItem(idx); } }}
+                placeholder="Add a custom task…"
+                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-[11px] text-[var(--text-primary)] outline-none"
+              />
+              <button onClick={() => addCustomItem(idx)} className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0">
+                Add
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={save} disabled={saving} className="btn-premium text-xs px-4 py-2 flex items-center gap-2">
+        {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Changes
+      </button>
     </div>
   );
 }
