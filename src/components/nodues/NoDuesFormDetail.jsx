@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { CheckCircle2, Circle, Loader2, PartyPopper, MessageSquare, Trash2, Percent, Save, Wallet, CalendarHeart, Plus, X, ArrowRightCircle, Undo2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle2, Circle, Loader2, PartyPopper, MessageSquare, Trash2, Percent, Save, Wallet, CalendarHeart, Plus, X, ArrowRightCircle, Undo2, Settings2, ChevronDown, Search, UserCog, Repeat, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
 const EXTRA_ATTENDANCE_CATEGORIES = ['Event/Farewell', 'SAC', 'Sports'];
+const DEFAULT_SUBJECT_ITEMS = ['Assignment', 'Tutorial', 'POD AI Quiz', 'Presentation/GD/Task/Mini Project'];
 
 /**
  * Renders one No Dues form's full checklist (subject rows + extra items +
@@ -18,18 +19,40 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   const [remark, setRemark] = useState(form.remark || '');
   const [tgRemark, setTgRemark] = useState(form.tgRemark || '');
   const [savingRemarks, setSavingRemarks] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const downloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const response = await api.get(`/no-dues/${form._id}/pdf`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `No-Dues-${(form.student?.name || 'student').replace(/[^a-z0-9]+/gi, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download the PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const uid = currentUser?._id;
   const isAdmin = currentUser?.role === 'admin';
   const isCreator = form.createdBy?._id === uid;
   const canEditRemarks = isCreator || isAdmin;
-  // Only the Academic Coordinator who released this form (or admin) manages
-  // the attendance-upgrade criteria — same gate as remarks/extra items.
-  const canEditAttendance = canEditRemarks;
-  // Any subject faculty assigned to this form ("TG/Faculty") — logs
-  // Extra Attendance entries for this student, alongside ticking their row.
-  const isAssignedFaculty = form.subjects.some((s) => s.faculty?._id === uid);
-  const canEditExtraAttendance = isAdmin || isAssignedFaculty;
+  // Dues fees stays an Academic Coordinator (creator) matter — unrelated to TG.
+  const canEditDuesFees = canEditRemarks;
+  // The student's TG (mentor) — and only them (or admin) — manages every
+  // attendance boost on this form: Medical/Other RGPV QP/Certification AND
+  // the free-form Extra Attendance entries. Neither the coordinator nor a
+  // subject faculty has this access unless they're also this student's TG.
+  const isTG = form.student?.mentor?._id === uid;
+  const canEditTGAttendance = isAdmin || isTG;
 
   const upgrade = form.attendanceUpgrade || {};
   const attendanceSummary = form.attendanceSummary || {
@@ -54,6 +77,8 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   const [addingExtra, setAddingExtra] = useState(false);
   const [removingEntryId, setRemovingEntryId] = useState(null);
   const [forwarding, setForwarding] = useState(false);
+  const [forwardPromptOpen, setForwardPromptOpen] = useState(false);
+  const [forwardRemarkDraft, setForwardRemarkDraft] = useState('');
 
   const saveDuesFees = async () => {
     setSavingDuesFees(true);
@@ -127,12 +152,17 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
     }
   };
 
-  const toggleForward = async (nextForwarded) => {
+  const toggleForward = async (nextForwarded, forwardRemark) => {
     setForwarding(true);
     try {
-      const { data } = await api.patch(`/no-dues/${form._id}/forward`, { forwarded: nextForwarded });
+      const { data } = await api.patch(`/no-dues/${form._id}/forward`, {
+        forwarded: nextForwarded,
+        ...(forwardRemark !== undefined ? { forwardRemark } : {}),
+      });
       if (data.success) {
         toast.success(data.message || 'Updated');
+        setForwardPromptOpen(false);
+        setForwardRemarkDraft('');
         await onChange(data.data);
       }
     } catch (err) {
@@ -140,6 +170,21 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
     } finally {
       setForwarding(false);
     }
+  };
+
+  const duesFeesDue = form.student?.duesFees > 0;
+
+  const clickMarkForward = () => {
+    if (duesFeesDue) {
+      setForwardPromptOpen(true);
+    } else {
+      toggleForward(true);
+    }
+  };
+
+  const confirmForwardWithRemark = () => {
+    if (!forwardRemarkDraft.trim()) return toast.error('A remark is required — this student still has dues fees pending');
+    toggleForward(true, forwardRemarkDraft.trim());
   };
 
   const toggleSubjectItem = async (subjectIndex, itemIndex, nextChecked) => {
@@ -199,40 +244,108 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
       )}
 
       {form.forwarded ? (
-        <div className="flex items-center justify-between flex-wrap gap-2 bg-purple-500/10 border border-purple-500/25 text-[var(--primary)] rounded-2xl px-4 py-3 font-bold text-sm">
-          <span className="flex items-center gap-2">
-            <ArrowRightCircle size={18} /> Forwarded for exam eligibility
-            {form.forwardedAt ? ` on ${new Date(form.forwardedAt).toLocaleDateString()}` : ''}
-          </span>
-          {(isCreator || isAdmin) && (
-            <button
-              onClick={() => toggleForward(false)}
-              disabled={forwarding}
-              className="flex items-center gap-1.5 text-xs font-bold hover:underline"
-            >
-              {forwarding ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />} Undo
-            </button>
+        <div className="bg-purple-500/10 border border-purple-500/25 text-[var(--primary)] rounded-2xl px-4 py-3">
+          <div className="flex items-center justify-between flex-wrap gap-2 font-bold text-sm">
+            <span className="flex items-center gap-2">
+              <ArrowRightCircle size={18} /> Forwarded for exam eligibility
+              {form.forwardedAt ? ` on ${new Date(form.forwardedAt).toLocaleDateString()}` : ''}
+            </span>
+            {(isCreator || isAdmin) && (
+              <button
+                onClick={() => toggleForward(false)}
+                disabled={forwarding}
+                className="flex items-center gap-1.5 text-xs font-bold hover:underline"
+              >
+                {forwarding ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />} Undo
+              </button>
+            )}
+          </div>
+          {form.forwardRemark && (
+            <p className="text-xs font-medium mt-2 opacity-90">Dues fees remark: {form.forwardRemark}</p>
           )}
         </div>
       ) : (
         (isCreator || isAdmin) && (
-          <button
-            onClick={() => toggleForward(true)}
-            disabled={!form.isCompleted || forwarding}
-            title={!form.isCompleted ? 'Complete every subject and extra item first' : ''}
-            className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 disabled:opacity-40"
-          >
-            {forwarding ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightCircle size={15} />} Mark Forward
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={clickMarkForward}
+              disabled={!form.isCompleted || forwarding}
+              title={!form.isCompleted ? 'Complete every subject and extra item first' : ''}
+              className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 disabled:opacity-40"
+            >
+              {forwarding ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightCircle size={15} />} Mark Forward
+            </button>
+            {forwardPromptOpen && (
+              <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl px-4 py-3 space-y-2">
+                <p className="text-xs font-bold text-amber-600">
+                  This student still has ₹{form.student?.duesFees} in dues fees — a remark is required to forward anyway.
+                </p>
+                <textarea
+                  rows={2}
+                  value={forwardRemarkDraft}
+                  onChange={(e) => setForwardRemarkDraft(e.target.value)}
+                  placeholder="Why forward despite pending dues fees?"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--primary)] resize-none"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button
+                    onClick={() => { setForwardPromptOpen(false); setForwardRemarkDraft(''); }}
+                    className="px-3 py-1.5 rounded-lg border border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmForwardWithRemark}
+                    disabled={forwarding}
+                    className="btn-premium text-xs px-3 py-1.5 flex items-center gap-1.5"
+                  >
+                    {forwarding ? <Loader2 size={13} className="animate-spin" /> : <ArrowRightCircle size={13} />} Confirm Forward
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         )
       )}
+
+      <div className="flex justify-end">
+        <button
+          onClick={downloadPdf}
+          disabled={downloadingPdf}
+          className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl border border-[var(--primary)]/30 text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all disabled:opacity-40"
+        >
+          {downloadingPdf ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Download PDF
+        </button>
+      </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
         <InfoBox label="Student" value={form.student?.name} sub={form.student?.enrollmentNumber} />
         <InfoBox label="Batch" value={form.batch} />
         <InfoBox label="Semester / Section" value={`Sem ${form.semester}${form.section ? ` — ${form.section}` : ''}`} />
-        <InfoBox label="Mentor (TG)" value={form.createdBy?.name} />
+        <InfoBox label="TG (Mentor)" value={form.student?.mentor?.name} sub={form.createdBy?.name ? `Released by ${form.createdBy.name}` : ''} />
       </div>
+
+      {/* Manage form — edit details / reassign student / reassign TG */}
+      {(isCreator || isAdmin) && (
+        <div className="glass-card rounded-2xl p-4">
+          <button
+            onClick={() => setManageOpen((o) => !o)}
+            className="w-full flex items-center justify-between gap-2 text-sm font-bold text-[var(--text-primary)]"
+          >
+            <span className="flex items-center gap-2">
+              <Settings2 size={15} className="text-[var(--primary)]" /> Manage Form
+            </span>
+            <ChevronDown size={16} className={`text-[var(--text-secondary)] transition-transform ${manageOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {manageOpen && (
+            <div className="mt-4 pt-4 border-t border-[var(--border-light)] space-y-5">
+              <ReassignStudentPanel form={form} onChange={onChange} />
+              <ReassignMentorPanel form={form} onChange={onChange} />
+              <EditFormDetailsPanel form={form} onChange={onChange} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Attendance + upgrade criteria */}
       <div className="glass-card rounded-2xl p-4 space-y-4">
@@ -254,7 +367,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
             label="Medical"
             hint="Up to 60 hrs → up to +10%. Needs base ≥ 50%."
             eligible={attendanceSummary.baseAttendancePercentage >= 50}
-            editable={canEditAttendance}
+            editable={canEditTGAttendance}
             enabled={medicalEnabled}
             onToggle={setMedicalEnabled}
             hours={medicalHours}
@@ -267,7 +380,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
             label="Other RGPV QP"
             hint="Up to 40 hrs → up to +6.67%. Needs base > 60%."
             eligible={attendanceSummary.baseAttendancePercentage > 60}
-            editable={canEditAttendance}
+            editable={canEditTGAttendance}
             enabled={rgpvEnabled}
             onToggle={setRgpvEnabled}
             hours={rgpvHours}
@@ -280,7 +393,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
             label="Certification"
             hint="2% per approved certificate, max 3 (6%). Needs base ≥ 50%."
             eligible={attendanceSummary.baseAttendancePercentage >= 50}
-            editable={canEditAttendance}
+            editable={canEditTGAttendance}
             enabled={certEnabled}
             onToggle={setCertEnabled}
             boostPercent={upgrade.certification?.boostPercent || 0}
@@ -292,14 +405,14 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           />
         </div>
 
-        {canEditAttendance && (
+        {canEditTGAttendance && (
           <button onClick={saveAttendanceCriteria} disabled={savingAttendance} className="btn-premium text-xs px-4 py-2 flex items-center gap-2">
             {savingAttendance ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Attendance Criteria
           </button>
         )}
       </div>
 
-      {/* Extra Attendance — logged by the assigned subject faculty */}
+      {/* Extra Attendance — logged only by this student's TG (mentor) */}
       <div className="glass-card rounded-2xl p-4 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <h4 className="font-display font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
@@ -310,7 +423,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           )}
         </div>
         <p className="text-[11px] text-[var(--text-secondary)] font-medium">
-          Logged by the subject faculty assigned to this form — Event/Farewell, SAC, or Sports participation, converted to
+          Logged only by this student's TG (mentor) — Event/Farewell, SAC, or Sports participation, converted to
           attendance % (same ratio as Medical, capped at +10% total).
         </p>
 
@@ -328,7 +441,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
                   {entry.description && <span className="text-[var(--text-secondary)]"> — {entry.description}</span>}
                   <span className="text-[var(--text-secondary)]"> · {entry.hoursClaimed} hrs · +{entry.boostPercent}% · by {entry.addedBy?.name || '—'}</span>
                 </div>
-                {canEditExtraAttendance && (
+                {canEditTGAttendance && (
                   <button
                     onClick={() => removeExtraEntry(entry._id)}
                     disabled={removingEntryId === entry._id}
@@ -342,7 +455,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           </div>
         )}
 
-        {canEditExtraAttendance && (
+        {canEditTGAttendance && (
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-[var(--border-light)]">
             <select
               value={extraCategory}
@@ -384,7 +497,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           <h4 className="font-display font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
             <Wallet size={15} className="text-[var(--primary)]" /> Dues Fees
           </h4>
-          {canEditAttendance ? (
+          {canEditDuesFees ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--text-secondary)]">₹</span>
               <input
@@ -583,6 +696,289 @@ function AttendanceCriterionBox({
         <p className="text-[10px] text-[var(--text-secondary)]">{hours} hrs claimed</p>
       )}
       {extraNote && <p className="text-[10px] text-[var(--text-secondary)] italic">{extraNote}</p>}
+    </div>
+  );
+}
+
+// Fixes a form that was created for the wrong person — searches all students
+// and, on pick, moves this entire form (checklist, ticks, everything) over.
+export function ReassignStudentPanel({ form, onChange }) {
+  const [search, setSearch] = useState('');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [reassigning, setReassigning] = useState(false);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data } = await api.get('/no-dues/all-students', { params: { search: search.trim() } });
+        if (data.success) setResults(data.data.filter((s) => s._id !== form.student?._id));
+      } catch {
+        /* silent — search is best-effort */
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search, form.student?._id]);
+
+  const reassign = async (student) => {
+    if (!window.confirm(`Reassign this form from ${form.student?.name} to ${student.name}?`)) return;
+    setReassigning(true);
+    try {
+      const { data } = await api.patch(`/no-dues/${form._id}/reassign-student`, { studentId: student._id });
+      if (data.success) {
+        toast.success(data.message || 'Student reassigned');
+        setSearch('');
+        setResults([]);
+        await onChange(data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reassign student');
+    } finally {
+      setReassigning(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <h5 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest flex items-center gap-1.5">
+        <Repeat size={13} /> Reassign Student
+      </h5>
+      <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2">
+        <Search size={13} className="text-[var(--text-secondary)] shrink-0" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search a different student by name or enrollment…"
+          className="flex-1 bg-transparent outline-none text-xs text-[var(--text-primary)]"
+        />
+        {searching && <Loader2 size={13} className="animate-spin text-[var(--text-secondary)]" />}
+      </div>
+      {results.length > 0 && (
+        <div className="border border-[var(--border-light)] rounded-xl overflow-hidden max-h-40 overflow-y-auto custom-scrollbar">
+          {results.map((s) => (
+            <button
+              key={s._id}
+              onClick={() => reassign(s)}
+              disabled={reassigning}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-[var(--bg-hover)] border-b border-[var(--border-light)] last:border-0 disabled:opacity-40"
+            >
+              <span className="font-bold text-[var(--text-primary)]">{s.name}</span>
+              <span className="text-[var(--text-secondary)]">{s.enrollmentNumber}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Changes which TG (mentor) this student reports to — affects who can
+// manage their attendance boosts and who they show up under in "Assign Faculty".
+export function ReassignMentorPanel({ form, onChange }) {
+  const [facultyList, setFacultyList] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [mentorId, setMentorId] = useState(form.student?.mentor?._id || '');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get('/no-dues/faculty-list').then(({ data }) => {
+      if (data.success) setFacultyList(data.data);
+      setLoaded(true);
+    }).catch(() => setLoaded(true));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const { data } = await api.patch(`/no-dues/${form._id}/reassign-mentor`, { mentorId: mentorId || null });
+      if (data.success) {
+        toast.success(data.message || 'TG reassigned');
+        await onChange(data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reassign TG');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <h5 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest flex items-center gap-1.5">
+        <UserCog size={13} /> Reassign TG (Mentor)
+      </h5>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <select
+          value={mentorId}
+          onChange={(e) => setMentorId(e.target.value)}
+          disabled={!loaded}
+          className="flex-1 bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+        >
+          <option value="">No TG</option>
+          {facultyList.map((f) => (
+            <option key={f._id} value={f._id}>{f.name} ({f.role})</option>
+          ))}
+        </select>
+        <button
+          onClick={save}
+          disabled={saving || mentorId === (form.student?.mentor?._id || '')}
+          className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 justify-center shrink-0 disabled:opacity-40"
+        >
+          {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Edits batch/semester/section and the subjects list itself — add/remove
+// subjects, rename them, or add custom tasks under a subject. Ticks/faculty
+// on a subject are preserved as long as its name doesn't change.
+export function EditFormDetailsPanel({ form, onChange }) {
+  const [batch, setBatch] = useState(form.batch || '');
+  const [semester, setSemester] = useState(form.semester || 1);
+  const [section, setSection] = useState(form.section || '');
+  const [subjects, setSubjects] = useState(
+    form.subjects.map((s) => ({ subjectCode: s.subjectCode || '', subjectName: s.subjectName, items: s.items.map((i) => i.label) }))
+  );
+  const [customItemDraft, setCustomItemDraft] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const setSubject = (idx, patch) => {
+    const next = [...subjects];
+    next[idx] = { ...next[idx], ...patch };
+    setSubjects(next);
+  };
+  const addSubject = () => setSubjects([...subjects, { subjectCode: '', subjectName: '', items: [...DEFAULT_SUBJECT_ITEMS] }]);
+  const removeSubject = (idx) => setSubjects(subjects.filter((_, i) => i !== idx));
+  const toggleItem = (idx, item) => {
+    const current = subjects[idx].items;
+    setSubject(idx, { items: current.includes(item) ? current.filter((i) => i !== item) : [...current, item] });
+  };
+  const addCustomItem = (idx) => {
+    const label = (customItemDraft[idx] || '').trim();
+    if (!label || subjects[idx].items.includes(label)) return;
+    setSubject(idx, { items: [...subjects[idx].items, label] });
+    setCustomItemDraft((prev) => ({ ...prev, [idx]: '' }));
+  };
+
+  const save = async () => {
+    if (!batch.trim()) return toast.error('Batch is required');
+    if (subjects.some((s) => !s.subjectName.trim())) return toast.error('Every subject needs a name');
+    setSaving(true);
+    try {
+      const { data } = await api.put(`/no-dues/${form._id}`, {
+        batch: batch.trim(),
+        semester,
+        section: section.trim(),
+        subjects: subjects.map((s) => ({ subjectCode: s.subjectCode.trim(), subjectName: s.subjectName.trim(), items: s.items })),
+      });
+      if (data.success) {
+        toast.success(data.message || 'Form updated');
+        await onChange(data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update form');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h5 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest">Edit Form Details</h5>
+      <div className="grid sm:grid-cols-3 gap-2">
+        <input
+          value={batch}
+          onChange={(e) => setBatch(e.target.value)}
+          placeholder="Batch (2023-27)"
+          className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+        />
+        <select
+          value={semester}
+          onChange={(e) => setSemester(Number(e.target.value))}
+          className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+        >
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => <option key={s} value={s}>Semester {s}</option>)}
+        </select>
+        <input
+          value={section}
+          onChange={(e) => setSection(e.target.value)}
+          placeholder="Section (optional)"
+          className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold text-[var(--text-secondary)]">Subjects</span>
+          <button onClick={addSubject} className="text-[11px] font-bold text-[var(--primary)] hover:underline flex items-center gap-1">
+            <Plus size={12} /> Add Subject
+          </button>
+        </div>
+        {subjects.map((subj, idx) => (
+          <div key={idx} className="border border-[var(--border-light)] rounded-xl p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                value={subj.subjectCode}
+                onChange={(e) => setSubject(idx, { subjectCode: e.target.value })}
+                placeholder="Code"
+                className="w-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
+              />
+              <input
+                value={subj.subjectName}
+                onChange={(e) => setSubject(idx, { subjectName: e.target.value })}
+                placeholder="Subject name"
+                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
+              />
+              {subjects.length > 1 && (
+                <button onClick={() => removeSubject(idx)} className="text-[var(--text-secondary)] hover:text-red-500 shrink-0">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {[...new Set([...DEFAULT_SUBJECT_ITEMS, 'Lab Record', ...subj.items])].map((item) => {
+                const on = subj.items.includes(item);
+                return (
+                  <button
+                    key={item}
+                    onClick={() => toggleItem(idx, item)}
+                    className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all ${
+                      on ? 'bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]' : 'border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                    }`}
+                  >
+                    {on ? '✓ ' : '+ '}{item}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                value={customItemDraft[idx] || ''}
+                onChange={(e) => setCustomItemDraft((prev) => ({ ...prev, [idx]: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomItem(idx); } }}
+                placeholder="Add a custom task…"
+                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-[11px] text-[var(--text-primary)] outline-none"
+              />
+              <button onClick={() => addCustomItem(idx)} className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0">
+                Add
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={save} disabled={saving} className="btn-premium text-xs px-4 py-2 flex items-center gap-2">
+        {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Changes
+      </button>
     </div>
   );
 }

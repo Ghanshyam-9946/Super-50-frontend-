@@ -65,15 +65,20 @@ import LeaderboardPage from './pages/shared/LeaderboardPage';
 // PMS
 import PMSRoutes from './pages/pms/PMSRoutes';
 
-// Role guard component
-const RoleGuard = ({ children, allowed }) => {
+// Role guard component. `allowResponsibility` additionally lets through any
+// user (regardless of role) who holds that responsibility tag — e.g. an
+// "Academic Coordinator" is usually a plain teacher/guide, not a distinct role.
+const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/" replace />;
-  
-  if (!allowed.includes(user.role)) {
-    const fallback = user.role === 'student' ? '/leaderboard' : 
-                   user.role === 'teacher' ? '/teacher/dashboard' : 
-                   user.role === 'guide' ? '/pms/guide' : 
+
+  const hasRole = allowed.includes(user.role);
+  const hasResponsibility = allowResponsibility && (user.responsibilities || []).includes(allowResponsibility);
+
+  if (!hasRole && !hasResponsibility) {
+    const fallback = user.role === 'student' ? '/leaderboard' :
+                   user.role === 'teacher' ? '/teacher/dashboard' :
+                   user.role === 'guide' ? '/pms/guide' :
                    user.role === 'admin' ? '/leaderboard' :
                    user.role === 'super50_admin' ? '/admin/dashboard' :
                    user.role === 'tp_admin' ? '/tp/enroll-students' :
@@ -196,7 +201,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['admin']}><TimetableManagePage /></RoleGuard>
         } />
         <Route path="/admin/no-dues" element={
-          <RoleGuard allowed={['admin']}><NoDuesAdminPage /></RoleGuard>
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><NoDuesAdminPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>

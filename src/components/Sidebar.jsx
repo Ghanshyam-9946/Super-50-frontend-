@@ -51,10 +51,13 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
   ];
 
+  const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
+
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
+    ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
@@ -64,6 +67,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const guideLinks = [
     { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
+    ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
