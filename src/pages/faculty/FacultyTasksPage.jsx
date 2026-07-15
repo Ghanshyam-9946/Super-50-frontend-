@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { Fragment, useEffect, useState, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -898,11 +898,16 @@ function AddTaskForm({ faculty, onCreated }) {
 
 function AllocatedTasks({ tasks, faculty, onFilter }) {
   const [filterId, setFilterId] = useState('');
+  const [openId, setOpenId] = useState(null);
 
   const applyFilter = async (id) => {
     setFilterId(id);
     await onFilter(id);
   };
+
+  // Re-fetch with whichever faculty filter is currently active — used after
+  // an edit/status-change/forward inside an expanded row.
+  const refresh = () => onFilter(filterId);
 
   return (
     <div className="space-y-5">
@@ -933,7 +938,7 @@ function AllocatedTasks({ tasks, faculty, onFilter }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border-light)] text-left">
-                  {['Task', 'Priority', 'Assigned To', 'Allocated By', 'Deadline', 'Status'].map((h) => (
+                  {['Task', 'Priority', 'Assigned To', 'Allocated By', 'Deadline', 'Status', ''].map((h) => (
                     <th key={h} className="px-5 py-4 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -942,32 +947,48 @@ function AllocatedTasks({ tasks, faculty, onFilter }) {
                 {tasks.map((t) => {
                   const s = STATUS_META[t.status] || STATUS_META.open;
                   const SIcon = s.icon;
+                  const open = openId === t._id;
                   return (
-                    <tr key={t._id} className="border-b border-[var(--border-light)] last:border-0 hover:bg-[var(--bg-hover)] transition-colors">
-                      <td className="px-5 py-4 max-w-[260px]">
-                        <div className="font-bold text-[var(--text-primary)] truncate">{t.title}</div>
-                        {t.description && <div className="text-xs text-[var(--text-secondary)] truncate mt-0.5">{t.description}</div>}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`badge ${PRIORITY_META[t.priority]?.ring || ''}`} style={{ borderColor: (PRIORITY_META[t.priority]?.accent || '#8b5cf6') + '33' }}>
-                          {PRIORITY_META[t.priority]?.label || t.priority}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex flex-wrap gap-1 max-w-[220px]">
-                          {(t.assignedTo || []).map((a) => (
-                            <span key={a._id} className="text-xs font-semibold px-2 py-1 rounded-lg bg-[var(--bg-hover)] text-[var(--text-primary)] whitespace-nowrap">{a.name}</span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 whitespace-nowrap text-[var(--text-secondary)] font-medium">{t.createdBy?.name || '—'}</td>
-                      <td className="px-5 py-4 whitespace-nowrap text-[var(--text-secondary)] font-medium">{fmtDate(t.deadline) || '—'}</td>
-                      <td className="px-5 py-4">
-                        <span className={`badge border ${s.ring} ${s.color} whitespace-nowrap`}>
-                          <SIcon size={12} /> {s.label}
-                        </span>
-                      </td>
-                    </tr>
+                    <Fragment key={t._id}>
+                      <tr
+                        onClick={() => setOpenId(open ? null : t._id)}
+                        className="border-b border-[var(--border-light)] last:border-0 hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      >
+                        <td className="px-5 py-4 max-w-[260px]">
+                          <div className="font-bold text-[var(--text-primary)] truncate">{t.title}</div>
+                          {t.description && <div className="text-xs text-[var(--text-secondary)] truncate mt-0.5">{t.description}</div>}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`badge ${PRIORITY_META[t.priority]?.ring || ''}`} style={{ borderColor: (PRIORITY_META[t.priority]?.accent || '#8b5cf6') + '33' }}>
+                            {PRIORITY_META[t.priority]?.label || t.priority}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1 max-w-[220px]">
+                            {(t.assignedTo || []).map((a) => (
+                              <span key={a._id} className="text-xs font-semibold px-2 py-1 rounded-lg bg-[var(--bg-hover)] text-[var(--text-primary)] whitespace-nowrap">{a.name}</span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-[var(--text-secondary)] font-medium">{t.createdBy?.name || '—'}</td>
+                        <td className="px-5 py-4 whitespace-nowrap text-[var(--text-secondary)] font-medium">{fmtDate(t.deadline) || '—'}</td>
+                        <td className="px-5 py-4">
+                          <span className={`badge border ${s.ring} ${s.color} whitespace-nowrap`}>
+                            <SIcon size={12} /> {s.label}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <ChevronRight size={16} className={`text-[var(--text-secondary)] transition-transform ${open ? 'rotate-90' : ''}`} />
+                        </td>
+                      </tr>
+                      {open && (
+                        <tr className="border-b border-[var(--border-light)] last:border-0">
+                          <td colSpan={7} className="p-4 bg-[var(--bg-hover)]/30">
+                            <TaskCard task={t} faculty={faculty} onChange={refresh} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>
