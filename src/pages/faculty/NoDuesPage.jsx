@@ -873,12 +873,12 @@ function AssignFacultyTab({ faculty, students }) {
     <div className="space-y-4">
       <div className="glass-card p-6 rounded-3xl">
         <p className="text-[var(--text-secondary)] text-sm font-medium mb-4">
-          Select No Dues (batch + semester) → Select Mentor → Select Faculty
-          per subject → Assign. A mentor leads a section of students, so the
-          faculty you assign only gets that mentor's students — repeat for
-          every mentor to cover the whole subject. Students without a mentor
-          assigned yet are skipped here — assign them a mentor first from the
-          Students page.
+          Every student's subjects default to their own mentor (TG) — no
+          assignment needed for a mentor's own group. Use this only to hand
+          specific students of a subject over to a different specialist
+          faculty: Select batch + semester → Select Mentor → Select Subject →
+          pick students → Assign. Students without a mentor assigned yet are
+          skipped here — assign them a mentor first from the Students page.
         </p>
         <div className="grid sm:grid-cols-3 gap-3">
           <div>
@@ -1006,14 +1006,14 @@ function AssignFacultyTab({ faculty, students }) {
 }
 
 // Step 3 of the flow: for the selected mentor, list every subject among that
-// mentor's students' forms — pick a faculty per subject and Assign. Only
-// that mentor's students get the faculty set for each subject.
+// mentor's students' forms. Every student already defaults to their own
+// mentor as subject faculty, so there's nothing to "assign" for the mentor's
+// own group — the only real action here is handing SPECIFIC students of a
+// subject to a different (specialist) faculty member.
 function SubjectAssignPanel({ batch, semester, mentorId, faculty }) {
   const [subjectRows, setSubjectRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [picked, setPicked] = useState({}); // subjectName -> facultyId
-  const [assigning, setAssigning] = useState(null); // subjectName currently being assigned
-  const [openSubject, setOpenSubject] = useState(null); // subjectName currently split-view expanded
+  const [openSubject, setOpenSubject] = useState(null); // subjectName currently expanded
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1033,31 +1033,6 @@ function SubjectAssignPanel({ batch, semester, mentorId, faculty }) {
     load();
   }, [load]);
 
-  // Quick path: assign one faculty to this subject for the mentor's WHOLE
-  // section at once (fine when only one teacher covers this subject here).
-  const assign = async (row) => {
-    const facultyId = picked[row.subjectName];
-    if (!facultyId) return toast.error("Pick a faculty first");
-    setAssigning(row.subjectName);
-    try {
-      const { data } = await api.patch("/no-dues/assign-faculty", {
-        batch,
-        semester,
-        subjectName: row.subjectName,
-        mentorId,
-        facultyId,
-      });
-      if (data.success) {
-        toast.success(data.message || "Faculty assigned");
-        await load();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to assign faculty");
-    } finally {
-      setAssigning(null);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-6">
@@ -1073,58 +1048,27 @@ function SubjectAssignPanel({ batch, semester, mentorId, faculty }) {
   return (
     <div className="space-y-2">
       {subjectRows.map((row) => {
-        const fullyAssigned = row.assigned === row.total;
         const open = openSubject === row.subjectName;
         return (
           <div key={row.subjectName} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-3 py-2.5">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-xs font-bold text-[var(--text-primary)] truncate">
-                  {row.subjectCode ? `${row.subjectCode} — ` : ""}
-                  {row.subjectName}
-                </span>
-                <span
-                  className={`badge shrink-0 ${fullyAssigned ? "badge-approved" : "bg-amber-500/10 border-amber-500/20 text-amber-500"}`}
-                >
-                  {row.assigned}/{row.total}
-                </span>
-              </div>
-              <select
-                value={picked[row.subjectName] || ""}
-                onChange={(e) => setPicked((prev) => ({ ...prev, [row.subjectName]: e.target.value }))}
-                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none w-full sm:w-48 shrink-0"
-              >
-                <option value="">Faculty…</option>
-                {faculty.map((f) => (
-                  <option key={f._id} value={f._id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={() => assign(row)}
-                disabled={assigning === row.subjectName}
-                title="Assign this faculty to every student under this mentor for this subject"
-                className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 justify-center shrink-0"
-              >
-                {assigning === row.subjectName ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <ArrowRight size={13} />
-                )}
-                Assign All
-              </button>
-              <button
-                onClick={() => setOpenSubject(open ? null : row.subjectName)}
-                title="Split this subject across multiple faculty by picking specific students"
-                className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0 whitespace-nowrap flex items-center gap-1"
-              >
-                Split by student
-                <ChevronRight size={14} className={`transition-transform ${open ? "rotate-90" : ""}`} />
-              </button>
-            </div>
+            <button
+              onClick={() => setOpenSubject(open ? null : row.subjectName)}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-left"
+            >
+              <span className="text-xs font-bold text-[var(--text-primary)] truncate">
+                {row.subjectCode ? `${row.subjectCode} — ` : ""}
+                {row.subjectName}
+              </span>
+              <span className="badge badge-approved shrink-0">
+                Defaults to this mentor
+              </span>
+              <ChevronRight size={14} className={`text-[var(--text-secondary)] transition-transform ml-auto shrink-0 ${open ? "rotate-90" : ""}`} />
+            </button>
             {open && (
               <div className="border-t border-[var(--border-light)] p-3 bg-[var(--bg-hover)]/30">
+                <p className="text-[11px] text-[var(--text-secondary)] mb-2">
+                  Pick specific students to hand over to a different (specialist) faculty for this subject — everyone else stays with the mentor.
+                </p>
                 <StudentAssignPanel
                   batch={batch}
                   semester={semester}
