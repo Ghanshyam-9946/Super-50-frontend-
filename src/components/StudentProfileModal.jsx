@@ -72,6 +72,51 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
     }
   };
 
+  const [editingRGPVId, setEditingRGPVId] = useState(null);
+  const [rgpvEditForm, setRgpvEditForm] = useState({
+    sgpa: '',
+    cgpa: '',
+    resultDecision: 'PASS',
+    grades: {}
+  });
+
+  const startEditingRGPV = (rgpv) => {
+    setRgpvEditForm({
+      sgpa: rgpv.sgpa || '',
+      cgpa: rgpv.cgpa || '',
+      resultDecision: rgpv.resultDecision || 'PASS',
+      grades: { ...rgpv.grades }
+    });
+    setEditingRGPVId(rgpv._id);
+  };
+
+  const handleRgpvGradeChange = (subject, value) => {
+    setRgpvEditForm(prev => ({
+      ...prev,
+      grades: {
+        ...prev.grades,
+        [subject]: value
+      }
+    }));
+  };
+
+  const saveRGPVResult = async (rgpvId) => {
+    const saveToast = toast.loading('Saving RGPV marks...');
+    try {
+      const res = await api.put(`/rgpv/results/${rgpvId}`, rgpvEditForm);
+      if (res.data.success) {
+        toast.success('RGPV results updated successfully!', { id: saveToast });
+        setData(prev => ({
+          ...prev,
+          rgpvResults: prev.rgpvResults.map(r => r._id === rgpvId ? { ...r, ...res.data.data } : r)
+        }));
+        setEditingRGPVId(null);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update RGPV results', { id: saveToast });
+    }
+  };
+
   useEffect(() => {
     if (isOpen && studentId) {
       setActiveTab(user?.role === 'student' ? 'profile' : 'menu');
@@ -859,34 +904,121 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                     ) : (
                       data.rgpvResults.map((rgpv, rIdx) => (
                         <div key={rIdx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                          <div className="flex justify-between items-center border-b pb-3">
-                            <div>
-                              <h4 className="font-bold text-slate-900">Semester {rgpv.semester}</h4>
-                              <p className="text-xs text-slate-500 mt-0.5">Result Decision: <span className="font-black text-slate-700">{rgpv.resultDecision}</span></p>
+                          {editingRGPVId === rgpv._id ? (
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center border-b pb-3">
+                                <div>
+                                  <h4 className="font-bold text-slate-900">Editing Semester {rgpv.semester}</h4>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setEditingRGPVId(null)}
+                                    className="px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    onClick={() => saveRGPVResult(rgpv._id)}
+                                    className="btn-premium px-3 py-1.5 text-xs font-black uppercase tracking-widest rounded-xl"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                  <label className="text-xs font-bold text-slate-500">SGPA</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={rgpvEditForm.sgpa}
+                                    onChange={(e) => setRgpvEditForm(prev => ({ ...prev, sgpa: e.target.value }))}
+                                    className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold focus:outline-none focus:border-indigo-500 transition-colors"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold text-slate-500">CGPA</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={rgpvEditForm.cgpa}
+                                    onChange={(e) => setRgpvEditForm(prev => ({ ...prev, cgpa: e.target.value }))}
+                                    className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold focus:outline-none focus:border-indigo-500 transition-colors"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-bold text-slate-500">Result Decision</label>
+                                  <select
+                                    value={rgpvEditForm.resultDecision}
+                                    onChange={(e) => setRgpvEditForm(prev => ({ ...prev, resultDecision: e.target.value }))}
+                                    className="w-full mt-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                                  >
+                                    <option value="PASS">PASS</option>
+                                    <option value="FAIL">FAIL</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-500">Subject Grades</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                  {Object.entries(rgpvEditForm.grades || {}).map(([subject, grade]) => (
+                                    <div key={subject} className="flex flex-col bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                      <span className="text-[10px] font-bold text-slate-500 truncate mb-1" title={subject}>{subject}</span>
+                                      <input
+                                        type="text"
+                                        value={grade}
+                                        onChange={(e) => handleRgpvGradeChange(subject, e.target.value)}
+                                        className="bg-white border border-slate-200 rounded-lg py-1 px-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex gap-4 text-xs font-bold">
-                              <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl text-center">
-                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">SGPA</span>
-                                <span className="text-slate-900 font-black">{rgpv.sgpa?.toFixed(2) || '0.00'}</span>
+                          ) : (
+                            <>
+                              <div className="flex justify-between items-center border-b pb-3">
+                                <div>
+                                  <h4 className="font-bold text-slate-900">Semester {rgpv.semester}</h4>
+                                  <p className="text-xs text-slate-500 mt-0.5">Result Decision: <span className="font-black text-slate-700">{rgpv.resultDecision}</span></p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  <div className="flex gap-4 text-xs font-bold">
+                                    <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl text-center">
+                                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">SGPA</span>
+                                      <span className="text-slate-900 font-black">{rgpv.sgpa?.toFixed(2) || '0.00'}</span>
+                                    </div>
+                                    <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl text-center">
+                                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">CGPA</span>
+                                      <span className="text-slate-900 font-black">{rgpv.cgpa?.toFixed(2) || '0.00'}</span>
+                                    </div>
+                                  </div>
+                                  {user?.role === 'admin' && (
+                                    <button
+                                      onClick={() => startEditingRGPV(rgpv)}
+                                      className="px-3 py-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors shadow-sm"
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
+                                </div>
                               </div>
-                              <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl text-center">
-                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">CGPA</span>
-                                <span className="text-slate-900 font-black">{rgpv.cgpa?.toFixed(2) || '0.00'}</span>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                {Object.entries(rgpv.grades || {}).map(([subject, grade], sIdx) => (
+                                  <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <span className="text-[10px] font-bold text-slate-500 truncate mr-2" title={subject}>{subject}</span>
+                                    <span className={`text-xs font-black font-mono px-1.5 py-0.5 rounded ${
+                                      ['A+', 'A', 'B+', 'B'].includes(grade) ? 'text-emerald-600 bg-emerald-100/40' :
+                                      ['C+', 'C'].includes(grade) ? 'text-blue-600 bg-blue-100/40' :
+                                      'text-rose-600 bg-rose-100/40'
+                                    }`}>{grade}</span>
+                                  </div>
+                                ))}
                               </div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                            {Object.entries(rgpv.grades || {}).map(([subject, grade], sIdx) => (
-                              <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                                <span className="text-[10px] font-bold text-slate-500 truncate mr-2" title={subject}>{subject}</span>
-                                <span className={`text-xs font-black font-mono px-1.5 py-0.5 rounded ${
-                                  ['A+', 'A', 'B+', 'B'].includes(grade) ? 'text-emerald-600 bg-emerald-100/40' :
-                                  ['C+', 'C'].includes(grade) ? 'text-blue-600 bg-blue-100/40' :
-                                  'text-rose-600 bg-rose-100/40'
-                                }`}>{grade}</span>
-                              </div>
-                            ))}
-                          </div>
+                            </>
+                          )}
                         </div>
                       ))
                     )}
