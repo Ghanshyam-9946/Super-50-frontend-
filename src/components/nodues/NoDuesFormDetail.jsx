@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, Circle, Loader2, PartyPopper, MessageSquare, Trash2, Percent, Save, Wallet, CalendarHeart, Plus, X, ArrowRightCircle, Undo2, Settings2, ChevronDown, Search, UserCog, Repeat, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
-const EXTRA_ATTENDANCE_CATEGORIES = ['Event/Farewell', 'SAC', 'Sports'];
+const DEFAULT_EXTRA_ATTENDANCE_CATEGORIES = ['Event/Farewell', 'SAC', 'Sports'];
+const ADD_NEW_CATEGORY_VALUE = '__add_new__';
 const DEFAULT_SUBJECT_ITEMS = ['Assignment', 'Tutorial', 'POD AI Quiz', 'Presentation/GD/Task/Mini Project'];
 
 /**
@@ -45,14 +46,15 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   const isAdmin = currentUser?.role === 'admin';
   const isCreator = form.createdBy?._id === uid;
   const canEditRemarks = isCreator || isAdmin;
-  // Dues fees stays an Academic Coordinator (creator) matter — unrelated to TG.
-  const canEditDuesFees = canEditRemarks;
   // The student's TG (mentor) — and only them (or admin) — manages every
   // attendance boost on this form: Medical/Other RGPV QP/Certification AND
   // the free-form Extra Attendance entries. Neither the coordinator nor a
   // subject faculty has this access unless they're also this student's TG.
   const isTG = form.student?.mentor?._id === uid;
   const canEditTGAttendance = isAdmin || isTG;
+  // Dues fees: the coordinator who released the form, admin, or the
+  // student's own TG (mentor) can update it.
+  const canEditDuesFees = canEditRemarks || isTG;
 
   const upgrade = form.attendanceUpgrade || {};
   const attendanceSummary = form.attendanceSummary || {
@@ -71,7 +73,15 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   const [duesFees, setDuesFees] = useState(form.student?.duesFees ?? 0);
   const [savingDuesFees, setSavingDuesFees] = useState(false);
 
-  const [extraCategory, setExtraCategory] = useState(EXTRA_ATTENDANCE_CATEGORIES[0]);
+  // Categories dropdown = the 3 common defaults + any custom category
+  // already used on this form (so a newly-typed one becomes reusable).
+  const categoryOptions = useMemo(() => {
+    const used = (form.extraAttendanceEntries || []).map((e) => e.category).filter(Boolean);
+    return [...new Set([...DEFAULT_EXTRA_ATTENDANCE_CATEGORIES, ...used])];
+  }, [form.extraAttendanceEntries]);
+
+  const [extraCategory, setExtraCategory] = useState(DEFAULT_EXTRA_ATTENDANCE_CATEGORIES[0]);
+  const [newCategoryDraft, setNewCategoryDraft] = useState('');
   const [extraDescription, setExtraDescription] = useState('');
   const [extraHours, setExtraHours] = useState('');
   const [addingExtra, setAddingExtra] = useState(false);
@@ -115,17 +125,24 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   };
 
   const addExtraEntry = async () => {
+    const isNewCategory = extraCategory === ADD_NEW_CATEGORY_VALUE;
+    const category = (isNewCategory ? newCategoryDraft : extraCategory).trim();
+    if (!category) return toast.error('Enter a category name');
     const hours = Number(extraHours);
     if (!hours || hours <= 0) return toast.error('Enter hours claimed');
     setAddingExtra(true);
     try {
       const { data } = await api.post(`/no-dues/${form._id}/extra-attendance`, {
-        category: extraCategory,
+        category,
         description: extraDescription.trim(),
         hoursClaimed: hours,
       });
       if (data.success) {
         toast.success('Extra Attendance entry added');
+        if (isNewCategory) {
+          setExtraCategory(category);
+          setNewCategoryDraft('');
+        }
         setExtraDescription('');
         setExtraHours('');
         await onChange(data.data);
@@ -462,10 +479,19 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
               onChange={(e) => setExtraCategory(e.target.value)}
               className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
             >
-              {EXTRA_ATTENDANCE_CATEGORIES.map((c) => (
+              {categoryOptions.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
+              <option value={ADD_NEW_CATEGORY_VALUE}>+ Add new category…</option>
             </select>
+            {extraCategory === ADD_NEW_CATEGORY_VALUE && (
+              <input
+                value={newCategoryDraft}
+                onChange={(e) => setNewCategoryDraft(e.target.value)}
+                placeholder="New category name"
+                className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none"
+              />
+            )}
             <input
               value={extraDescription}
               onChange={(e) => setExtraDescription(e.target.value)}
