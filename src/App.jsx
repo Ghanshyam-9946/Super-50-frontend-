@@ -72,17 +72,18 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/" replace />;
 
-  const hasRole = allowed.includes(user.role);
+  const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
+  const hasRole = allowed.some(role => userRoles.includes(role));
   const hasResponsibility = allowResponsibility && (user.responsibilities || []).includes(allowResponsibility);
 
   if (!hasRole && !hasResponsibility) {
-    const fallback = user.role === 'student' ? '/leaderboard' :
-                   user.role === 'teacher' ? '/teacher/dashboard' :
-                   user.role === 'guide' ? '/pms/guide' :
-                   user.role === 'admin' ? '/leaderboard' :
-                   user.role === 'super50_admin' ? '/admin/dashboard' :
-                   user.role === 'tp_admin' ? '/tp/enroll-students' :
-                   user.role === 'pms_admin' ? '/pms/admin' : '/login';
+    const fallback = userRoles.includes('student') ? '/leaderboard' :
+                     userRoles.includes('admin') ? '/leaderboard' :
+                     userRoles.includes('super50_admin') ? '/admin/dashboard' :
+                     userRoles.includes('teacher') ? '/teacher/dashboard' :
+                     userRoles.includes('guide') ? '/pms/guide' :
+                     userRoles.includes('tp_admin') ? '/tp/enroll-students' :
+                     userRoles.includes('pms_admin') ? '/pms/admin' : '/login';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -91,7 +92,10 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
 const Super50Guard = ({ children }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/" replace />;
-  if (user.role === 'admin' || user.role === 'teacher' || user.role === 'super50_admin') return children;
+  
+  const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
+  const isPrivileged = userRoles.some(r => ['admin', 'teacher', 'super50_admin'].includes(r));
+  if (isPrivileged) return children;
   if (!user.isSuper50) return <Navigate to="/leaderboard" replace />;
   return children;
 };
