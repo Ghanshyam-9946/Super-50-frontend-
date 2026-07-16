@@ -26,8 +26,57 @@ export default function GeneralFormsPage() {
     purpose: '',
     description: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    fields: []
   });
+
+  const addField = () => {
+    setNewForm(prev => ({
+      ...prev,
+      fields: [...prev.fields, { label: '', type: 'text', required: false, options: [] }]
+    }));
+  };
+
+  const removeField = (index) => {
+    setNewForm(prev => ({
+      ...prev,
+      fields: prev.fields.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateField = (index, key, value) => {
+    setNewForm(prev => {
+      const updated = [...prev.fields];
+      updated[index] = { ...updated[index], [key]: value };
+      return { ...prev, fields: updated };
+    });
+  };
+
+  const addFieldOption = (fieldIndex) => {
+    setNewForm(prev => {
+      const updated = [...prev.fields];
+      updated[fieldIndex].options = [...updated[fieldIndex].options, ''];
+      return { ...prev, fields: updated };
+    });
+  };
+
+  const removeFieldOption = (fieldIndex, optionIndex) => {
+    setNewForm(prev => {
+      const updated = [...prev.fields];
+      updated[fieldIndex].options = updated[fieldIndex].options.filter((_, i) => i !== optionIndex);
+      return { ...prev, fields: updated };
+    });
+  };
+
+  const updateFieldOption = (fieldIndex, optionIndex, value) => {
+    setNewForm(prev => {
+      const updated = [...prev.fields];
+      const optCopy = [...updated[fieldIndex].options];
+      optCopy[optionIndex] = value;
+      updated[fieldIndex].options = optCopy;
+      return { ...prev, fields: updated };
+    });
+  };
 
   const fetchForms = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -50,12 +99,23 @@ export default function GeneralFormsPage() {
     if (!newForm.purpose.trim()) {
       return toast.error('Please enter a purpose/title');
     }
+    // Validation on fields
+    if (newForm.fields.some(f => !f.label.trim())) {
+      return toast.error('Please fill in labels for all custom questions');
+    }
+    if (newForm.fields.some(f => ['radio', 'checkbox', 'dropdown'].includes(f.type) && f.options.length === 0)) {
+      return toast.error('Multiple choice questions require at least one option');
+    }
+    if (newForm.fields.some(f => ['radio', 'checkbox', 'dropdown'].includes(f.type) && f.options.some(opt => !opt.trim()))) {
+      return toast.error('Please enter valid texts for all option fields');
+    }
+
     const toastId = toast.loading('Creating form...');
     try {
       await api.post('/general-forms', newForm);
       toast.success('Generalised form created successfully!', { id: toastId });
       setIsCreateOpen(false);
-      setNewForm({ purpose: '', description: '', startDate: '', endDate: '' });
+      setNewForm({ purpose: '', description: '', startDate: '', endDate: '', fields: [] });
       fetchForms(true);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create form', { id: toastId });
@@ -201,7 +261,7 @@ export default function GeneralFormsPage() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="bg-[var(--bg-modal)] border border-[var(--border-light)] rounded-3xl shadow-xl w-full max-w-lg p-8 relative"
+              className="bg-[var(--bg-modal)] border border-[var(--border-light)] rounded-3xl shadow-xl w-full max-w-2xl p-8 relative max-h-[90vh] overflow-y-auto"
             >
               <button
                 onClick={() => setIsCreateOpen(false)}
@@ -255,6 +315,117 @@ export default function GeneralFormsPage() {
                       onChange={(e) => setNewForm({ ...newForm, endDate: e.target.value })}
                       className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-colors"
                     />
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-200 pt-6 mt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Custom Questions (Google Forms Style)</h4>
+                    <button
+                      type="button"
+                      onClick={addField}
+                      className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-colors"
+                    >
+                      + Add Question
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {newForm.fields.map((field, fIdx) => (
+                      <div key={fIdx} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 relative group">
+                        <button
+                          type="button"
+                          onClick={() => removeField(fIdx)}
+                          className="absolute top-4 right-4 text-rose-500 hover:text-rose-700 text-xs font-bold"
+                        >
+                          Remove
+                        </button>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Question Title / Label *</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. What is your department?"
+                              value={field.label}
+                              onChange={(e) => updateField(fIdx, 'label', e.target.value)}
+                              className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Question Type</label>
+                            <select
+                              value={field.type}
+                              onChange={(e) => updateField(fIdx, 'type', e.target.value)}
+                              className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                            >
+                              <option value="text">Short Answer (Text)</option>
+                              <option value="paragraph">Paragraph</option>
+                              <option value="radio">Multiple Choice (Radio)</option>
+                              <option value="checkbox">Checkboxes</option>
+                              <option value="dropdown">Dropdown Selection</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`req-${fIdx}`}
+                            checked={field.required}
+                            onChange={(e) => updateField(fIdx, 'required', e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor={`req-${fIdx}`} className="text-xs font-semibold text-slate-600 cursor-pointer">
+                            Required question
+                          </label>
+                        </div>
+
+                        {/* Options editor if multiple choice */}
+                        {['radio', 'checkbox', 'dropdown'].includes(field.type) && (
+                          <div className="bg-white/80 p-3 rounded-xl border border-slate-100 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Options List</span>
+                              <button
+                                type="button"
+                                onClick={() => addFieldOption(fIdx)}
+                                className="text-[9px] font-black text-indigo-500 hover:text-indigo-700"
+                              >
+                                + Add Option
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              {field.options.map((opt, oIdx) => (
+                                <div key={oIdx} className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder={`Option ${oIdx + 1}`}
+                                    value={opt}
+                                    onChange={(e) => updateFieldOption(fIdx, oIdx, e.target.value)}
+                                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg py-1 px-2.5 text-xs font-semibold text-slate-800 focus:outline-none"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFieldOption(fIdx, oIdx)}
+                                    className="text-rose-500 hover:text-rose-700 text-xs px-1"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {newForm.fields.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-4 border border-dashed rounded-xl">
+                        No custom fields added. The form will collect default info (Full Name, Enrollment, Email).
+                      </p>
+                    )}
                   </div>
                 </div>
 

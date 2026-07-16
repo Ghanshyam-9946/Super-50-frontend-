@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
 import {
   ArrowLeft,
@@ -21,6 +22,7 @@ export default function GeneralFormSubmissionsPage() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
 
   const fetchDetailsAndSubmissions = async () => {
     setLoading(true);
@@ -55,13 +57,22 @@ export default function GeneralFormSubmissionsPage() {
       toast.error('No submissions to export');
       return;
     }
-    const data = submissions.map((s, idx) => ({
-      'S.No': idx + 1,
-      'Full Name': s.fullName,
-      'Enrollment Number': s.enrollmentNumber,
-      'Email Address': s.email,
-      'Submitted At': new Date(s.createdAt).toLocaleString()
-    }));
+    const data = submissions.map((s, idx) => {
+      const row = {
+        'S.No': idx + 1,
+        'Full Name': s.fullName,
+        'Enrollment Number': s.enrollmentNumber,
+        'Email Address': s.email,
+        'Submitted At': new Date(s.createdAt).toLocaleString()
+      };
+      if (form && form.fields) {
+        form.fields.forEach(field => {
+          const val = s.responses?.[field.label] || s.responses?.get?.(field.label);
+          row[field.label] = Array.isArray(val) ? val.join(', ') : (val || '');
+        });
+      }
+      return row;
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
@@ -156,6 +167,7 @@ export default function GeneralFormSubmissionsPage() {
                     <th className="px-6 py-4">Enrollment Number</th>
                     <th className="px-6 py-4">Email Address</th>
                     <th className="px-6 py-4">Registration Time</th>
+                    <th className="px-6 py-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-light)]">
@@ -175,6 +187,14 @@ export default function GeneralFormSubmissionsPage() {
                       <td className="px-6 py-4 font-normal text-xs text-[var(--text-secondary)]">
                         {new Date(sub.createdAt).toLocaleString()}
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => setSelectedSubmission(sub)}
+                          className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-black uppercase tracking-wider hover:bg-indigo-100 transition-colors"
+                        >
+                          View Response
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -183,6 +203,72 @@ export default function GeneralFormSubmissionsPage() {
           )}
         </div>
       </div>
+
+      {/* View Response Modal */}
+      <AnimatePresence>
+        {selectedSubmission && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[var(--bg-modal)] border border-[var(--border-light)] rounded-3xl shadow-xl w-full max-w-lg p-8 relative max-h-[85vh] overflow-y-auto"
+            >
+              <button
+                onClick={() => setSelectedSubmission(null)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors"
+              >
+                <ArrowLeft size={18} className="rotate-90" />
+              </button>
+
+              <h2 className="text-2xl font-display font-black text-[var(--text-primary)] mb-1">Student Response</h2>
+              <p className="text-xs text-[var(--text-secondary)] font-medium mb-6">
+                Submission detail for: <strong className="text-[var(--text-primary)]">{form?.purpose}</strong>
+              </p>
+
+              <div className="space-y-6">
+                {/* Basic Info */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-4 text-xs font-bold text-slate-700">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase">Full Name</span>
+                      <span className="text-slate-800">{selectedSubmission.fullName}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block uppercase">Enrollment Number</span>
+                      <span className="text-slate-800 uppercase">{selectedSubmission.enrollmentNumber}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-[10px] text-slate-400 block uppercase">Email Address</span>
+                      <span className="text-slate-800 font-normal">{selectedSubmission.email}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Custom Questions */}
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Custom Questions responses</h3>
+                  {form?.fields && form.fields.map((field) => {
+                    const ans = selectedSubmission.responses?.[field.label] || selectedSubmission.responses?.[field.label];
+                    return (
+                      <div key={field._id} className="border-b border-slate-100 pb-3">
+                        <span className="text-xs font-bold text-slate-500 block mb-1">{field.label}</span>
+                        <span className="text-sm font-bold text-slate-900 leading-relaxed">
+                          {Array.isArray(ans) ? ans.join(', ') : (ans || <span className="text-slate-400 font-normal italic">No Response</span>)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {(!form?.fields || form.fields.length === 0) && (
+                    <p className="text-xs text-slate-400 italic">No custom fields were configured for this form.</p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
