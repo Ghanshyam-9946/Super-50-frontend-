@@ -1673,6 +1673,7 @@ function FormsList({
   emptyText,
 }) {
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("name"); // name | roll
   const uid = user?._id;
 
   const filtered = useMemo(() => {
@@ -1685,6 +1686,17 @@ function FormsList({
     );
   }, [forms, search]);
 
+  const sorted = useMemo(() => {
+    const copy = [...filtered];
+    copy.sort((a, b) => {
+      if (sortBy === "roll") {
+        return (a.student?.enrollmentNumber || "").localeCompare(b.student?.enrollmentNumber || "");
+      }
+      return (a.student?.name || "").localeCompare(b.student?.name || "");
+    });
+    return copy;
+  }, [filtered, sortBy]);
+
   // Group by whichever subject(s) the viewer is the assigned faculty for on
   // that form; forms where they're only the TG (no subject assigned to
   // them) fall into their own group.
@@ -1694,7 +1706,7 @@ function FormsList({
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(form);
     };
-    filtered.forEach((form) => {
+    sorted.forEach((form) => {
       const mySubjects = (form.subjects || []).filter((s) => s.faculty?._id === uid).map((s) => s.subjectName);
       const isTG = form.student?.mentor?._id === uid;
       if (mySubjects.length === 0) {
@@ -1708,7 +1720,7 @@ function FormsList({
       if (b === "Your TG Students") return 1;
       return a.localeCompare(b);
     });
-  }, [filtered, uid]);
+  }, [sorted, uid]);
 
   const showGroups = groups.length > 1;
 
@@ -1727,10 +1739,18 @@ function FormsList({
   const renderForm = (form) => {
     const open = openFormId === form._id;
     const percent = formProgress(form);
+    // A subject faculty (or TG) may only care about their own row — flag it
+    // separately from the whole-form "Completed" state, which also needs
+    // every OTHER subject/extra item done.
+    const mySubjects = (form.subjects || []).filter((s) => s.faculty?._id === uid);
+    const myPartDone = mySubjects.length > 0 && mySubjects.every((s) => s.items.every((i) => i.checked || i.optional));
+    const highlightSky = myPartDone && !form.isCompleted;
     return (
       <div
         key={form._id}
-        className={`glass-card rounded-2xl overflow-hidden ${form.isCompleted ? "ring-1 ring-emerald-500/30" : ""}`}
+        className={`glass-card rounded-2xl overflow-hidden ${
+          form.isCompleted ? "ring-1 ring-emerald-500/30" : highlightSky ? "ring-1 ring-sky-500/30 bg-sky-500/5" : ""
+        }`}
       >
         <button
           onClick={() => setOpenFormId(open ? null : form._id)}
@@ -1740,6 +1760,10 @@ function FormsList({
             {form.isCompleted ? (
               <span className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
                 <PartyPopper size={15} className="text-emerald-500" />
+              </span>
+            ) : highlightSky ? (
+              <span className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center shrink-0">
+                <Check size={15} className="text-sky-500" />
               </span>
             ) : (
               <span className="w-8 h-8 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0">
@@ -1767,6 +1791,11 @@ function FormsList({
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <ProgressPill percent={percent} />
+            {highlightSky && (
+              <span className="badge bg-sky-500/10 border-sky-500/20 text-sky-500">
+                Your part done
+              </span>
+            )}
             {form.forwarded && (
               <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
                 Forwarded
@@ -1809,17 +1838,27 @@ function FormsList({
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by student name or enrollment number…"
-          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-purple-500/10 transition-all"
-        />
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by student name or enrollment number…"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-purple-500/10 transition-all"
+          />
+        </div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-xl px-3.5 py-2.5 text-sm font-bold text-[var(--text-primary)] outline-none shrink-0"
+        >
+          <option value="name">Sort: Name</option>
+          <option value="roll">Sort: Roll No</option>
+        </select>
       </div>
 
-      {filtered.length === 0 ? (
+      {sorted.length === 0 ? (
         <div className="glass-card p-10 text-center rounded-3xl">
           <p className="text-[var(--text-secondary)] text-sm font-medium">No students match "{search}"</p>
         </div>
@@ -1838,7 +1877,7 @@ function FormsList({
           ))}
         </div>
       ) : (
-        <div className="space-y-3">{filtered.map(renderForm)}</div>
+        <div className="space-y-3">{sorted.map(renderForm)}</div>
       )}
     </div>
   );
