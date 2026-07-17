@@ -265,6 +265,8 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [search, setSearch] = useState('');
   const [dept, setDept] = useState('');
   const [batch, setBatch] = useState('');
+  const [mentorId, setMentorId] = useState('');
+  const [mentorsList, setMentorsList] = useState([]);
   const [sortField, setSortField] = useState('batch');
   const [sortDir, setSortDir] = useState('asc');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -296,6 +298,18 @@ export default function StudentsPage({ isSuper50 = false }) {
     }
   }, [isSuper50, subTab]);
 
+  useEffect(() => {
+    const fetchMentors = async () => {
+      try {
+        const { data } = await api.get('/admin/guides');
+        setMentorsList(data.data || []);
+      } catch (error) {
+        console.error("Failed to fetch mentors", error);
+      }
+    };
+    fetchMentors();
+  }, []);
+
   const handleDeleteClass = async (id) => {
     if (window.confirm('Are you sure you want to delete this class attendance sheet? Student attendance percentages will be recalculated.')) {
       try {
@@ -313,10 +327,11 @@ export default function StudentsPage({ isSuper50 = false }) {
       department: dept || undefined,
       batch: batch || undefined,
       search: search || undefined,
+      mentorId: mentorId || undefined,
       sort: `${sortDir === 'desc' ? '-' : ''}${sortField}`,
       isSuper50: isSuper50 ? 'true' : undefined
     }));
-  }, [dispatch, dept, batch, search, sortField, sortDir, isSuper50]);
+  }, [dispatch, dept, batch, search, mentorId, sortField, sortDir, isSuper50]);
 
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -400,6 +415,19 @@ export default function StudentsPage({ isSuper50 = false }) {
               >
                 <option value="">All Batches</option>
                 {filters.batches?.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ChevronDown size={14} />
+              </div>
+            </div>
+            <div className="relative flex-1 min-w-[200px]">
+              <Users size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <select
+                className="w-full bg-[var(--bg-select)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all appearance-none shadow-sm cursor-pointer"
+                value={mentorId} onChange={(e) => setMentorId(e.target.value)} id="students-mentor-filter"
+              >
+                <option value="">Search by Mentor...</option>
+                {mentorsList.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                 <ChevronDown size={14} />

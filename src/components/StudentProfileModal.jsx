@@ -366,7 +366,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Profile Overview Tab */}
                 {activeTab === 'profile' && (
                   <div className="space-y-6">
-                    {user?.role === 'admin' && (
+                    {(user?.role !== 'student') && (
                       <div className="flex justify-end">
                         {isEditing ? (
                           <div className="flex gap-2">
