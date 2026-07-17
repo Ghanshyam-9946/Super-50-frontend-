@@ -395,8 +395,8 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           />
           <AttendanceCriterionBox
             label="Other RGPV QP"
-            hint="Up to 40 hrs → up to +6.67%. Needs base < 50%."
-            eligible={attendanceSummary.baseAttendancePercentage < 50}
+            hint="Up to 40 hrs → up to +6.67%. Needs base < 60%."
+            eligible={attendanceSummary.baseAttendancePercentage < 60}
             editable={canEditTGAttendance}
             enabled={rgpvEnabled}
             onToggle={setRgpvEnabled}
