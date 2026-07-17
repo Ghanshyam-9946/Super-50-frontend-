@@ -547,7 +547,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
       <div className="space-y-3">
         {form.subjects.map((subject, si) => {
           const canTickThisRow = isAdmin || isCreator || subject.faculty?._id === uid;
-          const allDone = subject.items.every((i) => i.checked);
+          const allDone = subject.items.every((i) => i.checked || i.optional);
           return (
             <div
               key={si}
@@ -586,7 +586,10 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
                       ) : (
                         <Circle size={15} className="shrink-0" />
                       )}
-                      <span className="truncate">{item.label}</span>
+                      <span className="truncate">
+                        {item.label}
+                        {item.optional && <span className="text-[var(--text-secondary)] font-normal"> (optional)</span>}
+                      </span>
                     </button>
                   );
                 })}

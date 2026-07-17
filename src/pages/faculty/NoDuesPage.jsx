@@ -1638,6 +1638,31 @@ function EditReleaseDetailsPanel({ group, onSaved }) {
 
 /* ─────────────────────────────  FORMS LIST (shared)  ───────────────────────────── */
 
+// Ticked items / total items across every subject + extra item on the form.
+function formProgress(form) {
+  const subjectItems = (form.subjects || []).flatMap((s) => s.items || []);
+  const allItems = [...subjectItems, ...(form.extraItems || [])];
+  const total = allItems.length;
+  const done = allItems.filter((i) => i.checked).length;
+  return total === 0 ? 0 : Math.round((done / total) * 100);
+}
+
+function ProgressPill({ percent }) {
+  const color =
+    percent === 100 ? "text-emerald-500" : percent >= 50 ? "text-amber-500" : "text-[var(--text-secondary)]";
+  return (
+    <span className={`flex items-center gap-1.5 text-[11px] font-bold shrink-0 ${color}`}>
+      <span className="w-10 h-1.5 rounded-full bg-[var(--border-light)] overflow-hidden">
+        <span
+          className={`block h-full rounded-full ${percent === 100 ? "bg-emerald-500" : percent >= 50 ? "bg-amber-500" : "bg-slate-400"}`}
+          style={{ width: `${percent}%` }}
+        />
+      </span>
+      {percent}%
+    </span>
+  );
+}
+
 function FormsList({
   forms,
   user,
@@ -1647,6 +1672,58 @@ function FormsList({
   onDelete,
   emptyText,
 }) {
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("name"); // name | roll
+  const uid = user?._id;
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return forms;
+    return forms.filter(
+      (f) =>
+        f.student?.name?.toLowerCase().includes(q) ||
+        (f.student?.enrollmentNumber || "").toLowerCase().includes(q)
+    );
+  }, [forms, search]);
+
+  const sorted = useMemo(() => {
+    const copy = [...filtered];
+    copy.sort((a, b) => {
+      if (sortBy === "roll") {
+        return (a.student?.enrollmentNumber || "").localeCompare(b.student?.enrollmentNumber || "");
+      }
+      return (a.student?.name || "").localeCompare(b.student?.name || "");
+    });
+    return copy;
+  }, [filtered, sortBy]);
+
+  // Group by whichever subject(s) the viewer is the assigned faculty for on
+  // that form; forms where they're only the TG (no subject assigned to
+  // them) fall into their own group.
+  const groups = useMemo(() => {
+    const map = new Map();
+    const pushTo = (key, form) => {
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(form);
+    };
+    sorted.forEach((form) => {
+      const mySubjects = (form.subjects || []).filter((s) => s.faculty?._id === uid).map((s) => s.subjectName);
+      const isTG = form.student?.mentor?._id === uid;
+      if (mySubjects.length === 0) {
+        pushTo(isTG ? "Your TG Students" : "Other", form);
+      } else {
+        mySubjects.forEach((name) => pushTo(name, form));
+      }
+    });
+    return [...map.entries()].sort(([a], [b]) => {
+      if (a === "Your TG Students") return -1;
+      if (b === "Your TG Students") return 1;
+      return a.localeCompare(b);
+    });
+  }, [sorted, uid]);
+
+  const showGroups = groups.length > 1;
+
   if (forms.length === 0) {
     return (
       <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">
@@ -1659,83 +1736,149 @@ function FormsList({
     );
   }
 
-  return (
-    <div className="space-y-3">
-      {forms.map((form) => {
-        const open = openFormId === form._id;
-        return (
-          <div
-            key={form._id}
-            className={`glass-card rounded-2xl overflow-hidden ${form.isCompleted ? "ring-1 ring-emerald-500/30" : ""}`}
-          >
-            <button
-              onClick={() => setOpenFormId(open ? null : form._id)}
-              className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
-            >
-              <div className="min-w-0 flex items-center gap-3">
-                {form.isCompleted ? (
-                  <span className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <PartyPopper size={15} className="text-emerald-500" />
+  const renderForm = (form) => {
+    const open = openFormId === form._id;
+    const percent = formProgress(form);
+    // A subject faculty (or TG) may only care about their own row — flag it
+    // separately from the whole-form "Completed" state, which also needs
+    // every OTHER subject/extra item done.
+    const mySubjects = (form.subjects || []).filter((s) => s.faculty?._id === uid);
+    const myPartDone = mySubjects.length > 0 && mySubjects.every((s) => s.items.every((i) => i.checked || i.optional));
+    const highlightSky = myPartDone && !form.isCompleted;
+    return (
+      <div
+        key={form._id}
+        className={`glass-card rounded-2xl overflow-hidden ${
+          form.isCompleted ? "ring-1 ring-emerald-500/30" : highlightSky ? "ring-1 ring-sky-500/30 bg-sky-500/5" : ""
+        }`}
+      >
+        <button
+          onClick={() => setOpenFormId(open ? null : form._id)}
+          className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
+        >
+          <div className="min-w-0 flex items-center gap-3">
+            {form.isCompleted ? (
+              <span className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <PartyPopper size={15} className="text-emerald-500" />
+              </span>
+            ) : highlightSky ? (
+              <span className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center shrink-0">
+                <Check size={15} className="text-sky-500" />
+              </span>
+            ) : (
+              <span className="w-8 h-8 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0">
+                <Circle size={15} className="text-slate-400" />
+              </span>
+            )}
+            <div className="min-w-0">
+              <div className="font-bold text-sm text-[var(--text-primary)] truncate">
+                {form.student?.name}{" "}
+                {form.student?.enrollmentNumber && (
+                  <span className="text-[var(--text-secondary)] font-medium">
+                    ({form.student.enrollmentNumber})
                   </span>
-                ) : (
-                  <span className="w-8 h-8 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0">
-                    <Circle size={15} className="text-slate-400" />
-                  </span>
-                )}
-                <div className="min-w-0">
-                  <div className="font-bold text-sm text-[var(--text-primary)] truncate">
-                    {form.student?.name}{" "}
-                    <span className="text-[var(--text-secondary)] font-medium">
-                      — {form.batch}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-[var(--text-secondary)]">
-                    Sem {form.semester}
-                    {form.section ? ` · ${form.section}` : ""} · Released by:{" "}
-                    {form.createdBy?.name}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {form.forwarded && (
-                  <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
-                    Forwarded
-                  </span>
-                )}
-                <span
-                  className={`badge ${form.isCompleted ? "badge-approved" : "bg-slate-500/10 border-slate-500/20 text-slate-500"}`}
-                >
-                  {form.isCompleted ? "Completed" : "In Progress"}
+                )}{" "}
+                <span className="text-[var(--text-secondary)] font-medium">
+                  — {form.batch}
                 </span>
-                <ChevronRight
-                  size={16}
-                  className={`text-[var(--text-secondary)] transition-transform ${open ? "rotate-90" : ""}`}
+              </div>
+              <div className="text-[11px] text-[var(--text-secondary)]">
+                Sem {form.semester}
+                {form.section ? ` · ${form.section}` : ""} · Released by:{" "}
+                {form.createdBy?.name}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <ProgressPill percent={percent} />
+            {highlightSky && (
+              <span className="badge bg-sky-500/10 border-sky-500/20 text-sky-500">
+                Your part done
+              </span>
+            )}
+            {form.forwarded && (
+              <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                Forwarded
+              </span>
+            )}
+            <span
+              className={`badge ${form.isCompleted ? "badge-approved" : "bg-slate-500/10 border-slate-500/20 text-slate-500"}`}
+            >
+              {form.isCompleted ? "Completed" : "In Progress"}
+            </span>
+            <ChevronRight
+              size={16}
+              className={`text-[var(--text-secondary)] transition-transform ${open ? "rotate-90" : ""}`}
+            />
+          </div>
+        </button>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="px-5 pb-5 pt-1 border-t border-[var(--border-light)]">
+                <NoDuesFormDetail
+                  form={form}
+                  currentUser={user}
+                  onChange={onChange}
+                  onDelete={onDelete}
+                  showDeleteButton
                 />
               </div>
-            </button>
-            <AnimatePresence>
-              {open && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="px-5 pb-5 pt-1 border-t border-[var(--border-light)]">
-                    <NoDuesFormDetail
-                      form={form}
-                      currentUser={user}
-                      onChange={onChange}
-                      onDelete={onDelete}
-                      showDeleteButton
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        );
-      })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by student name or enrollment number…"
+            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-purple-500/10 transition-all"
+          />
+        </div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-xl px-3.5 py-2.5 text-sm font-bold text-[var(--text-primary)] outline-none shrink-0"
+        >
+          <option value="name">Sort: Name</option>
+          <option value="roll">Sort: Roll No</option>
+        </select>
+      </div>
+
+      {sorted.length === 0 ? (
+        <div className="glass-card p-10 text-center rounded-3xl">
+          <p className="text-[var(--text-secondary)] text-sm font-medium">No students match "{search}"</p>
+        </div>
+      ) : showGroups ? (
+        <div className="space-y-6">
+          {groups.map(([groupName, groupForms]) => (
+            <div key={groupName}>
+              <h4 className="flex items-center gap-2 text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-2">
+                {groupName}
+                <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                  {groupForms.length}
+                </span>
+              </h4>
+              <div className="space-y-3">{groupForms.map(renderForm)}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">{sorted.map(renderForm)}</div>
+      )}
     </div>
   );
 }
