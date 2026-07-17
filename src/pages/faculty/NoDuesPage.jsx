@@ -32,6 +32,7 @@ const DEFAULT_SUBJECT_ITEMS = [
   "Tutorial",
   "POD AI Quiz",
   "Presentation/GD/Task/Mini Project",
+  "RGPV",
 ];
 
 const isAcademicCoordinator = (user) =>

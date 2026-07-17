@@ -5,7 +5,10 @@ import api from '../../services/api';
 
 const DEFAULT_EXTRA_ATTENDANCE_CATEGORIES = ['Event/Farewell', 'SAC', 'Sports'];
 const ADD_NEW_CATEGORY_VALUE = '__add_new__';
-const DEFAULT_SUBJECT_ITEMS = ['Assignment', 'Tutorial', 'POD AI Quiz', 'Presentation/GD/Task/Mini Project'];
+const DEFAULT_SUBJECT_ITEMS = ['Assignment', 'Tutorial', 'POD AI Quiz', 'Presentation/GD/Task/Mini Project', 'RGPV'];
+// RGPV is only applicable — and tickable — below this base attendance %
+// (must match ATTENDANCE_RULES.otherRgpvQp.maxBaseAttendance on the backend).
+const RGPV_ATTENDANCE_THRESHOLD = 60;
 
 /**
  * Renders one No Dues form's full checklist (subject rows + extra items +
@@ -547,7 +550,9 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
       <div className="space-y-3">
         {form.subjects.map((subject, si) => {
           const canTickThisRow = isAdmin || isCreator || subject.faculty?._id === uid;
-          const allDone = subject.items.every((i) => i.checked || i.optional);
+          const rgpvApplicable = attendanceSummary.baseAttendancePercentage < RGPV_ATTENDANCE_THRESHOLD;
+          const isItemApplicable = (item) => item.label !== 'RGPV' || rgpvApplicable;
+          const allDone = subject.items.every((i) => i.checked || i.optional || !isItemApplicable(i));
           return (
             <div
               key={si}
@@ -568,16 +573,20 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
                 {subject.items.map((item, ii) => {
                   const key = `s${si}-${ii}`;
                   const busy = busyKey === key;
+                  const applicable = isItemApplicable(item);
+                  const tickable = canTickThisRow && applicable;
                   return (
                     <button
                       key={ii}
-                      disabled={!canTickThisRow || busy}
+                      disabled={!tickable || busy}
                       onClick={() => toggleSubjectItem(si, ii, !item.checked)}
                       className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all ${
-                        item.checked
+                        !applicable
+                          ? 'border-[var(--border-light)] text-[var(--text-secondary)] opacity-50'
+                          : item.checked
                           ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600'
                           : 'border-[var(--border-light)] text-[var(--text-secondary)]'
-                      } ${canTickThisRow ? 'hover:bg-[var(--bg-hover)] cursor-pointer' : 'cursor-default opacity-80'}`}
+                      } ${tickable ? 'hover:bg-[var(--bg-hover)] cursor-pointer' : 'cursor-default opacity-80'}`}
                     >
                       {busy ? (
                         <Loader2 size={15} className="animate-spin shrink-0" />
@@ -589,6 +598,9 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
                       <span className="truncate">
                         {item.label}
                         {item.optional && <span className="text-[var(--text-secondary)] font-normal"> (optional)</span>}
+                        {!applicable && (
+                          <span className="text-[var(--text-secondary)] font-normal"> (N/A — attendance ≥ {RGPV_ATTENDANCE_THRESHOLD}%)</span>
+                        )}
                       </span>
                     </button>
                   );
