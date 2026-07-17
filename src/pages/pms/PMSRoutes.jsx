@@ -44,7 +44,9 @@ import GuideStatusDetail from './guide/StatusDetail';
 const RoleGuard = ({ children, allowed }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/" replace />;
-  if (!allowed.includes(user.role)) return <Navigate to="/unauthorized" replace />;
+  const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
+  const hasRole = allowed.some(role => userRoles.includes(role));
+  if (!hasRole) return <Navigate to="/unauthorized" replace />;
   return children;
 };
 

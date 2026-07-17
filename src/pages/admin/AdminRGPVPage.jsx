@@ -4,6 +4,8 @@ import { Upload, Trash2, Search, Loader2, Award, ChevronDown, Check, X, FileText
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
+const BATCHES = ['2020-24', '2021-25', '2022-26', '2023-27', '2024-28'];
+
 export default function AdminRGPVPage() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,19 +14,24 @@ export default function AdminRGPVPage() {
   
   // Filters and upload state
   const [selectedSem, setSelectedSem] = useState('5'); // Default to 5th semester as in request
+  const [selectedBatch, setSelectedBatch] = useState('2023-27'); // Default to 2023-27 batch
   const [uploadSem, setUploadSem] = useState('5');
+  const [uploadBatch, setUploadBatch] = useState('2023-27');
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchResults();
-  }, [selectedSem]);
+  }, [selectedSem, selectedBatch]);
 
   const fetchResults = async () => {
     setLoading(true);
     try {
-      const semQuery = selectedSem === 'all' ? '' : `?semester=${selectedSem}`;
-      const { data } = await api.get(`/rgpv/results${semQuery}`);
+      const params = [];
+      if (selectedSem !== 'all') params.push(`semester=${selectedSem}`);
+      if (selectedBatch !== 'all') params.push(`batch=${selectedBatch}`);
+      const queryStr = params.length > 0 ? `?${params.join('&')}` : '';
+      const { data } = await api.get(`/rgpv/results${queryStr}`);
       setResults(data.data);
     } catch (error) {
       toast.error('Failed to load RGPV results');
@@ -43,6 +50,7 @@ export default function AdminRGPVPage() {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('semester', uploadSem);
+    fd.append('batch', uploadBatch);
 
     setUploading(true);
     const toastId = toast.loading('Uploading and processing RGPV sheet...');
@@ -117,17 +125,32 @@ export default function AdminRGPVPage() {
             </div>
 
             <form onSubmit={handleUpload} className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Semester</label>
-                <select
-                  value={uploadSem}
-                  onChange={(e) => setUploadSem(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
-                    <option key={s} value={s}>Semester {s}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Semester</label>
+                  <select
+                    value={uploadSem}
+                    onChange={(e) => setUploadSem(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                      <option key={s} value={s}>Semester {s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Batch</label>
+                  <select
+                    value={uploadBatch}
+                    onChange={(e) => setUploadBatch(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                  >
+                    {BATCHES.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -173,18 +196,34 @@ export default function AdminRGPVPage() {
             
             {/* Toolbar Filters */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b pb-4">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">View Sem:</span>
-                <select
-                  value={selectedSem}
-                  onChange={(e) => setSelectedSem(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-                >
-                  <option value="all">All Semesters</option>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
-                    <option key={s} value={s}>Semester {s}</option>
-                  ))}
-                </select>
+              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">View Sem:</span>
+                  <select
+                    value={selectedSem}
+                    onChange={(e) => setSelectedSem(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                  >
+                    <option value="all">All Semesters</option>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                      <option key={s} value={s}>Semester {s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Batch:</span>
+                  <select
+                    value={selectedBatch}
+                    onChange={(e) => setSelectedBatch(e.target.value)}
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                  >
+                    <option value="all">All Batches</option>
+                    {BATCHES.map(b => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
                 {selectedSem !== 'all' && results.length > 0 && (
                   <button
                     onClick={handleDelete}

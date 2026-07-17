@@ -142,11 +142,14 @@ const StudentMSTPage = () => {
                     const isTotal = subject.toLowerCase().includes('total');
                     
                     const testNameLower = (activeResult?.testName || '').toLowerCase();
+                    const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
                     let maxMarks = 100;
-                    if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
-                      maxMarks = 28;
-                    } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
-                      maxMarks = 42;
+                    if (!isCrt) {
+                      if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                        maxMarks = 28;
+                      } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                        maxMarks = 42;
+                      }
                     }
                     
                     const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');

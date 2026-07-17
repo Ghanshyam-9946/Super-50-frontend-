@@ -50,6 +50,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
+  const isSuper50Mentor = (user?.responsibilities || []).includes('Super 50 Mentor');
 
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -58,8 +59,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
-    { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
-    { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    ...(isSuper50Mentor ? [
+      { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
+      { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' }
+    ] : []),
   ];
 
   const guideLinks = [
@@ -115,6 +118,46 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/pms/admin', icon: Database, label: 'PMS Dashboard' },
   ];
 
+  const getNavLinks = () => {
+    const roles = user?.roles && user.roles.length > 0 ? user.roles : [user?.role];
+    if (roles.includes('student')) {
+      return commonStudentLinks;
+    }
+
+    const combined = [];
+    const seen = new Set();
+    const hasMultipleRoles = roles.length > 1;
+
+    roles.forEach(role => {
+      let roleLinks = [];
+      if (role === 'admin') roleLinks = adminLinks;
+      else if (role === 'super50_admin') roleLinks = super50AdminLinks;
+      else if (role === 'tp_admin') roleLinks = tpAdminLinks;
+      else if (role === 'pms_admin') roleLinks = pmsAdminLinks;
+      else if (role === 'teacher') roleLinks = teacherLinks;
+      else if (role === 'guide') roleLinks = guideLinks;
+
+      roleLinks.forEach(link => {
+        if (!seen.has(link.to)) {
+          seen.add(link.to);
+          
+          let adjustedLabel = link.label;
+          if (hasMultipleRoles) {
+            if (link.to === '/admin/dashboard') {
+              adjustedLabel = 'Dashboard (Admin)';
+            } else if (link.to === '/teacher/dashboard') {
+              adjustedLabel = 'Dashboard (Faculty)';
+            }
+          }
+          
+          combined.push({ ...link, label: adjustedLabel });
+        }
+      });
+    });
+
+    return combined.length > 0 ? combined : commonStudentLinks;
+  };
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/login');
@@ -155,15 +198,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
         {/* Core Nav */}
         <div className="space-y-1.5">
           {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4">Core</p>}
-          {(user?.role === 'admin' ? adminLinks :
-            user?.role === 'super50_admin' ? super50AdminLinks :
-              user?.role === 'tp_admin' ? tpAdminLinks :
-                user?.role === 'pms_admin' ? pmsAdminLinks :
-                  user?.role === 'teacher' ? teacherLinks :
-                    user?.role === 'guide' ? guideLinks :
-                      commonStudentLinks).map((link) => (
-                        <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-                      ))}
+          {getNavLinks().map((link) => (
+            <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
+          ))}
         </div>
 
         {/* T&P Section (Students Only) */}

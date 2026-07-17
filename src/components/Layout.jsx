@@ -1,11 +1,20 @@
+import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
+import { fetchMe } from '../features/auth/authSlice';
 
 export default function Layout({ theme, toggleTheme }) {
   const { user, token } = useSelector((s) => s.auth);
+  const dispatch = useDispatch();
   const location = useLocation();
+
+  useEffect(() => {
+    if (token) {
+      dispatch(fetchMe());
+    }
+  }, [dispatch, token]);
 
   if (!token || !user) return <Navigate to="/" replace />;
 

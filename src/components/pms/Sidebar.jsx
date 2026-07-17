@@ -76,7 +76,58 @@ const Sidebar = ({ open, onClose }) => {
 
   if (!user) return null;
 
-  const nav = user.role === 'admin' ? adminNav : user.role === 'student' ? studentNav : guideNav;
+  const getNav = () => {
+    const roles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
+    if (roles.includes('student')) {
+      return studentNav;
+    }
+    
+    const hasAdmin = roles.includes('admin') || roles.includes('pms_admin');
+    const hasGuide = roles.includes('guide') || roles.includes('teacher');
+    
+    if (hasAdmin && hasGuide) {
+      const combined = [];
+      const sections = {};
+      
+      const addNav = (navItems) => {
+        let currentSection = 'Main';
+        navItems.forEach(item => {
+          if (item.section) {
+            currentSection = item.section;
+            return;
+          }
+          if (!sections[currentSection]) {
+            sections[currentSection] = [];
+          }
+          if (!sections[currentSection].some(existing => existing.to === item.to)) {
+            let adjustedLabel = item.label;
+            if (item.to === '/pms/admin/dashboard') {
+              adjustedLabel = 'PMS Admin Dashboard';
+            } else if (item.to === '/pms/guide/dashboard') {
+              adjustedLabel = 'PMS Guide Dashboard';
+            }
+            sections[currentSection].push({ ...item, label: adjustedLabel });
+          }
+        });
+      };
+      
+      addNav(adminNav);
+      addNav(guideNav);
+      
+      Object.keys(sections).forEach(secName => {
+        if (sections[secName].length > 0) {
+          combined.push({ section: secName });
+          combined.push(...sections[secName]);
+        }
+      });
+      return combined;
+    }
+    
+    if (hasAdmin) return adminNav;
+    return guideNav;
+  };
+
+  const nav = getNav();
   const logoUrl = branding.appLogo ? `/uploads/branding/${branding.appLogo}` : '';
 
   return (

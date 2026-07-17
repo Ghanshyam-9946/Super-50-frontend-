@@ -82,7 +82,7 @@ function EditStudentModal({ student, onClose, onSuccess }) {
     if (canAssignMentor) {
       const fetchMentors = async () => {
         try {
-          const { data } = await api.get('/admin/mentors');
+          const { data } = await api.get('/admin/guides');
           setMentors(data.data || []);
         } catch (error) {
           console.error("Failed to fetch mentors", error);

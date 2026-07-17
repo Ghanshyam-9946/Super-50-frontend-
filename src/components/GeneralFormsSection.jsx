@@ -24,6 +24,7 @@ export default function GeneralFormsSection() {
     enrollmentNumber: '',
     email: ''
   });
+  const [responses, setResponses] = useState({});
   const [submittedForms, setSubmittedForms] = useState({});
 
   const fetchActiveForms = async () => {
@@ -61,6 +62,21 @@ export default function GeneralFormsSection() {
       enrollmentNumber: '',
       email: ''
     });
+    setResponses({});
+  };
+
+  const handleResponseChange = (fieldLabel, value) => {
+    setResponses(prev => ({ ...prev, [fieldLabel]: value }));
+  };
+
+  const handleCheckboxChange = (fieldLabel, option, checked) => {
+    setResponses(prev => {
+      const currentList = prev[fieldLabel] || [];
+      const newList = checked 
+        ? [...currentList, option] 
+        : currentList.filter(o => o !== option);
+      return { ...prev, [fieldLabel]: newList };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -69,9 +85,24 @@ export default function GeneralFormsSection() {
       return toast.error('All fields are required');
     }
 
+    // Validate required custom fields
+    if (selectedForm.fields) {
+      for (const field of selectedForm.fields) {
+        if (field.required) {
+          const val = responses[field.label];
+          if (val === undefined || val === null || val === '' || (Array.isArray(val) && val.length === 0)) {
+            return toast.error(`Question "${field.label}" is required`);
+          }
+        }
+      }
+    }
+
     const toastId = toast.loading('Submitting registration...');
     try {
-      const res = await api.post(`/general-forms/${selectedForm._id}/submit`, formData);
+      const res = await api.post(`/general-forms/${selectedForm._id}/submit`, {
+        ...formData,
+        responses
+      });
       toast.success(res.data.message || 'Form submitted successfully!', { id: toastId });
       
       // Save submission status in localStorage
@@ -195,7 +226,7 @@ export default function GeneralFormsSection() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[var(--bg-modal)] border border-[var(--border-light)] rounded-3xl shadow-xl w-full max-w-md p-8 relative"
+              className="bg-[var(--bg-modal)] border border-[var(--border-light)] rounded-3xl shadow-xl w-full max-w-xl p-8 relative max-h-[90vh] overflow-y-auto"
             >
               <button
                 onClick={() => setSelectedForm(null)}
@@ -253,6 +284,92 @@ export default function GeneralFormsSection() {
                     className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-colors"
                   />
                 </div>
+
+                {/* Custom Fields (Google Forms Style) */}
+                {selectedForm.fields && selectedForm.fields.map((field) => {
+                  const fieldId = `field-${field._id}`;
+                  const isRequired = field.required;
+                  return (
+                    <div key={field._id} className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1 flex items-center gap-1.5">
+                        {field.label} {isRequired && '*'}
+                      </label>
+                      
+                      {field.type === 'text' && (
+                        <input
+                          type="text"
+                          required={isRequired}
+                          value={responses[field.label] || ''}
+                          onChange={(e) => handleResponseChange(field.label, e.target.value)}
+                          placeholder="Short answer text"
+                          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-colors"
+                        />
+                      )}
+
+                      {field.type === 'paragraph' && (
+                        <textarea
+                          required={isRequired}
+                          value={responses[field.label] || ''}
+                          onChange={(e) => handleResponseChange(field.label, e.target.value)}
+                          placeholder="Long answer text"
+                          rows="3"
+                          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-colors resize-none"
+                        />
+                      )}
+
+                      {field.type === 'dropdown' && (
+                        <select
+                          required={isRequired}
+                          value={responses[field.label] || ''}
+                          onChange={(e) => handleResponseChange(field.label, e.target.value)}
+                          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] transition-colors cursor-pointer"
+                        >
+                          <option value="">Choose</option>
+                          {field.options.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      {field.type === 'radio' && (
+                        <div className="space-y-2 pt-1">
+                          {field.options.map(opt => (
+                            <label key={opt} className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)] cursor-pointer">
+                              <input
+                                type="radio"
+                                name={fieldId}
+                                required={isRequired}
+                                checked={responses[field.label] === opt}
+                                onChange={() => handleResponseChange(field.label, opt)}
+                                className="text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                              />
+                              <span>{opt}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+
+                      {field.type === 'checkbox' && (
+                        <div className="space-y-2 pt-1">
+                          {field.options.map(opt => {
+                            const isChecked = (responses[field.label] || []).includes(opt);
+                            return (
+                              <label key={opt} className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)] cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => handleCheckboxChange(field.label, opt, e.target.checked)}
+                                  className="text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded"
+                                />
+                                <span>{opt}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
                 <button type="submit" className="btn-premium w-full py-3.5 mt-6 flex items-center justify-center gap-2">
                   <Send size={14} /> Submit Application

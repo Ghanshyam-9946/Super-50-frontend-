@@ -28,6 +28,11 @@ export default function AdminDashboard() {
   const { pendingActivities } = useSelector((s) => s.activities);
   const { user } = useSelector((s) => s.auth);
 
+  const userRoles = useMemo(() => user?.roles && user.roles.length > 0 ? user.roles : [user?.role || ''], [user]);
+  const isTeacher = userRoles.includes('teacher');
+  const isAdminOrSuperAdmin = userRoles.includes('admin') || userRoles.includes('super50_admin');
+  const isTpOrPmsAdmin = userRoles.includes('tp_admin') || userRoles.includes('pms_admin');
+
   const [selectedDept, setSelectedDept] = useState('All');
   const [processing, setProcessing] = useState({});
   const [rejectModal, setRejectModal] = useState(null);
@@ -95,12 +100,12 @@ export default function AdminDashboard() {
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <div>
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
-            {user?.role === 'admin' ? '⚙️ Enterprise' : user?.role === 'super50_admin' ? '🌟 Super50 Admin' : '👩‍🏫 Faculty'} Dashboard
+            {isAdminOrSuperAdmin ? '⚙️ Enterprise Admin' : isTpOrPmsAdmin ? '💼 T&P/PMS Admin' : '👩‍🏫 Faculty'} Dashboard
           </h1>
           <p className="text-[var(--text-secondary)] mt-2 font-medium">Monitoring {adminStats?.totalStudents || 0} students across {filters.departments?.length || 0} departments.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {user?.role === 'admin' && (
+          {(userRoles.includes('admin') || userRoles.includes('tp_admin')) && (
             <>
               <Link to="/admin/bulk-create" className="btn-premium flex items-center gap-2 text-xs">
                 <UserPlus size={16} /> Onboard (Excel)
@@ -113,12 +118,12 @@ export default function AdminDashboard() {
               </Link>
             </>
           )}
-          {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+          {(userRoles.includes('admin') || userRoles.includes('super50_admin')) && (
             <Link to="/admin/super50-selection" className="btn-premium flex items-center gap-2 text-xs">
               <Star size={16} /> Super 50
             </Link>
           )}
-          {user?.role === 'teacher' && (
+          {isTeacher && (
             <Link to="/teacher/students" className="btn-premium flex items-center gap-2 text-xs">
               <Users size={16} /> View Student Records
             </Link>
@@ -396,53 +401,7 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {user?.role === 'teacher' ? (
-        <div className="glass-card p-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">🎓 Student & Placement Directory</h3>
-              <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Search or browse students to view their full profile, activities, and detailed placement tracking.</p>
-            </div>
-            <Link to="/teacher/students" className="btn-premium text-xs px-6 py-3 flex items-center gap-2">
-              <Users size={16} /> View Complete List
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {allStudents.slice(0, 8).map((student) => (
-              <div key={student._id} className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all group hover:border-[var(--primary)]">
-                <div className="flex items-center gap-4">
-                  <img
-                    src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
-                    className="w-12 h-12 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)] object-cover"
-                    alt={student.name}
-                  />
-                  <div>
-                    <div className="text-[15px] font-bold text-[var(--text-primary)] flex items-center gap-2">
-                      {student.name}
-                      {student.isSuper50 && <span className="bg-amber-500/10 text-amber-500 text-[9px] px-2 py-0.5 rounded border border-amber-500/20 uppercase font-black tracking-widest">Super 50</span>}
-                    </div>
-                    <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-1 opacity-80">
-                      {student.enrollmentNumber} • {student.department}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedStudentForHistory(student)}
-                  className="btn-outline-premium text-xs py-2 px-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Eye size={14} /> Profile
-                </button>
-              </div>
-            ))}
-          </div>
-          {allStudents.length === 0 && (
-            <div className="text-center py-16 text-slate-400 font-bold text-sm uppercase tracking-widest border border-dashed rounded-3xl mt-6">
-              No students found in directory
-            </div>
-          )}
-        </div>
-      ) : (
+      {isAdminOrSuperAdmin && (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Performance Chart */}
@@ -639,7 +598,7 @@ export default function AdminDashboard() {
               )}
 
               {/* Student Directory Preview for Dashboard */}
-              {user?.role !== 'teacher' && (
+              {!isTeacher && (
                 <div className="mt-12">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-display font-black text-[var(--text-primary)]">Student Directory Preview</h3>
@@ -680,6 +639,55 @@ export default function AdminDashboard() {
             </div>
           </div>
         </>
+      )}
+
+      {/* If teacher role is active, render the full Student & Placement Directory */}
+      {isTeacher && (
+        <div className="glass-card p-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">🎓 Student & Placement Directory</h3>
+              <p className="text-[13px] text-[var(--text-secondary)] font-medium mt-1">Search or browse students to view their full profile, activities, and detailed placement tracking.</p>
+            </div>
+            <Link to="/teacher/students" className="btn-premium text-xs px-6 py-3 flex items-center gap-2">
+              <Users size={16} /> View Complete List
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {allStudents.slice(0, 8).map((student) => (
+              <div key={student._id} className="bg-[var(--bg-app)] border border-[var(--border-light)] rounded-[1.2rem] p-5 flex items-center justify-between shadow-sm hover:shadow-md transition-all group hover:border-[var(--primary)]">
+                <div className="flex items-center gap-4">
+                  <img
+                    src={student.profileImage || `https://ui-avatars.com/api/?name=${student.name}&background=random`}
+                    className="w-12 h-12 rounded-full border-2 border-[var(--bg-card)] shadow-sm ring-1 ring-[var(--border-light)] object-cover"
+                    alt={student.name}
+                  />
+                  <div>
+                    <div className="text-[15px] font-bold text-[var(--text-primary)] flex items-center gap-2">
+                      {student.name}
+                      {student.isSuper50 && <span className="bg-amber-500/10 text-amber-500 text-[9px] px-2 py-0.5 rounded border border-amber-500/20 uppercase font-black tracking-widest">Super 50</span>}
+                    </div>
+                    <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-1 opacity-80">
+                      {student.enrollmentNumber} • {student.department}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedStudentForHistory(student)}
+                  className="btn-outline-premium text-xs py-2 px-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Eye size={14} /> Profile
+                </button>
+              </div>
+            ))}
+          </div>
+          {allStudents.length === 0 && (
+            <div className="text-center py-16 text-slate-400 font-bold text-sm uppercase tracking-widest border border-dashed rounded-3xl mt-6">
+              No students found in directory
+            </div>
+          )}
+        </div>
       )}
 
       {/* Student Profile Modal (Full Details) */}
