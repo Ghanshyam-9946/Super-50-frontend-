@@ -59,9 +59,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
+    { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     ...(isSuper50Mentor ? [
-      { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
-      { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' }
+      { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
     ] : []),
   ];
 
@@ -140,7 +140,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       roleLinks.forEach(link => {
         if (!seen.has(link.to)) {
           seen.add(link.to);
-          
+
           let adjustedLabel = link.label;
           if (hasMultipleRoles) {
             if (link.to === '/admin/dashboard') {
@@ -149,7 +149,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
               adjustedLabel = 'Dashboard (Faculty)';
             }
           }
-          
+
           combined.push({ ...link, label: adjustedLabel });
         }
       });
@@ -165,7 +165,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const SidebarContent = () => (
     <div className={`flex flex-col h-full bg-[var(--bg-card)] border-r border-[var(--border-light)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${collapsed ? 'w-20' : 'w-72'}`}>
-      
+
       {/* Brand */}
       <div className="p-6 pb-2 relative group">
         <div className={`flex items-center gap-4 ${collapsed ? 'justify-center' : ''}`}>
@@ -183,9 +183,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
             </motion.div>
           )}
         </div>
-        
+
         {/* Desktop Collapse Toggle */}
-        <button 
+        <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden lg:flex absolute -right-3 top-8 w-6 h-6 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-full items-center justify-center text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--primary)] shadow-sm transition-all z-10"
         >
@@ -237,17 +237,17 @@ const Sidebar = ({ theme, toggleTheme }) => {
       {/* Footer / User Profile */}
       <div className="p-4 mt-auto border-t border-[var(--border-light)]">
         <div className={`flex flex-col gap-3 ${collapsed ? 'items-center' : ''}`}>
-          <div 
+          <div
             className="flex items-center gap-3 cursor-pointer group p-1.5 -ml-1.5 rounded-xl hover:bg-[var(--bg-hover)] transition-colors"
             onClick={() => setIsProfileModalOpen(true)}
             title="Edit Profile"
           >
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--bg-app)] to-[var(--bg-app)] border border-[var(--border-light)] flex items-center justify-center text-sm font-bold text-[var(--text-primary)] shadow-sm shrink-0 overflow-hidden group-hover:border-[var(--primary)] transition-colors">
               {user?.profileImage ? (
-                <img 
-                  src={getImageUrl(user.profileImage)} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={getImageUrl(user.profileImage)}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 user?.name?.[0]
@@ -287,7 +287,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       <button onClick={() => setMobileOpen(!mobileOpen)} className="lg:hidden fixed top-4 left-4 z-[100] p-3 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-light)] text-[var(--text-primary)] shadow-xl">
         {mobileOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
-      
+
       <div className="hidden lg:block h-screen sticky top-0 z-40">
         <SidebarContent />
       </div>
@@ -303,9 +303,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
         )}
       </AnimatePresence>
 
-      <ProfileEditModal 
-        isOpen={isProfileModalOpen} 
-        onClose={() => setIsProfileModalOpen(false)} 
+      <ProfileEditModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
       />
     </>
   );
@@ -328,10 +328,10 @@ const NavItem = ({ link, onClick, collapsed }) => (
     {({ isActive }) => (
       <>
         {isActive && (
-          <motion.div 
-            layoutId="sidebarActiveBg" 
-            className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-xl shadow-md shadow-[rgba(139,92,246,0.15)]" 
-            initial={false} 
+          <motion.div
+            layoutId="sidebarActiveBg"
+            className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-xl shadow-md shadow-[rgba(139,92,246,0.15)]"
+            initial={false}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           />
         )}

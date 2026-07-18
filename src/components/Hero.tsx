@@ -16,7 +16,7 @@ export function Hero() {
   const rotate = useTransform(scrollYProgress, [0, 1], [0, 5]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const titleWords = "One Platform for".split(" ");
+  const titleWords = "Platform for".split(" ");
   const highlightWords = "Monitoring Individual Learning and Excellence".split(" ");
 
   return (
@@ -45,17 +45,25 @@ export function Hero() {
           </span>
         </motion.div>
 
-        <h1 className="font-display text-5xl font-[900] leading-[1.15] tracking-tight text-black md:text-7xl lg:text-8xl mb-6">
-          <div className="flex flex-wrap justify-center gap-x-[0.2em] mb-4">
+        <h1 className="font-display text-5xl font-[900] leading-[1.15] tracking-tight text-black dark:text-white md:text-7xl lg:text-8xl mb-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-[0.2em] mb-4">
             {titleWords.map((word, idx) => (
               <motion.span
                 key={idx}
-                initial={{ opacity: 0, y: 40 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: idx * 0.1, ease: [0.21, 0.45, 0.32, 0.9] }}
+                transition={{ duration: 0.8, delay: idx * 0.1, ease: "easeOut" }}
                 className="inline-block"
               >
-                {word}
+                {idx === 0 ? (
+                  <span className="relative inline-block px-5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-[1.25rem] -rotate-3 mx-1 shadow-2xl">
+                    {word}
+                  </span>
+                ) : (
+                  <span className="ml-2">
+                    {word}
+                  </span>
+                )}
               </motion.span>
             ))}
           </div>
@@ -63,28 +71,28 @@ export function Hero() {
             {highlightWords.map((word, idx) => (
               <motion.span
                 key={idx}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 + idx * 0.08, ease: [0.21, 0.45, 0.32, 0.9] }}
+                transition={{ duration: 0.8, delay: 0.3 + idx * 0.1, ease: "easeOut" }}
                 className="inline-block"
               >
                 <motion.span
-                  className="inline-block text-gradient-brand drop-shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                  className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-brand-purple to-brand-orange drop-shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                  style={{ backgroundSize: "200% auto" }}
                   animate={{
-                    y: [0, -8, 0],
+                    backgroundPosition: ["0% center", "200% center"]
                   }}
                   transition={{
-                    repeat: Infinity,
-                    repeatType: "reverse",
-                    duration: 2.5,
-                    ease: "easeInOut",
-                    delay: 0.8 + idx * 0.15,
+                    backgroundPosition: {
+                      repeat: Infinity,
+                      duration: 20,
+                      ease: "linear"
+                    }
                   }}
                   whileHover={{
-                    scale: 1.12,
-                    y: -12,
-                    filter: "brightness(1.2) drop-shadow(0 0 35px rgba(99,102,241,0.55))",
-                    transition: { duration: 0.2, y: { duration: 0.1 } }
+                    scale: 1.05,
+                    filter: "brightness(1.1) drop-shadow(0 0 25px rgba(99,102,241,0.4))",
+                    transition: { duration: 0.3 }
                   }}
                 >
                   {word}
