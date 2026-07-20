@@ -388,10 +388,12 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           </h4>
           <div className="flex items-center gap-3 text-xs">
             <span className="text-[var(--text-secondary)]">Base: <strong className="text-[var(--text-primary)]">{attendanceSummary.baseAttendancePercentage}%</strong></span>
-            {attendanceSummary.totalBoostPercent > 0 && (
-              <span className="text-emerald-500 font-bold">+{attendanceSummary.totalBoostPercent}%</span>
-            )}
-            <span className="text-[var(--text-secondary)]">Adjusted: <strong className="text-emerald-500">{attendanceSummary.adjustedAttendancePercentage}%</strong></span>
+            {/* "Adjusted" = just the Medical/Other RGPV QP/Certification boost
+                amount — 0% until one of those is enabled, growing from there.
+                Extra Attendance is already folded into Base, so it never
+                shows up here. */}
+            <span className="text-[var(--text-secondary)]">Adjusted: <strong className="text-emerald-500">+{attendanceSummary.totalBoostPercent}%</strong></span>
+            <span className="text-[var(--text-secondary)]">Final: <strong className="text-emerald-500">{attendanceSummary.adjustedAttendancePercentage}%</strong></span>
           </div>
         </div>
 
@@ -457,7 +459,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
         </div>
         <p className="text-[11px] text-[var(--text-secondary)] font-medium">
           Logged only by this student's TG (mentor) — Event/Farewell, SAC, or Sports participation, converted to
-          attendance % (same ratio as Medical, capped at +10% total). Unlike Medical/Other RGPV QP/Certification,
+          attendance % (same ratio as Medical, no cap). Unlike Medical/Other RGPV QP/Certification,
           this is added directly to the student's real attendance record — not just this form.
         </p>
 
