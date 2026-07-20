@@ -220,7 +220,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
     toggleForward(true, forwardRemarkDraft.trim());
   };
 
-  const toggleSubjectItem = async (subjectIndex, itemIndex, nextChecked) => {
+  const toggleSubjectItem = async (subjectIndex, itemIndex, nextChecked, hoursClaimed) => {
     const key = `s${subjectIndex}-${itemIndex}`;
     setBusyKey(key);
     try {
@@ -228,6 +228,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
         subjectIndex,
         itemIndex,
         checked: nextChecked,
+        ...(hoursClaimed !== undefined ? { hoursClaimed } : {}),
       });
       if (data.success) await onChange(data.data);
     } catch (err) {
@@ -235,6 +236,19 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
     } finally {
       setBusyKey(null);
     }
+  };
+
+  // RGPV item needs 0-12 hours claimed before it can be ticked — this
+  // tracks which item's inline hours prompt is currently open.
+  const [rgpvPromptKey, setRgpvPromptKey] = useState(null);
+  const [rgpvHoursDraft, setRgpvHoursDraft] = useState('');
+  const confirmRgpvTick = async (si, ii) => {
+    const hours = Number(rgpvHoursDraft);
+    if (rgpvHoursDraft === '' || Number.isNaN(hours) || hours < 0 || hours > 12) {
+      return toast.error('Enter hours between 0 and 12');
+    }
+    setRgpvPromptKey(null);
+    await toggleSubjectItem(si, ii, true, hours);
   };
 
   const toggleExtraItem = async (itemIndex, nextChecked) => {
@@ -600,11 +614,53 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
                     const busy = busyKey === key;
                     const applicable = isItemApplicable(item);
                     const tickable = canTickThisRow && applicable;
+                    const isRgpv = item.label === 'RGPV';
+
+                    if (isRgpv && !item.checked && rgpvPromptKey === key) {
+                      return (
+                        <div
+                          key={ii}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--bg-input)] text-xs"
+                        >
+                          <span className="text-[var(--text-secondary)] shrink-0 font-semibold">RGPV hrs (0-12):</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={12}
+                            value={rgpvHoursDraft}
+                            onChange={(e) => setRgpvHoursDraft(e.target.value)}
+                            autoFocus
+                            className="w-14 bg-transparent outline-none border-b border-[var(--border-light)] text-[var(--text-primary)]"
+                          />
+                          <button
+                            onClick={() => confirmRgpvTick(si, ii)}
+                            disabled={busy}
+                            className="text-emerald-500 font-bold shrink-0 ml-auto"
+                          >
+                            {busy ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={15} />}
+                          </button>
+                          <button
+                            onClick={() => setRgpvPromptKey(null)}
+                            className="text-[var(--text-secondary)] shrink-0"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      );
+                    }
+
                     return (
                       <button
                         key={ii}
                         disabled={!tickable || busy}
-                        onClick={() => toggleSubjectItem(si, ii, !item.checked)}
+                        onClick={() => {
+                          if (isRgpv && !item.checked) {
+                            setRgpvHoursDraft('');
+                            setRgpvPromptKey(key);
+                          } else {
+                            toggleSubjectItem(si, ii, !item.checked);
+                          }
+                        }}
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all ${
                           !applicable
                             ? 'border-[var(--border-light)] text-[var(--text-secondary)] opacity-50'
@@ -622,6 +678,9 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
                         )}
                         <span className="truncate">
                           {item.label}
+                          {isRgpv && item.checked && (
+                            <span className="text-[var(--text-secondary)] font-normal"> ({item.hoursClaimed} hrs, +{item.boostPercent}%)</span>
+                          )}
                           {item.optional && <span className="text-[var(--text-secondary)] font-normal"> (optional)</span>}
                           {!applicable && (
                             <span className="text-[var(--text-secondary)] font-normal"> (N/A — attendance ≥ {RGPV_ATTENDANCE_THRESHOLD}%)</span>
