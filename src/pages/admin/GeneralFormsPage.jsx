@@ -22,6 +22,7 @@ export default function GeneralFormsPage() {
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingFormId, setEditingFormId] = useState(null);
   const [newForm, setNewForm] = useState({
     purpose: '',
     description: '',
@@ -94,7 +95,7 @@ export default function GeneralFormsPage() {
     fetchForms();
   }, []);
 
-  const handleCreateForm = async (e) => {
+  const handleSubmitForm = async (e) => {
     e.preventDefault();
     if (!newForm.purpose.trim()) {
       return toast.error('Please enter a purpose/title');
@@ -110,16 +111,35 @@ export default function GeneralFormsPage() {
       return toast.error('Please enter valid texts for all option fields');
     }
 
-    const toastId = toast.loading('Creating form...');
+    const toastId = toast.loading(editingFormId ? 'Updating form...' : 'Creating form...');
     try {
-      await api.post('/general-forms', newForm);
-      toast.success('Generalised form created successfully!', { id: toastId });
+      if (editingFormId) {
+        await api.put(`/general-forms/${editingFormId}`, newForm);
+        toast.success('Form updated successfully!', { id: toastId });
+      } else {
+        await api.post('/general-forms', newForm);
+        toast.success('Generalised form created successfully!', { id: toastId });
+      }
       setIsCreateOpen(false);
+      setEditingFormId(null);
       setNewForm({ purpose: '', description: '', startDate: '', endDate: '', fields: [] });
       fetchForms(true);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create form', { id: toastId });
+      toast.error(err.response?.data?.message || `Failed to ${editingFormId ? 'update' : 'create'} form`, { id: toastId });
     }
+  };
+
+  const handleEditClick = (form, e) => {
+    e.stopPropagation();
+    setNewForm({
+      purpose: form.purpose,
+      description: form.description || '',
+      startDate: form.startDate ? new Date(form.startDate).toISOString().slice(0, 16) : '',
+      endDate: form.endDate ? new Date(form.endDate).toISOString().slice(0, 16) : '',
+      fields: form.fields || []
+    });
+    setEditingFormId(form._id);
+    setIsCreateOpen(true);
   };
 
   const handleToggleStatus = async (id, e) => {
@@ -156,14 +176,18 @@ export default function GeneralFormsPage() {
             <span>General Purpose Forms</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">
-            Generalised Forms Manager
+            Register now to reserve your spot and begin your learning journey
           </h1>
           <p className="text-[var(--text-secondary)] font-medium mt-1">
             Create, manage and view submissions for all dynamic event registration forms.
           </p>
         </div>
         <button
-          onClick={() => setIsCreateOpen(true)}
+          onClick={() => {
+            setEditingFormId(null);
+            setNewForm({ purpose: '', description: '', startDate: '', endDate: '', fields: [] });
+            setIsCreateOpen(true);
+          }}
           className="btn-premium flex items-center gap-2 self-start md:self-center py-3 px-6 rounded-xl text-sm"
         >
           <Plus size={16} /> Create General Form
@@ -230,6 +254,12 @@ export default function GeneralFormsPage() {
                 <div className="mt-8 pt-4 border-t border-[var(--border-light)] flex items-center justify-between gap-4">
                   <div className="flex gap-2">
                     <button
+                      onClick={(e) => handleEditClick(form, e)}
+                      className="text-[10px] uppercase font-black tracking-wider px-2.5 py-1.5 rounded-lg border bg-blue-500/5 text-blue-500 border-blue-500/20 hover:bg-blue-500/10"
+                    >
+                      Edit
+                    </button>
+                    <button
                       onClick={(e) => handleToggleStatus(form._id, e)}
                       className={`text-[10px] uppercase font-black tracking-wider px-2.5 py-1.5 rounded-lg border ${
                         form.isActive ? 'bg-amber-500/5 text-amber-500 border-amber-500/20 hover:bg-amber-500/10' : 'bg-emerald-500/5 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10'
@@ -264,16 +294,21 @@ export default function GeneralFormsPage() {
               className="bg-[var(--bg-modal)] border border-[var(--border-light)] rounded-3xl shadow-xl w-full max-w-2xl p-8 relative max-h-[90vh] overflow-y-auto"
             >
               <button
-                onClick={() => setIsCreateOpen(false)}
+                onClick={() => {
+                  setIsCreateOpen(false);
+                  setEditingFormId(null);
+                }}
                 className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors"
               >
                 <XCircle size={18} />
               </button>
 
-              <h2 className="text-2xl font-display font-black text-[var(--text-primary)] mb-1">Create Generalised Form</h2>
+              <h2 className="text-2xl font-display font-black text-[var(--text-primary)] mb-1">
+                {editingFormId ? 'Edit Generalised Form' : 'Create Generalised Form'}
+              </h2>
               <p className="text-xs text-[var(--text-secondary)] font-medium mb-6">Set up a simple registration form with custom purpose and date limits.</p>
 
-              <form onSubmit={handleCreateForm} className="space-y-4">
+              <form onSubmit={handleSubmitForm} className="space-y-4">
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Purpose / Title *</label>
                   <input
@@ -430,7 +465,7 @@ export default function GeneralFormsPage() {
                 </div>
 
                 <button type="submit" className="btn-premium w-full py-3.5 mt-6 flex items-center justify-center gap-2">
-                  Create Form
+                  {editingFormId ? 'Update Form' : 'Create Form'}
                 </button>
               </form>
             </motion.div>

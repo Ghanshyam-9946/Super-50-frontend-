@@ -137,7 +137,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <Super50Guard><ActivitiesPage /></Super50Guard>
         } />
         <Route path="/certificates" element={
-          <RoleGuard allowed={['student']}><CertificatesPage /></RoleGuard>
+          <RoleGuard allowed={['student', 'teacher', 'admin', 'super50_admin']}><CertificatesPage /></RoleGuard>
         } />
         <Route path="/student/podai-marks" element={
           <RoleGuard allowed={['student']}><PodAIMarksPage /></RoleGuard>
@@ -205,7 +205,7 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/amcat" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminAMCATPage /></RoleGuard>} />
         <Route path="/admin/mst" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminMSTPage /></RoleGuard>} />
         <Route path="/admin/timetable" element={
-          <RoleGuard allowed={['admin']}><TimetableManagePage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'teacher']}><TimetableManagePage /></RoleGuard>
         } />
         <Route path="/admin/no-dues" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><NoDuesAdminPage /></RoleGuard>

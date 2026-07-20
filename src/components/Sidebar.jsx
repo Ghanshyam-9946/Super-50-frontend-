@@ -60,6 +60,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/certificates', icon: Award, label: 'Certificates' },
+    { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
     ...(isSuper50Mentor ? [
       { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
     ] : []),

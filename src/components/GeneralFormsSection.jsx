@@ -142,7 +142,7 @@ export default function GeneralFormsSection() {
             transition={{ delay: 0.1 }}
             className="text-3xl md:text-5xl font-display font-black tracking-tight text-[var(--text-primary)]"
           >
-            Generalised Registration Forms
+            Register now to reserve your spot and begin your learning journey
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 15 }}
