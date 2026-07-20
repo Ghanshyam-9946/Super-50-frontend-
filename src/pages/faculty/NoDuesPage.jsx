@@ -1639,12 +1639,20 @@ function EditReleaseDetailsPanel({ group, onSaved }) {
 
 /* ─────────────────────────────  FORMS LIST (shared)  ───────────────────────────── */
 
-// Ticked items / total items across every subject + extra item on the form.
+// Must match the backend's ATTENDANCE_RULES.otherRgpvQp.maxBaseAttendance —
+// the RGPV subject item only applies (and blocks completion) below this.
+const RGPV_ATTENDANCE_THRESHOLD = 60;
+const isSubjectItemApplicable = (item, form) =>
+  item.label !== 'RGPV' || (form.attendanceSummary?.baseAttendancePercentage ?? 0) < RGPV_ATTENDANCE_THRESHOLD;
+
+// Ticked (or not-applicable/optional) items / applicable items across every
+// subject + extra item on the form — mirrors the backend's completion rule
+// so 100% here always lines up with form.isCompleted.
 function formProgress(form) {
-  const subjectItems = (form.subjects || []).flatMap((s) => s.items || []);
+  const subjectItems = (form.subjects || []).flatMap((s) => s.items || []).filter((i) => isSubjectItemApplicable(i, form));
   const allItems = [...subjectItems, ...(form.extraItems || [])];
   const total = allItems.length;
-  const done = allItems.filter((i) => i.checked).length;
+  const done = allItems.filter((i) => i.checked || i.optional).length;
   return total === 0 ? 0 : Math.round((done / total) * 100);
 }
 
@@ -1744,7 +1752,9 @@ function FormsList({
     // separately from the whole-form "Completed" state, which also needs
     // every OTHER subject/extra item done.
     const mySubjects = (form.subjects || []).filter((s) => s.faculty?._id === uid);
-    const myPartDone = mySubjects.length > 0 && mySubjects.every((s) => s.items.every((i) => i.checked || i.optional));
+    const myPartDone =
+      mySubjects.length > 0 &&
+      mySubjects.every((s) => s.items.every((i) => i.checked || i.optional || !isSubjectItemApplicable(i, form)));
     const highlightSky = myPartDone && !form.isCompleted;
     return (
       <div

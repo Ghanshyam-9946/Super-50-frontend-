@@ -161,7 +161,7 @@ function OverviewTab({ user }) {
         <StatCard label="Forwarded" value={stats.forwardedCount} accent="text-[var(--primary)]" icon={ArrowRightCircle} />
         <StatCard label="Completed" value={stats.completedNotForwarded} accent="text-emerald-500" />
         <StatCard label="In Progress" value={stats.inProgressCount} accent="text-slate-400" />
-        <StatCard label="Avg Adjusted Attendance" value={`${stats.avgAdjustedAttendance}%`} accent="text-amber-500" icon={Percent} />
+        <StatCard label="Avg Final Attendance" value={`${stats.avgAdjustedAttendance}%`} accent="text-amber-500" icon={Percent} />
         <StatCard label="Total Pending Fees" value={`₹${stats.totalPendingFees}`} accent="text-red-400" icon={Wallet} />
       </div>
 
