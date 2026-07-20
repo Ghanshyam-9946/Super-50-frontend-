@@ -46,6 +46,19 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   };
 
   const uid = currentUser?._id;
+  // Subjects render as an accordion — only the viewer's own subject(s) start
+  // expanded, everything else stays collapsed (still clickable to open).
+  const [openSubjects, setOpenSubjects] = useState(
+    () => new Set(form.subjects.map((s, i) => (s.faculty?._id === uid ? i : null)).filter((i) => i !== null))
+  );
+  const toggleSubjectOpen = (si) =>
+    setOpenSubjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(si)) next.delete(si);
+      else next.add(si);
+      return next;
+    });
+
   const isAdmin = currentUser?.role === 'admin';
   const isCreator = form.createdBy?._id === uid;
   const canEditRemarks = isCreator || isAdmin;
@@ -444,7 +457,8 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
         </div>
         <p className="text-[11px] text-[var(--text-secondary)] font-medium">
           Logged only by this student's TG (mentor) — Event/Farewell, SAC, or Sports participation, converted to
-          attendance % (same ratio as Medical, capped at +10% total).
+          attendance % (same ratio as Medical, capped at +10% total). Unlike Medical/Other RGPV QP/Certification,
+          this is added directly to the student's real attendance record — not just this form.
         </p>
 
         {form.extraAttendanceEntries.length === 0 ? (
@@ -546,66 +560,76 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
         </div>
       </div>
 
-      {/* Subject-wise checklist */}
+      {/* Subject-wise checklist — accordion; only the viewer's own subject
+          starts expanded, everything else stays collapsed until clicked. */}
       <div className="space-y-3">
         {form.subjects.map((subject, si) => {
           const canTickThisRow = isAdmin || isCreator || subject.faculty?._id === uid;
           const rgpvApplicable = attendanceSummary.baseAttendancePercentage < RGPV_ATTENDANCE_THRESHOLD;
           const isItemApplicable = (item) => item.label !== 'RGPV' || rgpvApplicable;
           const allDone = subject.items.every((i) => i.checked || i.optional || !isItemApplicable(i));
+          const isOpen = openSubjects.has(si);
           return (
             <div
               key={si}
-              className={`rounded-2xl border p-4 ${
+              className={`rounded-2xl border overflow-hidden ${
                 allDone ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-[var(--border-light)] glass-card'
               }`}
             >
-              <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+              <button
+                onClick={() => toggleSubjectOpen(si)}
+                className="w-full flex items-center justify-between gap-2 flex-wrap p-4 text-left"
+              >
                 <div>
                   <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">
                     {subject.subjectCode ? `${subject.subjectCode} — ` : ''}{subject.subjectName}
                   </h4>
                   <p className="text-[11px] text-[var(--text-secondary)] font-medium">Faculty: {subject.faculty?.name || '—'}</p>
                 </div>
-                {allDone && <span className="badge badge-approved">Cleared</span>}
-              </div>
-              <div className="grid sm:grid-cols-2 gap-2">
-                {subject.items.map((item, ii) => {
-                  const key = `s${si}-${ii}`;
-                  const busy = busyKey === key;
-                  const applicable = isItemApplicable(item);
-                  const tickable = canTickThisRow && applicable;
-                  return (
-                    <button
-                      key={ii}
-                      disabled={!tickable || busy}
-                      onClick={() => toggleSubjectItem(si, ii, !item.checked)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all ${
-                        !applicable
-                          ? 'border-[var(--border-light)] text-[var(--text-secondary)] opacity-50'
-                          : item.checked
-                          ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600'
-                          : 'border-[var(--border-light)] text-[var(--text-secondary)]'
-                      } ${tickable ? 'hover:bg-[var(--bg-hover)] cursor-pointer' : 'cursor-default opacity-80'}`}
-                    >
-                      {busy ? (
-                        <Loader2 size={15} className="animate-spin shrink-0" />
-                      ) : item.checked ? (
-                        <CheckCircle2 size={15} className="shrink-0" />
-                      ) : (
-                        <Circle size={15} className="shrink-0" />
-                      )}
-                      <span className="truncate">
-                        {item.label}
-                        {item.optional && <span className="text-[var(--text-secondary)] font-normal"> (optional)</span>}
-                        {!applicable && (
-                          <span className="text-[var(--text-secondary)] font-normal"> (N/A — attendance ≥ {RGPV_ATTENDANCE_THRESHOLD}%)</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  {allDone && <span className="badge badge-approved">Cleared</span>}
+                  <ChevronDown size={16} className={`text-[var(--text-secondary)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </button>
+              {isOpen && (
+                <div className="grid sm:grid-cols-2 gap-2 px-4 pb-4">
+                  {subject.items.map((item, ii) => {
+                    const key = `s${si}-${ii}`;
+                    const busy = busyKey === key;
+                    const applicable = isItemApplicable(item);
+                    const tickable = canTickThisRow && applicable;
+                    return (
+                      <button
+                        key={ii}
+                        disabled={!tickable || busy}
+                        onClick={() => toggleSubjectItem(si, ii, !item.checked)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all ${
+                          !applicable
+                            ? 'border-[var(--border-light)] text-[var(--text-secondary)] opacity-50'
+                            : item.checked
+                            ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600'
+                            : 'border-[var(--border-light)] text-[var(--text-secondary)]'
+                        } ${tickable ? 'hover:bg-[var(--bg-hover)] cursor-pointer' : 'cursor-default opacity-80'}`}
+                      >
+                        {busy ? (
+                          <Loader2 size={15} className="animate-spin shrink-0" />
+                        ) : item.checked ? (
+                          <CheckCircle2 size={15} className="shrink-0" />
+                        ) : (
+                          <Circle size={15} className="shrink-0" />
                         )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                        <span className="truncate">
+                          {item.label}
+                          {item.optional && <span className="text-[var(--text-secondary)] font-normal"> (optional)</span>}
+                          {!applicable && (
+                            <span className="text-[var(--text-secondary)] font-normal"> (N/A — attendance ≥ {RGPV_ATTENDANCE_THRESHOLD}%)</span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
