@@ -267,7 +267,7 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [batch, setBatch] = useState('');
   const [mentorId, setMentorId] = useState('');
   const [mentorsList, setMentorsList] = useState([]);
-  const [sortField, setSortField] = useState('batch');
+  const [sortField, setSortField] = useState('enrollmentNumber');
   const [sortDir, setSortDir] = useState('asc');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -447,7 +447,9 @@ export default function StudentsPage({ isSuper50 = false }) {
                   <thead className="text-[10px] uppercase bg-[var(--bg-app)] text-slate-500 font-black tracking-widest border-b border-[var(--border-light)]">
                     <tr>
                       <th className="px-6 py-4">#</th>
-                      <th className="px-6 py-4">Student</th>
+                      <th onClick={() => handleSort('enrollmentNumber')} className="px-6 py-4 cursor-pointer hover:text-slate-700 transition-colors group">
+                        <span className="flex items-center gap-1.5">Student / Enrollment <SortIcon field="enrollmentNumber" /></span>
+                      </th>
                       <th className="px-6 py-4">Department</th>
                       <th className="px-6 py-4">Batch</th>
                       <th className="px-6 py-4">Mentor</th>
