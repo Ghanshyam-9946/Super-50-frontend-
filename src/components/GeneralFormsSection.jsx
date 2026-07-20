@@ -25,7 +25,6 @@ export default function GeneralFormsSection() {
     email: ''
   });
   const [responses, setResponses] = useState({});
-  const [submittedForms, setSubmittedForms] = useState({});
 
   const fetchActiveForms = async () => {
     try {
@@ -40,19 +39,6 @@ export default function GeneralFormsSection() {
 
   useEffect(() => {
     fetchActiveForms();
-
-    // Check localStorage for already submitted forms
-    const stored = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('general_form_sub_')) {
-        const formId = key.replace('general_form_sub_', '');
-        try {
-          stored[formId] = JSON.parse(localStorage.getItem(key));
-        } catch (e) {}
-      }
-    }
-    setSubmittedForms(stored);
   }, []);
 
   const handleOpenForm = (form) => {
@@ -105,10 +91,6 @@ export default function GeneralFormsSection() {
       });
       toast.success(res.data.message || 'Form submitted successfully!', { id: toastId });
       
-      // Save submission status in localStorage
-      localStorage.setItem(`general_form_sub_${selectedForm._id}`, JSON.stringify(res.data.data));
-      setSubmittedForms(prev => ({ ...prev, [selectedForm._id]: res.data.data }));
-      
       setSelectedForm(null);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit form', { id: toastId });
@@ -158,7 +140,6 @@ export default function GeneralFormsSection() {
         {/* Forms Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {activeForms.map((form, idx) => {
-            const hasSubmitted = !!submittedForms[form._id];
             return (
               <motion.div
                 key={form._id}
@@ -173,11 +154,6 @@ export default function GeneralFormsSection() {
                     <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center border border-[var(--primary)]/20 text-[var(--primary)] shrink-0">
                       <FileText size={22} />
                     </div>
-                    {hasSubmitted && (
-                      <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] px-2.5 py-1 rounded-lg uppercase font-black tracking-wider flex items-center gap-1.5 shadow-sm">
-                        <CheckCircle size={12} /> Submitted
-                      </span>
-                    )}
                   </div>
 
                   <h3 className="text-xl font-display font-black text-[var(--text-primary)] mt-6 leading-tight group-hover:text-[var(--primary)] transition-colors">
@@ -199,18 +175,12 @@ export default function GeneralFormsSection() {
                 </div>
 
                 <div className="mt-8">
-                  {hasSubmitted ? (
-                    <div className="w-full bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 text-center py-3.5 rounded-xl text-xs font-black uppercase tracking-wider">
-                      Response Recorded
-                    </div>
-                  ) : (
                     <button
                       onClick={() => handleOpenForm(form)}
                       className="w-full btn-premium py-3.5 rounded-xl text-xs font-black uppercase tracking-wider"
                     >
                       Fill Form
                     </button>
-                  )}
                 </div>
               </motion.div>
             );
