@@ -65,7 +65,8 @@ export default function ActivityLogsPage() {
     return (
       l.description?.toLowerCase().includes(q) ||
       l.userName?.toLowerCase().includes(q) ||
-      l.path?.toLowerCase().includes(q)
+      l.path?.toLowerCase().includes(q) ||
+      l.ip?.toLowerCase().includes(q)
     );
   });
 
@@ -88,7 +89,7 @@ export default function ActivityLogsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by description, user, or path (current page only)…"
+            placeholder="Search by description, user, path, or IP (current page only)…"
             className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl pl-10 pr-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-purple-500/10 transition-all"
           />
         </div>
@@ -141,7 +142,7 @@ export default function ActivityLogsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border-light)] text-left">
-                  {['When', 'User', 'Module', 'Method', 'Description', 'Status'].map((h) => (
+                  {['When', 'User', 'Module', 'Method', 'Description', 'IP', 'Status'].map((h) => (
                     <th key={h} className="px-5 py-4 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest whitespace-nowrap">
                       {h}
                     </th>
@@ -172,6 +173,9 @@ export default function ActivityLogsPage() {
                       </td>
                       <td className="px-5 py-3.5 text-xs text-[var(--text-primary)] max-w-md truncate" title={log.description}>
                         {log.description}
+                      </td>
+                      <td className="px-5 py-3.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap font-mono">
+                        {log.ip || '—'}
                       </td>
                       <td className="px-5 py-3.5">
                         {log.success ? (
