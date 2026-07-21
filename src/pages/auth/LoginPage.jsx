@@ -25,7 +25,7 @@ export default function LoginPage() {
         } else if (user.role === 'teacher') {
           path = '/teacher/dashboard';
         } else if (user.role === 'admin') {
-          path = '/admin/dashboard';
+          path = '/leaderboard';
         } else if (user.role === 'guide') {
           path = '/pms/guide';
         }

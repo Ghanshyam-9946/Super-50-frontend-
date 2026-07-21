@@ -4,7 +4,7 @@ import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -60,7 +60,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/certificates', icon: Award, label: 'Certificates' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
     ...(isSuper50Mentor ? [
       { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
@@ -76,7 +75,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const adminLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
     { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues & Mentors' },
@@ -96,16 +94,17 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
     { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
     { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
+    { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
   ];
 
   const super50AdminLinks = [
-    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
     { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 

@@ -100,8 +100,12 @@ function UploadModal({ onClose }) {
 export default function CertificatesPage() {
   const dispatch = useDispatch();
   const { myCertificates, loading } = useSelector((s) => s.certificates);
+  const { user } = useSelector((s) => s.auth);
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState('all');
+
+  const userRoles = user?.roles && user.roles.length > 0 ? user.roles : [user?.role || ''];
+  const isTeacher = userRoles.includes('teacher');
 
   useEffect(() => { dispatch(fetchMyCertificates()); }, [dispatch]);
 
@@ -115,15 +119,19 @@ export default function CertificatesPage() {
             <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 border border-orange-200 shadow-sm shrink-0">
               <Award size={32} />
             </div>
-            My Certificates
+            {isTeacher ? 'Certificates' : 'My Certificates'}
           </h1>
-          <p className="text-[var(--text-secondary)] font-medium mt-1">Upload and track your verified certificates and achievements.</p>
+          <p className="text-[var(--text-secondary)] font-medium mt-1">
+            {isTeacher ? 'View and manage certificates.' : 'Upload and track your verified certificates and achievements.'}
+          </p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
-          <button className="btn-premium flex items-center gap-2 px-6 py-3" onClick={() => setShowModal(true)} id="open-upload-modal">
-            <Plus size={18} /> Upload Certificate
-          </button>
-        </motion.div>
+        {!isTeacher && (
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
+            <button className="btn-premium flex items-center gap-2 px-6 py-3" onClick={() => setShowModal(true)} id="open-upload-modal">
+              <Plus size={18} /> Upload Certificate
+            </button>
+          </motion.div>
+        )}
       </header>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -149,10 +157,12 @@ export default function CertificatesPage() {
             <Award size={48} className="text-slate-300" />
           </div>
           <h3 className="text-2xl font-display font-black text-[var(--text-primary)] mb-2">No certificates found</h3>
-          <p className="text-[var(--text-secondary)] font-medium mb-8">You haven't uploaded any certificates matching this filter yet.</p>
-          <button className="btn-premium flex items-center gap-2 px-6 py-3 mx-auto" onClick={() => setShowModal(true)}>
-            <Upload size={18} /> Upload First Certificate
-          </button>
+          <p className="text-[var(--text-secondary)] font-medium mb-8">No certificates matching this filter were found.</p>
+          {!isTeacher && (
+            <button className="btn-premium flex items-center gap-2 px-6 py-3 mx-auto" onClick={() => setShowModal(true)}>
+              <Upload size={18} /> Upload First Certificate
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
