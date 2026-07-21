@@ -584,16 +584,20 @@ function UploadQuestionModal({ onClose, onRefresh }) {
 }
 
 const normalizeBatch = (rawBatch) => {
-  if (!rawBatch) return '2027';
+  if (!rawBatch) return '2023';
   let str = String(rawBatch).trim();
   if (str.includes('-') || str.includes('/')) {
     const parts = str.split(/[-/]/);
     if (parts.length === 2) {
-      let lastPart = parts[1].trim();
-      if (lastPart.length === 2) lastPart = '20' + lastPart;
-      if (lastPart.length === 4) return lastPart;
+      let firstPart = parts[0].trim();
+      if (firstPart.length === 2) firstPart = '20' + firstPart;
+      if (firstPart.length === 4) return firstPart;
     }
   }
+  if (str === '2028') return '2024';
+  if (str === '2027') return '2023';
+  if (str === '2029') return '2025';
+  if (str === '2026') return '2022';
   return str;
 };
 
@@ -607,7 +611,7 @@ const FacultyPlacementDashboard = () => {
 
   // Available batches calculation (null-safe)
   const availableBatches = React.useMemo(() => {
-    const set = new Set(['2027', '2026', '2025', '2028']);
+    const set = new Set(['2023', '2024', '2025', '2026']);
     (drives || []).forEach(d => {
       if (d?.batch) set.add(normalizeBatch(d.batch));
     });
@@ -918,7 +922,7 @@ const FacultyPlacementDashboard = () => {
                         <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md capitalize">{drive.campusType}</span>
                       )}
                       <span className="text-indigo-600 font-bold bg-indigo-50 border border-indigo-200/50 px-2 py-0.5 rounded-md text-[12px] flex items-center gap-1">
-                        <GraduationCap size={13} /> Batch {normalizeBatch(drive.batch || '2027')}
+                        <GraduationCap size={13} /> Batch {normalizeBatch(drive.batch || '2023')}
                       </span>
                       {drive.package && (
                         <>
