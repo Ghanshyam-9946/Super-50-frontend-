@@ -79,7 +79,7 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   if (!hasRole && !hasResponsibility) {
     const fallback = userRoles.includes('student') ? '/leaderboard' :
                      userRoles.includes('admin') ? '/leaderboard' :
-                     userRoles.includes('super50_admin') ? '/admin/dashboard' :
+                     userRoles.includes('super50_admin') ? '/leaderboard' :
                      userRoles.includes('teacher') ? '/teacher/dashboard' :
                      userRoles.includes('guide') ? '/pms/guide' :
                      userRoles.includes('tp_admin') ? '/tp/enroll-students' :

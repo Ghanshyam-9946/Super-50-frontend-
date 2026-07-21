@@ -60,7 +60,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/certificates', icon: Award, label: 'Certificates' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
     ...(isSuper50Mentor ? [
       { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
@@ -76,7 +75,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const adminLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
     { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues & Mentors' },
@@ -99,7 +97,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const super50AdminLinks = [
-    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
