@@ -4,7 +4,7 @@ import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -96,6 +96,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
     { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
     { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
+    { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
   ];
 
   const super50AdminLinks = [
@@ -106,6 +107,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
