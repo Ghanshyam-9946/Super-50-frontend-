@@ -56,6 +56,7 @@ import StudentRGPVPage from './pages/student/StudentRGPVPage';
 import TimetableManagePage from './pages/admin/TimetableManagePage';
 import StudentTimetablePage from './pages/student/StudentTimetablePage';
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
+import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
 
@@ -167,6 +168,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/rgpv" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><AdminRGPVPage /></RoleGuard>
+        } />
+        <Route path="/admin/activity-logs" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><ActivityLogsPage /></RoleGuard>
         } />
         <Route path="/admin/students" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage /></RoleGuard>
