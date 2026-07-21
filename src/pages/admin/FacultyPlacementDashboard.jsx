@@ -30,7 +30,8 @@ import {
   FileSpreadsheet,
   Trash2,
   FileText,
-  Download
+  Download,
+  GraduationCap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -582,12 +583,111 @@ function UploadQuestionModal({ onClose, onRefresh }) {
   );
 }
 
+const normalizeBatch = (rawBatch) => {
+  if (!rawBatch) return '2027';
+  let str = String(rawBatch).trim();
+  if (str.includes('-') || str.includes('/')) {
+    const parts = str.split(/[-/]/);
+    if (parts.length === 2) {
+      let lastPart = parts[1].trim();
+      if (lastPart.length === 2) lastPart = '20' + lastPart;
+      if (lastPart.length === 4) return lastPart;
+    }
+  }
+  return str;
+};
+
 const FacultyPlacementDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { drives, stats, selections, feedbacks, loading, error } = useSelector((state) => state.placement);
   const [activeTab, setActiveTab] = useState('drives');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState('all');
+
+  // Available batches calculation (null-safe)
+  const availableBatches = React.useMemo(() => {
+    const set = new Set(['2027', '2026', '2025', '2028']);
+    (drives || []).forEach(d => {
+      if (d?.batch) set.add(normalizeBatch(d.batch));
+    });
+    (selections || []).forEach(s => {
+      if (s?.student?.batch) set.add(normalizeBatch(s.student.batch));
+      if (s?.drive?.batch) set.add(normalizeBatch(s.drive.batch));
+    });
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [drives, selections]);
+
+  // Filtered drives by selected batch (null-safe)
+  const filteredDrives = React.useMemo(() => {
+    const safeDrives = drives || [];
+    if (selectedBatch === 'all') return safeDrives;
+    return safeDrives.filter(d => normalizeBatch(d?.batch) === selectedBatch);
+  }, [drives, selectedBatch]);
+
+  // Filtered selections by selected batch (null-safe)
+  const filteredSelections = React.useMemo(() => {
+    const safeSelections = selections || [];
+    if (selectedBatch === 'all') return safeSelections;
+    return safeSelections.filter(s => {
+      const studentB = s?.student?.batch ? normalizeBatch(s.student.batch) : '';
+      const driveB = s?.drive?.batch ? normalizeBatch(s.drive.batch) : '';
+      return studentB === selectedBatch || driveB === selectedBatch;
+    });
+  }, [selections, selectedBatch]);
+
+  // Dynamic real-time stats calculation
+  const activeDrivesCount = React.useMemo(() => {
+    return filteredDrives.filter(d => {
+      if (!d.deadline) return true;
+      const deadlineDate = new Date(d.deadline);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      return deadlineDate >= today;
+    }).length;
+  }, [filteredDrives]);
+
+  const totalPlacedCount = React.useMemo(() => {
+    return filteredSelections.length;
+  }, [filteredSelections]);
+
+  const avgPackageStr = React.useMemo(() => {
+    const extractNumericPackage = (pkgStr) => {
+      if (!pkgStr) return 0;
+      const match = String(pkgStr).match(/(\d+(?:\.\d+)?)/);
+      return match ? parseFloat(match[1]) : 0;
+    };
+
+    const selectedPackages = filteredSelections
+      .map(s => extractNumericPackage(s.drive?.package))
+      .filter(p => p > 0);
+
+    if (selectedPackages.length > 0) {
+      const avg = selectedPackages.reduce((a, b) => a + b, 0) / selectedPackages.length;
+      return `${avg.toFixed(1)} LPA`;
+    }
+
+    const drivePackages = filteredDrives
+      .map(d => extractNumericPackage(d.package))
+      .filter(p => p > 0);
+
+    if (drivePackages.length > 0) {
+      const avg = drivePackages.reduce((a, b) => a + b, 0) / drivePackages.length;
+      return `${avg.toFixed(1)} LPA`;
+    }
+
+    return '0 LPA';
+  }, [filteredSelections, filteredDrives]);
+
+  const ongoingRoundsCount = React.useMemo(() => {
+    return filteredDrives.reduce((acc, d) => {
+      const isDriveActive = !d.deadline || new Date(d.deadline) >= new Date(new Date().setHours(0,0,0,0));
+      if (isDriveActive) {
+        return acc + (d.rounds?.length || 0);
+      }
+      return acc;
+    }, 0);
+  }, [filteredDrives]);
   
   // Modal state
   const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -671,11 +771,11 @@ const FacultyPlacementDashboard = () => {
   ) || [];
 
   const groupedSelections = React.useMemo(() => {
-    if (!selections) return [];
+    if (!filteredSelections) return [];
     const map = {};
-    selections.forEach(sel => {
-      const dId = sel.drive?._id;
-      if (!dId) return;
+    filteredSelections.forEach(sel => {
+      if (!sel || !sel.drive || !sel.drive._id) return;
+      const dId = sel.drive._id;
       if (!map[dId]) {
         map[dId] = {
           drive: sel.drive,
@@ -687,9 +787,9 @@ const FacultyPlacementDashboard = () => {
       }
     });
     return Object.values(map);
-  }, [selections]);
+  }, [filteredSelections]);
 
-  if (loading && drives.length === 0 && feedbacks.length === 0) return (
+  if (loading && (!drives || drives.length === 0) && (!feedbacks || feedbacks.length === 0)) return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
       <div className="w-12 h-12 border-4 border-purple-500/20 border-t-[var(--primary)] rounded-full animate-spin"></div>
       <p className="text-[var(--text-secondary)] font-medium">Loading placement analytics...</p>
@@ -720,6 +820,32 @@ const FacultyPlacementDashboard = () => {
         </div>
       )}
 
+      {/* Header with Batch Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 rounded-3xl">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-display font-black text-[var(--text-primary)] tracking-tight">Placement Analytics</h1>
+          <p className="text-[var(--text-secondary)] text-sm font-medium mt-1">Real-time drive tracking, hiring rounds & placement statistics.</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 bg-[var(--bg-input)] border border-[var(--border-light)] px-4 py-2.5 rounded-2xl shadow-sm">
+            <Filter size={16} className="text-[var(--primary)] shrink-0" />
+            <span className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider">Batch:</span>
+            <select
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+              className="bg-transparent text-sm font-black text-[var(--text-primary)] focus:outline-none cursor-pointer pr-2"
+              id="placement-batch-filter"
+            >
+              <option value="all">All Batches</option>
+              {availableBatches.map(b => (
+                <option key={b} value={b}>Batch {b}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <motion.div 
         variants={containerVariants}
@@ -728,10 +854,10 @@ const FacultyPlacementDashboard = () => {
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
       >
         {[
-          { label: 'Active Drives', value: drives.length, icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50' },
-          { label: 'Total Placed', value: stats?.find(s => s._id === 'selected')?.count || 0, icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'Avg Package', value: '8.4 LPA', icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-50' },
-          { label: 'Ongoing Rounds', value: '12', icon: Filter, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { label: 'Active Drives', value: activeDrivesCount, icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50' },
+          { label: 'Total Placed', value: totalPlacedCount, icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { label: 'Avg Package', value: avgPackageStr, icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-50' },
+          { label: 'Ongoing Rounds', value: ongoingRoundsCount, icon: Filter, color: 'text-amber-500', bg: 'bg-amber-50' },
         ].map((stat, i) => (
           <motion.div
             key={i}
@@ -773,7 +899,7 @@ const FacultyPlacementDashboard = () => {
 
         {activeTab === 'drives' && (
           <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 gap-4">
-            {drives.map((drive, idx) => (
+            {filteredDrives.map((drive, idx) => (
               <motion.div
                 key={drive._id}
                 variants={itemVariants}
@@ -786,11 +912,14 @@ const FacultyPlacementDashboard = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-display font-black text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">{drive.companyName}</h3>
-                    <div className="flex items-center gap-3 text-[13px] font-medium text-[var(--text-secondary)] mt-1.5">
+                    <div className="flex items-center flex-wrap gap-3 text-[13px] font-medium text-[var(--text-secondary)] mt-1.5">
                       <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{drive.driveType || 'Placement Drive'}</span>
                       {drive.campusType && (
                         <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md capitalize">{drive.campusType}</span>
                       )}
+                      <span className="text-indigo-600 font-bold bg-indigo-50 border border-indigo-200/50 px-2 py-0.5 rounded-md text-[12px] flex items-center gap-1">
+                        <GraduationCap size={13} /> Batch {normalizeBatch(drive.batch || '2027')}
+                      </span>
                       {drive.package && (
                         <>
                           <span className="opacity-50">•</span>
@@ -813,7 +942,7 @@ const FacultyPlacementDashboard = () => {
                   </div>
                   <div className="hidden md:flex flex-col items-end">
                     <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Deadline</p>
-                    <p className="text-[14px] font-bold text-[var(--text-primary)] mt-1">{new Date(drive.deadline).toLocaleDateString()}</p>
+                    <p className="text-[14px] font-bold text-[var(--text-primary)] mt-1">{drive.deadline ? new Date(drive.deadline).toLocaleDateString() : 'N/A'}</p>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-[var(--bg-app)] flex items-center justify-center border border-[var(--border-light)] group-hover:bg-[var(--primary)] group-hover:border-[var(--primary)] group-hover:text-white transition-all duration-300">
                     <ChevronRight size={16} className="text-[var(--text-secondary)] group-hover:text-white" />
@@ -822,13 +951,13 @@ const FacultyPlacementDashboard = () => {
               </motion.div>
             ))}
 
-            {drives.length === 0 && (
+            {filteredDrives.length === 0 && (
               <motion.div variants={itemVariants} className="glass-card p-16 text-center border-dashed">
                 <div className="w-20 h-20 bg-slate-50 border border-[var(--border-light)] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
                   <Clock className="text-[#CBD5E1]" size={36} />
                 </div>
                 <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">No Drives Found</h3>
-                <p className="text-[var(--text-secondary)] font-medium mt-3 max-w-md mx-auto">Start by creating a new placement drive.</p>
+                <p className="text-[var(--text-secondary)] font-medium mt-3 max-w-md mx-auto">No placement drives found for {selectedBatch === 'all' ? 'any batch' : `Batch ${selectedBatch}`}.</p>
               </motion.div>
             )}
           </motion.div>
@@ -969,8 +1098,8 @@ const FacultyPlacementDashboard = () => {
                       <Briefcase className="text-emerald-500" size={24} />
                     </div>
                     <div>
-                      <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{group.drive.companyName}</h3>
-                      <p className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1 inline-block">{group.drive.package}</p>
+                      <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{group.drive?.companyName || 'Drive'}</h3>
+                      <p className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1 inline-block">{group.drive?.package || 'N/A'}</p>
                     </div>
                   </div>
                   <div className="text-right">
