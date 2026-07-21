@@ -143,7 +143,7 @@ export default function ActivityLogsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border-light)] text-left">
-                  {['When', 'User', 'Module', 'Method', 'Description', 'Status'].map((h) => (
+                  {['When', 'User', 'Module', 'Method', 'Description', 'Device / IP', 'Status'].map((h) => (
                     <th key={h} className="px-5 py-4 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest whitespace-nowrap">
                       {h}
                     </th>
@@ -174,6 +174,25 @@ export default function ActivityLogsPage() {
                       </td>
                       <td className="px-5 py-3.5 text-xs text-[var(--text-primary)] max-w-md truncate" title={log.description}>
                         {log.description}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="font-bold text-xs text-[var(--text-primary)]">
+                          {(() => {
+                            if (!log.userAgent) return 'Unknown Device';
+                            const parser = new UAParser(log.userAgent);
+                            const b = parser.getBrowser();
+                            const o = parser.getOS();
+                            if (b.name && o.name) return `${b.name} on ${o.name}`;
+                            if (b.name) return b.name;
+                            if (o.name) return o.name;
+                            return 'Unknown Device';
+                          })()}
+                        </div>
+                        {log.ip && (
+                          <div className="text-[10px] text-[var(--text-secondary)]">
+                            IP: {log.ip === '::1' || log.ip === '127.0.0.1' ? `Local Network (${log.ip})` : log.ip}
+                          </div>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
                         {log.success ? (
