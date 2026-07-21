@@ -4,6 +4,7 @@ import { History, Search, Filter, ChevronLeft, ChevronRight, CheckCircle2, XCirc
 import { format, isValid } from 'date-fns';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import { UAParser } from 'ua-parser-js';
 
 const METHOD_COLORS = {
   POST: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500',
@@ -142,7 +143,7 @@ export default function ActivityLogsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--border-light)] text-left">
-                  {['When', 'User', 'Module', 'Method', 'Description', 'IP', 'Status'].map((h) => (
+                  {['When', 'User', 'Module', 'Method', 'Description', 'Status'].map((h) => (
                     <th key={h} className="px-5 py-4 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest whitespace-nowrap">
                       {h}
                     </th>
@@ -173,9 +174,6 @@ export default function ActivityLogsPage() {
                       </td>
                       <td className="px-5 py-3.5 text-xs text-[var(--text-primary)] max-w-md truncate" title={log.description}>
                         {log.description}
-                      </td>
-                      <td className="px-5 py-3.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap font-mono">
-                        {log.ip || '—'}
                       </td>
                       <td className="px-5 py-3.5">
                         {log.success ? (
