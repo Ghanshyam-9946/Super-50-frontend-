@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Provider, useSelector } from 'react-redux';
+import { Provider, useSelector, useDispatch } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { store } from './app/store';
+import { logout } from './features/auth/authSlice';
 
 import Layout from './components/Layout';
 
@@ -100,6 +102,44 @@ const Super50Guard = ({ children }) => {
   if (!user.isSuper50) return <Navigate to="/leaderboard" replace />;
   return children;
 };
+
+// Auto log out user after 6 hours of inactivity
+function IdleTimer() {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let timeoutId;
+    const TIMEOUT_LIMIT = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        dispatch(logout());
+        toast.error('Session expired due to inactivity');
+      }, TIMEOUT_LIMIT);
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    resetTimer();
+
+    events.forEach((event) => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach((event) => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [user, dispatch]);
+
+  return null;
+}
 
 function AppRoutes({ theme, toggleTheme }) {
   return (
@@ -300,6 +340,7 @@ export default function App() {
   return (
     <Provider store={store}>
       <BrowserRouter>
+        <IdleTimer />
         <AppRoutes theme={theme} toggleTheme={toggleTheme} />
         <Toaster
           position="top-right"

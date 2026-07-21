@@ -7,11 +7,24 @@ const storedUser = localStorage.getItem('super50_user');
 export const login = createAsyncThunk('auth/login', async (credentials, { rejectWithValue }) => {
   try {
     const { data } = await api.post('/auth/login', credentials);
+    if (!data.otpRequired) {
+      localStorage.setItem('super50_token', data.token);
+      localStorage.setItem('super50_user', JSON.stringify(data.user));
+    }
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Login failed');
+  }
+});
+
+export const verifyLoginOtp = createAsyncThunk('auth/verifyLoginOtp', async ({ email, otp }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post('/auth/verify-login-otp', { email, otp });
     localStorage.setItem('super50_token', data.token);
     localStorage.setItem('super50_user', JSON.stringify(data.user));
     return data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Login failed');
+    return rejectWithValue(err.response?.data?.message || 'OTP verification failed');
   }
 });
 
@@ -81,15 +94,23 @@ const authSlice = createSlice({
     token: storedToken || null,
     loading: false,
     error: null,
+    otpRequired: false,
+    tempEmail: null,
   },
   reducers: {
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.otpRequired = false;
+      state.tempEmail = null;
       localStorage.removeItem('super50_token');
       localStorage.removeItem('super50_user');
     },
     clearError: (state) => { state.error = null; },
+    clearOtpRequired: (state) => {
+      state.otpRequired = false;
+      state.tempEmail = null;
+    },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload };
       localStorage.setItem('super50_user', JSON.stringify(state.user));
@@ -100,10 +121,29 @@ const authSlice = createSlice({
       .addCase(login.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        if (action.payload.otpRequired) {
+          state.otpRequired = true;
+          state.tempEmail = action.payload.email;
+        } else {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+          state.otpRequired = false;
+          state.tempEmail = null;
+        }
       })
       .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(verifyLoginOtp.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(verifyLoginOtp.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.otpRequired = false;
+        state.tempEmail = null;
+      })
+      .addCase(verifyLoginOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
@@ -149,5 +189,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, updateUser } = authSlice.actions;
+export const { logout, clearError, updateUser, clearOtpRequired } = authSlice.actions;
 export default authSlice.reducer;
