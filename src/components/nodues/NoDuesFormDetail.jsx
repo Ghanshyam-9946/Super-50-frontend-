@@ -398,7 +398,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           <AttendanceCriterionBox
             label="Medical"
             hint="Up to 60 hrs → up to +10%. Needs base ≥ 50%."
-            eligible={attendanceSummary.baseAttendancePercentage >= 50}
+            eligible={attendanceSummary.medicalEligible}
             editable={canEditTGAttendance}
             enabled={medicalEnabled}
             onToggle={setMedicalEnabled}
@@ -411,7 +411,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           <AttendanceCriterionBox
             label="Other RGPV QP"
             hint="Up to 40 hrs → up to +6.67%. Needs base < 60%."
-            eligible={attendanceSummary.baseAttendancePercentage < 60}
+            eligible={attendanceSummary.rgpvEligible}
             editable={canEditTGAttendance}
             enabled={rgpvEnabled}
             onToggle={setRgpvEnabled}
@@ -424,7 +424,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           <AttendanceCriterionBox
             label="Certification"
             hint="2% per approved certificate, max 3 (6%). Needs base ≥ 50%."
-            eligible={attendanceSummary.baseAttendancePercentage >= 50}
+            eligible={attendanceSummary.certificationEligible}
             editable={canEditTGAttendance}
             enabled={certEnabled}
             onToggle={setCertEnabled}
@@ -564,8 +564,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
       <div className="space-y-3">
         {form.subjects.map((subject, si) => {
           const canTickThisRow = isAdmin || isCreator || subject.faculty?._id === uid;
-          const rgpvApplicable = attendanceSummary.baseAttendancePercentage < RGPV_ATTENDANCE_THRESHOLD;
-          const isItemApplicable = (item) => item.label !== 'RGPV' || rgpvApplicable;
+          const isItemApplicable = (item) => item.label !== 'RGPV' || attendanceSummary.rgpvEligible;
           const allDone = subject.items.every((i) => i.checked || i.optional || !isItemApplicable(i));
           const isOpen = openSubjects.has(si);
           return (
