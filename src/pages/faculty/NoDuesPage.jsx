@@ -24,6 +24,7 @@ import {
   LayoutDashboard,
   Wallet,
   Percent,
+  RefreshCw,
 } from "lucide-react";
 import { Doughnut } from "react-chartjs-2";
 import {
@@ -281,7 +282,7 @@ export default function NoDuesPage() {
                 emptyText="You aren't assigned as subject faculty on any No Dues form yet."
               />
             )}
-            {tab === "dashboard" && <MyDashboardTab forms={checklistForms} user={user} />}
+            {tab === "dashboard" && <MyDashboardTab forms={checklistForms} user={user} onRefresh={refreshForms} />}
           </motion.div>
         </AnimatePresence>
       )}
@@ -311,8 +312,30 @@ function DashboardStatCard({ label, value, accent, icon: Icon }) {
 // Every calculation here is scoped to `forms` (the caller's own
 // assigned-to-me forms — as TG and/or as subject faculty), never the whole
 // department, so a teacher only ever sees numbers about their own students.
-function MyDashboardTab({ forms, user }) {
+function MyDashboardTab({ forms, user, onRefresh }) {
   const uid = user?._id;
+  const [recomputing, setRecomputing] = useState(false);
+
+  // Safe, idempotent data-consistency repair: re-derives every form's
+  // Completed/In Progress flag from the current rules (a stored
+  // isCompleted only refreshes on the next tick action on that specific
+  // form, so a rule change like a new optional item can leave old forms
+  // showing stale "In Progress" until this runs). Open to every TG, not
+  // just admins, so anyone who spots a stale status can fix it.
+  const recomputeAll = async () => {
+    setRecomputing(true);
+    try {
+      const { data } = await api.post("/no-dues/recompute-all");
+      if (data.success) {
+        toast.success(data.message);
+        await onRefresh?.();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to recompute");
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const forwardedCount = forms.filter((f) => f.forwarded).length;
@@ -362,6 +385,16 @@ function MyDashboardTab({ forms, user }) {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <button
+          onClick={recomputeAll}
+          disabled={recomputing}
+          title="Re-check every form's Completed/In Progress status against the current rules"
+          className="flex items-center gap-2 text-xs font-bold px-3.5 py-2 rounded-xl border border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all disabled:opacity-40"
+        >
+          {recomputing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Recompute All Status
+        </button>
+      </div>
       <div className="grid sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <DashboardStatCard label="My Students" value={stats.totalStudents} />
         <DashboardStatCard label="Forwarded" value={stats.forwardedCount} accent="text-[var(--primary)]" icon={ArrowRightCircle} />
@@ -1927,86 +1960,88 @@ function FormsList({
     return (
       <div
         key={form._id}
-        className={`glass-card rounded-2xl overflow-hidden flex items-stretch ${
+        className={`glass-card rounded-2xl overflow-hidden ${
           form.isCompleted ? "ring-1 ring-emerald-500/30" : highlightSky ? "ring-1 ring-sky-500/30 bg-sky-500/5" : ""
         } ${isSelected ? "ring-2 ring-[var(--primary)]" : ""}`}
       >
-        {selectMode && (
-          <button
-            onClick={() => (selectable ? toggleSelected(form._id) : null)}
-            disabled={!selectable}
-            title={selectable ? "Select for bulk forward" : "Only completed, not-yet-forwarded forms can be selected"}
-            className="flex items-center justify-center px-4 shrink-0 disabled:opacity-30"
-          >
-            <span
-              className={`w-5 h-5 rounded-md border flex items-center justify-center ${
-                isSelected ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-light)]"
-              }`}
+        <div className="flex items-stretch">
+          {selectMode && (
+            <button
+              onClick={() => (selectable ? toggleSelected(form._id) : null)}
+              disabled={!selectable}
+              title={selectable ? "Select for bulk forward" : "Only completed, not-yet-forwarded forms can be selected"}
+              className="flex items-center justify-center px-4 shrink-0 disabled:opacity-30"
             >
-              {isSelected && <Check size={13} className="text-white" />}
-            </span>
-          </button>
-        )}
-        <button
-          onClick={() => setOpenFormId(open ? null : form._id)}
-          className="flex-1 min-w-0 flex items-center justify-between gap-3 px-5 py-4 text-left"
-        >
-          <div className="min-w-0 flex items-center gap-3">
-            {form.isCompleted ? (
-              <span className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                <PartyPopper size={15} className="text-emerald-500" />
+              <span
+                className={`w-5 h-5 rounded-md border flex items-center justify-center ${
+                  isSelected ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-light)]"
+                }`}
+              >
+                {isSelected && <Check size={13} className="text-white" />}
               </span>
-            ) : highlightSky ? (
-              <span className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center shrink-0">
-                <Check size={15} className="text-sky-500" />
-              </span>
-            ) : (
-              <span className="w-8 h-8 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0">
-                <Circle size={15} className="text-slate-400" />
-              </span>
-            )}
-            <div className="min-w-0">
-              <div className="font-bold text-sm text-[var(--text-primary)] truncate">
-                {form.student?.name}{" "}
-                {form.student?.enrollmentNumber && (
-                  <span className="text-[var(--text-secondary)] font-medium">
-                    ({form.student.enrollmentNumber})
-                  </span>
-                )}{" "}
-                <span className="text-[var(--text-secondary)] font-medium">
-                  — {form.batch}
+            </button>
+          )}
+          <button
+            onClick={() => setOpenFormId(open ? null : form._id)}
+            className="flex-1 min-w-0 flex items-center justify-between gap-3 px-5 py-4 text-left"
+          >
+            <div className="min-w-0 flex items-center gap-3">
+              {form.isCompleted ? (
+                <span className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <PartyPopper size={15} className="text-emerald-500" />
                 </span>
-              </div>
-              <div className="text-[11px] text-[var(--text-secondary)]">
-                Sem {form.semester}
-                {form.section ? ` · ${form.section}` : ""} · Released by:{" "}
-                {form.createdBy?.name}
+              ) : highlightSky ? (
+                <span className="w-8 h-8 rounded-full bg-sky-500/10 flex items-center justify-center shrink-0">
+                  <Check size={15} className="text-sky-500" />
+                </span>
+              ) : (
+                <span className="w-8 h-8 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0">
+                  <Circle size={15} className="text-slate-400" />
+                </span>
+              )}
+              <div className="min-w-0">
+                <div className="font-bold text-sm text-[var(--text-primary)] truncate">
+                  {form.student?.name}{" "}
+                  {form.student?.enrollmentNumber && (
+                    <span className="text-[var(--text-secondary)] font-medium">
+                      ({form.student.enrollmentNumber})
+                    </span>
+                  )}{" "}
+                  <span className="text-[var(--text-secondary)] font-medium">
+                    — {form.batch}
+                  </span>
+                </div>
+                <div className="text-[11px] text-[var(--text-secondary)]">
+                  Sem {form.semester}
+                  {form.section ? ` · ${form.section}` : ""} · Released by:{" "}
+                  {form.createdBy?.name}
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <ProgressPill percent={percent} />
-            {highlightSky && (
-              <span className="badge bg-sky-500/10 border-sky-500/20 text-sky-500">
-                Your part done
+            <div className="flex items-center gap-2 shrink-0">
+              <ProgressPill percent={percent} />
+              {highlightSky && (
+                <span className="badge bg-sky-500/10 border-sky-500/20 text-sky-500">
+                  Your part done
+                </span>
+              )}
+              {form.forwarded && (
+                <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                  Forwarded
+                </span>
+              )}
+              <span
+                className={`badge ${form.isCompleted ? "badge-approved" : "bg-slate-500/10 border-slate-500/20 text-slate-500"}`}
+              >
+                {form.isCompleted ? "Completed" : "In Progress"}
               </span>
-            )}
-            {form.forwarded && (
-              <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
-                Forwarded
-              </span>
-            )}
-            <span
-              className={`badge ${form.isCompleted ? "badge-approved" : "bg-slate-500/10 border-slate-500/20 text-slate-500"}`}
-            >
-              {form.isCompleted ? "Completed" : "In Progress"}
-            </span>
-            <ChevronRight
-              size={16}
-              className={`text-[var(--text-secondary)] transition-transform ${open ? "rotate-90" : ""}`}
-            />
-          </div>
-        </button>
+              <ChevronRight
+                size={16}
+                className={`text-[var(--text-secondary)] transition-transform ${open ? "rotate-90" : ""}`}
+              />
+            </div>
+          </button>
+        </div>
         <AnimatePresence>
           {open && (
             <motion.div
