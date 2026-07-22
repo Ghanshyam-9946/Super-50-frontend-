@@ -1646,11 +1646,10 @@ const isSubjectItemApplicable = (item, form) =>
   item.label !== 'RGPV' || (form.attendanceSummary?.baseAttendancePercentage ?? 0) < RGPV_ATTENDANCE_THRESHOLD;
 
 // Ticked (or not-applicable/optional) items / applicable items across every
-// subject + extra item on the form — mirrors the backend's completion rule
-// so 100% here always lines up with form.isCompleted.
+// subject on the form — mirrors the backend's completion rule so 100% here
+// always lines up with form.isCompleted.
 function formProgress(form) {
-  const subjectItems = (form.subjects || []).flatMap((s) => s.items || []).filter((i) => isSubjectItemApplicable(i, form));
-  const allItems = [...subjectItems, ...(form.extraItems || [])];
+  const allItems = (form.subjects || []).flatMap((s) => s.items || []).filter((i) => isSubjectItemApplicable(i, form));
   const total = allItems.length;
   const done = allItems.filter((i) => i.checked || i.optional).length;
   return total === 0 ? 0 : Math.round((done / total) * 100);
