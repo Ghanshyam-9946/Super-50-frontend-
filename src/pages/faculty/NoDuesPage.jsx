@@ -19,13 +19,27 @@ import {
   UserCheck,
   ArrowRight,
   Settings2,
+  CheckCircle2,
+  ArrowRightCircle,
+  LayoutDashboard,
+  Wallet,
+  Percent,
 } from "lucide-react";
+import { Doughnut } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { fetchMe } from "../../features/auth/authSlice";
 import NoDuesFormDetail, {
   ReassignStudentPanel,
 } from "../../components/nodues/NoDuesFormDetail";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DEFAULT_SUBJECT_ITEMS = [
   "Assignment",
@@ -43,7 +57,7 @@ export default function NoDuesPage() {
   const { user } = useSelector((s) => s.auth);
   const dispatch = useDispatch();
   const isCoordinator = isAcademicCoordinator(user);
-  const [tab, setTab] = useState(isCoordinator ? "students" : "checklist"); // students | create | forms | checklist
+  const [tab, setTab] = useState(isCoordinator ? "students" : "dashboard"); // students | create | forms | checklist | dashboard
   const [students, setStudents] = useState([]);
   const [faculty, setFaculty] = useState([]);
   const [myForms, setMyForms] = useState([]);
@@ -144,6 +158,7 @@ export default function NoDuesPage() {
   };
 
   const tabs = [
+    { key: "dashboard", label: "My Dashboard", icon: LayoutDashboard },
     ...(isCoordinator
       ? [
           { key: "students", label: "All Students", icon: Users2 },
@@ -248,6 +263,8 @@ export default function NoDuesPage() {
                 onChange={handleFormChanged}
                 onDelete={deleteForm}
                 emptyText="You haven't created any No Dues forms yet."
+                bulkForward
+                onBulkForwarded={refreshForms}
               />
             )}
             {tab === "manage" && (
@@ -264,9 +281,118 @@ export default function NoDuesPage() {
                 emptyText="You aren't assigned as subject faculty on any No Dues form yet."
               />
             )}
+            {tab === "dashboard" && <MyDashboardTab forms={checklistForms} user={user} />}
           </motion.div>
         </AnimatePresence>
       )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────  MY DASHBOARD (TG / faculty)  ───────────────────────────── */
+
+const DASHBOARD_STATUS_COLORS = {
+  forwarded: "#8b5cf6", // purple — matches the "Forwarded" badge everywhere else
+  completed: "#10b981", // emerald — matches "Completed"
+  inProgress: "#64748b", // slate — matches "In Progress"
+};
+
+function DashboardStatCard({ label, value, accent, icon: Icon }) {
+  return (
+    <div className="glass-card p-5 rounded-2xl">
+      <div className={`flex items-center gap-2 text-2xl md:text-3xl font-display font-black leading-none ${accent || "text-[var(--text-primary)]"}`}>
+        {Icon && <Icon size={20} />} {value}
+      </div>
+      <div className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-2">{label}</div>
+    </div>
+  );
+}
+
+// Every calculation here is scoped to `forms` (the caller's own
+// assigned-to-me forms — as TG and/or as subject faculty), never the whole
+// department, so a teacher only ever sees numbers about their own students.
+function MyDashboardTab({ forms, user }) {
+  const uid = user?._id;
+
+  const stats = useMemo(() => {
+    const forwardedCount = forms.filter((f) => f.forwarded).length;
+    const completedNotForwarded = forms.filter((f) => f.isCompleted && !f.forwarded).length;
+    const inProgressCount = forms.filter((f) => !f.isCompleted).length;
+
+    const seenStudents = new Map();
+    forms.forEach((f) => {
+      if (f.student?._id) seenStudents.set(f.student._id, f.student);
+    });
+    const totalStudents = seenStudents.size;
+    const totalPendingFees = [...seenStudents.values()].reduce((sum, s) => sum + (s.duesFees || 0), 0);
+
+    const attendanceValues = forms
+      .map((f) => f.attendanceSummary?.adjustedAttendancePercentage)
+      .filter((v) => v != null);
+    const avgAttendance = attendanceValues.length
+      ? Math.round((attendanceValues.reduce((a, b) => a + b, 0) / attendanceValues.length) * 10) / 10
+      : 0;
+
+    const asTG = forms.filter((f) => f.student?.mentor?._id === uid).length;
+    const asSubjectFaculty = forms.filter((f) => (f.subjects || []).some((s) => s.faculty?._id === uid)).length;
+
+    return { forwardedCount, completedNotForwarded, inProgressCount, totalStudents, totalPendingFees, avgAttendance, asTG, asSubjectFaculty };
+  }, [forms, uid]);
+
+  const doughnutData = {
+    labels: ["Forwarded", "Completed (not forwarded)", "In Progress"],
+    datasets: [{
+      data: [stats.forwardedCount, stats.completedNotForwarded, stats.inProgressCount],
+      backgroundColor: [DASHBOARD_STATUS_COLORS.forwarded, DASHBOARD_STATUS_COLORS.completed, DASHBOARD_STATUS_COLORS.inProgress],
+      borderWidth: 0,
+    }],
+  };
+
+  if (forms.length === 0) {
+    return (
+      <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">
+        <LayoutDashboard size={40} className="text-[var(--text-secondary)] opacity-50" />
+        <p className="text-[var(--text-primary)] font-bold">No No Dues forms involve you yet.</p>
+        <p className="text-[var(--text-secondary)] text-sm max-w-md">
+          Once you're a student's TG (mentor) or get assigned a subject, their No Dues numbers will show up here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <DashboardStatCard label="My Students" value={stats.totalStudents} />
+        <DashboardStatCard label="Forwarded" value={stats.forwardedCount} accent="text-[var(--primary)]" icon={ArrowRightCircle} />
+        <DashboardStatCard label="Completed" value={stats.completedNotForwarded} accent="text-emerald-500" />
+        <DashboardStatCard label="In Progress" value={stats.inProgressCount} accent="text-slate-400" />
+        <DashboardStatCard label="Avg Attendance" value={`${stats.avgAttendance}%`} accent="text-amber-500" icon={Percent} />
+        <DashboardStatCard label="Pending Fees" value={`₹${stats.totalPendingFees}`} accent="text-red-400" icon={Wallet} />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-3">
+        <div className="glass-card p-5 rounded-2xl">
+          <h4 className="font-display font-bold text-sm text-[var(--text-primary)] mb-4">Status Breakdown</h4>
+          <div className="max-w-[260px] mx-auto">
+            <Doughnut
+              data={doughnutData}
+              options={{ plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } } }}
+            />
+          </div>
+        </div>
+        <div className="glass-card p-5 rounded-2xl flex flex-col justify-center gap-4">
+          <h4 className="font-display font-bold text-sm text-[var(--text-primary)]">Your Role On These Forms</h4>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[var(--text-secondary)] font-medium">As TG (mentor)</span>
+            <span className="badge bg-sky-500/10 border-sky-500/20 text-sky-500">{stats.asTG} student{stats.asTG !== 1 ? "s" : ""}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[var(--text-secondary)] font-medium">As subject faculty</span>
+            <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">{stats.asSubjectFaculty} student{stats.asSubjectFaculty !== 1 ? "s" : ""}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1639,11 +1765,13 @@ function EditReleaseDetailsPanel({ group, onSaved }) {
 
 /* ─────────────────────────────  FORMS LIST (shared)  ───────────────────────────── */
 
-// Must match the backend's ATTENDANCE_RULES.otherRgpvQp.maxBaseAttendance —
-// the RGPV subject item only applies (and blocks completion) below this.
-const RGPV_ATTENDANCE_THRESHOLD = 60;
+// rgpvEligible is computed server-side from the student's RAW (un-rounded)
+// attendance — reading it directly here (instead of re-deriving from the
+// rounded baseAttendancePercentage) keeps this always in sync with the
+// backend's own completion check, so "100% progress" here can never
+// disagree with the server's isCompleted flag.
 const isSubjectItemApplicable = (item, form) =>
-  item.label !== 'RGPV' || (form.attendanceSummary?.baseAttendancePercentage ?? 0) < RGPV_ATTENDANCE_THRESHOLD;
+  item.label !== 'RGPV' || !!form.attendanceSummary?.rgpvEligible;
 
 // Ticked (or not-applicable/optional) items / applicable items across every
 // subject on the form — mirrors the backend's completion rule so 100% here
@@ -1679,10 +1807,48 @@ function FormsList({
   onChange,
   onDelete,
   emptyText,
+  bulkForward = false,
+  onBulkForwarded,
 }) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("name"); // name | roll
   const uid = user?._id;
+
+  // Bulk-forward mode (coordinator only, "Forms I Released" tab) — pick
+  // several fully-completed, not-yet-forwarded forms and forward them all
+  // in one request instead of opening each one individually.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkRemark, setBulkRemark] = useState("");
+  const [bulkForwarding, setBulkForwarding] = useState(false);
+
+  const toggleSelected = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const submitBulkForward = async () => {
+    if (selectedIds.length === 0) return toast.error("Select at least one form");
+    setBulkForwarding(true);
+    try {
+      const { data } = await api.patch("/no-dues/bulk-forward", {
+        formIds: selectedIds,
+        remark: bulkRemark.trim(),
+      });
+      if (data.success) {
+        toast.success(data.message);
+        if (data.data?.skipped?.length) {
+          data.data.skipped.forEach((s) => toast.error(`${s.name}: ${s.reason}`, { duration: 5000 }));
+        }
+        setSelectedIds([]);
+        setBulkRemark("");
+        setSelectMode(false);
+        await onBulkForwarded?.();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Bulk forward failed");
+    } finally {
+      setBulkForwarding(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -1755,16 +1921,35 @@ function FormsList({
       mySubjects.length > 0 &&
       mySubjects.every((s) => s.items.every((i) => i.checked || i.optional || !isSubjectItemApplicable(i, form)));
     const highlightSky = myPartDone && !form.isCompleted;
+    // Only fully-completed, not-yet-forwarded forms can be bulk-selected.
+    const selectable = bulkForward && form.isCompleted && !form.forwarded;
+    const isSelected = selectedIds.includes(form._id);
     return (
       <div
         key={form._id}
-        className={`glass-card rounded-2xl overflow-hidden ${
+        className={`glass-card rounded-2xl overflow-hidden flex items-stretch ${
           form.isCompleted ? "ring-1 ring-emerald-500/30" : highlightSky ? "ring-1 ring-sky-500/30 bg-sky-500/5" : ""
-        }`}
+        } ${isSelected ? "ring-2 ring-[var(--primary)]" : ""}`}
       >
+        {selectMode && (
+          <button
+            onClick={() => (selectable ? toggleSelected(form._id) : null)}
+            disabled={!selectable}
+            title={selectable ? "Select for bulk forward" : "Only completed, not-yet-forwarded forms can be selected"}
+            className="flex items-center justify-center px-4 shrink-0 disabled:opacity-30"
+          >
+            <span
+              className={`w-5 h-5 rounded-md border flex items-center justify-center ${
+                isSelected ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-light)]"
+              }`}
+            >
+              {isSelected && <Check size={13} className="text-white" />}
+            </span>
+          </button>
+        )}
         <button
           onClick={() => setOpenFormId(open ? null : form._id)}
-          className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left"
+          className="flex-1 min-w-0 flex items-center justify-between gap-3 px-5 py-4 text-left"
         >
           <div className="min-w-0 flex items-center gap-3">
             {form.isCompleted ? (
@@ -1866,7 +2051,44 @@ function FormsList({
           <option value="name">Sort: Name</option>
           <option value="roll">Sort: Roll No</option>
         </select>
+        {bulkForward && (
+          <button
+            onClick={() => {
+              setSelectMode((v) => !v);
+              setSelectedIds([]);
+            }}
+            className={`text-sm font-bold px-3.5 py-2.5 rounded-xl border shrink-0 flex items-center gap-1.5 ${
+              selectMode
+                ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                : "border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+            }`}
+          >
+            <CheckCircle2 size={14} /> {selectMode ? "Cancel" : "Select to Forward"}
+          </button>
+        )}
       </div>
+
+      {selectMode && (
+        <div className="glass-card rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sticky top-2 z-10">
+          <span className="text-sm font-bold text-[var(--text-primary)] shrink-0">
+            {selectedIds.length} selected
+          </span>
+          <input
+            value={bulkRemark}
+            onChange={(e) => setBulkRemark(e.target.value)}
+            placeholder="Remark (only needed for students with dues fees pending)"
+            className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3.5 py-2 text-sm text-[var(--text-primary)] outline-none"
+          />
+          <button
+            onClick={submitBulkForward}
+            disabled={bulkForwarding || selectedIds.length === 0}
+            className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 shrink-0 disabled:opacity-40"
+          >
+            {bulkForwarding ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightCircle size={15} />}
+            Forward Selected ({selectedIds.length})
+          </button>
+        </div>
+      )}
 
       {sorted.length === 0 ? (
         <div className="glass-card p-10 text-center rounded-3xl">
