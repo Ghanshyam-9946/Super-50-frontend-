@@ -71,6 +71,9 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   // Dues fees: the coordinator who released the form, admin, or the
   // student's own TG (mentor) can update it.
   const canEditDuesFees = canEditRemarks || isTG;
+  // "Other Requirements" (training report, internship, etc.): same set of
+  // people as dues fees — coordinator, TG, or admin.
+  const canEditExtraItems = canEditRemarks || isTG;
 
   const upgrade = form.attendanceUpgrade || {};
   const attendanceSummary = form.attendanceSummary || {
@@ -696,11 +699,13 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
         })}
       </div>
 
-      {/* TG-only extra items */}
+      {/* Other Requirements — ticked by the coordinator who released the
+          form, or the student's TG (mentor), or admin. Only "Semester
+          Break Training Report" is mandatory; the rest are optional. */}
       <div className="glass-card rounded-2xl p-4">
         <h4 className="font-display font-bold text-sm text-[var(--text-primary)] mb-1">Other Requirements</h4>
         <p className="text-[11px] text-[var(--text-secondary)] font-medium mb-3">
-          Ticked only by the mentor (TG) after proof is submitted directly to them.
+          Ticked by the Academic Coordinator or the mentor (TG) after proof is submitted directly to them.
         </p>
         <div className="grid sm:grid-cols-2 gap-2">
           {form.extraItems.map((item, ii) => {
@@ -709,13 +714,13 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
             return (
               <button
                 key={ii}
-                disabled={!canEditRemarks || busy}
+                disabled={!canEditExtraItems || busy}
                 onClick={() => toggleExtraItem(ii, !item.checked)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all ${
                   item.checked
                     ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600'
                     : 'border-[var(--border-light)] text-[var(--text-secondary)]'
-                } ${canEditRemarks ? 'hover:bg-[var(--bg-hover)] cursor-pointer' : 'cursor-default opacity-80'}`}
+                } ${canEditExtraItems ? 'hover:bg-[var(--bg-hover)] cursor-pointer' : 'cursor-default opacity-80'}`}
               >
                 {busy ? (
                   <Loader2 size={15} className="animate-spin shrink-0" />
@@ -724,7 +729,10 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
                 ) : (
                   <Circle size={15} className="shrink-0" />
                 )}
-                <span className="truncate">{item.label}</span>
+                <span className="truncate">
+                  {item.label}
+                  {item.optional && <span className="text-[var(--text-secondary)] font-normal"> (optional)</span>}
+                </span>
               </button>
             );
           })}
