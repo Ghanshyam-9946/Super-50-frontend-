@@ -4,7 +4,7 @@ import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,6 +95,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
     { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
     { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
+    { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
   ];
 
   const super50AdminLinks = [
