@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useEffect, useState, useRef } from "react";
-import { ArrowRight, Sparkles, LogIn, Briefcase, Trophy } from "lucide-react";
+import { useRef } from "react";
+import { ArrowRight, Sparkles, Shield, Award, Users, TrendingUp, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export function Hero() {
@@ -11,189 +11,129 @@ export function Hero() {
     offset: ["start start", "end start"]
   });
 
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, -100]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, -200]);
-  const rotate = useTransform(scrollYProgress, [0, 1], [0, 5]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-
-  const titleWords = "Platform for".split(" ");
-  const highlightWords = "Monitoring Individual Learning and Excellence".split(" ");
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
 
   return (
-    <section ref={containerRef} className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 pt-24 pb-16">
-      {/* Modern Grid and Vibrant Glow Background */}
-      <div className="absolute inset-0 z-0 bg-white dark:bg-[#0a0a0a]">
-        {/* Subtle Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-
-        {/* Clean Glowing Orbs */}
-        <div className="absolute top-0 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] animate-blob" />
-        <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] translate-x-1/2 rounded-full bg-purple-500/20 dark:bg-purple-600/20 blur-[120px] animate-blob" style={{ animationDelay: "-4s" }} />
-        <div className="absolute -bottom-32 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-pink-500/20 dark:bg-pink-600/20 blur-[120px] animate-blob" style={{ animationDelay: "-8s" }} />
+    <section ref={containerRef} className="relative flex min-h-[92vh] flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-20">
+      {/* Background Mesh Grid & Ambient Glows */}
+      <div className="absolute inset-0 z-0 bg-[#09090b] selection:bg-brand-indigo selection:text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_10%,#000_70%,transparent_100%)]" />
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 h-[500px] w-[700px] rounded-full bg-gradient-to-tr from-indigo-600/15 via-purple-600/15 to-pink-500/10 blur-[130px] pointer-events-none" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl text-center">
+      <div className="relative z-10 mx-auto max-w-5xl text-center">
+        {/* Subtle pill tag */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-8 inline-flex items-center gap-2.5 rounded-full glass px-5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-black shadow-lg border-white/40"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-300 backdrop-blur-md"
         >
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-orange opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-orange shadow-[0_0_10px_var(--brand-orange)]" />
-          </span>
+          <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="tracking-wide">SISTec Official Student & Placement Engine</span>
         </motion.div>
 
-        <h1 className="font-display text-5xl font-[900] leading-[1.15] tracking-tight text-black dark:text-white md:text-7xl lg:text-8xl mb-6">
-          <div className="flex flex-wrap items-center justify-center gap-x-[0.2em] mb-4">
-            {titleWords.map((word, idx) => (
-              <motion.span
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: idx * 0.1, ease: "easeOut" }}
-                className="inline-block"
-              >
-                {idx === 0 ? (
-                  <span className="relative inline-block px-5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-[1.25rem] -rotate-3 mx-1 shadow-2xl">
-                    {word}
-                  </span>
-                ) : (
-                  <span className="ml-2">
-                    {word}
-                  </span>
-                )}
-              </motion.span>
-            ))}
-          </div>
-          <div className="flex flex-wrap justify-center gap-x-[0.25em] px-4 max-w-5xl mx-auto">
-            {highlightWords.map((word, idx) => (
-              <motion.span
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 + idx * 0.1, ease: "easeOut" }}
-                className="inline-block"
-              >
-                <motion.span
-                  className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-brand-purple to-brand-orange drop-shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                  style={{ backgroundSize: "200% auto" }}
-                  animate={{
-                    backgroundPosition: ["0% center", "200% center"]
-                  }}
-                  transition={{
-                    backgroundPosition: {
-                      repeat: Infinity,
-                      duration: 20,
-                      ease: "linear"
-                    }
-                  }}
-                  whileHover={{
-                    scale: 1.05,
-                    filter: "brightness(1.1) drop-shadow(0 0 25px rgba(99,102,241,0.4))",
-                    transition: { duration: 0.3 }
-                  }}
-                >
-                  {word}
-                </motion.span>
-              </motion.span>
-            ))}
-          </div>
-        </h1>
+        {/* Crisp, human header - avoided AI word salad */}
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="font-display text-5xl font-extrabold tracking-tight text-white md:text-7xl lg:text-8xl leading-[1.08]"
+        >
+          Empowering student excellence with <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-amber-300 bg-clip-text text-transparent">clarity.</span>
+        </motion.h1>
 
+        {/* Minimal human tagline */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mx-auto mt-6 max-w-2xl text-lg md:text-xl font-normal text-slate-400 leading-relaxed"
+        >
+          One intuitive ecosystem for tracking campus placements, projects, certifications, and real-time student performance rankings.
+        </motion.p>
 
-
+        {/* Action Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-8 flex items-center justify-center"
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-10 flex flex-wrap items-center justify-center gap-4"
         >
-          <a href="#features" className="btn-premium h-14 px-10 text-base group shadow-[0_0_20px_var(--brand-indigo)/20]">
-            <Sparkles size={18} className="mr-2 transition-transform group-hover:rotate-12" />
-            Explore Ecosystem
-            <ArrowRight size={18} className="ml-2 transition-transform group-hover:translate-x-1" />
+          <button
+            onClick={() => navigate('/login')}
+            className="group relative flex h-13 items-center gap-2 rounded-full bg-white px-8 text-sm font-bold text-black transition-all hover:bg-slate-100 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/5"
+          >
+            Get Started
+            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+          </button>
+          <a
+            href="#features"
+            className="flex h-13 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 text-sm font-semibold text-slate-300 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white"
+          >
+            Explore Platform
           </a>
         </motion.div>
 
-        {/* Enhanced Layered Dashboard Preview */}
+        {/* Sleek Modern Preview Card (Web3 / Fintech Inspired Minimal Card) */}
         <motion.div
-          style={{ y: y1, rotateX: rotate, opacity }}
-          className="relative mx-auto mt-24 max-w-6xl"
+          style={{ y: y1, opacity }}
+          className="relative mx-auto mt-20 max-w-5xl"
         >
-          <div className="absolute -inset-10 rounded-[3rem] bg-gradient-to-r from-brand-indigo/20 via-brand-purple/20 to-brand-orange/20 blur-[100px] opacity-50" />
+          <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-amber-500/10 blur-2xl opacity-60" />
+          
+          <div className="relative rounded-[2rem] border border-white/10 bg-[#121318]/90 p-4 backdrop-blur-2xl shadow-2xl">
+            {/* Window header */}
+            <div className="flex items-center justify-between border-b border-white/5 px-4 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-3 rounded-full bg-rose-500/80" />
+                <div className="h-3 w-3 rounded-full bg-amber-500/80" />
+                <div className="h-3 w-3 rounded-full bg-emerald-500/80" />
+              </div>
+              <span className="text-[11px] font-mono font-medium text-slate-500">mile.sistec.ac.in/dashboard</span>
+              <div className="w-12" />
+            </div>
 
-          <div className="glass-strong relative rounded-[2.5rem] p-3 shadow-[0_50px_100px_-20px_oklch(0_0_0/0.15)] border border-white/60 overflow-hidden group">
-            <div className="rounded-[2rem] bg-white/60 backdrop-blur-xl p-8 transition-colors group-hover:bg-white/80">
-              <div className="mb-8 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-2">
-                    <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
-                    <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
-                    <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
-                  </div>
+            {/* Dashboard Content Grid */}
+            <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-left">
+              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider">Top Rankers</span>
+                  <Trophy size={16} className="text-amber-400" />
                 </div>
+                <div className="text-2xl font-bold text-white">#01 Super 50</div>
+                <span className="text-[11px] text-emerald-400 font-medium">+12 pts this week</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[
-                  { title: "Placement Power", val: "94.2%", color: "brand-indigo" },
-                  { title: "Elite Ranking", val: "#07", color: "brand-purple" },
-                  { title: "Innovation", val: "12", color: "brand-orange" }
-                ].map((item, idx) => (
-                  <motion.div
-                    key={item.title}
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 6 + idx, repeat: Infinity, ease: "easeInOut", delay: idx * 0.7 }}
-                    className="rounded-[2rem] bg-white/80 p-7 shadow-xl shadow-slate-200/50 border border-white text-left group/card hover:bg-white transition-all hover:scale-[1.02]"
-                  >
-                    <div className="text-[12px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-6">{item.title}</div>
-                    <div className={`font-display text-4xl font-[900] text-${item.color} tracking-tight`}>
-                      {item.val}
-                    </div>
-                  </motion.div>
-                ))}
+              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider">Placement Rate</span>
+                  <TrendingUp size={16} className="text-indigo-400" />
+                </div>
+                <div className="text-2xl font-bold text-white">94.8%</div>
+                <span className="text-[11px] text-slate-400 font-medium">Verified drives</span>
+              </div>
+
+              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider">Projects Vault</span>
+                  <Award size={16} className="text-purple-400" />
+                </div>
+                <div className="text-2xl font-bold text-white">100+ Live</div>
+                <span className="text-[11px] text-purple-400 font-medium">Faculty approved</span>
+              </div>
+
+              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
+                <div className="flex items-center justify-between text-slate-400 mb-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider">Certifications</span>
+                  <Shield size={16} className="text-emerald-400" />
+                </div>
+                <div className="text-2xl font-bold text-white">Verified</div>
+                <span className="text-[11px] text-emerald-400 font-medium">Instant audit</span>
               </div>
             </div>
           </div>
-
-          {/* Parallax Floating UI Elements */}
-          <motion.div
-            style={{ y: y2 }}
-            className="absolute -left-16 top-1/3 hidden md:block z-20"
-          >
-            <div className="glass rounded-[1.5rem] p-5 shadow-floating border-white/60 animate-float">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-brand-indigo to-brand-purple flex items-center justify-center shadow-xl shadow-brand-indigo/20">
-                  <Sparkles size={24} className="text-white" />
-                </div>
-                <div>
-                  <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Global Status</div>
-                  <div className="font-display text-base font-black text-foreground">Top 1% Worldwide</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            style={{ y: y2 }}
-            className="absolute -right-12 bottom-1/4 hidden md:block z-20"
-          >
-            <div className="glass rounded-[1.5rem] p-5 shadow-floating border-white/60 animate-float" style={{ animationDelay: "-3s" }}>
-              <div className="flex items-center gap-4 text-left">
-                <div className="h-12 w-12 rounded-full border-2 border-brand-orange/30 p-1">
-                  <div className="h-full w-full rounded-full bg-brand-orange/10 flex items-center justify-center">
-                    <ArrowRight size={22} className="text-brand-orange" />
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Recent Milestone</div>
-                  <div className="font-display text-base font-black text-brand-orange">Dream Offer Locked</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
       </div>
     </section>

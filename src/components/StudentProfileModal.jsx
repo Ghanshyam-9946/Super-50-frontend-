@@ -805,6 +805,51 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                         </div>
                       </div>
                     )}
+
+                    {/* Previous Semester Attendance History */}
+                    <div className="flex justify-between items-center mt-6 mb-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                      <div>
+                        <h4 className="font-bold text-slate-900">Semester-wise Attendance History</h4>
+                        <p className="text-xs text-slate-500 mt-0.5">Historical attendance records per semester.</p>
+                      </div>
+                    </div>
+
+                    {(!data?.semesterAttendance || data.semesterAttendance.length === 0) ? (
+                      <div className="text-center py-10 bg-white border rounded-2xl border-slate-200 text-slate-500 text-sm font-bold">
+                        No previous semester-wise attendance history recorded.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {data.semesterAttendance.map((semAtt) => (
+                          <div key={semAtt._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h5 className="font-bold text-slate-900">Semester {semAtt.semester}</h5>
+                                {semAtt.sessionName && <p className="text-xs text-slate-500 mt-0.5">{semAtt.sessionName}</p>}
+                                {semAtt.projectName && <p className="text-xs font-semibold text-indigo-600 mt-1">Project: {semAtt.projectName}</p>}
+                              </div>
+                              <span className={`px-2.5 py-1 rounded-md text-xs font-black font-mono ${
+                                semAtt.attendancePercentage >= 75
+                                  ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                  : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                              }`}>
+                                {semAtt.attendancePercentage}%
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs font-bold pt-2 border-t border-slate-100">
+                              <div className="bg-slate-50 p-2 rounded-xl text-center">
+                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Total Days</span>
+                                <span className="text-slate-900">{semAtt.totalDays}</span>
+                              </div>
+                              <div className="bg-slate-50 p-2 rounded-xl text-center">
+                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Present Days</span>
+                                <span className="text-slate-900">{semAtt.totalPresent}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

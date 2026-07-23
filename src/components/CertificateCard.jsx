@@ -4,17 +4,17 @@ import { Award, CheckCircle2, XCircle, Clock } from 'lucide-react';
 export default function CertificateCard({ cert }) {
   const statusConfig = {
     approved: {
-      bg: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+      bg: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
       icon: CheckCircle2,
       label: 'Approved'
     },
     rejected: {
-      bg: 'bg-red-50 text-red-600 border-red-100',
+      bg: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
       icon: XCircle,
       label: 'Rejected'
     },
     pending: {
-      bg: 'bg-amber-50 text-amber-600 border-amber-100',
+      bg: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
       icon: Clock,
       label: 'Pending'
     }

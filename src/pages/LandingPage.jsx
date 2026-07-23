@@ -18,7 +18,7 @@ import GeneralFormsSection from "@/components/GeneralFormsSection";
 
 export default function LandingPage() {
   return (
-    <div className="relative noise">
+    <div className="relative bg-[#09090b] text-white min-h-screen selection:bg-indigo-500 selection:text-white">
       <Loader />
       <Cursor />
       <MouseGlow />

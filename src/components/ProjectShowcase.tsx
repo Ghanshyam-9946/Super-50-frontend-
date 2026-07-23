@@ -1,58 +1,50 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { ExternalLink, Github as GithubIcon, Folder, Star, Users } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 const projects = [
   {
     id: 1,
-    title: "AI Grievance System",
-    category: "Full Stack · AI",
-    desc: "A municipal complaint management system using NLP for automated ward routing and priority detection.",
-    tags: ["React", "FastAPI", "Python", "PostgreSQL"],
-    stats: { stars: 124, contributors: 8 },
+    title: "AI Grievance Routing Engine",
+    category: "NLP & Automation",
+    desc: "Automated municipal complaint routing system built for real-time priority evaluation.",
+    tags: ["React", "FastAPI", "Python"],
     image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop" 
   },
   {
     id: 2,
-    title: "EcoTrack Workspace",
-    category: "SaaS · Innovation",
-    desc: "Unified ecosystem for tracking student sustainability projects and campus-wide carbon footprint metrics.",
-    tags: ["Next.js", "Tailwind", "Supabase", "Framer"],
-    stats: { stars: 89, contributors: 5 },
+    title: "Campus EcoTrack Workspace",
+    category: "Analytics & SaaS",
+    desc: "Unified analytics dashboard for measuring student sustainability metrics and campus carbon footprint.",
+    tags: ["Next.js", "Tailwind", "Supabase"],
     image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426&auto=format&fit=crop"
   },
   {
     id: 3,
-    title: "MILE Leaderboard",
-    category: "Real-time · Elite",
-    desc: "High-performance ranking engine with live socket updates and animated talent score visualization.",
-    tags: ["TypeScript", "Node.js", "Redis", "Canvas"],
-    stats: { stars: 215, contributors: 12 },
+    title: "MILE Talent Leaderboard",
+    category: "Real-time Systems",
+    desc: "High-performance student ranking engine with animated performance score breakdown.",
+    tags: ["TypeScript", "Node.js", "Redis"],
     image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop"
   }
 ];
 
 export function ProjectShowcase() {
-  const [hovered, setHovered] = useState(null);
-
   return (
-    <section id="projects" className="relative px-6 py-32 bg-slate-50/30">
+    <section id="projects" className="relative px-6 py-28 bg-[#09090b]">
       <div className="mx-auto max-w-7xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-16 flex flex-col items-end justify-between gap-8 md:flex-row"
-        >
-          <div className="max-w-2xl text-left">
-            <div className="mb-4 font-mono text-[11px] font-black uppercase tracking-[0.4em] text-brand-indigo">
-              Innovation Gallery
-            </div>
-            <h2 className="font-display text-5xl font-black md:text-7xl tracking-tight text-foreground">
-              Showcasing the <span className="text-gradient-brand">future.</span>
+        <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-3">
+            <span className="text-xs font-mono font-semibold uppercase tracking-[0.2em] text-indigo-400">
+              Student Innovation
+            </span>
+            <h2 className="font-display text-4xl md:text-5xl font-extrabold text-white tracking-tight">
+              Featured Projects
             </h2>
           </div>
-        </motion.div>
+          <p className="max-w-md text-sm text-slate-400">
+            A curated collection of verified major & minor technical projects created by SISTec students.
+          </p>
+        </div>
 
         <div className="grid gap-8 md:grid-cols-3">
           {projects.map((p, i) => (
@@ -62,44 +54,41 @@ export function ProjectShowcase() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              onMouseEnter={() => setHovered(p.id)}
-              onMouseLeave={() => setHovered(null)}
-              className="group relative flex flex-col h-[550px] overflow-hidden rounded-[2rem] bg-white shadow-md border border-slate-100"
+              className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-white/20"
             >
-              <div className="relative h-1/2 overflow-hidden">
+              <div className="relative h-48 overflow-hidden">
                 <img
                   src={p.image}
                   alt={p.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent opacity-80" />
               </div>
 
-              <div className="flex flex-1 flex-col justify-between p-8">
+              <div className="flex flex-1 flex-col justify-between p-6">
                 <div>
-                  <div className="mb-2 font-mono text-[10px] font-black uppercase tracking-wider text-brand-purple">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
                     {p.category}
-                  </div>
-                  <h3 className="mb-3 font-display text-2xl font-black">{p.title}</h3>
-                  <p className="text-sm text-muted-foreground font-medium line-clamp-2">
+                  </span>
+                  <h3 className="mt-1 font-display text-xl font-bold text-white tracking-tight">
+                    {p.title}
+                  </h3>
+                  <p className="mt-2 text-xs text-slate-400 leading-relaxed line-clamp-2">
                     {p.desc}
                   </p>
                 </div>
 
-                <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <Star size={14} className="text-black/60 dark:text-slate-400" />
-                      <span className="text-[10px] font-black text-black/60 dark:text-slate-400">{p.stats.stars}</span>
-                    </div>
-                  </div>
+                <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
                   <div className="flex gap-2">
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-100 hover:bg-slate-50">
-                      <GithubIcon size={16} className="text-black/80 dark:text-slate-400" />
-                    </button>
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-indigo text-white">
-                      <ExternalLink size={16} />
-                    </button>
+                    {p.tags.map(t => (
+                      <span key={t} className="rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-medium text-slate-300">
+                        {t}
+                      </span>
+                    ))}
                   </div>
+                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover:bg-white group-hover:text-black">
+                    <ArrowUpRight size={14} />
+                  </button>
                 </div>
               </div>
             </motion.div>
