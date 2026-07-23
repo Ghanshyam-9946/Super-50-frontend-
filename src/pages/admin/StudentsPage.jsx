@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent, deleteAllStudents } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw } from 'lucide-react';
+import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent } from '../../features/students/studentsSlice';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
@@ -10,7 +10,7 @@ import api from '../../services/api';
 function AddStudentModal({ onClose }) {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: '', enrollmentNumber: '', email: '', department: '', batch: '' });
+  const [form, setForm] = useState({ name: '', enrollmentNumber: '', email: '', department: '', batch: '', residenceType: 'Day Scholar' });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,6 +55,19 @@ function AddStudentModal({ onClose }) {
               />
             </div>
           ))}
+
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Residence Status</label>
+            <select
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm cursor-pointer"
+              value={form.residenceType}
+              onChange={(e) => setForm({ ...form, residenceType: e.target.value })}
+            >
+              <option value="Day Scholar">Day Scholar</option>
+              <option value="Hosteller">Hosteller</option>
+            </select>
+          </div>
+
           <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2" disabled={loading} id="add-student-submit">
             {loading ? <><Loader2 size={16} className="animate-spin" /> Creating...</> : <><UserPlus size={16} /> Create Account & Send Email</>}
           </button>
@@ -72,6 +85,7 @@ function EditStudentModal({ student, onClose, onSuccess }) {
     batch: student?.batch || '',
     enrollmentNumber: student?.enrollmentNumber || '',
     mentor: student?.mentor?._id || student?.mentor || '',
+    residenceType: student?.residenceType || 'Day Scholar',
   });
   const { user } = useSelector((state) => state.auth);
   const [mentors, setMentors] = useState([]);
@@ -144,7 +158,7 @@ function EditStudentModal({ student, onClose, onSuccess }) {
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mentor</label>
               <select
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm cursor-pointer"
                 value={form.mentor}
                 onChange={(e) => setForm({ ...form, mentor: e.target.value })}
               >
@@ -155,6 +169,19 @@ function EditStudentModal({ student, onClose, onSuccess }) {
               </select>
             </div>
           )}
+
+          <div>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Residence Status (Hosteller / Day Scholar)</label>
+            <select
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm cursor-pointer"
+              value={form.residenceType}
+              onChange={(e) => setForm({ ...form, residenceType: e.target.value })}
+            >
+              <option value="Day Scholar">Day Scholar</option>
+              <option value="Hosteller">Hosteller</option>
+            </select>
+          </div>
+
           <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2" disabled={loading}>
             {loading ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : <><Edit size={16} /> Save Changes</>}
           </button>
@@ -273,6 +300,10 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
+  // Pagination State (20 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
   // Super 50 Class Attendance States
   const [subTab, setSubTab] = useState('cohort');
   const [classes, setClasses] = useState([]);
@@ -333,6 +364,15 @@ export default function StudentsPage({ isSuper50 = false }) {
     }));
   }, [dispatch, dept, batch, search, mentorId, sortField, sortDir, isSuper50]);
 
+  // Reset pagination to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, dept, batch, mentorId, sortField, sortDir, isSuper50]);
+
+  const totalPages = Math.ceil(allStudents.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedStudents = allStudents.slice(startIndex, startIndex + itemsPerPage);
+
   const handleSort = (field) => {
     if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('desc'); }
@@ -341,14 +381,6 @@ export default function StudentsPage({ isSuper50 = false }) {
   const SortIcon = ({ field }) => sortField === field
     ? (sortDir === 'desc' ? <ChevronDown size={14} className="text-[var(--primary)]" /> : <ChevronUp size={14} className="text-[var(--primary)]" />)
     : <ChevronDown size={14} className="text-slate-300 opacity-50 group-hover:opacity-100" />;
-
-  const handleDeleteAllStudents = async () => {
-    if (window.confirm('Are you absolutely sure you want to delete ALL students? This action cannot be undone.')) {
-      const result = await dispatch(deleteAllStudents());
-      if (!result.error) toast.success('All students deleted successfully');
-      else toast.error('Failed to delete all students');
-    }
-  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -359,9 +391,6 @@ export default function StudentsPage({ isSuper50 = false }) {
         </motion.div>
         {user?.role === 'admin' && (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="flex gap-3">
-            <button className="text-rose-500 hover:bg-rose-500/10 border border-rose-500/20 bg-rose-500/5 rounded-xl flex items-center gap-2 px-6 py-3 font-bold text-[13px] shadow-sm transition-all" onClick={handleDeleteAllStudents}>
-              <Trash2 size={18} /> Delete All
-            </button>
             <button className="btn-premium flex items-center gap-2 px-6 py-3" onClick={() => setShowAddModal(true)} id="add-student-btn">
               <UserPlus size={18} /> Add Student
             </button>
@@ -465,11 +494,11 @@ export default function StudentsPage({ isSuper50 = false }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-light)]">
-                    {allStudents.map((student, i) => (
+                    {paginatedStudents.map((student, i) => (
                       <motion.tr key={student._id}
                         className="hover:bg-[var(--bg-hover)] transition-colors"
                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}>
-                        <td className="px-6 py-4 text-slate-400 font-bold">{i + 1}</td>
+                        <td className="px-6 py-4 text-slate-400 font-bold">{startIndex + i + 1}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-full border border-[var(--border-light)] shadow-sm flex items-center justify-center font-black text-white text-sm" style={{ background: `hsl(${(student.name.charCodeAt(0) * 37) % 360}, 60%, 40%)` }}>
@@ -484,13 +513,22 @@ export default function StudentsPage({ isSuper50 = false }) {
                         <td className="px-6 py-4 font-bold">{student.department}</td>
                         <td className="px-6 py-4 font-bold">{student.batch}</td>
                         <td className="px-6 py-4 font-bold">
-                          {student.mentor ? (
-                            <span className="text-[12px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-1 rounded-md border border-[var(--primary)]/20 whitespace-nowrap">
-                              {student.mentor?.name || student.mentor}
+                          <div className="flex flex-col gap-1 items-start">
+                            {student.mentor ? (
+                              <span className="text-[12px] bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded-md border border-[var(--primary)]/20 whitespace-nowrap">
+                                {student.mentor?.name || student.mentor}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-xs italic">Unassigned</span>
+                            )}
+                            <span className={`text-[10px] px-2 py-0.5 rounded-md font-extrabold uppercase tracking-wider border ${
+                              student.residenceType === 'Hosteller' 
+                                ? 'bg-indigo-50 text-indigo-600 border-indigo-200' 
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}>
+                              {student.residenceType || 'Day Scholar'}
                             </span>
-                          ) : (
-                            <span className="text-slate-400 text-xs italic">Unassigned</span>
-                          )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -598,6 +636,61 @@ export default function StudentsPage({ isSuper50 = false }) {
                   <div className="p-16 text-center border-t border-dashed">
                     <Users size={48} className="text-slate-300 mx-auto mb-4" />
                     <p className="text-slate-500 font-bold uppercase tracking-widest text-[11px]">No students found</p>
+                  </div>
+                )}
+                {allStudents.length > 0 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-[var(--border-light)] bg-[var(--bg-app)]/50">
+                    <div className="text-xs font-bold text-[var(--text-secondary)]">
+                      Showing <span className="text-[var(--text-primary)] font-black">{startIndex + 1}</span> to{' '}
+                      <span className="text-[var(--text-primary)] font-black">{Math.min(startIndex + itemsPerPage, allStudents.length)}</span> of{' '}
+                      <span className="text-[var(--text-primary)] font-black">{allStudents.length}</span> students
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40 disabled:hover:border-[var(--border-light)] disabled:hover:text-[var(--text-primary)] disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center"
+                        title="Previous Page"
+                        id="prev-page-btn"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, idx) => idx + 1)
+                          .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1)
+                          .reduce((acc, page, index, arr) => {
+                            if (index > 0 && page - arr[index - 1] > 1) {
+                              acc.push(<span key={`dots-${page}`} className="px-2 text-slate-400 font-black">...</span>);
+                            }
+                            acc.push(
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`w-8 h-8 rounded-xl text-xs font-black transition-all flex items-center justify-center border ${
+                                  currentPage === page
+                                    ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md shadow-[var(--primary)]/20'
+                                    : 'border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--primary)]/50'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                            return acc;
+                          }, [])}
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:border-[var(--primary)] hover:text-[var(--primary)] disabled:opacity-40 disabled:hover:border-[var(--border-light)] disabled:hover:text-[var(--text-primary)] disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center"
+                        title="Next Page"
+                        id="next-page-btn"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

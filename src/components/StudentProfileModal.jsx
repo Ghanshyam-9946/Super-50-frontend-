@@ -537,6 +537,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                             <div className="flex justify-between"><span className="text-slate-500">Email:</span><span className="font-bold text-slate-900">{data.student.email}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Batch:</span><span className="font-bold text-slate-900">{data.student.batch}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">CGPA:</span><span className="font-bold text-slate-900">{data.student.cgpa || 'N/A'}</span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Residence:</span><span className="font-bold text-indigo-600">{data.student.residenceType || 'Day Scholar'}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600">{Math.round(data.student.attendancePercentage || 0)}%</span></div>
                           </div>

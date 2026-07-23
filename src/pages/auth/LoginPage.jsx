@@ -2,16 +2,17 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { login, clearError } from '../../features/auth/authSlice';
+import { login, clearError, verifyLoginOtp, clearOtpRequired } from '../../features/auth/authSlice';
 import { GraduationCap, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, user } = useSelector((state) => state.auth);
+  const { loading, error, user, otpRequired, tempEmail } = useSelector((state) => state.auth);
 
   const [form, setForm] = useState({ email: '', password: '' });
+  const [otp, setOtp] = useState('');
   const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
@@ -44,6 +45,15 @@ export default function LoginPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     dispatch(login(form));
+  };
+
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      toast.error('Please enter a 6-digit OTP');
+      return;
+    }
+    dispatch(verifyLoginOtp({ email: tempEmail, otp }));
   };
 
   return (
@@ -101,84 +111,137 @@ export default function LoginPage() {
         </div>
 
         {/* Login Card */}
-        <div className="glass-card" style={{ padding: 32 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Welcome back 👋</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 28 }}>
-            Sign in to your account to continue
-          </p>
+        {otpRequired ? (
+          <div className="glass-card" style={{ padding: 32 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Enter OTP Key 🔑</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 20, lineHeight: '1.5' }}>
+              Please enter the 6-digit verification code sent to <strong style={{ color: '#7c3aed' }}>{tempEmail}</strong>
+            </p>
 
-          <form onSubmit={handleSubmit}>
-            {/* Email */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-                Email Address
-              </label>
-              <div style={{ position: 'relative' }}>
-                <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <form onSubmit={handleVerifyOtp}>
+              {/* OTP Input */}
+              <div style={{ marginBottom: 20 }}>
                 <input
-                  type="email"
-                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
-                  style={{ paddingLeft: 40 }}
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  type="text"
+                  maxLength={6}
+                  pattern="\d{6}"
+                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 text-center text-2xl tracking-[0.5em] text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                  placeholder="000000"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                   required
-                  id="login-email"
+                  id="login-otp"
                 />
               </div>
-            </div>
 
-            {/* Password */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ marginBottom: 6 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  Password
-                </label>
-              </div>
-              <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-10 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
-                  style={{ paddingLeft: 40, paddingRight: 40 }}
-                  placeholder="Enter your password"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  required
-                  id="login-password"
-                />
+              {/* Submit OTP */}
+              <div>
                 <button
-                  type="button"
-                  onClick={() => setShowPass(!showPass)}
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                  type="submit"
+                  className="btn-premium"
+                  style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '12px 24px', fontSize: 15 }}
+                  disabled={loading}
+                  id="otp-submit"
                 >
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {loading ? (
+                    <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Verifying...</>
+                  ) : 'Verify & Login →'}
                 </button>
               </div>
-            </div>
+            </form>
 
-            {/* Submit */}
-            <div style={{ marginTop: 28 }}>
+            <div style={{ textAlign: 'center', marginTop: 24 }}>
               <button
-                type="submit"
-                className="btn-premium"
-                style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '12px 24px', fontSize: 15 }}
-                disabled={loading}
-                id="login-submit"
+                onClick={() => {
+                  dispatch(clearOtpRequired());
+                  setOtp('');
+                }}
+                style={{ background: 'none', border: 'none', color: '#7c3aed', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
               >
-                {loading ? (
-                  <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Signing in...</>
-                ) : 'Sign In →'}
+                ← Back to Login
               </button>
             </div>
-          </form>
-
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
-              Forgot password?
-            </Link>
           </div>
-        </div>
+        ) : (
+          <div className="glass-card" style={{ padding: 32 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Welcome back 👋</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 28 }}>
+              Sign in to your account to continue
+            </p>
+
+            <form onSubmit={handleSubmit}>
+              {/* Email */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                  Email Address
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="email"
+                    className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                    style={{ paddingLeft: 40 }}
+                    placeholder="you@example.com"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    required
+                    id="login-email"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ marginBottom: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    Password
+                  </label>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-10 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                    style={{ paddingLeft: 40, paddingRight: 40 }}
+                    placeholder="Enter your password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    required
+                    id="login-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                  >
+                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <div style={{ marginTop: 28 }}>
+                <button
+                  type="submit"
+                  className="btn-premium"
+                  style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '12px 24px', fontSize: 15 }}
+                  disabled={loading}
+                  id="login-submit"
+                >
+                  {loading ? (
+                    <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Signing in...</>
+                  ) : 'Sign In →'}
+                </button>
+              </div>
+            </form>
+
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
+                Forgot password?
+              </Link>
+            </div>
+          </div>
+        )}
 
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--text-muted)' }}>
           Don't have an account?{' '}

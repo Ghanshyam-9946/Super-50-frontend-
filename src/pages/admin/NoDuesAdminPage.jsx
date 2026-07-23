@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck2, ChevronRight, PartyPopper, Circle,
-  Wallet, Percent, ArrowRightCircle, Download, Loader2,
+  Wallet, Percent, ArrowRightCircle, Download, Loader2, RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -52,6 +52,7 @@ function OverviewTab({ user }) {
   const [filter, setFilter] = useState('');
   const [openFormId, setOpenFormId] = useState(null);
   const [downloading, setDownloading] = useState(false);
+  const [recomputing, setRecomputing] = useState(false);
 
   const downloadForwarded = async () => {
     setDownloading(true);
@@ -79,7 +80,7 @@ function OverviewTab({ user }) {
       if (filter) params.completed = filter;
       const { data } = await api.get('/no-dues', { params });
       if (data.success) setForms(data.data);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load No Dues forms');
     } finally {
       setLoading(false);
@@ -89,6 +90,26 @@ function OverviewTab({ user }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // One-time repair: re-run isCompleted for every form using the CURRENT
+  // rules — needed after a completion-rule change (a new optional item, a
+  // threshold fix, etc.), since a form's stored isCompleted flag only ever
+  // refreshes when someone next ticks an item on that specific form.
+  const recomputeAll = async () => {
+    if (!window.confirm('Re-check completion status for every No Dues form using the current rules? This is safe and reversible.')) return;
+    setRecomputing(true);
+    try {
+      const { data } = await api.post('/no-dues/recompute-all');
+      if (data.success) {
+        toast.success(data.message);
+        await load();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to recompute');
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   const handleChange = (updated) => setForms((prev) => prev.map((f) => (f._id === updated._id ? updated : f)));
 
@@ -200,10 +221,20 @@ function OverviewTab({ user }) {
           <option value="true">Completed</option>
           <option value="false">In Progress</option>
         </select>
+        {user?.role === 'admin' && (
+          <button
+            onClick={recomputeAll}
+            disabled={recomputing}
+            title="Re-check every form's Completed/In Progress status against the current rules"
+            className="ml-auto flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl border border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all disabled:opacity-40"
+          >
+            {recomputing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Recompute All Status
+          </button>
+        )}
         <button
           onClick={downloadForwarded}
           disabled={downloading}
-          className="ml-auto flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl border border-[var(--primary)]/30 text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all disabled:opacity-40"
+          className={`flex items-center gap-2 text-xs font-bold px-4 py-2.5 rounded-xl border border-[var(--primary)]/30 text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-all disabled:opacity-40 ${user?.role === 'admin' ? '' : 'ml-auto'}`}
         >
           {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Download Forwarded (Excel)
         </button>
