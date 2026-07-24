@@ -11,11 +11,10 @@ const DEFAULT_SUBJECT_ITEMS = ['Assignment', 'Tutorial', 'POD AI Quiz', 'Present
 const RGPV_ATTENDANCE_THRESHOLD = 60;
 
 /**
- * Renders one No Dues form's full checklist (subject rows + extra items +
- * remarks), enforcing the same permission rules as the backend:
+ * Renders one No Dues form's full checklist (subject rows + remarks),
+ * enforcing the same permission rules as the backend:
  *   - a subject row's items can only be ticked by that subject's faculty,
  *     the form's creator (TG), or an admin
- *   - extra items can only be ticked by the form's creator (TG) or an admin
  * Anyone else (including the student) sees a read-only view.
  */
 export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete, showDeleteButton }) {
@@ -71,9 +70,6 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
   // Dues fees: the coordinator who released the form, admin, or the
   // student's own TG (mentor) can update it.
   const canEditDuesFees = canEditRemarks || isTG;
-  // "Other Requirements" (training report, internship, etc.): same set of
-  // people as dues fees — coordinator, TG, or admin.
-  const canEditExtraItems = canEditRemarks || isTG;
 
   const upgrade = form.attendanceUpgrade || {};
   const attendanceSummary = form.attendanceSummary || {
@@ -254,22 +250,6 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
     await toggleSubjectItem(si, ii, true, hours);
   };
 
-  const toggleExtraItem = async (itemIndex, nextChecked) => {
-    const key = `e${itemIndex}`;
-    setBusyKey(key);
-    try {
-      const { data } = await api.patch(`/no-dues/${form._id}/extra-item`, {
-        itemIndex,
-        checked: nextChecked,
-      });
-      if (data.success) await onChange(data.data);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Update failed');
-    } finally {
-      setBusyKey(null);
-    }
-  };
-
   const saveRemarks = async () => {
     setSavingRemarks(true);
     try {
@@ -320,7 +300,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
             <button
               onClick={clickMarkForward}
               disabled={!form.isCompleted || forwarding}
-              title={!form.isCompleted ? 'Complete every subject and extra item first' : ''}
+              title={!form.isCompleted ? 'Complete every subject checklist first' : ''}
               className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 disabled:opacity-40"
             >
               {forwarding ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightCircle size={15} />} Mark Forward
@@ -418,7 +398,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           <AttendanceCriterionBox
             label="Medical"
             hint="Up to 60 hrs → up to +10%. Needs base ≥ 50%."
-            eligible={attendanceSummary.baseAttendancePercentage >= 50}
+            eligible={attendanceSummary.medicalEligible}
             editable={canEditTGAttendance}
             enabled={medicalEnabled}
             onToggle={setMedicalEnabled}
@@ -431,7 +411,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           <AttendanceCriterionBox
             label="Other RGPV QP"
             hint="Up to 40 hrs → up to +6.67%. Needs base < 60%."
-            eligible={attendanceSummary.baseAttendancePercentage < 60}
+            eligible={attendanceSummary.rgpvEligible}
             editable={canEditTGAttendance}
             enabled={rgpvEnabled}
             onToggle={setRgpvEnabled}
@@ -444,7 +424,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
           <AttendanceCriterionBox
             label="Certification"
             hint="2% per approved certificate, max 3 (6%). Needs base ≥ 50%."
-            eligible={attendanceSummary.baseAttendancePercentage >= 50}
+            eligible={attendanceSummary.certificationEligible}
             editable={canEditTGAttendance}
             enabled={certEnabled}
             onToggle={setCertEnabled}
@@ -584,8 +564,7 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
       <div className="space-y-3">
         {form.subjects.map((subject, si) => {
           const canTickThisRow = isAdmin || isCreator || subject.faculty?._id === uid;
-          const rgpvApplicable = attendanceSummary.baseAttendancePercentage < RGPV_ATTENDANCE_THRESHOLD;
-          const isItemApplicable = (item) => item.label !== 'RGPV' || rgpvApplicable;
+          const isItemApplicable = (item) => item.label !== 'RGPV' || attendanceSummary.rgpvEligible;
           const allDone = subject.items.every((i) => i.checked || i.optional || !isItemApplicable(i));
           const isOpen = openSubjects.has(si);
           return (
@@ -697,46 +676,6 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
             </div>
           );
         })}
-      </div>
-
-      {/* Other Requirements — ticked by the coordinator who released the
-          form, or the student's TG (mentor), or admin. Only "Semester
-          Break Training Report" is mandatory; the rest are optional. */}
-      <div className="glass-card rounded-2xl p-4">
-        <h4 className="font-display font-bold text-sm text-[var(--text-primary)] mb-1">Other Requirements</h4>
-        <p className="text-[11px] text-[var(--text-secondary)] font-medium mb-3">
-          Ticked by the Academic Coordinator or the mentor (TG) after proof is submitted directly to them.
-        </p>
-        <div className="grid sm:grid-cols-2 gap-2">
-          {form.extraItems.map((item, ii) => {
-            const key = `e${ii}`;
-            const busy = busyKey === key;
-            return (
-              <button
-                key={ii}
-                disabled={!canEditExtraItems || busy}
-                onClick={() => toggleExtraItem(ii, !item.checked)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold text-left transition-all ${
-                  item.checked
-                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600'
-                    : 'border-[var(--border-light)] text-[var(--text-secondary)]'
-                } ${canEditExtraItems ? 'hover:bg-[var(--bg-hover)] cursor-pointer' : 'cursor-default opacity-80'}`}
-              >
-                {busy ? (
-                  <Loader2 size={15} className="animate-spin shrink-0" />
-                ) : item.checked ? (
-                  <CheckCircle2 size={15} className="shrink-0" />
-                ) : (
-                  <Circle size={15} className="shrink-0" />
-                )}
-                <span className="truncate">
-                  {item.label}
-                  {item.optional && <span className="text-[var(--text-secondary)] font-normal"> (optional)</span>}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Remarks */}
