@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck2, ChevronRight, PartyPopper, Circle,
-  Wallet, Percent, ArrowRightCircle, Download, Loader2, RefreshCw,
+  Wallet, Percent, ArrowRightCircle, Download, Loader2, RefreshCw, CheckCircle2, Check,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -54,6 +54,14 @@ function OverviewTab({ user }) {
   const [downloading, setDownloading] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
 
+  // Bulk-forward mode — pick several fully-completed, not-yet-forwarded
+  // forms (across whichever filter is active) and forward them all in one
+  // request instead of opening each one individually.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkRemark, setBulkRemark] = useState('');
+  const [bulkForwarding, setBulkForwarding] = useState(false);
+
   const downloadForwarded = async () => {
     setDownloading(true);
     try {
@@ -77,9 +85,13 @@ function OverviewTab({ user }) {
     setLoading(true);
     try {
       const params = {};
-      if (filter) params.completed = filter;
+      // "Forwarded" isn't a param the backend understands (it filters on
+      // isCompleted only) — fetch everything and narrow it down here.
+      if (filter === 'true' || filter === 'false') params.completed = filter;
       const { data } = await api.get('/no-dues', { params });
-      if (data.success) setForms(data.data);
+      if (data.success) {
+        setForms(filter === 'forwarded' ? data.data.filter((f) => f.forwarded) : data.data);
+      }
     } catch {
       toast.error('Failed to load No Dues forms');
     } finally {
@@ -112,6 +124,42 @@ function OverviewTab({ user }) {
   };
 
   const handleChange = (updated) => setForms((prev) => prev.map((f) => (f._id === updated._id ? updated : f)));
+
+  // Only fully-completed, not-yet-forwarded forms can be bulk-selected.
+  const eligibleIds = useMemo(
+    () => forms.filter((f) => f.isCompleted && !f.forwarded).map((f) => f._id),
+    [forms]
+  );
+
+  const toggleSelected = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const selectAllEligible = () => setSelectedIds(eligibleIds);
+
+  const submitBulkForward = async () => {
+    if (selectedIds.length === 0) return toast.error('Select at least one form');
+    setBulkForwarding(true);
+    try {
+      const { data } = await api.patch('/no-dues/bulk-forward', {
+        formIds: selectedIds,
+        remark: bulkRemark.trim(),
+      });
+      if (data.success) {
+        toast.success(data.message);
+        if (data.data?.skipped?.length) {
+          data.data.skipped.forEach((s) => toast.error(`${s.name}: ${s.reason}`, { duration: 5000 }));
+        }
+        setSelectedIds([]);
+        setBulkRemark('');
+        setSelectMode(false);
+        await load();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Bulk forward failed');
+    } finally {
+      setBulkForwarding(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const forwardedCount = forms.filter((f) => f.forwarded).length;
@@ -220,7 +268,21 @@ function OverviewTab({ user }) {
           <option value="">All</option>
           <option value="true">Completed</option>
           <option value="false">In Progress</option>
+          <option value="forwarded">Forwarded</option>
         </select>
+        <button
+          onClick={() => {
+            setSelectMode((v) => !v);
+            setSelectedIds([]);
+          }}
+          className={`text-xs font-bold px-4 py-2.5 rounded-xl border flex items-center gap-1.5 ${
+            selectMode
+              ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+              : 'border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+          }`}
+        >
+          <CheckCircle2 size={14} /> {selectMode ? 'Cancel' : 'Select to Forward'}
+        </button>
         {user?.role === 'admin' && (
           <button
             onClick={recomputeAll}
@@ -240,6 +302,35 @@ function OverviewTab({ user }) {
         </button>
       </div>
 
+      {selectMode && (
+        <div className="glass-card rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sticky top-2 z-10">
+          <span className="text-sm font-bold text-[var(--text-primary)] shrink-0">
+            {selectedIds.length} selected
+          </span>
+          <button
+            onClick={selectAllEligible}
+            disabled={eligibleIds.length === 0}
+            className="text-xs font-bold px-3.5 py-2 rounded-xl border border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all disabled:opacity-40 shrink-0"
+          >
+            Select All ({eligibleIds.length})
+          </button>
+          <input
+            value={bulkRemark}
+            onChange={(e) => setBulkRemark(e.target.value)}
+            placeholder="Remark (only needed for students with dues fees pending)"
+            className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3.5 py-2 text-sm text-[var(--text-primary)] outline-none"
+          />
+          <button
+            onClick={submitBulkForward}
+            disabled={bulkForwarding || selectedIds.length === 0}
+            className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 shrink-0 disabled:opacity-40"
+          >
+            {bulkForwarding ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightCircle size={15} />}
+            Forward Selected ({selectedIds.length})
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div className="glass-card p-16 flex flex-col items-center justify-center gap-4 rounded-3xl">
           <div className="w-12 h-12 border-4 border-purple-500/20 border-t-[var(--primary)] rounded-full animate-spin" />
@@ -253,35 +344,51 @@ function OverviewTab({ user }) {
         <div className="space-y-3">
           {forms.map((form) => {
             const open = openFormId === form._id;
+            const selectable = form.isCompleted && !form.forwarded;
+            const isSelected = selectedIds.includes(form._id);
             return (
-              <div key={form._id} className={`glass-card rounded-2xl overflow-hidden ${form.isCompleted ? 'ring-1 ring-emerald-500/30' : ''}`}>
-                <button onClick={() => setOpenFormId(open ? null : form._id)} className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left">
-                  <div className="min-w-0 flex items-center gap-3">
-                    {form.isCompleted ? (
-                      <span className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0"><PartyPopper size={15} className="text-emerald-500" /></span>
-                    ) : (
-                      <span className="w-8 h-8 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0"><Circle size={15} className="text-slate-400" /></span>
-                    )}
-                    <div className="min-w-0">
-                      <div className="font-bold text-sm text-[var(--text-primary)] truncate">{form.student?.name} <span className="text-[var(--text-secondary)] font-medium">— {form.batch}</span></div>
-                      <div className="text-[11px] text-[var(--text-secondary)]">Sem {form.semester}{form.section ? ` · ${form.section}` : ''} · Mentor: {form.createdBy?.name}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {form.attendanceSummary && (
-                      <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
-                        Attendance: {form.attendanceSummary.adjustedAttendancePercentage}%
+              <div key={form._id} className={`glass-card rounded-2xl overflow-hidden ${form.isCompleted ? 'ring-1 ring-emerald-500/30' : ''} ${isSelected ? 'ring-2 ring-[var(--primary)]' : ''}`}>
+                <div className="flex items-stretch">
+                  {selectMode && (
+                    <button
+                      onClick={() => (selectable ? toggleSelected(form._id) : null)}
+                      disabled={!selectable}
+                      title={selectable ? 'Select for bulk forward' : 'Only completed, not-yet-forwarded forms can be selected'}
+                      className="flex items-center justify-center px-4 shrink-0 disabled:opacity-30"
+                    >
+                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center ${isSelected ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border-light)]'}`}>
+                        {isSelected && <Check size={13} className="text-white" />}
                       </span>
-                    )}
-                    {form.forwarded && (
-                      <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">Forwarded</span>
-                    )}
-                    <span className={`badge ${form.isCompleted ? 'badge-approved' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
-                      {form.isCompleted ? 'Completed' : 'In Progress'}
-                    </span>
-                    <ChevronRight size={16} className={`text-[var(--text-secondary)] transition-transform ${open ? 'rotate-90' : ''}`} />
-                  </div>
-                </button>
+                    </button>
+                  )}
+                  <button onClick={() => setOpenFormId(open ? null : form._id)} className="flex-1 min-w-0 flex items-center justify-between gap-3 px-5 py-4 text-left">
+                    <div className="min-w-0 flex items-center gap-3">
+                      {form.isCompleted ? (
+                        <span className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0"><PartyPopper size={15} className="text-emerald-500" /></span>
+                      ) : (
+                        <span className="w-8 h-8 rounded-full bg-slate-500/10 flex items-center justify-center shrink-0"><Circle size={15} className="text-slate-400" /></span>
+                      )}
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm text-[var(--text-primary)] truncate">{form.student?.name} <span className="text-[var(--text-secondary)] font-medium">— {form.batch}</span></div>
+                        <div className="text-[11px] text-[var(--text-secondary)]">Sem {form.semester}{form.section ? ` · ${form.section}` : ''} · Mentor: {form.createdBy?.name}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {form.attendanceSummary && (
+                        <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                          Attendance: {form.attendanceSummary.adjustedAttendancePercentage}%
+                        </span>
+                      )}
+                      {form.forwarded && (
+                        <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">Forwarded</span>
+                      )}
+                      <span className={`badge ${form.isCompleted ? 'badge-approved' : 'bg-slate-500/10 border-slate-500/20 text-slate-500'}`}>
+                        {form.isCompleted ? 'Completed' : 'In Progress'}
+                      </span>
+                      <ChevronRight size={16} className={`text-[var(--text-secondary)] transition-transform ${open ? 'rotate-90' : ''}`} />
+                    </div>
+                  </button>
+                </div>
                 <AnimatePresence>
                   {open && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
