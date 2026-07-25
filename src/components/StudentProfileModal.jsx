@@ -605,9 +605,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                             <p className="text-xs text-slate-500 truncate">{cert.issuedBy}</p>
                             <a href={cert.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-500 hover:underline mt-1 block">View File</a>
                           </div>
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase ${cert.verified === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-                              cert.verified === 'rejected' ? 'bg-rose-100 text-rose-700' :
-                                'bg-amber-100 text-amber-700'
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border ${cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                              cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                'bg-amber-500/10 text-amber-500 border-amber-500/20'
                             }`}>
                             {cert.verified}
                           </span>

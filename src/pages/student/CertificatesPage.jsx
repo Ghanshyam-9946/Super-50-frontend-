@@ -184,9 +184,9 @@ export default function CertificatesPage() {
 
                 <div className="mb-4">
                   <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 w-max shadow-sm ${
-                    cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 
-                    cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : 
-                    'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                    cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 
+                    cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 
+                    'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                   }`}>
                     {cert.verified === 'approved' ? <><ShieldCheck size={12} /> Approved</> : 
                      cert.verified === 'rejected' ? <><ShieldAlert size={12} /> Rejected</> : 
