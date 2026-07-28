@@ -1,7 +1,40 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
-import { ArrowRight, Sparkles, Shield, Award, Users, TrendingUp, Trophy } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { ArrowRight, Sparkles, LogIn, Briefcase, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+
+const phrases = ["Placements.", "Super 50.", "Projects.", "Monitoring Individual Learning and Excellence."];
+
+function Typewriter() {
+  const [i, setI] = useState(0);
+  const [text, setText] = useState("");
+  const [del, setDel] = useState(false);
+
+  useEffect(() => {
+    const current = phrases[i];
+    const speed = del ? 50 : 110;
+    const t = setTimeout(() => {
+      if (!del && text === current) {
+        setTimeout(() => setDel(true), 1400);
+        return;
+      }
+      if (del && text === "") {
+        setDel(false);
+        setI((i + 1) % phrases.length);
+        return;
+      }
+      setText(del ? current.slice(0, text.length - 1) : current.slice(0, text.length + 1));
+    }, speed);
+    return () => clearTimeout(t);
+  }, [text, del, i]);
+
+  return (
+    <span className="text-gradient-brand drop-shadow-[0_0_20px_var(--brand-indigo)/20]">
+      {text}
+      <span className="ml-0.5 inline-block h-[0.9em] w-[4px] -mb-1 animate-pulse bg-brand-indigo rounded-full" />
+    </span>
+  );
+}
 
 export function Hero() {
   const navigate = useNavigate();
@@ -11,129 +44,155 @@ export function Hero() {
     offset: ["start start", "end start"]
   });
 
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, -60]);
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, -200]);
+  const rotate = useTransform(scrollYProgress, [0, 1], [0, 5]);
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  const titleWords = "One Platform for".split(" ");
 
   return (
-    <section ref={containerRef} className="relative flex min-h-[92vh] flex-col items-center justify-center overflow-hidden px-6 pt-32 pb-20">
-      {/* Background Mesh Grid & Ambient Glows */}
-      <div className="absolute inset-0 z-0 bg-[#09090b] selection:bg-brand-indigo selection:text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_10%,#000_70%,transparent_100%)]" />
-        <div className="absolute top-12 left-1/2 -translate-x-1/2 h-[500px] w-[700px] rounded-full bg-gradient-to-tr from-indigo-600/15 via-purple-600/15 to-pink-500/10 blur-[130px] pointer-events-none" />
+    <section ref={containerRef} className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 pt-24 pb-16">
+      {/* Modern Grid and Vibrant Glow Background */}
+      <div className="absolute inset-0 z-0 bg-white dark:bg-[#0a0a0a]">
+        {/* Subtle Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+
+        {/* Enhanced Clean Glowing Orbs */}
+        <div className="absolute top-0 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-cyan-400/30 dark:bg-cyan-600/30 blur-[120px] animate-blob" />
+        <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] translate-x-1/2 rounded-full bg-fuchsia-400/30 dark:bg-fuchsia-600/30 blur-[120px] animate-blob" style={{ animationDelay: "-4s" }} />
+        <div className="absolute -bottom-32 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-amber-400/30 dark:bg-amber-600/30 blur-[120px] animate-blob" style={{ animationDelay: "-8s" }} />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-5xl text-center">
-        {/* Subtle pill tag */}
+      <div className="relative z-10 mx-auto max-w-7xl text-center">
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-300 backdrop-blur-md"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="mb-12 inline-flex items-center gap-2.5 rounded-full glass px-5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-black shadow-lg border-white/40"
         >
-          <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="tracking-wide">SISTec Official Student & Placement Engine</span>
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-500 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_var(--tw-shadow-color)]" />
+          </span>
         </motion.div>
 
-        {/* Crisp, human header - avoided AI word salad */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="font-display text-5xl font-extrabold tracking-tight text-white md:text-7xl lg:text-8xl leading-[1.08]"
-        >
-          Empowering student excellence with <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-amber-300 bg-clip-text text-transparent">clarity.</span>
-        </motion.h1>
+        <h1 className="font-display text-7xl font-[900] leading-[1.1] tracking-tight text-black md:text-8xl lg:text-9xl mb-10 flex flex-col items-center justify-center gap-2">
+          {titleWords.map((word, idx) => (
+            <motion.span
+              key={idx}
+              initial={{ opacity: 0, y: 50, rotateX: -20 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              transition={{ duration: 0.9, delay: idx * 0.2, ease: [0.21, 1.02, 0.32, 1] }}
+              className="inline-block transform-gpu drop-shadow-sm"
+            >
+              {word}
+            </motion.span>
+          ))}
+          <motion.div
+            initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
+            className="mt-6 text-4xl md:text-6xl lg:text-7xl font-extrabold max-w-5xl"
+          >
+            <span className="bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-amber-500 bg-clip-text text-transparent bg-300% animate-gradient drop-shadow-[0_0_30px_rgba(217,70,239,0.3)]">
+              Monitoring Individual Learning and Excellence
+            </span>
+          </motion.div>
+        </h1>
 
-        {/* Minimal human tagline */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mx-auto mt-6 max-w-2xl text-lg md:text-xl font-normal text-slate-400 leading-relaxed"
-        >
-          One intuitive ecosystem for tracking campus placements, projects, certifications, and real-time student performance rankings.
-        </motion.p>
 
-        {/* Action Buttons */}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="mt-8 flex items-center justify-center"
         >
-          <button
-            onClick={() => navigate('/login')}
-            className="group relative flex h-13 items-center gap-2 rounded-full bg-white px-8 text-sm font-bold text-black transition-all hover:bg-slate-100 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/5"
-          >
-            Get Started
-            <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-          </button>
-          <a
-            href="#features"
-            className="flex h-13 items-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 text-sm font-semibold text-slate-300 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white"
-          >
-            Explore Platform
+          <a href="#features" className="btn-premium h-14 px-10 text-base group shadow-[0_0_20px_var(--brand-indigo)/20]">
+            <Sparkles size={18} className="mr-2 transition-transform group-hover:rotate-12" />
+            Explore Ecosystem
+            <ArrowRight size={18} className="ml-2 transition-transform group-hover:translate-x-1" />
           </a>
         </motion.div>
 
-        {/* Sleek Modern Preview Card (Web3 / Fintech Inspired Minimal Card) */}
+        {/* Enhanced Layered Dashboard Preview */}
         <motion.div
-          style={{ y: y1, opacity }}
-          className="relative mx-auto mt-20 max-w-5xl"
+          style={{ y: y1, rotateX: rotate, opacity }}
+          className="relative mx-auto mt-24 max-w-6xl"
         >
-          <div className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-amber-500/10 blur-2xl opacity-60" />
-          
-          <div className="relative rounded-[2rem] border border-white/10 bg-[#121318]/90 p-4 backdrop-blur-2xl shadow-2xl">
-            {/* Window header */}
-            <div className="flex items-center justify-between border-b border-white/5 px-4 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-rose-500/80" />
-                <div className="h-3 w-3 rounded-full bg-amber-500/80" />
-                <div className="h-3 w-3 rounded-full bg-emerald-500/80" />
-              </div>
-              <span className="text-[11px] font-mono font-medium text-slate-500">mile.sistec.ac.in/dashboard</span>
-              <div className="w-12" />
-            </div>
+          <div className="absolute -inset-10 rounded-[3rem] bg-gradient-to-r from-brand-indigo/20 via-brand-purple/20 to-brand-orange/20 blur-[100px] opacity-50" />
 
-            {/* Dashboard Content Grid */}
-            <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 text-left">
-              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
-                <div className="flex items-center justify-between text-slate-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Top Rankers</span>
-                  <Trophy size={16} className="text-amber-400" />
+          <div className="glass-strong relative rounded-[2.5rem] p-3 shadow-[0_50px_100px_-20px_oklch(0_0_0/0.15)] border border-white/60 overflow-hidden group">
+            <div className="rounded-[2rem] bg-white/60 backdrop-blur-xl p-8 transition-colors group-hover:bg-white/80">
+              <div className="mb-8 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-2">
+                    <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
+                    <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
+                    <span className="h-3.5 w-3.5 rounded-full bg-slate-200" />
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-white">#01 Super 50</div>
-                <span className="text-[11px] text-emerald-400 font-medium">+12 pts this week</span>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
-                <div className="flex items-center justify-between text-slate-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Placement Rate</span>
-                  <TrendingUp size={16} className="text-indigo-400" />
-                </div>
-                <div className="text-2xl font-bold text-white">94.8%</div>
-                <span className="text-[11px] text-slate-400 font-medium">Verified drives</span>
-              </div>
-
-              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
-                <div className="flex items-center justify-between text-slate-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Projects Vault</span>
-                  <Award size={16} className="text-purple-400" />
-                </div>
-                <div className="text-2xl font-bold text-white">100+ Live</div>
-                <span className="text-[11px] text-purple-400 font-medium">Faculty approved</span>
-              </div>
-
-              <div className="rounded-xl border border-white/5 bg-white/[0.03] p-5">
-                <div className="flex items-center justify-between text-slate-400 mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider">Certifications</span>
-                  <Shield size={16} className="text-emerald-400" />
-                </div>
-                <div className="text-2xl font-bold text-white">Verified</div>
-                <span className="text-[11px] text-emerald-400 font-medium">Instant audit</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                  { title: "Placement Power", val: "94.2%", color: "brand-indigo" },
+                  { title: "Elite Ranking", val: "#07", color: "brand-purple" },
+                  { title: "Innovation", val: "12", color: "brand-orange" }
+                ].map((item, idx) => (
+                  <motion.div
+                    key={item.title}
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ duration: 6 + idx, repeat: Infinity, ease: "easeInOut", delay: idx * 0.7 }}
+                    className="rounded-[2rem] bg-white/80 p-7 shadow-xl shadow-slate-200/50 border border-white text-left group/card hover:bg-white transition-all hover:scale-[1.02]"
+                  >
+                    <div className="text-[12px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-6">{item.title}</div>
+                    <div className={`font-display text-4xl font-[900] text-${item.color} tracking-tight`}>
+                      {item.val}
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </div>
+
+          {/* Parallax Floating UI Elements */}
+          <motion.div
+            style={{ y: y2 }}
+            className="absolute -left-16 top-1/3 hidden md:block z-20"
+          >
+            <div className="glass rounded-[1.5rem] p-5 shadow-floating border-white/60 animate-float">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-brand-indigo to-brand-purple flex items-center justify-center shadow-xl shadow-brand-indigo/20">
+                  <Sparkles size={24} className="text-white" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Global Status</div>
+                  <div className="font-display text-base font-black text-foreground">Top 1% Worldwide</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            style={{ y: y2 }}
+            className="absolute -right-12 bottom-1/4 hidden md:block z-20"
+          >
+            <div className="glass rounded-[1.5rem] p-5 shadow-floating border-white/60 animate-float" style={{ animationDelay: "-3s" }}>
+              <div className="flex items-center gap-4 text-left">
+                <div className="h-12 w-12 rounded-full border-2 border-brand-orange/30 p-1">
+                  <div className="h-full w-full rounded-full bg-brand-orange/10 flex items-center justify-center">
+                    <ArrowRight size={22} className="text-brand-orange" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest">Recent Milestone</div>
+                  <div className="font-display text-base font-black text-brand-orange">Dream Offer Locked</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       </div>
     </section>

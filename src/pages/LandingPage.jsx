@@ -6,6 +6,7 @@ import { Particles } from "@/components/Particles";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
+import { DiscoverSpaces } from "@/components/DiscoverSpaces";
 import { Features } from "@/components/Features";
 import LeaderboardPage from "@/pages/shared/LeaderboardPage";
 import { Stats } from "@/components/Stats";
@@ -18,7 +19,7 @@ import GeneralFormsSection from "@/components/GeneralFormsSection";
 
 export default function LandingPage() {
   return (
-    <div className="relative bg-[#09090b] text-white min-h-screen selection:bg-indigo-500 selection:text-white">
+    <div className="relative noise">
       <Loader />
       <Cursor />
       <MouseGlow />
@@ -27,8 +28,9 @@ export default function LandingPage() {
       <Navbar />
       <main className="relative z-10">
         <Hero />
-        <Features />
         <ProjectShowcase />
+        <Features />
+        <DiscoverSpaces />
         <LeaderboardPage limit={5} />
         <Stats />
         <Workflow />

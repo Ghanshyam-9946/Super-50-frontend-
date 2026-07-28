@@ -1,98 +1,86 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { Briefcase, Trophy, FolderKanban, ArrowUpRight } from "lucide-react";
 
-const projects = [
+const capabilities = [
   {
     id: 1,
-    title: "AI Grievance Routing Engine",
-    category: "NLP & Automation",
-    desc: "Automated municipal complaint routing system built for real-time priority evaluation.",
-    tags: ["React", "FastAPI", "Python"],
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop" 
+    icon: Briefcase,
+    badge: "18 LPA Max",
+    subtitle: "PLACEMENT ENGINE",
+    title: "Real-time Drives & Placements",
+    desc: "Seamless company drive feeds, interview schedules, and instant application tracking.",
   },
   {
     id: 2,
-    title: "Campus EcoTrack Workspace",
-    category: "Analytics & SaaS",
-    desc: "Unified analytics dashboard for measuring student sustainability metrics and campus carbon footprint.",
-    tags: ["Next.js", "Tailwind", "Supabase"],
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426&auto=format&fit=crop"
+    icon: Trophy,
+    badge: "Top 50 Rank",
+    subtitle: "SUPER 50 COHORT",
+    title: "Leaderboard & Skill Tracking",
+    desc: "Track POD AI scores, submit verified certificates, and rise through live campus rankings.",
   },
   {
     id: 3,
-    title: "MILE Talent Leaderboard",
-    category: "Real-time Systems",
-    desc: "High-performance student ranking engine with animated performance score breakdown.",
-    tags: ["TypeScript", "Node.js", "Redis"],
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop"
+    icon: FolderKanban,
+    badge: "100+ Projects",
+    subtitle: "INNOVATION HUB",
+    title: "Project Vault & Showcase",
+    desc: "Submit major and minor projects, receive guide feedback, and publish to the campus gallery.",
   }
 ];
 
 export function ProjectShowcase() {
   return (
-    <section id="projects" className="relative px-6 py-28 bg-[#09090b]">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-3">
-            <span className="text-xs font-mono font-semibold uppercase tracking-[0.2em] text-indigo-400">
-              Student Innovation
-            </span>
-            <h2 className="font-display text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-              Featured Projects
-            </h2>
+    <section id="capabilities" className="relative px-6 py-32 bg-[#09090b] text-white overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute left-1/2 top-1/2 h-[400px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none" />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div className="mb-20 text-center">
+          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-indigo-500">
+            Platform Capabilities
           </div>
-          <p className="max-w-md text-sm text-slate-400">
-            A curated collection of verified major & minor technical projects created by SISTec students.
-          </p>
+          <h2 className="font-display text-4xl font-extrabold tracking-tight md:text-5xl lg:text-6xl">
+            Designed for impact and<br />efficiency.
+          </h2>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {projects.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-white/20"
-            >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={p.image}
-                  alt={p.title}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent opacity-80" />
-              </div>
-
-              <div className="flex flex-1 flex-col justify-between p-6">
+        <div className="grid gap-6 md:grid-cols-3">
+          {capabilities.map((cap, i) => {
+            const Icon = cap.icon;
+            return (
+              <motion.div
+                key={cap.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group relative flex flex-col justify-between rounded-[1.5rem] border border-white/10 bg-white/[0.02] p-8 hover:bg-white/[0.04] transition-colors"
+              >
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">
-                    {p.category}
-                  </span>
-                  <h3 className="mt-1 font-display text-xl font-bold text-white tracking-tight">
-                    {p.title}
-                  </h3>
-                  <p className="mt-2 text-xs text-slate-400 leading-relaxed line-clamp-2">
-                    {p.desc}
+                  <div className="mb-12 flex items-center justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 shadow-inner">
+                      <Icon size={20} className="text-white/80" />
+                    </div>
+                    <div className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-semibold text-white/70 border border-white/10">
+                      {cap.badge}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                    {cap.subtitle}
+                  </div>
+                  <h3 className="mb-3 text-2xl font-bold tracking-tight text-white/90">{cap.title}</h3>
+                  <p className="text-sm font-medium leading-relaxed text-white/50">
+                    {cap.desc}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
-                  <div className="flex gap-2">
-                    {p.tags.map(t => (
-                      <span key={t} className="rounded-md bg-white/5 px-2 py-0.5 text-[10px] font-medium text-slate-300">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-colors group-hover:bg-white group-hover:text-black">
-                    <ArrowUpRight size={14} />
-                  </button>
+                <div className="mt-12 flex items-center text-xs font-bold text-white transition-colors group-hover:text-indigo-400 cursor-pointer">
+                  Explore Details <ArrowUpRight size={14} className="ml-1 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
