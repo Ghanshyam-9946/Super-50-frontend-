@@ -34,7 +34,6 @@ export default function LandingPage() {
         <LeaderboardPage limit={5} />
         <Stats />
         <Workflow />
-        <SelectionFormSection />
         <GeneralFormsSection />
         <Footer />
       </main>
