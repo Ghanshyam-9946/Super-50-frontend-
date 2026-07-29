@@ -17,10 +17,10 @@ export function Footer() {
               </div>
               <div>
                 <h3 className="text-2xl font-[900] tracking-tight text-white font-display leading-none">
-                  SCOPE<span className="text-blue-500">.</span>
+                  MILE<span className="text-blue-500">.</span>
                 </h3>
                 <span className="text-xs font-bold tracking-wider text-blue-500 uppercase block mt-1.5">
-                  SISTec CSE Operations & Progress Engine
+                  Every Milestone Matters
                 </span>
               </div>
             </div>
