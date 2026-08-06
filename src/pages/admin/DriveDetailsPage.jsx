@@ -66,6 +66,19 @@ const DriveDetailsPage = () => {
     }
   };
 
+  const handleDeleteStudent = async (studentId, studentName) => {
+    if (!window.confirm(`Are you sure you want to remove ${studentName || 'this student'} from this drive?`)) return;
+    
+    const toastId = toast.loading('Removing student...');
+    try {
+      await api.delete(`/placement/drives/${id}/students/${studentId}`);
+      toast.success('Student removed successfully!', { id: toastId });
+      fetchDriveDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove student', { id: toastId });
+    }
+  };
+
   useEffect(() => {
     if (drive?.rounds) {
       setRoundsList(drive.rounds);
@@ -366,6 +379,7 @@ const DriveDetailsPage = () => {
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Current Round</th>
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Round-by-Round Clearance</th>
                 <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Final Outcome</th>
+                <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-light)]">
@@ -431,13 +445,22 @@ const DriveDetailsPage = () => {
                         {(app.status === 'not-applied' || app.status === 'eligible') ? 'Not Applied' : app.status === 'selected' ? 'Selected' : app.status === 'rejected' ? 'Eliminated' : 'In Progress'}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => handleDeleteStudent(app.student?._id, app.student?.name)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove Student from Drive"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
 
               {applications.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center text-[var(--text-secondary)] font-medium">
+                  <td colSpan={7} className="py-16 text-center text-[var(--text-secondary)] font-medium">
                     No students configured or eligible for this batch/drive.
                   </td>
                 </tr>
