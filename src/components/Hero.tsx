@@ -3,6 +3,39 @@ import { useEffect, useState, useRef } from "react";
 import { ArrowRight, Sparkles, LogIn, Briefcase, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+const phrases = ["Placements.", "Super 50.", "Projects.", "Monitoring Individual Learning and Excellence."];
+
+function Typewriter() {
+  const [i, setI] = useState(0);
+  const [text, setText] = useState("");
+  const [del, setDel] = useState(false);
+
+  useEffect(() => {
+    const current = phrases[i];
+    const speed = del ? 50 : 110;
+    const t = setTimeout(() => {
+      if (!del && text === current) {
+        setTimeout(() => setDel(true), 1400);
+        return;
+      }
+      if (del && text === "") {
+        setDel(false);
+        setI((i + 1) % phrases.length);
+        return;
+      }
+      setText(del ? current.slice(0, text.length - 1) : current.slice(0, text.length + 1));
+    }, speed);
+    return () => clearTimeout(t);
+  }, [text, del, i]);
+
+  return (
+    <span className="text-gradient-brand drop-shadow-[0_0_20px_var(--brand-indigo)/20]">
+      {text}
+      <span className="ml-0.5 inline-block h-[0.9em] w-[4px] -mb-1 animate-pulse bg-brand-indigo rounded-full" />
+    </span>
+  );
+}
+
 export function Hero() {
   const navigate = useNavigate();
   const containerRef = useRef(null);
@@ -16,8 +49,7 @@ export function Hero() {
   const rotate = useTransform(scrollYProgress, [0, 1], [0, 5]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const titleWords = "Platform for".split(" ");
-  const highlightWords = "Monitoring Individual Learning and Excellence".split(" ");
+  const titleWords = "One Platform for".split(" ");
 
   return (
     <section ref={containerRef} className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 pt-24 pb-16">
@@ -26,10 +58,10 @@ export function Hero() {
         {/* Subtle Grid Pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
 
-        {/* Clean Glowing Orbs */}
-        <div className="absolute top-0 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-blue-500/20 dark:bg-blue-600/20 blur-[120px] animate-blob" />
-        <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] translate-x-1/2 rounded-full bg-purple-500/20 dark:bg-purple-600/20 blur-[120px] animate-blob" style={{ animationDelay: "-4s" }} />
-        <div className="absolute -bottom-32 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-pink-500/20 dark:bg-pink-600/20 blur-[120px] animate-blob" style={{ animationDelay: "-8s" }} />
+        {/* Enhanced Clean Glowing Orbs */}
+        <div className="absolute top-0 left-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-cyan-400/30 dark:bg-cyan-600/30 blur-[120px] animate-blob" />
+        <div className="absolute top-1/4 right-1/4 h-[600px] w-[600px] translate-x-1/2 rounded-full bg-fuchsia-400/30 dark:bg-fuchsia-600/30 blur-[120px] animate-blob" style={{ animationDelay: "-4s" }} />
+        <div className="absolute -bottom-32 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-amber-400/30 dark:bg-amber-600/30 blur-[120px] animate-blob" style={{ animationDelay: "-8s" }} />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl text-center">
@@ -37,69 +69,36 @@ export function Hero() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-8 inline-flex items-center gap-2.5 rounded-full glass px-5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-black shadow-lg border-white/40"
+          className="mb-12 inline-flex items-center gap-2.5 rounded-full glass px-5 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-black shadow-lg border-white/40"
         >
           <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-orange opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-brand-orange shadow-[0_0_10px_var(--brand-orange)]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-500 opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500 shadow-[0_0_10px_var(--tw-shadow-color)]" />
           </span>
         </motion.div>
 
-        <h1 className="font-display text-5xl font-[900] leading-[1.15] tracking-tight text-black dark:text-white md:text-7xl lg:text-8xl mb-6">
-          <div className="flex flex-wrap items-center justify-center gap-x-[0.2em] mb-4">
-            {titleWords.map((word, idx) => (
-              <motion.span
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: idx * 0.1, ease: "easeOut" }}
-                className="inline-block"
-              >
-                {idx === 0 ? (
-                  <span className="relative inline-block px-5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-[1.25rem] -rotate-3 mx-1 shadow-2xl">
-                    {word}
-                  </span>
-                ) : (
-                  <span className="ml-2">
-                    {word}
-                  </span>
-                )}
-              </motion.span>
-            ))}
-          </div>
-          <div className="flex flex-wrap justify-center gap-x-[0.25em] px-4 max-w-5xl mx-auto">
-            {highlightWords.map((word, idx) => (
-              <motion.span
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 + idx * 0.1, ease: "easeOut" }}
-                className="inline-block"
-              >
-                <motion.span
-                  className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-brand-indigo via-brand-purple to-brand-orange drop-shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                  style={{ backgroundSize: "200% auto" }}
-                  animate={{
-                    backgroundPosition: ["0% center", "200% center"]
-                  }}
-                  transition={{
-                    backgroundPosition: {
-                      repeat: Infinity,
-                      duration: 20,
-                      ease: "linear"
-                    }
-                  }}
-                  whileHover={{
-                    scale: 1.05,
-                    filter: "brightness(1.1) drop-shadow(0 0 25px rgba(99,102,241,0.4))",
-                    transition: { duration: 0.3 }
-                  }}
-                >
-                  {word}
-                </motion.span>
-              </motion.span>
-            ))}
-          </div>
+        <h1 className="font-display text-7xl font-[900] leading-[1.1] tracking-tight text-black md:text-8xl lg:text-9xl mb-10 flex flex-col items-center justify-center gap-2">
+          {titleWords.map((word, idx) => (
+            <motion.span
+              key={idx}
+              initial={{ opacity: 0, y: 50, rotateX: -20 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              transition={{ duration: 0.9, delay: idx * 0.2, ease: [0.21, 1.02, 0.32, 1] }}
+              className="inline-block transform-gpu drop-shadow-sm"
+            >
+              {word}
+            </motion.span>
+          ))}
+          <motion.div
+            initial={{ opacity: 0, y: 40, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
+            className="mt-6 text-4xl md:text-6xl lg:text-7xl font-extrabold max-w-5xl"
+          >
+            <span className="bg-gradient-to-r from-cyan-500 via-fuchsia-500 to-amber-500 bg-clip-text text-transparent bg-300% animate-gradient drop-shadow-[0_0_30px_rgba(217,70,239,0.3)]">
+              Monitoring Individual Learning and Excellence
+            </span>
+          </motion.div>
         </h1>
 
 

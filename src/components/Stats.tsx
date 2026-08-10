@@ -1,10 +1,12 @@
 import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import api from "@/services/api";
 
 function Counter({ to, suffix }) {
   const [v, setV] = useState(0);
   const ref = useRef(null);
   const inView = useInView(ref, { once: true });
+
   useEffect(() => {
     if (!inView) return;
     const start = performance.now();
@@ -17,6 +19,7 @@ function Counter({ to, suffix }) {
     };
     requestAnimationFrame(tick);
   }, [inView, to]);
+
   return (
     <div ref={ref} className="font-display text-4xl font-black text-gradient-brand md:text-6xl tracking-tighter">
       {v.toLocaleString()}{suffix}
@@ -25,40 +28,38 @@ function Counter({ to, suffix }) {
 }
 
 export function Stats() {
-  const [data, setData] = useState({
-    totalStudents: 12480,
-    projectsUploaded: 3214,
-    placementSuccess: 94,
-    activeSuper50: 50,
-  });
+  const [statsData, setStatsData] = useState([
+    { value: 0, label: "Total Students", suffix: "+" },
+    { value: 0, label: "Projects Uploaded", suffix: "" },
+    { value: 0, label: "Placement Success", suffix: "%" },
+    { value: 0, label: "Active Super 50", suffix: "" },
+  ]);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/students/public-stats');
-        const json = await res.json();
-        if (json.success && json.data) {
-          setData(json.data);
+        const response = await api.get('/students/public-stats');
+        if (response.data.success) {
+          const { totalStudents, projectsUploaded, placementSuccess, activeSuper50 } = response.data.data;
+          setStatsData([
+            { value: totalStudents, label: "Total Students", suffix: "+" },
+            { value: projectsUploaded, label: "Projects Uploaded", suffix: "" },
+            { value: placementSuccess, label: "Placement Success", suffix: "%" },
+            { value: activeSuper50, label: "Active Super 50", suffix: "" },
+          ]);
         }
-      } catch (err) {
-        console.error('Failed to fetch public stats:', err);
+      } catch (error) {
+        console.error("Failed to fetch public stats:", error);
       }
     };
     fetchStats();
   }, []);
 
-  const statsList = [
-    { value: data.totalStudents, label: "Total Students", suffix: "+" },
-    { value: data.projectsUploaded, label: "Projects Uploaded", suffix: "" },
-    { value: data.placementSuccess, label: "Placement Success", suffix: "%" },
-    { value: data.activeSuper50, label: "Active Super 50", suffix: "" },
-  ];
-
   return (
     <section id="stats" className="relative px-6 py-32">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {statsList.map((s, i) => (
+          {statsData.map((s, i) => (
             <motion.div
               key={s.label}
               initial={{ opacity: 0, scale: 0.98 }}

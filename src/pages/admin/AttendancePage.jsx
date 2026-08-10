@@ -3,14 +3,34 @@ import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { uploadAttendance, fetchAttendanceHistory } from '../../features/attendance/attendanceSlice';
-import { ClipboardList, Upload, FileSpreadsheet, CheckCircle, Users, Loader2, Info } from 'lucide-react';
+import { ClipboardList, Upload, FileSpreadsheet, CheckCircle, Users, Loader2, Info, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../../services/api';
 
 export default function AttendancePage() {
   const dispatch = useDispatch();
   const { history, lastUploadResult, loading } = useSelector((s) => s.attendance);
   const [file, setFile] = useState(null);
   const [meta, setMeta] = useState({ batch: '', semester: '', totalWorkingDays: '' });
+  const [backfilling, setBackfilling] = useState(false);
+
+  // One-time setup after the raw/credit attendance split was introduced —
+  // establishes each student's CURRENT attendancePercentage as their
+  // rawAttendancePercentage baseline (Extra Attendance credit starts at 0
+  // going forward). Safe to run more than once; only needed once per
+  // environment (e.g. once in production after this update is deployed).
+  const backfillRawAttendance = async () => {
+    if (!window.confirm('Run the one-time attendance baseline setup? This is safe and only needs to run once per environment.')) return;
+    setBackfilling(true);
+    try {
+      const { data } = await api.post('/attendance/backfill-raw-attendance');
+      if (data.success) toast.success(data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to run the baseline setup');
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   useEffect(() => { dispatch(fetchAttendanceHistory()); }, [dispatch]);
 
@@ -66,14 +86,30 @@ export default function AttendancePage() {
 
           <div className="border-t border-blue-200/50 pt-4 mt-2">
             <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">Sample Excel Format</p>
-            <a 
-              href="/upload/Book1.xlsx" 
+            <a
+              href="/upload/Book1.xlsx"
               download="Book1.xlsx"
               className="inline-flex items-center gap-2 bg-white border border-blue-200 hover:border-blue-400 text-blue-700 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm"
             >
               <FileSpreadsheet size={18} />
               Download Sample Excel File
             </a>
+          </div>
+
+          <div className="border-t border-blue-200/50 pt-4 mt-4">
+            <p className="font-black mb-2 uppercase tracking-widest text-[10px] text-blue-600">One-Time Setup</p>
+            <p className="text-blue-800/80 mb-3">
+              Extra Attendance (given by a student's TG via No Dues) now survives future uploads instead of being
+              overwritten. Run this once per environment so existing students get a clean baseline.
+            </p>
+            <button
+              onClick={backfillRawAttendance}
+              disabled={backfilling}
+              className="inline-flex items-center gap-2 bg-white border border-blue-200 hover:border-blue-400 text-blue-700 px-4 py-2.5 rounded-xl shadow-sm transition-all font-bold text-sm disabled:opacity-50"
+            >
+              {backfilling ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
+              Run Attendance Baseline Setup
+            </button>
           </div>
         </div>
       </motion.div>

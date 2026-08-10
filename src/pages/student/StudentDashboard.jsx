@@ -135,7 +135,7 @@ export default function StudentDashboard() {
             Hello, <span className="text-gradient">{student?.name?.split(' ')[0]}</span>
           </h1>
           <p className="text-[var(--text-secondary)] font-bold text-[11px] uppercase tracking-[0.15em] mt-2 opacity-80">
-            {student?.department} • Batch {student?.batch} • {student?.enrollmentNumber}
+            {student?.department} • Batch {student?.batch} • {student?.enrollmentNumber} {student?.cgpa !== undefined && student.cgpa > 0 ? `• CGPA: ${Number(student.cgpa).toFixed(2)}` : ''}
           </p>
         </div>
       </motion.header>

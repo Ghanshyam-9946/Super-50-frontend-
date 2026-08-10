@@ -6,6 +6,7 @@ import { Particles } from "@/components/Particles";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
+import { DiscoverSpaces } from "@/components/DiscoverSpaces";
 import { Features } from "@/components/Features";
 import LeaderboardPage from "@/pages/shared/LeaderboardPage";
 import { Stats } from "@/components/Stats";
@@ -27,12 +28,12 @@ export default function LandingPage() {
       <Navbar />
       <main className="relative z-10">
         <Hero />
-        <Features />
         <ProjectShowcase />
+        <Features />
+        <DiscoverSpaces />
         <LeaderboardPage limit={5} />
         <Stats />
         <Workflow />
-        <SelectionFormSection />
         <GeneralFormsSection />
         <Footer />
       </main>

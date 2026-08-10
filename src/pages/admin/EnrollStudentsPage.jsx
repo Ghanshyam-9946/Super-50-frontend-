@@ -16,6 +16,35 @@ const EnrollStudentsPage = () => {
   const [expandedBatch, setExpandedBatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [showManualAddModal, setShowManualAddModal] = useState(false);
+  const [selectedBatchForManualAdd, setSelectedBatchForManualAdd] = useState('');
+  const [manualEnrollmentNumbers, setManualEnrollmentNumbers] = useState('');
+  const [enrollingManual, setEnrollingManual] = useState(false);
+
+  const handleManualEnroll = async (e) => {
+    e.preventDefault();
+    if (!manualEnrollmentNumbers.trim()) {
+      return toast.error('Please enter enrollment numbers');
+    }
+
+    setEnrollingManual(true);
+    const toastId = toast.loading('Enrolling student(s)...');
+    try {
+      const res = await api.post('/placement/enroll-student-manual', {
+        enrollmentNumbers: manualEnrollmentNumbers,
+        batch: selectedBatchForManualAdd
+      });
+      toast.success(res.data.message || 'Students enrolled successfully!', { id: toastId, duration: 5000 });
+      setManualEnrollmentNumbers('');
+      setShowManualAddModal(false);
+      fetchEnrolledStudents();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to enroll student(s)', { id: toastId });
+    } finally {
+      setEnrollingManual(false);
+    }
+  };
+
   const fetchEnrolledStudents = async () => {
     setLoadingStudents(true);
     try {
@@ -265,6 +294,16 @@ const EnrollStudentsPage = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedBatchForManualAdd(batchData.batch);
+                          setShowManualAddModal(true);
+                        }}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-all shadow-sm`}
+                      >
+                        <UserPlus size={14} /> Add Student
+                      </button>
                       <div className={`${color.badge} px-4 py-2 rounded-xl border ${color.border} text-sm font-black`}>
                         {batchData.count} Students
                       </div>
@@ -358,6 +397,47 @@ const EnrollStudentsPage = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Manual Student Add Modal */}
+      {showManualAddModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 455, padding: 32 }}>
+            <button onClick={() => setShowManualAddModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/50 p-2 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 mb-4 shadow-sm">
+              <UserPlus size={24} />
+            </div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Add Student to Batch {selectedBatchForManualAdd}</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Enroll registered students into this placement batch.</p>
+
+            <form onSubmit={handleManualEnroll} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Enrollment Numbers (comma separated) *</label>
+                <textarea
+                  required
+                  value={manualEnrollmentNumbers}
+                  onChange={(e) => setManualEnrollmentNumbers(e.target.value)}
+                  placeholder="e.g., 0187CS231084, 0187CS231085"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none h-28"
+                />
+                <p className="text-[11px] text-[var(--text-secondary)] mt-1.5 leading-normal">
+                  Enter one or more comma-separated enrollment numbers. The students must already be registered in the database.
+                </p>
+              </div>
+
+              <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2" disabled={enrollingManual}>
+                {enrollingManual ? 'Enrolling...' : (
+                  <>
+                    <UserPlus size={16} /> Enroll Student(s)
+                  </>
+                )}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
