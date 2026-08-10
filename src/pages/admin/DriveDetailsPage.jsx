@@ -26,6 +26,59 @@ const DriveDetailsPage = () => {
   const [newRoundName, setNewRoundName] = useState('');
   const [newRoundDesc, setNewRoundDesc] = useState('');
 
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [addingStudents, setAddingStudents] = useState(false);
+  const [addMode, setAddMode] = useState('manual'); // 'manual' or 'file'
+  const [manualEnrollmentNumbers, setManualEnrollmentNumbers] = useState('');
+  const [studentFile, setStudentFile] = useState(null);
+
+  const handleAddStudents = async (e) => {
+    e.preventDefault();
+    if (addMode === 'manual' && !manualEnrollmentNumbers.trim()) {
+      return toast.error('Please enter enrollment numbers');
+    }
+    if (addMode === 'file' && !studentFile) {
+      return toast.error('Please select a file');
+    }
+
+    setAddingStudents(true);
+    const toastId = toast.loading('Adding students...');
+    try {
+      if (addMode === 'manual') {
+        const res = await api.post(`/placement/drives/${id}/add-students`, {
+          enrollmentNumbers: manualEnrollmentNumbers
+        });
+        toast.success(res.data.message || 'Students added successfully!', { id: toastId });
+      } else {
+        const formData = new FormData();
+        formData.append('file', studentFile);
+        const res = await api.post(`/placement/drives/${id}/add-students`, formData);
+        toast.success(res.data.message || 'Students added successfully!', { id: toastId });
+      }
+      setManualEnrollmentNumbers('');
+      setStudentFile(null);
+      setShowAddStudentModal(false);
+      fetchDriveDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add students', { id: toastId });
+    } finally {
+      setAddingStudents(false);
+    }
+  };
+
+  const handleDeleteStudent = async (studentId, studentName) => {
+    if (!window.confirm(`Are you sure you want to remove ${studentName || 'this student'} from this drive?`)) return;
+    
+    const toastId = toast.loading('Removing student...');
+    try {
+      await api.delete(`/placement/drives/${id}/students/${studentId}`);
+      toast.success('Student removed successfully!', { id: toastId });
+      fetchDriveDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove student', { id: toastId });
+    }
+  };
+
   useEffect(() => {
     if (drive?.rounds) {
       setRoundsList(drive.rounds);
@@ -301,10 +354,18 @@ const DriveDetailsPage = () => {
 
       {/* Student List */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card overflow-hidden">
-        <div className="p-8 border-b border-[var(--border-light)] flex items-center justify-between">
+        <div className="p-8 border-b border-[var(--border-light)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-display font-black text-[var(--text-primary)]">Student Applications ({applications.length})</h2>
             <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium">Detailed tracking of all student progress in this hiring drive.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddStudentModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[var(--primary)] text-white rounded-xl hover:opacity-90 transition-all text-xs font-bold whitespace-nowrap shrink-0 shadow-md"
+            >
+              <Plus size={14} /> Add Students
+            </button>
           </div>
         </div>
 
@@ -318,6 +379,7 @@ const DriveDetailsPage = () => {
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Current Round</th>
                 <th className="text-left px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Round-by-Round Clearance</th>
                 <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Final Outcome</th>
+                <th className="text-right px-6 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-light)]">
@@ -383,13 +445,22 @@ const DriveDetailsPage = () => {
                         {(app.status === 'not-applied' || app.status === 'eligible') ? 'Not Applied' : app.status === 'selected' ? 'Selected' : app.status === 'rejected' ? 'Eliminated' : 'In Progress'}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => handleDeleteStudent(app.student?._id, app.student?.name)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove Student from Drive"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
 
               {applications.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center text-[var(--text-secondary)] font-medium">
+                  <td colSpan={7} className="py-16 text-center text-[var(--text-secondary)] font-medium">
                     No students configured or eligible for this batch/drive.
                   </td>
                 </tr>
@@ -416,11 +487,13 @@ const DriveDetailsPage = () => {
             <form onSubmit={handleUploadResults} className="space-y-5">
               {selectedRoundName && (
                 <div className="bg-[var(--bg-input)]/30 border border-[var(--border-light)] rounded-xl p-3.5">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Required Excel Column</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-[var(--primary)]/10 text-[var(--primary)] px-2 py-0.5 rounded border border-[var(--primary)]/20">{selectedRoundName}</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-2">Plus: <strong>Enrollment No</strong> or <strong>Email</strong> to identify students.</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Excel File Format</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mb-2 font-medium">
+                    Required Columns: <strong>Enrollment Number</strong>, <strong>Name</strong>, <strong>Department</strong>, <strong>Batch</strong>.
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Students present in the Excel sheet will be marked as <strong>Cleared</strong> for <strong>{selectedRoundName}</strong>; others will be marked as <strong>Eliminated</strong>.
+                  </p>
                 </div>
               )}
 
@@ -486,6 +559,98 @@ const DriveDetailsPage = () => {
               </div>
               <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2">
                 <Plus size={16} /> Create Round
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Add Student Modal */}
+      {showAddStudentModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 480, padding: 32 }}>
+            <button onClick={() => setShowAddStudentModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/50 p-2 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center border border-[var(--primary)]/20 mb-4 shadow-sm">
+              <Users size={24} />
+            </div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Add Students to Drive</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Enroll more candidates to this specific drive.</p>
+
+            {/* Mode selection tabs */}
+            <div className="flex bg-[var(--bg-input)]/40 p-1 rounded-xl border border-[var(--border-light)] mb-5">
+              <button
+                type="button"
+                onClick={() => setAddMode('manual')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${addMode === 'manual' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                Manual Entry
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddMode('file')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${addMode === 'file' ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+              >
+                Upload File
+              </button>
+            </div>
+
+            <form onSubmit={handleAddStudents} className="space-y-4">
+              {addMode === 'manual' ? (
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Enrollment Numbers (comma separated) *</label>
+                  <textarea
+                    required
+                    value={manualEnrollmentNumbers}
+                    onChange={(e) => setManualEnrollmentNumbers(e.target.value)}
+                    placeholder="e.g., 0101CS201001, 0101CS201002"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none h-24"
+                  />
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-1.5 leading-normal">
+                    Enter one or more comma-separated enrollment numbers of registered students.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div 
+                    className="border-2 border-dashed border-[var(--border-light)] rounded-2xl p-8 text-center bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 transition-colors cursor-pointer" 
+                    onClick={() => document.getElementById('add-student-file').click()}
+                  >
+                    <input 
+                      type="file" 
+                      id="add-student-file" 
+                      accept=".xlsx, .xls, .pdf" 
+                      className="hidden" 
+                      onChange={(e) => setStudentFile(e.target.files[0])} 
+                    />
+                    {studentFile ? (
+                      <div className="space-y-1">
+                        <FileSpreadsheet className="text-[var(--primary)] mx-auto animate-bounce" size={28} />
+                        <p className="text-sm font-bold text-[var(--text-primary)]">{studentFile.name}</p>
+                        <p className="text-xs text-[var(--text-secondary)] uppercase">Click to change</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Upload className="text-slate-400 mx-auto" size={28} />
+                        <p className="text-sm font-bold text-[var(--text-primary)]">Select Student List File</p>
+                        <p className="text-xs text-[var(--text-secondary)]">.xlsx, .xls, or .pdf</p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-normal">
+                    Uploaded file should contain student details (Name, Enrollment Number, Email, Department, etc.). Accounts will be auto-created for new users.
+                  </p>
+                </div>
+              )}
+
+              <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2" disabled={addingStudents}>
+                {addingStudents ? 'Adding...' : (
+                  <>
+                    <Plus size={16} /> Add Students
+                  </>
+                )}
               </button>
             </form>
           </motion.div>

@@ -16,10 +16,10 @@ export function Footer() {
                 <img src="/upload/SISTec_Logo.png" alt="SISTec Logo" className="h-10 w-10 object-contain" />
               </div>
               <div>
-                <h3 className="text-3xl font-[900] tracking-widest text-white font-display leading-none">
+                <h3 className="text-2xl font-[900] tracking-tight text-white font-display leading-none">
                   MILE<span className="text-blue-500">.</span>
                 </h3>
-                <span className="text-sm font-bold tracking-wider text-blue-500 uppercase block mt-1.5">
+                <span className="text-xs font-bold tracking-wider text-blue-500 uppercase block mt-1.5">
                   Every Milestone Matters
                 </span>
               </div>
@@ -88,7 +88,7 @@ export function Footer() {
                   <Mail className="h-5 w-5" />
                 </div>
                 <a href="mailto:seogn@sistec.ac.in" className="text-sm text-slate-400 hover:text-white transition-colors duration-200 font-medium">
-                  mile@sistec.ac.in
+                  scope@sistec.ac.in
                 </a>
               </li>
             </ul>
@@ -99,7 +99,7 @@ export function Footer() {
         <div className="mt-16 pt-8 border-t border-slate-900/60 flex justify-center items-center">
           <p className="text-xs text-slate-500 text-center font-medium tracking-wide">
             © 2026 Designed & Developed by{" "}
-            <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Shubham, Shivam, Ghanshyam</span>{" "}
+            <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Shivam, Shubham, Ghanshyam</span>{" "}
             and{" "}
             <span className="text-blue-400/90 font-semibold hover:text-blue-400 transition-colors cursor-pointer">Ajay</span>{" "}
             under the Guidance of{" "}

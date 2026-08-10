@@ -3,8 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchPendingCertificates, verifyCertificate } from '../../features/certificates/certificatesSlice';
 import { fetchPendingActivities, verifyActivity } from '../../features/activities/activitiesSlice';
-import { ShieldCheck, Eye, FileText, Image, Check, X, MessageSquare, Loader2, Zap } from 'lucide-react';
+import { ShieldCheck, Eye, FileText, Image, Check, X, Loader2, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../../services/api';
 
 function RejectModal({ cert, onClose, onConfirm }) {
   const [reason, setReason] = useState('');
@@ -99,11 +100,36 @@ export default function VerifyCertificatesPage() {
   const [activityDetailsModal, setActivityDetailsModal] = useState(null);
   const [processing, setProcessing] = useState({});
   const [activeTab, setActiveTab] = useState('certificates');
+  
+  // History states
+  const [statusFilter, setStatusFilter] = useState('pending'); // 'pending', 'approved', 'rejected'
+  const [certsList, setCertsList] = useState([]);
+  const [actsList, setActsList] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  useEffect(() => { 
-    dispatch(fetchPendingCertificates()); 
-    dispatch(fetchPendingActivities());
-  }, [dispatch]);
+  useEffect(() => {
+    if (statusFilter === 'pending') {
+      dispatch(fetchPendingCertificates());
+      dispatch(fetchPendingActivities());
+    } else {
+      const fetchHistory = async () => {
+        setLoadingHistory(true);
+        try {
+          const [certsRes, actsRes] = await Promise.all([
+            api.get('/certificates/all', { params: { status: statusFilter } }),
+            api.get('/activities/all', { params: { status: statusFilter } })
+          ]);
+          setCertsList(certsRes.data.data);
+          setActsList(actsRes.data.data);
+        } catch (err) {
+          toast.error('Failed to load verification history');
+        } finally {
+          setLoadingHistory(false);
+        }
+      };
+      fetchHistory();
+    }
+  }, [dispatch, statusFilter]);
 
   const handleApprove = async (id) => {
     setProcessing((p) => ({ ...p, [id]: 'approve' }));
@@ -135,8 +161,13 @@ export default function VerifyCertificatesPage() {
     else toast.error(result.payload);
   };
 
+  const activeCertificates = statusFilter === 'pending' ? pendingCertificates : certsList;
+  const activeActivities = statusFilter === 'pending' ? pendingActivities : actsList;
+  const isLoading = statusFilter === 'pending' ? (activeTab === 'certificates' ? certLoading : actLoading) : loadingHistory;
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
+      {/* Header */}
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-2">
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)] flex items-center gap-4">
@@ -149,38 +180,56 @@ export default function VerifyCertificatesPage() {
         </motion.div>
       </header>
 
+      {/* Status filter tabs */}
+      <div className="flex flex-wrap items-center gap-3">
+        {['pending', 'approved', 'rejected'].map((status) => (
+          <button
+            key={status}
+            onClick={() => setStatusFilter(status)}
+            className={`px-5 py-2.5 rounded-[1.2rem] text-[12px] font-black uppercase tracking-widest transition-all border ${
+              statusFilter === status
+                ? 'bg-[var(--primary)] text-white border-[var(--primary)] shadow-md shadow-purple-500/20'
+                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 shadow-sm'
+            }`}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
+
+      {/* Main type tabs */}
       <div className="flex items-center gap-4 bg-[var(--bg-card)] p-2 rounded-2xl border border-[var(--border-light)] w-max">
         <button
           className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'certificates' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}
           onClick={() => setActiveTab('certificates')}
         >
-          Certificates ({pendingCertificates.length})
+          Certificates ({activeCertificates.length})
         </button>
         <button
           className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${activeTab === 'activities' ? 'bg-[var(--primary)] text-white shadow-md' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'}`}
           onClick={() => setActiveTab('activities')}
         >
-          Activities ({pendingActivities.length})
+          Activities ({activeActivities.length})
         </button>
       </div>
 
       {activeTab === 'certificates' && (
-        certLoading ? (
+        isLoading ? (
           <div className="flex flex-col gap-4">
             {[1,2,3].map(i => <div key={i} className="animate-pulse bg-[var(--bg-card)] border border-[var(--border-light)] rounded-[1.2rem] h-[160px]" />)}
           </div>
-        ) : pendingCertificates.length === 0 ? (
+        ) : activeCertificates.length === 0 ? (
           <div className="glass-card p-16 text-center border-dashed">
             <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
               <ShieldCheck size={48} className="text-emerald-400" />
             </div>
-            <h3 className="text-2xl font-display font-black text-[var(--text-primary)] mb-2">All caught up! 🎉</h3>
-            <p className="text-[var(--text-secondary)] font-medium">There are no pending certificates to review at this moment.</p>
+            <h3 className="text-2xl font-display font-black text-[var(--text-primary)] mb-2">No certificates found</h3>
+            <p className="text-[var(--text-secondary)] font-medium">There are no {statusFilter} certificates to display.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-6">
             <AnimatePresence>
-              {pendingCertificates.map((cert, i) => (
+              {activeCertificates.map((cert, i) => (
                 <motion.div key={cert._id} className="glass-card p-6 flex flex-col md:flex-row gap-6 items-start hover:border-[var(--primary)] transition-all group"
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: 100 }} transition={{ delay: i * 0.05 }}>
@@ -198,8 +247,14 @@ export default function VerifyCertificatesPage() {
                         {cert.description && <div className="text-[13px] font-medium text-[var(--text-secondary)] mb-2">{cert.description}</div>}
                         {cert.issuedBy && <div className="text-[11px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Issued by: <strong className="text-[var(--text-primary)]">{cert.issuedBy}</strong></div>}
                       </div>
-                      <span className="bg-orange-500/10 text-orange-600 border border-orange-500/20 text-[10px] px-3 py-1.5 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
-                        <Loader2 size={12} className="animate-spin" /> Pending
+                      <span className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max border ${
+                        cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                        cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                        'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                      }`}>
+                        {cert.verified === 'approved' ? <><ShieldCheck size={12} /> Approved</> :
+                         cert.verified === 'rejected' ? <><X size={12} /> Rejected</> :
+                         <><Loader2 size={12} className="animate-spin" /> Pending</>}
                       </span>
                     </div>
 
@@ -211,7 +266,7 @@ export default function VerifyCertificatesPage() {
                       </div>
                       <div>
                         <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80 mb-1">Enrollment</div>
-                        <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{cert.studentId?.enrollmentNumber}</div>
+                        <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{cert.studentId?.enrollmentNumber || cert.studentId?.enrollmentNo}</div>
                       </div>
                       <div>
                         <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80 mb-1">Department</div>
@@ -223,21 +278,36 @@ export default function VerifyCertificatesPage() {
                       </div>
                     </div>
 
+                    {/* Verification details for history */}
+                    {statusFilter !== 'pending' && (
+                      <div className="mt-4 p-3 bg-slate-500/5 rounded-xl border border-[var(--border-light)] text-[12px] font-medium text-[var(--text-secondary)] flex flex-col gap-1">
+                        <div>Verified By: <strong className="text-[var(--text-primary)]">{cert.verifiedBy?.name || 'Admin'}</strong></div>
+                        <div>Verified At: <strong className="text-[var(--text-primary)]">{new Date(cert.verifiedAt || cert.updatedAt).toLocaleString('en-IN')}</strong></div>
+                        {cert.verified === 'rejected' && cert.rejectionReason && (
+                          <div className="mt-2 text-rose-500">Rejection Reason: {cert.rejectionReason}</div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Actions */}
                     <div className="flex flex-wrap items-center gap-3 mt-6">
                       <a href={cert.fileUrl} target="_blank" rel="noreferrer"
                         className="btn-outline-premium py-2.5 px-4 flex items-center gap-2 text-xs">
                         <Eye size={14} /> View Certificate
                       </a>
-                      <button className="btn-success py-2.5 px-4 flex items-center gap-2 text-xs"
-                        onClick={() => handleApprove(cert._id)} disabled={!!processing[cert._id]}
-                        id={`approve-${cert._id}`}>
-                        {processing[cert._id] === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve & Add Points
-                      </button>
-                      <button className="btn-danger py-2.5 px-4 flex items-center gap-2 text-xs"
-                        onClick={() => setRejectModal(cert)} id={`reject-${cert._id}`}>
-                        <X size={14} /> Reject
-                      </button>
+                      {statusFilter === 'pending' && (
+                        <>
+                          <button className="btn-success py-2.5 px-4 flex items-center gap-2 text-xs"
+                            onClick={() => handleApprove(cert._id)} disabled={!!processing[cert._id]}
+                            id={`approve-${cert._id}`}>
+                            {processing[cert._id] === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve & Add Points
+                          </button>
+                          <button className="btn-danger py-2.5 px-4 flex items-center gap-2 text-xs"
+                            onClick={() => setRejectModal(cert)} id={`reject-${cert._id}`}>
+                            <X size={14} /> Reject
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -248,22 +318,22 @@ export default function VerifyCertificatesPage() {
       )}
 
       {activeTab === 'activities' && (
-        actLoading ? (
+        isLoading ? (
           <div className="flex flex-col gap-4">
             {[1,2,3].map(i => <div key={i} className="animate-pulse bg-[var(--bg-card)] border border-[var(--border-light)] rounded-[1.2rem] h-[160px]" />)}
           </div>
-        ) : pendingActivities.length === 0 ? (
+        ) : activeActivities.length === 0 ? (
           <div className="glass-card p-16 text-center border-dashed">
             <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
               <ShieldCheck size={48} className="text-emerald-400" />
             </div>
-            <h3 className="text-2xl font-display font-black text-[var(--text-primary)] mb-2">All caught up! 🎉</h3>
-            <p className="text-[var(--text-secondary)] font-medium">There are no pending activities to review at this moment.</p>
+            <h3 className="text-2xl font-display font-black text-[var(--text-primary)] mb-2">No activities found</h3>
+            <p className="text-[var(--text-secondary)] font-medium">There are no {statusFilter} activities to display.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-6">
             <AnimatePresence>
-              {pendingActivities.map((act, i) => (
+              {activeActivities.map((act, i) => (
                 <motion.div key={act._id} className="glass-card p-6 flex flex-col md:flex-row gap-6 items-start hover:border-[var(--primary)] transition-all group"
                   initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: 100 }} transition={{ delay: i * 0.05 }}>
@@ -281,8 +351,14 @@ export default function VerifyCertificatesPage() {
                         {act.description && <div className="text-[13px] font-medium text-[var(--text-secondary)] mb-2">{act.description}</div>}
                         <div className="text-[11px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Type: <strong className="text-[var(--text-primary)]">{act.type}</strong></div>
                       </div>
-                      <span className="bg-orange-500/10 text-orange-600 border border-orange-500/20 text-[10px] px-3 py-1.5 rounded-md uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max">
-                        <Loader2 size={12} className="animate-spin" /> Pending
+                      <span className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max border ${
+                        act.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                        act.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                        'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                      }`}>
+                        {act.verified === 'approved' ? <><ShieldCheck size={12} /> Approved</> :
+                         act.verified === 'rejected' ? <><X size={12} /> Rejected</> :
+                         <><Loader2 size={12} className="animate-spin" /> Pending</>}
                       </span>
                     </div>
 
@@ -294,7 +370,7 @@ export default function VerifyCertificatesPage() {
                       </div>
                       <div>
                         <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80 mb-1">Enrollment</div>
-                        <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{act.studentId?.enrollmentNumber || act.student?.enrollmentNumber}</div>
+                        <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{act.studentId?.enrollmentNumber || act.studentId?.enrollmentNo || act.student?.enrollmentNumber}</div>
                       </div>
                       <div>
                         <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] opacity-80 mb-1">Department</div>
@@ -305,6 +381,17 @@ export default function VerifyCertificatesPage() {
                         <div className="text-[13px] font-bold text-[var(--text-primary)] truncate">{new Date(act.date || act.createdAt).toLocaleDateString('en-IN')}</div>
                       </div>
                     </div>
+
+                    {/* Verification details for history */}
+                    {statusFilter !== 'pending' && (
+                      <div className="mt-4 p-3 bg-slate-500/5 rounded-xl border border-[var(--border-light)] text-[12px] font-medium text-[var(--text-secondary)] flex flex-col gap-1">
+                        <div>Verified By: <strong className="text-[var(--text-primary)]">{act.verifiedBy?.name || 'Admin'}</strong></div>
+                        <div>Verified At: <strong className="text-[var(--text-primary)]">{new Date(act.verifiedAt || act.updatedAt).toLocaleString('en-IN')}</strong></div>
+                        {act.verified === 'rejected' && act.rejectionReason && (
+                          <div className="mt-2 text-rose-500">Rejection Reason: {act.rejectionReason}</div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex flex-wrap items-center gap-3 mt-6">
@@ -318,15 +405,19 @@ export default function VerifyCertificatesPage() {
                           <Eye size={14} /> View Evidence
                         </a>
                       )}
-                      <button className="btn-success py-2.5 px-4 flex items-center gap-2 text-xs"
-                        onClick={() => handleApproveActivity(act._id)} disabled={!!processing[act._id]}
-                        id={`approve-act-${act._id}`}>
-                        {processing[act._id] === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve & Add Points
-                      </button>
-                      <button className="btn-danger py-2.5 px-4 flex items-center gap-2 text-xs"
-                        onClick={() => setRejectModal({...act, isActivity: true})} id={`reject-act-${act._id}`}>
-                        <X size={14} /> Reject
-                      </button>
+                      {statusFilter === 'pending' && (
+                        <>
+                          <button className="btn-success py-2.5 px-4 flex items-center gap-2 text-xs"
+                            onClick={() => handleApproveActivity(act._id)} disabled={!!processing[act._id]}
+                            id={`approve-act-${act._id}`}>
+                            {processing[act._id] === 'approve' ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Approve & Add Points
+                          </button>
+                          <button className="btn-danger py-2.5 px-4 flex items-center gap-2 text-xs"
+                            onClick={() => setRejectModal({...act, isActivity: true})} id={`reject-act-${act._id}`}>
+                            <X size={14} /> Reject
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </motion.div>

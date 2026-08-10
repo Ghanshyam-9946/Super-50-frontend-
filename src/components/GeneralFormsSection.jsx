@@ -98,7 +98,6 @@ export default function GeneralFormsSection() {
   };
 
   if (loading) return null;
-  if (activeForms.length === 0) return null;
 
   return (
     <section className="py-24 relative overflow-hidden bg-black/20 border-t border-[var(--border-light)]">
@@ -138,54 +137,60 @@ export default function GeneralFormsSection() {
         </div>
 
         {/* Forms Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {activeForms.map((form, idx) => {
-            return (
-              <motion.div
-                key={form._id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 }}
-                className="glass-card p-8 flex flex-col justify-between hover:border-[var(--primary)]/50 transition-all duration-300 group relative hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center border border-[var(--primary)]/20 text-[var(--primary)] shrink-0">
-                      <FileText size={22} />
+        {activeForms.length === 0 ? (
+          <div className="text-center text-[var(--text-secondary)] font-medium bg-black/20 py-10 rounded-2xl border border-[var(--border-light)]">
+            There are currently no active registrations available. Please check back later.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {activeForms.map((form, idx) => {
+              return (
+                <motion.div
+                  key={form._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="glass-card p-8 flex flex-col justify-between hover:border-[var(--primary)]/50 transition-all duration-300 group relative hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 flex items-center justify-center border border-[var(--primary)]/20 text-[var(--primary)] shrink-0">
+                        <FileText size={22} />
+                      </div>
                     </div>
+
+                    <h3 className="text-xl font-display font-black text-[var(--text-primary)] mt-6 leading-tight group-hover:text-[var(--primary)] transition-colors">
+                      {form.purpose}
+                    </h3>
+                    
+                    {form.description && (
+                      <p className="text-sm text-[var(--text-secondary)] mt-3 leading-relaxed line-clamp-3">
+                        {form.description}
+                      </p>
+                    )}
+
+                    {form.endDate && (
+                      <div className="mt-6 flex items-center gap-2 text-xs text-[var(--text-secondary)] font-bold">
+                        <Clock size={14} className="text-amber-500" />
+                        <span>Closes: {new Date(form.endDate).toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <h3 className="text-xl font-display font-black text-[var(--text-primary)] mt-6 leading-tight group-hover:text-[var(--primary)] transition-colors">
-                    {form.purpose}
-                  </h3>
-                  
-                  {form.description && (
-                    <p className="text-sm text-[var(--text-secondary)] mt-3 leading-relaxed line-clamp-3">
-                      {form.description}
-                    </p>
-                  )}
-
-                  {form.endDate && (
-                    <div className="mt-6 flex items-center gap-2 text-xs text-[var(--text-secondary)] font-bold">
-                      <Clock size={14} className="text-amber-500" />
-                      <span>Closes: {new Date(form.endDate).toLocaleString()}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-8">
-                    <button
-                      onClick={() => handleOpenForm(form)}
-                      className="w-full btn-premium py-3.5 rounded-xl text-xs font-black uppercase tracking-wider"
-                    >
-                      Fill Form
-                    </button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                  <div className="mt-8">
+                      <button
+                        onClick={() => handleOpenForm(form)}
+                        className="w-full btn-premium py-3.5 rounded-xl text-xs font-black uppercase tracking-wider"
+                      >
+                        Fill Form
+                      </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Submission Modal */}

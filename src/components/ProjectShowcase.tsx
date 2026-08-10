@@ -1,109 +1,86 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { ExternalLink, Github as GithubIcon, Folder, Star, Users } from "lucide-react";
+import { Briefcase, Trophy, FolderKanban, ArrowUpRight } from "lucide-react";
 
-const projects = [
+const capabilities = [
   {
     id: 1,
-    title: "AI Grievance System",
-    category: "Full Stack · AI",
-    desc: "A municipal complaint management system using NLP for automated ward routing and priority detection.",
-    tags: ["React", "FastAPI", "Python", "PostgreSQL"],
-    stats: { stars: 124, contributors: 8 },
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=2070&auto=format&fit=crop" 
+    icon: Briefcase,
+    badge: "18 LPA Max",
+    subtitle: "PLACEMENT ENGINE",
+    title: "Real-time Drives & Placements",
+    desc: "Seamless company drive feeds, interview schedules, and instant application tracking.",
   },
   {
     id: 2,
-    title: "EcoTrack Workspace",
-    category: "SaaS · Innovation",
-    desc: "Unified ecosystem for tracking student sustainability projects and campus-wide carbon footprint metrics.",
-    tags: ["Next.js", "Tailwind", "Supabase", "Framer"],
-    stats: { stars: 89, contributors: 5 },
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426&auto=format&fit=crop"
+    icon: Trophy,
+    badge: "Top 50 Rank",
+    subtitle: "SUPER 50 COHORT",
+    title: "Leaderboard & Skill Tracking",
+    desc: "Track POD AI scores, submit verified certificates, and rise through live campus rankings.",
   },
   {
     id: 3,
-    title: "MILE Leaderboard",
-    category: "Real-time · Elite",
-    desc: "High-performance ranking engine with live socket updates and animated talent score visualization.",
-    tags: ["TypeScript", "Node.js", "Redis", "Canvas"],
-    stats: { stars: 215, contributors: 12 },
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop"
+    icon: FolderKanban,
+    badge: "100+ Projects",
+    subtitle: "INNOVATION HUB",
+    title: "Project Vault & Showcase",
+    desc: "Submit major and minor projects, receive guide feedback, and publish to the campus gallery.",
   }
 ];
 
 export function ProjectShowcase() {
-  const [hovered, setHovered] = useState(null);
-
   return (
-    <section id="projects" className="relative px-6 py-32 bg-slate-50/30">
-      <div className="mx-auto max-w-7xl">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mb-16 flex flex-col items-end justify-between gap-8 md:flex-row"
-        >
-          <div className="max-w-2xl text-left">
-            <div className="mb-4 font-mono text-[11px] font-black uppercase tracking-[0.4em] text-brand-indigo">
-              Innovation Gallery
-            </div>
-            <h2 className="font-display text-5xl font-black md:text-7xl tracking-tight text-foreground">
-              Showcasing the <span className="text-gradient-brand">future.</span>
-            </h2>
+    <section id="capabilities" className="relative px-6 py-32 bg-[#09090b] text-white overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute left-1/2 top-1/2 h-[400px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/10 blur-[100px] pointer-events-none" />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div className="mb-20 text-center">
+          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-indigo-500">
+            Platform Capabilities
           </div>
-        </motion.div>
+          <h2 className="font-display text-4xl font-extrabold tracking-tight md:text-5xl lg:text-6xl">
+            Designed for impact and<br />efficiency.
+          </h2>
+        </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {projects.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              onMouseEnter={() => setHovered(p.id)}
-              onMouseLeave={() => setHovered(null)}
-              className="group relative flex flex-col h-[550px] overflow-hidden rounded-[2rem] bg-white shadow-md border border-slate-100"
-            >
-              <div className="relative h-1/2 overflow-hidden">
-                <img
-                  src={p.image}
-                  alt={p.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              </div>
-
-              <div className="flex flex-1 flex-col justify-between p-8">
+        <div className="grid gap-6 md:grid-cols-3">
+          {capabilities.map((cap, i) => {
+            const Icon = cap.icon;
+            return (
+              <motion.div
+                key={cap.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group relative flex flex-col justify-between rounded-[1.5rem] border border-white/10 bg-white/[0.02] p-8 hover:bg-white/[0.04] transition-colors"
+              >
                 <div>
-                  <div className="mb-2 font-mono text-[10px] font-black uppercase tracking-wider text-brand-purple">
-                    {p.category}
+                  <div className="mb-12 flex items-center justify-between">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 shadow-inner">
+                      <Icon size={20} className="text-white/80" />
+                    </div>
+                    <div className="rounded-full bg-white/5 px-3 py-1 text-[10px] font-semibold text-white/70 border border-white/10">
+                      {cap.badge}
+                    </div>
                   </div>
-                  <h3 className="mb-3 font-display text-2xl font-black">{p.title}</h3>
-                  <p className="text-sm text-muted-foreground font-medium line-clamp-2">
-                    {p.desc}
+                  
+                  <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-white/50">
+                    {cap.subtitle}
+                  </div>
+                  <h3 className="mb-3 text-2xl font-bold tracking-tight text-white/90">{cap.title}</h3>
+                  <p className="text-sm font-medium leading-relaxed text-white/50">
+                    {cap.desc}
                   </p>
                 </div>
 
-                <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5">
-                      <Star size={14} className="text-black/60 dark:text-slate-400" />
-                      <span className="text-[10px] font-black text-black/60 dark:text-slate-400">{p.stats.stars}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-100 hover:bg-slate-50">
-                      <GithubIcon size={16} className="text-black/80 dark:text-slate-400" />
-                    </button>
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-indigo text-white">
-                      <ExternalLink size={16} />
-                    </button>
-                  </div>
+                <div className="mt-12 flex items-center text-xs font-bold text-white transition-colors group-hover:text-indigo-400 cursor-pointer">
+                  Explore Details <ArrowUpRight size={14} className="ml-1 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
