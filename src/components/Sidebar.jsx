@@ -1,10 +1,11 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
+  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +30,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/certificates', icon: Award, label: 'Certificates' },
     { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
     { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
+    { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
   ];
 
   // Training & Placement Section (ALL students)
@@ -51,12 +53,19 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
   const isSuper50Mentor = (user?.responsibilities || []).includes('Super 50 Mentor');
+  // A teacher only sees PMS guide features once they've actually been
+  // assigned as a Project Guide (roles array gets 'guide' added — see
+  // pms/admin/Guides.jsx) — being a teacher alone is no longer enough.
+  const isProjectGuide = user?.role === 'guide' || (user?.roles || []).includes('guide');
 
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
+    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
+    ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
@@ -70,7 +79,20 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
+    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  ];
+
+  // Student Upload (existing Bulk Create page) now lives inside this group,
+  // alongside the new Section/Mentor/Subject Catalog screens.
+  const masterDataLinks = [
+    { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },
+    { to: '/admin/master-data/sections', icon: Layers, label: 'Create Section' },
+    { to: '/admin/master-data/mentors', icon: UserCheck, label: 'Assign Mentor' },
+    { to: '/admin/master-data/subjects', icon: BookOpen, label: 'Create Subjects' },
+    { to: '/admin/master-data/choice-matrix', icon: Grid3x3, label: 'Choice Filling Matrix' },
+    { to: '/admin/master-data/load-calculation', icon: Gauge, label: 'Load Calculation' },
+    { to: '/admin/master-data/allocation-sheet', icon: FileSpreadsheet, label: 'Allocation Sheet' },
   ];
 
   const adminLinks = [
@@ -79,6 +101,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
     { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
+    { to: '/admin/sessional-marks', icon: GraduationCap, label: 'Sessional Marks Report' },
+    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks (Manage)' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
@@ -86,7 +110,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
     { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
-    { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
+    { label: 'Master Data', icon: Layers, children: masterDataLinks },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
@@ -141,8 +165,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
       else if (role === 'guide') roleLinks = guideLinks;
 
       roleLinks.forEach(link => {
-        if (!seen.has(link.to)) {
-          seen.add(link.to);
+        const key = link.to || link.label; // groups (no `to`, has `children`) dedupe by label
+        if (!seen.has(key)) {
+          seen.add(key);
 
           let adjustedLabel = link.label;
           if (hasMultipleRoles) {
@@ -201,9 +226,13 @@ const Sidebar = ({ theme, toggleTheme }) => {
         {/* Core Nav */}
         <div className="space-y-1.5">
           {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4">Core</p>}
-          {getNavLinks().map((link) => (
-            <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-          ))}
+          {getNavLinks().map((link) =>
+            link.children ? (
+              <NavGroup key={link.label} group={link} collapsed={collapsed} onNavigate={() => setMobileOpen(false)} />
+            ) : (
+              <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
+            )
+          )}
         </div>
 
         {/* T&P Section (Students Only) */}
@@ -354,5 +383,54 @@ const NavItem = ({ link, onClick, collapsed }) => (
     )}
   </NavLink>
 );
+
+// A parent menu item that expands into a flat list of NavItems — collapsed
+// by default, auto-opens when one of its children is the active route.
+// No such grouping existed anywhere in this file before Master Data.
+const NavGroup = ({ group, collapsed, onNavigate }) => {
+  const location = useLocation();
+  const hasActiveChild = group.children.some((c) => location.pathname === c.to);
+  const [open, setOpen] = useState(hasActiveChild);
+
+  if (collapsed) {
+    // No room to show a label + chevron when collapsed — just render the
+    // children flat, same as any other icon-only link.
+    return (
+      <>
+        {group.children.map((child) => (
+          <NavItem key={child.to} link={child} collapsed={collapsed} onClick={onNavigate} />
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-4 px-3.5 py-3 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all duration-300"
+      >
+        <group.icon size={18} />
+        <span className="flex-1 text-left font-bold text-sm tracking-tight">{group.label}</span>
+        <ChevronDown size={14} className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden pl-4 space-y-1"
+          >
+            {group.children.map((child) => (
+              <NavItem key={child.to} link={child} collapsed={collapsed} onClick={onNavigate} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default Sidebar;

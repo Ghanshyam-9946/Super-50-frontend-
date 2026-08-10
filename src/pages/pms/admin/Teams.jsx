@@ -20,6 +20,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
   const [form, setForm] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [pickerBatch, setPickerBatch] = useState('');
   const [pickerResults, setPickerResults] = useState([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerLoading, setPickerLoading] = useState(false);
@@ -47,6 +48,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         members: initMembers,
       });
       setPickerQuery('');
+      setPickerBatch('');
       setPickerResults([]);
       setPickerOpen(false);
     }
@@ -61,6 +63,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         const res = await adminAPI.searchAvailableStudents({
           q: pickerQuery,
           semester: team.semester,
+          batch: pickerBatch,
           excludeTeamId: team._id,
         });
         // Exclude already-added members
@@ -73,7 +76,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
       }
     }, 300);
     return () => clearTimeout(t);
-  }, [pickerQuery, pickerOpen, team, form.members]);
+  }, [pickerQuery, pickerBatch, pickerOpen, team, form.members]);
 
   const addMemberFromPicker = (student) => {
     // Check for duplicate by student ID or enrollment number
@@ -310,14 +313,24 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
           {(form.members?.length || 0) < 5 && (
             <div className="relative">
               <label className="form-label">Add member (search admin-uploaded students)</label>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    className="form-input pl-10"
+                    placeholder={`Search Sem ${team.semester} students by name or enrollment…`}
+                    value={pickerQuery}
+                    onChange={(e) => { setPickerQuery(e.target.value); setPickerOpen(true); }}
+                    onFocus={() => setPickerOpen(true)}
+                  />
+                </div>
                 <input
                   type="text"
-                  className="form-input pl-10"
-                  placeholder={`Search Sem ${team.semester} students by name or enrollment…`}
-                  value={pickerQuery}
-                  onChange={(e) => { setPickerQuery(e.target.value); setPickerOpen(true); }}
+                  className="form-input w-32"
+                  placeholder="Batch"
+                  value={pickerBatch}
+                  onChange={(e) => { setPickerBatch(e.target.value); setPickerOpen(true); }}
                   onFocus={() => setPickerOpen(true)}
                 />
               </div>

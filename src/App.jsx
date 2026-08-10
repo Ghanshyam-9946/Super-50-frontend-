@@ -62,6 +62,16 @@ import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
+import SessionalMarksAdminPage from './pages/admin/SessionalMarksAdminPage';
+import MasterDataSections from './pages/admin/masterdata/Sections';
+import MasterDataMentors from './pages/admin/masterdata/Mentors';
+import MasterDataSubjects from './pages/admin/masterdata/Subjects';
+import MasterDataChoiceMatrix from './pages/admin/masterdata/ChoiceMatrix';
+import MasterDataLoadCalculation from './pages/admin/masterdata/LoadCalculation';
+import MasterDataAllocationSheet from './pages/admin/masterdata/AllocationSheet';
+import ChoiceFillingPage from './pages/faculty/ChoiceFillingPage';
+import SessionalMarksPage from './pages/faculty/SessionalMarksPage';
+import StudentSessionalMarksPage from './pages/student/StudentSessionalMarksPage';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -196,6 +206,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/no-dues" element={
           <RoleGuard allowed={['student']}><StudentNoDuesPage /></RoleGuard>
         } />
+        <Route path="/student/sessional-marks" element={
+          <RoleGuard allowed={['student']}><StudentSessionalMarksPage /></RoleGuard>
+        } />
         <Route path="/student/rgpv" element={
           <RoleGuard allowed={['student']}><StudentRGPVPage /></RoleGuard>
         } />
@@ -234,6 +247,24 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/bulk-create" element={
           <RoleGuard allowed={['admin']}><BulkCreatePage /></RoleGuard>
         } />
+        <Route path="/admin/master-data/sections" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataSections /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/mentors" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataMentors /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/subjects" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataSubjects /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/choice-matrix" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataChoiceMatrix /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/load-calculation" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataLoadCalculation /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/allocation-sheet" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataAllocationSheet /></RoleGuard>
+        } />
         <Route path="/admin/super50-selection" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><Super50SelectionPage /></RoleGuard>
         } />
@@ -257,6 +288,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/no-dues" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><NoDuesAdminPage /></RoleGuard>
+        } />
+        <Route path="/admin/sessional-marks" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><SessionalMarksAdminPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
@@ -308,6 +342,16 @@ function AppRoutes({ theme, toggleTheme }) {
         {/* No Dues — mentor (TG) view, shared across staff roles */}
         <Route path="/faculty/no-dues" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><NoDuesPage /></RoleGuard>
+        } />
+
+        {/* Sessional Marks — faculty/coordinator view, shared across staff roles */}
+        <Route path="/faculty/sessional-marks" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><SessionalMarksPage /></RoleGuard>
+        } />
+
+        {/* Subject Choice Filling — faculty view, shared across staff roles */}
+        <Route path="/faculty/choice-filling" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ChoiceFillingPage /></RoleGuard>
         } />
       </Route>
 

@@ -25,6 +25,7 @@ import {
   Wallet,
   Percent,
   RefreshCw,
+  Send,
 } from "lucide-react";
 import { Doughnut } from "react-chartjs-2";
 import {
@@ -65,7 +66,6 @@ export default function NoDuesPage() {
   const [checklistForms, setChecklistForms] = useState([]);
   const [studentsError, setStudentsError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [preselectedStudent, setPreselectedStudent] = useState(null);
   const [openFormId, setOpenFormId] = useState(null);
 
   // Refresh the current user's responsibilities (e.g. picks up an
@@ -163,7 +163,7 @@ export default function NoDuesPage() {
     ...(isCoordinator
       ? [
           { key: "students", label: "All Students", icon: Users2 },
-          { key: "create", label: "Create No Dues Form", icon: Plus },
+          { key: "create", label: "Release No Dues", icon: Send },
           { key: "assign", label: "Assign Faculty", icon: UserCheck },
           { key: "forms", label: "Forms I Released", icon: ClipboardList },
           { key: "manage", label: "Manage Forms", icon: Settings2 },
@@ -237,18 +237,11 @@ export default function NoDuesPage() {
                 students={students}
                 error={studentsError}
                 onRefresh={loadAll}
-                onCreateFor={(student) => {
-                  setPreselectedStudent(student);
-                  setTab("create");
-                }}
               />
             )}
             {tab === "create" && (
-              <CreateFormView
-                students={students}
-                preselected={preselectedStudent}
-                onCreated={async () => {
-                  setPreselectedStudent(null);
+              <ReleaseFormView
+                onReleased={async () => {
                   await refreshForms();
                   setTab("forms");
                 }}
@@ -432,7 +425,7 @@ function MyDashboardTab({ forms, user, onRefresh }) {
 
 /* ─────────────────────────────  ALL STUDENTS  ───────────────────────────── */
 
-function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
+function AllStudentsTab({ students, error, onRefresh }) {
   const [search, setSearch] = useState("");
   const [batchFilter, setBatchFilter] = useState("");
   const [uploadingFees, setUploadingFees] = useState(false);
@@ -530,7 +523,7 @@ function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[var(--border-light)] text-left">
-              {["Name", "Enrollment", "Semester", "Attendance", "Dues Fees", ""].map((h) => (
+              {["Name", "Enrollment", "Semester", "Attendance", "Dues Fees"].map((h) => (
                 <th
                   key={h}
                   className="px-5 py-4 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest whitespace-nowrap"
@@ -563,14 +556,6 @@ function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
                 <td className="px-5 py-4 text-[var(--text-secondary)]">
                   ₹{s.duesFees ?? 0}
                 </td>
-                <td className="px-5 py-4 text-right">
-                  <button
-                    onClick={() => onCreateFor(s)}
-                    className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 ml-auto"
-                  >
-                    <Plus size={13} /> No Dues Form
-                  </button>
-                </td>
               </tr>
             ))}
             {filtered.length === 0 && (
@@ -590,404 +575,120 @@ function AllStudentsTab({ students, error, onCreateFor, onRefresh }) {
   );
 }
 
-/* ─────────────────────────────  CREATE FORM  ───────────────────────────── */
+/* ─────────────────────────────  RELEASE FORM  ───────────────────────────── */
 
-function CreateFormView({ students, preselected, onCreated }) {
-  const [studentIds, setStudentIds] = useState(
-    preselected?._id ? [preselected._id] : [],
-  );
-  const [studentSearch, setStudentSearch] = useState("");
-  const [semesterFilter, setSemesterFilter] = useState("");
+const RELEASE_SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+// Subjects, checklist items and subject faculty all come from the Subject
+// Catalog + Faculty Allocation (Master Data) now — the coordinator no
+// longer builds a subject list by hand for every release.
+function ReleaseFormView({ onReleased }) {
   const [batch, setBatch] = useState("");
-  const [semester, setSemester] = useState(preselected?.semester || 1);
+  const [semester, setSemester] = useState("");
   const [section, setSection] = useState("");
-  const [subjects, setSubjects] = useState([
-    {
-      subjectCode: "",
-      subjectName: "",
-      items: [...DEFAULT_SUBJECT_ITEMS],
-    },
-  ]);
-  const [submitting, setSubmitting] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const filteredStudents = students.filter((s) => {
-    const matchesSearch =
-      s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      (s.enrollmentNumber || "")
-        .toLowerCase()
-        .includes(studentSearch.toLowerCase());
-    const matchesSemester =
-      !semesterFilter || String(s.semester) === String(semesterFilter);
-    const matchesBatch = !batch || s.batch === batch;
-    return matchesSearch && matchesSemester && matchesBatch;
-  });
-
-  const toggleStudent = (id) =>
-    setStudentIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  const allFilteredSelected =
-    filteredStudents.length > 0 &&
-    filteredStudents.every((s) => studentIds.includes(s._id));
-  const toggleSelectAll = () => {
-    const ids = filteredStudents.map((s) => s._id);
-    setStudentIds((prev) =>
-      allFilteredSelected
-        ? prev.filter((id) => !ids.includes(id))
-        : [...new Set([...prev, ...ids])],
-    );
-  };
-
-  // Semesters/batches present among the loaded students, for quick "whole batch/semester" selection
-  const availableSemesters = [
-    ...new Set(students.map((s) => s.semester).filter(Boolean)),
-  ].sort((a, b) => a - b);
-  const availableBatches = [
-    ...new Set(students.map((s) => s.batch).filter(Boolean)),
-  ].sort();
-
-  const setSubject = (idx, patch) => {
-    const next = [...subjects];
-    next[idx] = { ...next[idx], ...patch };
-    setSubjects(next);
-  };
-  const addSubject = () =>
-    setSubjects([
-      ...subjects,
-      {
-        subjectCode: "",
-        subjectName: "",
-        items: [...DEFAULT_SUBJECT_ITEMS],
-      },
-    ]);
-  const removeSubject = (idx) =>
-    setSubjects(subjects.filter((_, i) => i !== idx));
-
-  const toggleItemForSubject = (idx, item) => {
-    const current = subjects[idx].items;
-    const next = current.includes(item)
-      ? current.filter((i) => i !== item)
-      : [...current, item];
-    setSubject(idx, { items: next });
-  };
-
-  const [customItemDraft, setCustomItemDraft] = useState({}); // idx -> text
-  const addCustomItem = (idx) => {
-    const label = (customItemDraft[idx] || "").trim();
-    if (!label) return;
-    if (subjects[idx].items.includes(label)) {
-      setCustomItemDraft((prev) => ({ ...prev, [idx]: "" }));
+  const release = async () => {
+    if (!batch.trim() || !semester) return toast.error("Enter batch and semester");
+    if (
+      !window.confirm(
+        `Release No Dues for every Sem ${semester} student in batch ${batch}${section ? ` / Section ${section}` : ""}? Subjects, faculty and checklist items come from Master Data.`,
+      )
+    )
       return;
-    }
-    setSubject(idx, { items: [...subjects[idx].items, label] });
-    setCustomItemDraft((prev) => ({ ...prev, [idx]: "" }));
-  };
-  const removeCustomItem = (idx, item) =>
-    setSubject(idx, { items: subjects[idx].items.filter((i) => i !== item) });
-
-  const submit = async () => {
-    if (studentIds.length === 0)
-      return toast.error("Select at least one student");
-    if (!batch)
-      return toast.error("Select a batch");
-    if (subjects.some((s) => !s.subjectName.trim()))
-      return toast.error("Every subject needs a name");
-
-    setSubmitting(true);
+    setReleasing(true);
+    setResult(null);
     try {
-      const { data } = await api.post("/no-dues/bulk", {
-        studentIds,
-        batch,
-        semester,
-        section: section.trim(),
-        subjects: subjects.map((s) => ({
-          subjectCode: s.subjectCode.trim(),
-          subjectName: s.subjectName.trim(),
-          items: s.items,
-        })),
+      const { data } = await api.post("/no-dues/release", {
+        batch: batch.trim(),
+        semester: Number(semester),
+        section: section.trim() || undefined,
       });
       if (data.success) {
-        toast.success(data.message || "No Dues forms created");
+        toast.success(data.message);
+        setResult(data);
         if (data.skipped?.length) {
-          data.skipped.forEach((sk) =>
-            toast.error(`Skipped ${sk.name || sk.studentId}: ${sk.reason}`),
-          );
+          data.skipped.forEach((s) => toast.error(`${s.name}: ${s.reason}`, { duration: 5000 }));
         }
-        await onCreated();
+        await onReleased?.();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to create forms");
+      toast.error(err.response?.data?.message || "Failed to release No Dues");
     } finally {
-      setSubmitting(false);
+      setReleasing(false);
     }
   };
 
-  const inputCls =
-    "w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-purple-500/10 transition-all";
-  const labelCls =
-    "block text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-1.5";
-
   return (
-    <div className="glass-card p-6 rounded-3xl space-y-6">
-      <div>
-        <label className={labelCls}>
-          Students{" "}
-          <span className="opacity-60 normal-case font-medium">
-            (any student — pick individually, filter by batch/semester, or select all)
-          </span>
-        </label>
-        <div className="border border-[var(--border-light)] rounded-2xl overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 px-3 py-2.5 border-b border-[var(--border-light)] bg-[var(--bg-input)]">
-            <div className="flex items-center gap-2 flex-1">
-              <Search
-                size={14}
-                className="text-[var(--text-secondary)] shrink-0"
-              />
-              <input
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                placeholder="Search by name or enrollment…"
-                className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)] min-w-0"
-              />
-            </div>
-            {availableBatches.length > 0 && (
-              <select
-                value={batch}
-                onChange={(e) => setBatch(e.target.value)}
-                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs font-bold text-[var(--text-primary)] outline-none shrink-0"
-              >
-                <option value="">Select batch…</option>
-                {availableBatches.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-            )}
-            {availableSemesters.length > 1 && (
-              <select
-                value={semesterFilter}
-                onChange={(e) => setSemesterFilter(e.target.value)}
-                className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] outline-none shrink-0"
-              >
-                <option value="">All semesters</option>
-                {availableSemesters.map((s) => (
-                  <option key={s} value={s}>
-                    Semester {s}
-                  </option>
-                ))}
-              </select>
-            )}
-            {filteredStudents.length > 0 && (
-              <button
-                onClick={toggleSelectAll}
-                className="text-[11px] font-bold text-[var(--primary)] hover:underline shrink-0 whitespace-nowrap"
-              >
-                {allFilteredSelected
-                  ? "Clear all"
-                  : `Select all (${filteredStudents.length})`}
-              </button>
-            )}
-            {studentIds.length > 0 && (
-              <span className="badge badge-approved shrink-0">
-                {studentIds.length} selected
-              </span>
-            )}
-          </div>
-          <div className="max-h-56 overflow-y-auto custom-scrollbar p-1.5 space-y-1">
-            {filteredStudents.length === 0 && (
-              <p className="text-sm text-[var(--text-secondary)] text-center py-6">
-                No students found.
-              </p>
-            )}
-            {filteredStudents.map((s) => {
-              const on = studentIds.includes(s._id);
-              return (
-                <button
-                  key={s._id}
-                  onClick={() => toggleStudent(s._id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-all ${
-                    on
-                      ? "bg-[var(--primary)]/10 border border-[var(--primary)]/30"
-                      : "hover:bg-[var(--bg-hover)] border border-transparent"
-                  }`}
-                >
-                  <div
-                    className={`w-4.5 h-4.5 rounded-md border flex items-center justify-center shrink-0 ${on ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-light)]"}`}
-                  >
-                    {on && <Check size={12} className="text-white" />}
-                  </div>
-                  <span className="text-sm font-bold text-[var(--text-primary)] truncate">
-                    {s.name}
-                  </span>
-                  <span className="text-[11px] text-[var(--text-secondary)] shrink-0 ml-auto">
-                    {s.enrollmentNumber}
-                    {s.semester ? ` · Sem ${s.semester}` : ""}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-5">
+    <div className="space-y-4">
+      <div className="glass-card p-6 rounded-2xl space-y-4">
         <div>
-          <label className={labelCls}>
-            Semester{" "}
-            <span className="opacity-60 normal-case font-medium">
-              (applied to every selected student's form)
-            </span>
+          <h3 className="font-display font-bold text-lg text-[var(--text-primary)]">Release No Dues</h3>
+          <p className="text-[var(--text-secondary)] text-sm mt-1">
+            Subjects, checklist items and subject faculty are derived automatically from the Subject Catalog and Faculty
+            Allocation set up under Master Data — nothing to type by hand here anymore.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+            Batch
+            <input
+              value={batch}
+              onChange={(e) => setBatch(e.target.value)}
+              placeholder="e.g. 2023"
+              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+            />
           </label>
-          <select
-            value={semester}
-            onChange={(e) => setSemester(Number(e.target.value))}
-            className={inputCls}
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-              <option key={s} value={s}>
-                Semester {s}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>
-            Section{" "}
-            <span className="opacity-60 normal-case font-medium">
-              (optional)
-            </span>
+          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+            Semester
+            <select
+              value={semester}
+              onChange={(e) => setSemester(e.target.value)}
+              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Select</option>
+              {RELEASE_SEMESTERS.map((n) => (
+                <option key={n} value={n}>
+                  Semester {n}
+                </option>
+              ))}
+            </select>
           </label>
-          <input
-            value={section}
-            onChange={(e) => setSection(e.target.value)}
-            placeholder="IV-1"
-            className={inputCls}
-          />
+          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+            Section <span className="normal-case font-medium">(optional — all sections if blank)</span>
+            <input
+              value={section}
+              onChange={(e) => setSection(e.target.value.toUpperCase())}
+              placeholder="e.g. A"
+              maxLength={1}
+              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+            />
+          </label>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-display font-bold text-[var(--text-primary)]">
-              Subjects
-            </h3>
-            <p className="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">
-              Faculty is assigned separately afterwards, from the "Assign Faculty" tab.
-            </p>
-          </div>
-          <button
-            onClick={addSubject}
-            className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline"
-          >
-            <Plus size={14} /> Add Subject
-          </button>
-        </div>
-
-        {subjects.map((subj, idx) => (
-          <div
-            key={idx}
-            className="border border-[var(--border-light)] rounded-2xl p-4 space-y-3"
-          >
-            <div className="flex items-center gap-2">
-              <input
-                value={subj.subjectCode}
-                onChange={(e) =>
-                  setSubject(idx, { subjectCode: e.target.value })
-                }
-                placeholder="Code (CS-402)"
-                className="w-32 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
-              />
-              <input
-                value={subj.subjectName}
-                onChange={(e) =>
-                  setSubject(idx, { subjectName: e.target.value })
-                }
-                placeholder="Subject name"
-                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
-              />
-              {subjects.length > 1 && (
-                <button
-                  onClick={() => removeSubject(idx)}
-                  className="text-[var(--text-secondary)] hover:text-red-500 shrink-0"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {DEFAULT_SUBJECT_ITEMS.concat(["Lab Record"]).map((item) => {
-                const on = subj.items.includes(item);
-                return (
-                  <button
-                    key={item}
-                    onClick={() => toggleItemForSubject(idx, item)}
-                    className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${
-                      on
-                        ? "bg-[var(--primary)]/10 border-[var(--primary)]/30 text-[var(--primary)]"
-                        : "border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                    }`}
-                  >
-                    {on ? "✓ " : "+ "}
-                    {item}
-                  </button>
-                );
-              })}
-              {subj.items
-                .filter((item) => !DEFAULT_SUBJECT_ITEMS.concat(["Lab Record"]).includes(item))
-                .map((item) => (
-                  <span
-                    key={item}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--primary)]/30 bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-bold"
-                  >
-                    {item}
-                    <button onClick={() => removeCustomItem(idx, item)} className="hover:text-red-500">
-                      <X size={11} />
-                    </button>
-                  </span>
-                ))}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                value={customItemDraft[idx] || ""}
-                onChange={(e) => setCustomItemDraft((prev) => ({ ...prev, [idx]: e.target.value }))}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustomItem(idx);
-                  }
-                }}
-                placeholder="Add a custom task for this subject…"
-                className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs text-[var(--text-primary)] outline-none"
-              />
-              <button
-                onClick={() => addCustomItem(idx)}
-                className="text-xs font-bold text-[var(--primary)] hover:underline shrink-0 flex items-center gap-1"
-              >
-                <Plus size={13} /> Add
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex justify-end pt-4 border-t border-[var(--border-light)]">
         <button
-          onClick={submit}
-          disabled={submitting}
-          className="btn-premium flex items-center gap-2 text-sm"
+          onClick={release}
+          disabled={releasing}
+          className="btn-premium text-sm px-5 py-2.5 flex items-center gap-2 disabled:opacity-40"
         >
-          {submitting ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Save size={16} />
-          )}{" "}
-          Create & Assign
+          {releasing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Release No Dues
         </button>
       </div>
+
+      {result && (
+        <div className="glass-card p-5 rounded-2xl text-sm space-y-2">
+          <p className="font-bold text-[var(--text-primary)]">{result.message}</p>
+          {result.skipped?.length > 0 && (
+            <ul className="text-xs text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+              {result.skipped.map((s, i) => (
+                <li key={i}>
+                  {s.name}: {s.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

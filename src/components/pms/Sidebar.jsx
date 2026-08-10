@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Calendar, FolderOpen, Presentation, UserCheck, Users,
-  Layers, ArrowUpCircle, BarChart3, CheckSquare, Settings, GraduationCap,
+  Layers, BarChart3, CheckSquare, Settings, GraduationCap,
   CloudUpload, ClipboardCheck, Bell, FileText, BookOpen, Award,
   Code2, TrendingUp, FolderArchive, Activity, CalendarCheck, FileEdit,
 } from 'lucide-react';
@@ -22,7 +22,6 @@ const adminNav = [
   { to: '/pms/admin/guides', label: 'Project Guides', icon: UserCheck },
   { to: '/pms/admin/students', label: 'Students', icon: Users },
   { to: '/pms/admin/teams', label: 'Teams & Assign Guide', icon: Layers },
-  { to: '/pms/admin/promote', label: 'Promote', icon: ArrowUpCircle },
 
   { section: 'Tracking' },
   { to: '/pms/admin/attendance', label: 'Daily Attendance', icon: CheckSquare },
