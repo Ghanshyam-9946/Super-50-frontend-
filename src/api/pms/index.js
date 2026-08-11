@@ -28,26 +28,15 @@ export const adminAPI = {
   createPresentation: (data) => api.post('/pms/admin/presentations', data),
   deletePresentation: (id) => api.delete(`/pms/admin/presentations/${id}`),
 
-  // Guides
+  // Guides — tagging an existing faculty account, never creating a new one
   listGuides: () => api.get('/pms/admin/guides'),
-  createGuide: (data) => api.post('/pms/admin/guides', data),
-  deleteGuide: (id) => api.delete(`/pms/admin/guides/${id}`),
+  listFacultyCandidates: () => api.get('/pms/admin/guides/candidates'),
+  assignGuideRole: (data) => api.post('/pms/admin/guides', data),
+  removeGuideRole: (id) => api.delete(`/pms/admin/guides/${id}`),
 
-  // Students
-  listStudents: () => api.get('/pms/admin/students'),
-  createStudent: (data) => api.post('/pms/admin/students', data),          // 🆕
-  updateStudent: (id, data) => api.put(`/pms/admin/students/${id}`, data), // 🆕
-  toggleStudent: (id) => api.put(`/pms/admin/students/${id}/toggle`),
-  deleteStudent: (id) => api.delete(`/pms/admin/students/${id}`),
-  bulkUploadStudents: (formData) =>
-    api.post('/pms/admin/students/bulk-upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  sampleTemplateUrl: '/api/pms/admin/students/sample-template',
-
-  // Promote
-  bulkPromote: (data) => api.post('/pms/admin/promote/bulk', data),
-  selectivePromote: (data) => api.post('/pms/admin/promote/selective', data),
+  // Students — read-only view (create/edit/bulk-upload/delete happen in the
+  // main admin panel, not in PMS), optionally filtered by batch/semester
+  listStudents: (params) => api.get('/pms/admin/students', { params }),
 
   // Teams
   listTeams: (params) => api.get('/pms/admin/teams', { params }),

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users, UserCheck, Layers, Presentation, Calendar, CheckCircle2, Settings as SettingsIcon,
-  CalendarPlus, ArrowUpCircle, Download, Zap, GitBranch,
+  CalendarPlus, Download, Zap, GitBranch,
 } from 'lucide-react';
 import { adminAPI } from '../../../api/pms';
 import { Spinner, Card, StatCard, EmptyState } from '../../../components/pms/Common';
@@ -75,7 +75,6 @@ const Dashboard = () => {
               <Link to="/pms/admin/teams" className="btn-outline justify-start"><Layers className="w-4 h-4" /> Assign Guides to Teams</Link>
               <Link to="/pms/admin/attendance" className="btn-outline justify-start"><CheckCircle2 className="w-4 h-4" /> View Attendance</Link>
               <Link to="/pms/admin/presentations" className="btn-outline justify-start"><CalendarPlus className="w-4 h-4" /> Schedule Presentation</Link>
-              <Link to="/pms/admin/promote" className="btn-outline justify-start"><ArrowUpCircle className="w-4 h-4" /> Promote Students</Link>
               <Link to="/pms/admin/reports" className="btn-outline justify-start"><Download className="w-4 h-4" /> Download Reports</Link>
               <Link to="/pms/admin/settings" className="btn-outline justify-start"><SettingsIcon className="w-4 h-4" /> App Settings</Link>
             </div>
