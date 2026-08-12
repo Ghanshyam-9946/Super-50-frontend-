@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Grid3x3, Loader2, Plus, Trash2, Send, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
+import BatchSelect from "../../../components/BatchSelect";
+import SectionSelect from "../../../components/SectionSelect";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
-const SECTIONS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 export default function ChoiceMatrix() {
   const [filters, setFilters] = useState({ batch: "", semester: "" });
@@ -102,11 +103,7 @@ export default function ChoiceMatrix() {
       <div className="glass-card p-5 rounded-2xl flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
           Batch
-          <input
-            value={filters.batch}
-            onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40"
-          />
+          <BatchSelect value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40" />
         </label>
         <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
           Semester
@@ -142,33 +139,50 @@ export default function ChoiceMatrix() {
               No choice filling round for this batch/semester yet — click "Release Choice Filling" above.
             </div>
           ) : (
-            <div className="glass-card rounded-2xl overflow-hidden">
+            <div className="glass-card rounded-2xl overflow-hidden overflow-x-auto">
               <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)]">
                 Round {matrix.round.isOpen ? "open" : "closed"} · {matrix.subjects.length} subject(s)
               </div>
-              <div className="divide-y divide-[var(--border-light)]">
-                {matrix.subjects.map((s) => {
-                  const picks = picksFor(s._id);
-                  return (
-                    <div key={s._id} className="px-4 py-3 flex flex-wrap items-center gap-3 text-sm">
-                      <span className="font-bold text-[var(--text-primary)] min-w-[180px]">
-                        {s.subjectName} {s.subjectCode && <span className="text-[var(--text-secondary)] font-medium">({s.subjectCode})</span>}
-                      </span>
-                      {picks.length === 0 ? (
-                        <span className="text-xs text-[var(--text-secondary)]">No preferences yet</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {picks.map((p) => (
-                            <span key={p._id} className="badge">
-                              {p.faculty?.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
+                    <th className="px-4 py-3">Subject Name</th>
+                    <th className="px-4 py-3">Priority 1</th>
+                    <th className="px-4 py-3">Priority 2</th>
+                    <th className="px-4 py-3">Priority 3</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrix.subjects.map((s) => {
+                    const picks = picksFor(s._id);
+                    return (
+                      <tr key={s._id} className="border-b border-[var(--border-light)] align-top">
+                        <td className="px-4 py-3 font-bold text-[var(--text-primary)]">
+                          {s.subjectName} {s.subjectCode && <span className="text-[var(--text-secondary)] font-medium">({s.subjectCode})</span>}
+                        </td>
+                        {[1, 2, 3].map((priority) => {
+                          const atPriority = picks.filter((p) => p.priority === priority);
+                          return (
+                            <td key={priority} className="px-4 py-3">
+                              {atPriority.length === 0 ? (
+                                <span className="text-xs text-[var(--text-secondary)]">—</span>
+                              ) : (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {atPriority.map((p) => (
+                                    <span key={p._id} className="badge">
+                                      {p.faculty?.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -193,18 +207,7 @@ export default function ChoiceMatrix() {
                 </label>
                 <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
                   Section
-                  <select
-                    value={rowForm.section}
-                    onChange={(e) => setRowForm((f) => ({ ...f, section: e.target.value }))}
-                    className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-                  >
-                    <option value="">Select</option>
-                    {SECTIONS.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                  <SectionSelect value={rowForm.section} onChange={(e) => setRowForm((f) => ({ ...f, section: e.target.value }))} />
                 </label>
                 <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
                   Faculty

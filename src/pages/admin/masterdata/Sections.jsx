@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Layers, Search, Loader2, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
+import BatchSelect from "../../../components/BatchSelect";
+import SectionSelect from "../../../components/SectionSelect";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
-const SECTIONS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 export default function Sections() {
   const [batch, setBatch] = useState("");
@@ -72,12 +73,7 @@ export default function Sections() {
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Batch
-            <input
-              value={batch}
-              onChange={(e) => setBatch(e.target.value)}
-              placeholder="e.g. 2023"
-              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40"
-            />
+            <BatchSelect value={batch} onChange={(e) => setBatch(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40" />
           </label>
           <button onClick={search} className="btn-premium text-sm px-4 py-2 flex items-center gap-1.5">
             {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />} Find Students
@@ -135,18 +131,7 @@ export default function Sections() {
             </label>
             <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
               Section
-              <select
-                value={assignSection}
-                onChange={(e) => setAssignSection(e.target.value)}
-                className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-              >
-                <option value="">Select</option>
-                {SECTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    Section {s}
-                  </option>
-                ))}
-              </select>
+              <SectionSelect value={assignSection} onChange={(e) => setAssignSection(e.target.value)} />
             </label>
             <button
               onClick={assign}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FileSpreadsheet, Loader2, Download, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
+import BatchSelect from "../../../components/BatchSelect";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -50,11 +51,7 @@ export default function AllocationSheet() {
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Batch
-            <input
-              value={filters.batch}
-              onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))}
-              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40"
-            />
+            <BatchSelect value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40" />
           </label>
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Semester

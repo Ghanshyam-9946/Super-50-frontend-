@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import BatchSelect from "../../components/BatchSelect";
+import SectionSelect from "../../components/SectionSelect";
 
 const isCoordinator = (user) =>
   user?.role === "admin" || (user?.responsibilities || []).includes("Academic Coordinator");
@@ -221,21 +223,9 @@ function SectionsTab() {
               </option>
             ))}
           </select>
-          <input
-            list="sm-batch-options"
-            placeholder="Batch (e.g. 2023)"
-            value={form.batch}
-            onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
           <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
-          <input
-            list="sm-section-options"
-            placeholder="Section (e.g. A)"
-            value={form.section}
-            onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
           <input
             list="sm-subject-code-options"
             placeholder="Subject code"
@@ -260,17 +250,7 @@ function SectionsTab() {
             {saving ? <Loader2 size={14} className="animate-spin" /> : "Assign"}
           </button>
         </div>
-        {/* Suggestions drawn from mappings already created — typing a new value is still fine (new subjects/sections have nothing to suggest yet). */}
-        <datalist id="sm-batch-options">
-          {[...new Set(mappings.map((m) => m.batch))].map((b) => (
-            <option key={b} value={b} />
-          ))}
-        </datalist>
-        <datalist id="sm-section-options">
-          {[...new Set(mappings.map((m) => m.section))].map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
+        {/* Suggestions drawn from mappings already created — typing a new value is still fine (new subjects have nothing to suggest yet). Batch/Section are now real selects (see BatchSelect/SectionSelect), so only subject code/name still use this datalist pattern. */}
         <datalist id="sm-subject-code-options">
           {[...new Set(mappings.map((m) => m.subjectCode).filter(Boolean))].map((s) => (
             <option key={s} value={s} />
@@ -404,19 +384,9 @@ function CreateSheetsTab() {
         </h3>
         <MappingPicker mappings={mappings} onPick={applyMapping} />
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <input
-            placeholder="Batch"
-            value={form.batch}
-            onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
           <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
-          <input
-            placeholder="Section"
-            value={form.section}
-            onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
           <input
             placeholder="Subject code"
             value={form.subjectCode}
@@ -555,7 +525,15 @@ function EntryTab({ user, coordinator }) {
     <div className="space-y-4">
       <div className="glass-card p-4 rounded-2xl flex flex-wrap items-end gap-3">
         <MappingPicker mappings={pickerOptions} onPick={applyMapping} label="Load an existing subject" />
-        {["batch", "section", "subjectCode", "subjectName"].map((k) => (
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          batch
+          <BatchSelect value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
+        </label>
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          section
+          <SectionSelect value={filters.section} onChange={(e) => setFilters((f) => ({ ...f, section: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
+        </label>
+        {["subjectCode", "subjectName"].map((k) => (
           <label key={k} className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             {k}
             <input
@@ -711,8 +689,15 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
   const categoryOptions = marksActivities.length ? marksActivities.map((a) => a.label) : CA_CATEGORIES;
   const categoryLabel = (cat) => CATEGORY_LABELS[cat] || cat;
   const hasLab = (sheet.subjectRef?.noOfPractical || 0) > 0;
+  // A category's max comes from its Subject Activity's maxMarks, when one
+  // is linked — saves re-typing the same number every entry. Still editable
+  // afterwards for a genuine one-off.
+  const defaultMaxFor = (category) => {
+    const activity = marksActivities.find((a) => a.label === category);
+    return activity ? String(activity.maxMarks ?? "") : "";
+  };
 
-  const [form, setForm] = useState({ category: categoryOptions[0] || "Assignment", kind: "Activity", unit: 1, obtained: "", max: "", entryId: null });
+  const [form, setForm] = useState({ category: categoryOptions[0] || "Assignment", kind: "Activity", unit: 1, obtained: "", max: defaultMaxFor(categoryOptions[0]), entryId: null });
   const [saving, setSaving] = useState(false);
   const [locking, setLocking] = useState(false);
   const [unlockReason, setUnlockReason] = useState("");
@@ -723,7 +708,7 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
   });
   const [savingLab, setSavingLab] = useState(false);
 
-  const resetForm = () => setForm({ category: categoryOptions[0] || "Assignment", kind: "Activity", unit: 1, obtained: "", max: "", entryId: null });
+  const resetForm = () => setForm({ category: categoryOptions[0] || "Assignment", kind: "Activity", unit: 1, obtained: "", max: defaultMaxFor(categoryOptions[0]), entryId: null });
 
   const saveLab = async () => {
     setSavingLab(true);
@@ -911,7 +896,7 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
             Category
             <select
               value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value, max: defaultMaxFor(e.target.value) }))}
               className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2 py-1.5 text-xs"
             >
               {categoryOptions.map((c) => (
@@ -1074,19 +1059,9 @@ function UploadTab() {
         </h3>
         <MappingPicker mappings={mappings} onPick={applyMapping} />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <input
-            placeholder="Batch"
-            value={form.batch}
-            onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
           <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
-          <input
-            placeholder="Section"
-            value={form.section}
-            onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
           <input
             placeholder="Subject name"
             value={form.subjectName}

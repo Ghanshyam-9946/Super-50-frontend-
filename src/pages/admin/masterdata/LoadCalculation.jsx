@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Gauge, Loader2, Search } from "lucide-react";
+import { Gauge, Loader2, Search, Download, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
+import BatchSelect from "../../../components/BatchSelect";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -9,6 +10,7 @@ export default function LoadCalculation() {
   const [filters, setFilters] = useState({ batch: "", semester: "" });
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState([]);
+  const [downloading, setDownloading] = useState(false);
 
   const load = async () => {
     if (!filters.batch || !filters.semester) return toast.error("Enter batch and semester");
@@ -20,6 +22,29 @@ export default function LoadCalculation() {
       toast.error(err.response?.data?.message || "Failed to load");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const download = async (format) => {
+    if (!filters.batch || !filters.semester) return toast.error("Enter batch and semester");
+    setDownloading(true);
+    try {
+      const response = await api.get(`/master-data/load-calculation.${format}`, {
+        params: filters,
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Load-Calculation-${filters.batch}-Sem${filters.semester}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download load calculation");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -40,11 +65,7 @@ export default function LoadCalculation() {
       <div className="glass-card p-5 rounded-2xl flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
           Batch
-          <input
-            value={filters.batch}
-            onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40"
-          />
+          <BatchSelect value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-40" />
         </label>
         <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
           Semester
@@ -63,6 +84,20 @@ export default function LoadCalculation() {
         </label>
         <button onClick={load} disabled={loading} className="btn-premium text-sm px-4 py-2 flex items-center gap-1.5 disabled:opacity-40">
           {loading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />} Calculate
+        </button>
+        <button
+          onClick={() => download("xlsx")}
+          disabled={downloading}
+          className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5 disabled:opacity-40"
+        >
+          {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Excel
+        </button>
+        <button
+          onClick={() => download("pdf")}
+          disabled={downloading}
+          className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5 disabled:opacity-40"
+        >
+          {downloading ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} PDF
         </button>
       </div>
 

@@ -70,6 +70,7 @@ import MasterDataChoiceMatrix from './pages/admin/masterdata/ChoiceMatrix';
 import MasterDataLoadCalculation from './pages/admin/masterdata/LoadCalculation';
 import MasterDataAllocationSheet from './pages/admin/masterdata/AllocationSheet';
 import ChoiceFillingPage from './pages/faculty/ChoiceFillingPage';
+import MySubjectActivities from './pages/faculty/MySubjectActivities';
 import SessionalMarksPage from './pages/faculty/SessionalMarksPage';
 import StudentSessionalMarksPage from './pages/student/StudentSessionalMarksPage';
 
@@ -352,6 +353,11 @@ function AppRoutes({ theme, toggleTheme }) {
         {/* Subject Choice Filling — faculty view, shared across staff roles */}
         <Route path="/faculty/choice-filling" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ChoiceFillingPage /></RoleGuard>
+        } />
+
+        {/* My Subjects (Activities) — Subject Faculty manages their own subjects' activities */}
+        <Route path="/faculty/my-subjects" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MySubjectActivities /></RoleGuard>
         } />
       </Route>
 
