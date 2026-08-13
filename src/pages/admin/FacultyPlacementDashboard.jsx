@@ -36,6 +36,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import FeedbackDetailModal from '../../components/FeedbackDetailModal';
+import { batchLabel } from '../../utils/batchLabel';
 
 function EnrollStudentsModal({ onClose, onRefresh }) {
   const [file, setFile] = useState(null);
@@ -609,9 +610,11 @@ const FacultyPlacementDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('all');
 
-  // Available batches calculation (null-safe)
+  // Available batches calculation (null-safe) — built from actual drive/
+  // selection records rather than the current student roster, since this
+  // dashboard's history can include batches that have since graduated.
   const availableBatches = React.useMemo(() => {
-    const set = new Set(['2023', '2024', '2025', '2026']);
+    const set = new Set();
     (drives || []).forEach(d => {
       if (d?.batch) set.add(normalizeBatch(d.batch));
     });
@@ -843,7 +846,7 @@ const FacultyPlacementDashboard = () => {
             >
               <option value="all">All Batches</option>
               {availableBatches.map(b => (
-                <option key={b} value={b}>Batch {b}</option>
+                <option key={b} value={b}>Batch {batchLabel(b)}</option>
               ))}
             </select>
           </div>

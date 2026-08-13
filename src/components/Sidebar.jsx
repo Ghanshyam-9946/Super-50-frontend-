@@ -65,6 +65,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
     { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
+    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Activities)' },
     ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
@@ -80,6 +81,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Activities)' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
@@ -126,7 +128,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const super50AdminLinks = [
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
-    { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
+    { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/super50-students', icon: Star, label: 'Super 50 Students' },
     { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },

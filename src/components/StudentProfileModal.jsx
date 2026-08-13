@@ -911,7 +911,16 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                     {(!data.amcatResults || data.amcatResults.length === 0) ? (
                       <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-500">No AMCAT results uploaded yet.</div>
                     ) : (
-                      data.amcatResults.map((amcat, aIdx) => (
+                      data.amcatResults.map((amcat, aIdx) => {
+                        // Each topic is out of 100, but topic count varies per
+                        // semester's uploaded sheet — so the aggregate "Total"
+                        // column's correct denominator is (topic count) * 100,
+                        // not a flat 100 (which produced nonsense like "540/100").
+                        const scoreKeys = Object.keys(amcat.scores || {});
+                        const isIdKey = (k) => k.toLowerCase().includes('id') || k.toLowerCase().includes('enrollment') || k.toLowerCase().includes('roll');
+                        const isTotalKey = (k) => k.toLowerCase().includes('total');
+                        const topicCount = scoreKeys.filter((k) => !isIdKey(k) && !isTotalKey(k)).length;
+                        return (
                         <div key={aIdx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                           <div className="flex justify-between items-center border-b pb-3">
                             <div>
@@ -921,19 +930,22 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {Object.entries(amcat.scores || {}).map(([subject, score], sIdx) => {
-                              const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
+                              const idKey = isIdKey(subject);
+                              const totalKey = isTotalKey(subject);
+                              const denominator = totalKey ? topicCount * 100 : 100;
                               return (
                                 <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                                   <span className="text-xs font-bold text-slate-700 capitalize truncate mr-2">{subject}</span>
                                   <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">
-                                    {score} {!isIdKey && '/ 100'}
+                                    {score} {!idKey && denominator > 0 && `/ ${denominator}`}
                                   </span>
                                 </div>
                               );
                             })}
                           </div>
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}

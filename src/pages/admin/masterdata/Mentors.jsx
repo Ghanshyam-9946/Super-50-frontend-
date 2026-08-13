@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { UserCheck, Loader2, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
+import BatchSelect from "../../../components/BatchSelect";
+import SectionSelect from "../../../components/SectionSelect";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -28,7 +30,7 @@ export default function Mentors() {
     setLoadingPreview(true);
     try {
       const { data } = await api.get("/master-data/students", {
-        params: { batch: form.batch, semester: form.semester, section: form.section.toUpperCase() },
+        params: { batch: form.batch, semester: form.semester, section: form.section },
       });
       if (data.success) setPreview(data.data);
     } catch (err) {
@@ -46,7 +48,6 @@ export default function Mentors() {
     try {
       const { data } = await api.patch("/master-data/students/mentor-bulk", {
         ...form,
-        section: form.section.toUpperCase(),
         semester: Number(form.semester),
       });
       if (data.success) {
@@ -93,12 +94,7 @@ export default function Mentors() {
           </label>
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Batch
-            <input
-              value={form.batch}
-              onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))}
-              placeholder="e.g. 2023"
-              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-            />
+            <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
           </label>
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Semester
@@ -117,13 +113,7 @@ export default function Mentors() {
           </label>
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Section
-            <input
-              value={form.section}
-              onChange={(e) => setForm((f) => ({ ...f, section: e.target.value.toUpperCase() }))}
-              placeholder="e.g. A"
-              maxLength={1}
-              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-            />
+            <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
           </label>
         </div>
         <div className="flex gap-2">

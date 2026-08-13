@@ -13,11 +13,12 @@ import {
   Unlock,
   Save,
   Search,
-  Users2,
   ListChecks,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import BatchSelect from "../../components/BatchSelect";
+import SectionSelect from "../../components/SectionSelect";
 
 const isCoordinator = (user) =>
   user?.role === "admin" || (user?.responsibilities || []).includes("Academic Coordinator");
@@ -26,10 +27,10 @@ const CA_CATEGORIES = ["Assignment", "Tutorial", "Activity", "LabRecord"];
 const CATEGORY_LABELS = {
   Assignment: "Assignment",
   Tutorial: "Tutorial",
-  Activity: "Presentation / Talk / Quiz",
+  Activity: "Presentation / Task / GD / etc",
   LabRecord: "Lab Record",
 };
-const ACTIVITY_KINDS = ["Presentation", "Talk", "Quiz", "Activity"];
+const ACTIVITY_KINDS = ["Presentation", "Task", "GD", "Other"];
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 // Semester only ever takes 1-8 — always a select, never free-typed.
@@ -83,10 +84,9 @@ function MappingPicker({ mappings, onPick, label = "Load from existing subject" 
 export default function SessionalMarksPage() {
   const { user } = useSelector((s) => s.auth);
   const coordinator = isCoordinator(user);
-  const [tab, setTab] = useState(coordinator ? "sections" : "entry");
+  const [tab, setTab] = useState(coordinator ? "create" : "entry");
 
   const tabs = [
-    ...(coordinator ? [{ id: "sections", label: "Sections & Subjects", icon: Users2 }] : []),
     ...(coordinator ? [{ id: "create", label: "Create Sheets", icon: Plus }] : []),
     { id: "entry", label: "Marks Entry", icon: ListChecks },
     ...(coordinator ? [{ id: "upload", label: "Bulk Upload", icon: Upload }] : []),
@@ -124,208 +124,9 @@ export default function SessionalMarksPage() {
         ))}
       </div>
 
-      {tab === "sections" && coordinator && <SectionsTab />}
       {tab === "create" && coordinator && <CreateSheetsTab />}
       {tab === "entry" && <EntryTab user={user} coordinator={coordinator} />}
       {tab === "upload" && coordinator && <UploadTab />}
-    </div>
-  );
-}
-
-/* ─────────────────────────────  SECTIONS & SUBJECTS  ───────────────────────────── */
-
-function SectionsTab() {
-  const [faculty, setFaculty] = useState([]);
-  const [mappings, setMappings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
-    facultyId: "",
-    batch: "",
-    semester: "",
-    section: "",
-    subjectCode: "",
-    subjectName: "",
-    mstColumnAlias: "",
-  });
-  const [saving, setSaving] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [f, m] = await Promise.all([
-        api.get("/sessional-marks/faculty-list"),
-        api.get("/sessional-marks/mappings"),
-      ]);
-      setFaculty(f.data.data || []);
-      setMappings(m.data.data || []);
-    } catch {
-      toast.error("Failed to load sections data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const submit = async () => {
-    if (!form.facultyId || !form.batch || !form.semester || !form.section || !form.subjectName) {
-      return toast.error("Fill faculty, batch, semester, section and subject name");
-    }
-    setSaving(true);
-    try {
-      const { data } = await api.post("/sessional-marks/faculty-section-map", {
-        ...form,
-        semester: Number(form.semester),
-      });
-      if (data.success) {
-        toast.success("Faculty assigned");
-        setForm((f) => ({ ...f, subjectCode: "", subjectName: "", mstColumnAlias: "" }));
-        load();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to assign faculty");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const remove = async (id) => {
-    if (!window.confirm("Remove this mapping? Sheets already created keep their faculty until reassigned.")) return;
-    try {
-      await api.delete(`/sessional-marks/mappings/${id}`);
-      toast.success("Mapping removed");
-      load();
-    } catch {
-      toast.error("Failed to remove mapping");
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="glass-card p-5 rounded-2xl space-y-3">
-        <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-          Assign Faculty to a Section + Subject
-        </h3>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <select
-            value={form.facultyId}
-            onChange={(e) => setForm((f) => ({ ...f, facultyId: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm text-[var(--text-primary)]"
-          >
-            <option value="">Select faculty</option>
-            {faculty.map((fac) => (
-              <option key={fac._id} value={fac._id}>
-                {fac.name}
-              </option>
-            ))}
-          </select>
-          <input
-            list="sm-batch-options"
-            placeholder="Batch (e.g. 2023)"
-            value={form.batch}
-            onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
-          <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
-          <input
-            list="sm-section-options"
-            placeholder="Section (e.g. A)"
-            value={form.section}
-            onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
-          <input
-            list="sm-subject-code-options"
-            placeholder="Subject code"
-            value={form.subjectCode}
-            onChange={(e) => setForm((f) => ({ ...f, subjectCode: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
-          <input
-            list="sm-subject-name-options"
-            placeholder="Subject name"
-            value={form.subjectName}
-            onChange={(e) => setForm((f) => ({ ...f, subjectName: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="MST column alias (optional)"
-            value={form.mstColumnAlias}
-            onChange={(e) => setForm((f) => ({ ...f, mstColumnAlias: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
-          <button onClick={submit} disabled={saving} className="btn-premium text-sm px-4 py-2 disabled:opacity-40">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : "Assign"}
-          </button>
-        </div>
-        {/* Suggestions drawn from mappings already created — typing a new value is still fine (new subjects/sections have nothing to suggest yet). */}
-        <datalist id="sm-batch-options">
-          {[...new Set(mappings.map((m) => m.batch))].map((b) => (
-            <option key={b} value={b} />
-          ))}
-        </datalist>
-        <datalist id="sm-section-options">
-          {[...new Set(mappings.map((m) => m.section))].map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
-        <datalist id="sm-subject-code-options">
-          {[...new Set(mappings.map((m) => m.subjectCode).filter(Boolean))].map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
-        <datalist id="sm-subject-name-options">
-          {[...new Set(mappings.map((m) => m.subjectName))].map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
-      </div>
-
-      {loading ? (
-        <div className="glass-card p-10 flex justify-center rounded-2xl">
-          <Loader2 className="animate-spin text-[var(--primary)]" />
-        </div>
-      ) : (
-        <div className="glass-card rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
-            <thead>
-              <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
-                <th className="px-4 py-3">Faculty</th>
-                <th className="px-4 py-3">Batch</th>
-                <th className="px-4 py-3">Sem</th>
-                <th className="px-4 py-3">Section</th>
-                <th className="px-4 py-3">Subject</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {mappings.map((m) => (
-                <tr key={m._id} className="border-b border-[var(--border-light)]">
-                  <td className="px-4 py-3 font-bold text-[var(--text-primary)]">{m.faculty?.name}</td>
-                  <td className="px-4 py-3">{m.batch}</td>
-                  <td className="px-4 py-3">{m.semester}</td>
-                  <td className="px-4 py-3">{m.section}</td>
-                  <td className="px-4 py-3">{m.subjectName}</td>
-                  <td className="px-4 py-3 text-right">
-                    <button onClick={() => remove(m._id)}>
-                      <Trash2 size={14} className="text-red-400" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {mappings.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-[var(--text-secondary)]">
-                    No mappings yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }
@@ -404,19 +205,9 @@ function CreateSheetsTab() {
         </h3>
         <MappingPicker mappings={mappings} onPick={applyMapping} />
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <input
-            placeholder="Batch"
-            value={form.batch}
-            onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
           <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
-          <input
-            placeholder="Section"
-            value={form.section}
-            onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
           <input
             placeholder="Subject code"
             value={form.subjectCode}
@@ -555,7 +346,15 @@ function EntryTab({ user, coordinator }) {
     <div className="space-y-4">
       <div className="glass-card p-4 rounded-2xl flex flex-wrap items-end gap-3">
         <MappingPicker mappings={pickerOptions} onPick={applyMapping} label="Load an existing subject" />
-        {["batch", "section", "subjectCode", "subjectName"].map((k) => (
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          batch
+          <BatchSelect value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
+        </label>
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          section
+          <SectionSelect value={filters.section} onChange={(e) => setFilters((f) => ({ ...f, section: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
+        </label>
+        {["subjectCode", "subjectName"].map((k) => (
           <label key={k} className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             {k}
             <input
@@ -699,7 +498,11 @@ function EntryTab({ user, coordinator }) {
 function SheetEditor({ sheet, onChange, coordinator, user }) {
   const uid = user?._id;
   const isAssignedFaculty = sheet.faculty?._id === uid || sheet.faculty === uid;
-  const canEdit = (isAssignedFaculty || coordinator) && !sheet.locked;
+  // A deadline is a live comparison against the stored date, not a separate
+  // lock flag — the coordinator extending it to a future date is the
+  // "unlock", nothing else to reset (mirrors the backend's isDeadlinePassed).
+  const deadlinePassed = !!sheet.deadline && new Date() > new Date(sheet.deadline);
+  const canEdit = (isAssignedFaculty || coordinator) && !sheet.locked && !deadlinePassed;
   const isAdmin = user?.role === "admin";
 
   // CA categories come from the linked Subject's marks-type Activities once
@@ -711,8 +514,15 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
   const categoryOptions = marksActivities.length ? marksActivities.map((a) => a.label) : CA_CATEGORIES;
   const categoryLabel = (cat) => CATEGORY_LABELS[cat] || cat;
   const hasLab = (sheet.subjectRef?.noOfPractical || 0) > 0;
+  // A category's max comes from its Subject Activity's maxMarks, when one
+  // is linked — saves re-typing the same number every entry. Still editable
+  // afterwards for a genuine one-off.
+  const defaultMaxFor = (category) => {
+    const activity = marksActivities.find((a) => a.label === category);
+    return activity ? String(activity.maxMarks ?? "") : "";
+  };
 
-  const [form, setForm] = useState({ category: categoryOptions[0] || "Assignment", kind: "Activity", unit: 1, obtained: "", max: "", entryId: null });
+  const [form, setForm] = useState({ category: categoryOptions[0] || "Assignment", kind: ACTIVITY_KINDS[0], unit: 1, obtained: "", max: defaultMaxFor(categoryOptions[0]), entryId: null });
   const [saving, setSaving] = useState(false);
   const [locking, setLocking] = useState(false);
   const [unlockReason, setUnlockReason] = useState("");
@@ -722,8 +532,27 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
     viva: sheet.lab?.viva ?? "",
   });
   const [savingLab, setSavingLab] = useState(false);
+  const [deadlineInput, setDeadlineInput] = useState(sheet.deadline ? sheet.deadline.slice(0, 10) : "");
+  const [savingDeadline, setSavingDeadline] = useState(false);
 
-  const resetForm = () => setForm({ category: categoryOptions[0] || "Assignment", kind: "Activity", unit: 1, obtained: "", max: "", entryId: null });
+  const resetForm = () => setForm({ category: categoryOptions[0] || "Assignment", kind: ACTIVITY_KINDS[0], unit: 1, obtained: "", max: defaultMaxFor(categoryOptions[0]), entryId: null });
+
+  const saveDeadline = async () => {
+    setSavingDeadline(true);
+    try {
+      const { data } = await api.patch(`/sessional-marks/sheets/${sheet._id}/deadline`, {
+        deadline: deadlineInput || null,
+      });
+      if (data.success) {
+        toast.success(data.message);
+        onChange(data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save deadline");
+    } finally {
+      setSavingDeadline(false);
+    }
+  };
 
   const saveLab = async () => {
     setSavingLab(true);
@@ -803,6 +632,26 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
 
   return (
     <div className="px-5 pb-5 pt-1 border-t border-[var(--border-light)] space-y-4">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className={`font-bold ${deadlinePassed ? "text-red-500" : "text-[var(--text-secondary)]"}`}>
+          Deadline: {sheet.deadline ? new Date(sheet.deadline).toLocaleDateString() : "Not set"}
+          {deadlinePassed && " — entries are blocked, extend to unlock"}
+        </span>
+        {coordinator && (
+          <>
+            <input
+              type="date"
+              value={deadlineInput}
+              onChange={(e) => setDeadlineInput(e.target.value)}
+              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2 py-1 text-xs"
+            />
+            <button onClick={saveDeadline} disabled={savingDeadline} className="text-xs font-bold px-2.5 py-1 rounded-lg border border-[var(--border-light)] disabled:opacity-40">
+              {savingDeadline ? <Loader2 size={12} className="animate-spin" /> : "Save"}
+            </button>
+          </>
+        )}
+      </div>
+
       {(sheet.mst?.test1?.testName || sheet.mst?.test2?.testName) && (
         <div className="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-4 gap-y-1">
           {sheet.mst?.test1?.testName && (
@@ -911,7 +760,7 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
             Category
             <select
               value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value, max: defaultMaxFor(e.target.value) }))}
               className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2 py-1.5 text-xs"
             >
               {categoryOptions.map((c) => (
@@ -1023,7 +872,7 @@ function UploadTab() {
     subjectCode: "",
     subjectName: "",
     category: "Assignment",
-    kind: "Activity",
+    kind: ACTIVITY_KINDS[0],
     unit: 1,
     max: "",
   });
@@ -1074,19 +923,9 @@ function UploadTab() {
         </h3>
         <MappingPicker mappings={mappings} onPick={applyMapping} />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <input
-            placeholder="Batch"
-            value={form.batch}
-            onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
           <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
-          <input
-            placeholder="Section"
-            value={form.section}
-            onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
           <input
             placeholder="Subject name"
             value={form.subjectName}
