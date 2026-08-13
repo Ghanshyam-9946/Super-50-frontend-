@@ -36,6 +36,7 @@ import {
 } from "chart.js";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { batchLabel } from "../../utils/batchLabel";
 import { fetchMe } from "../../features/auth/authSlice";
 import NoDuesFormDetail, {
   ReassignStudentPanel,
@@ -504,7 +505,7 @@ function AllStudentsTab({ students, error, onRefresh }) {
             <option value="">All batches</option>
             {availableBatches.map((b) => (
               <option key={b} value={b}>
-                {b}
+                {batchLabel(b)}
               </option>
             ))}
           </select>
@@ -752,7 +753,7 @@ function AssignFacultyTab({ faculty, students }) {
               <option value="">Select…</option>
               {availableBatches.map((b) => (
                 <option key={b} value={b}>
-                  {b}
+                  {batchLabel(b)}
                 </option>
               ))}
             </select>

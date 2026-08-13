@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Grid3x3, Loader2, Plus, Trash2, Send, RefreshCw } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
@@ -6,27 +6,53 @@ import BatchSelect from "../../../components/BatchSelect";
 import SectionSelect from "../../../components/SectionSelect";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
+const PRIORITIES = [1, 2, 3, 4, 5];
 
 export default function ChoiceMatrix() {
   const [filters, setFilters] = useState({ batch: "", semester: "" });
+  const [batchOptions, setBatchOptions] = useState([]);
+  const [releaseBatches, setReleaseBatches] = useState([]);
+  const [releaseSemesters, setReleaseSemesters] = useState([]);
   const [releasing, setReleasing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [matrix, setMatrix] = useState(null); // {round, subjects, preferences}
+  const [facultyList, setFacultyList] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [rowForm, setRowForm] = useState({ subjectId: "", section: "", facultyId: "" });
+  const [rowForm, setRowForm] = useState({ subjectId: "", section: "", facultyId: "", labSupportFacultyId: "" });
   const [finalizing, setFinalizing] = useState(false);
 
+  useEffect(() => {
+    api
+      .get("/master-data/batches")
+      .then(({ data }) => {
+        if (data.success) setBatchOptions(data.data);
+      })
+      .catch(() => {});
+    api
+      .get("/master-data/faculty-list")
+      .then(({ data }) => {
+        if (data.success) setFacultyList(data.data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleReleaseBatch = (b) =>
+    setReleaseBatches((prev) => (prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]));
+  const toggleReleaseSemester = (s) =>
+    setReleaseSemesters((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+
   const release = async () => {
-    if (!filters.batch || !filters.semester) return toast.error("Enter batch and semester first");
+    if (releaseBatches.length === 0 || releaseSemesters.length === 0) {
+      return toast.error("Pick at least one batch and one semester to release");
+    }
     setReleasing(true);
     try {
       const { data } = await api.post("/master-data/choice-filling/release", {
-        batch: filters.batch,
-        semester: Number(filters.semester),
+        batches: releaseBatches,
+        semesters: releaseSemesters,
       });
       if (data.success) {
-        toast.success("Choice filling released to faculty");
-        loadMatrix();
+        toast.success(data.message || "Choice filling released to faculty");
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to release");
@@ -51,6 +77,8 @@ export default function ChoiceMatrix() {
   };
 
   const picksFor = (subjectId) => (matrix?.preferences || []).filter((p) => p.subject?._id === subjectId);
+  const selectedSubject = matrix?.subjects.find((s) => s._id === rowForm.subjectId);
+  const selectedSubjectHasLab = (selectedSubject?.noOfPractical || 0) > 0;
 
   const addAssignment = () => {
     if (!rowForm.subjectId || !rowForm.section || !rowForm.facultyId) {
@@ -59,8 +87,14 @@ export default function ChoiceMatrix() {
     const subject = matrix.subjects.find((s) => s._id === rowForm.subjectId);
     const faculty = picksFor(rowForm.subjectId).find((p) => p.faculty._id === rowForm.facultyId)?.faculty
       || { _id: rowForm.facultyId, name: "(picked faculty)" };
-    setAssignments((prev) => [...prev, { ...rowForm, subjectName: subject.subjectName, facultyName: faculty.name }]);
-    setRowForm({ subjectId: "", section: "", facultyId: "" });
+    const labSupportFaculty = rowForm.labSupportFacultyId
+      ? facultyList.find((f) => f._id === rowForm.labSupportFacultyId)
+      : null;
+    setAssignments((prev) => [
+      ...prev,
+      { ...rowForm, subjectName: subject.subjectName, facultyName: faculty.name, labSupportFacultyName: labSupportFaculty?.name || "" },
+    ]);
+    setRowForm({ subjectId: "", section: "", facultyId: "", labSupportFacultyId: "" });
   };
 
   const removeAssignment = (idx) => setAssignments((prev) => prev.filter((_, i) => i !== idx));
@@ -72,7 +106,12 @@ export default function ChoiceMatrix() {
       const { data } = await api.post("/master-data/choice-filling/finalize", {
         batch: filters.batch,
         semester: Number(filters.semester),
-        assignments: assignments.map((a) => ({ subjectId: a.subjectId, section: a.section, facultyId: a.facultyId })),
+        assignments: assignments.map((a) => ({
+          subjectId: a.subjectId,
+          section: a.section,
+          facultyId: a.facultyId,
+          labSupportFacultyId: a.labSupportFacultyId || null,
+        })),
       });
       if (data.success) {
         toast.success(data.message);
@@ -100,6 +139,54 @@ export default function ChoiceMatrix() {
         </div>
       </header>
 
+      <div className="glass-card p-5 rounded-2xl space-y-3">
+        <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">Release Choice Filling</h3>
+        <p className="text-xs text-[var(--text-secondary)]">
+          Pick every batch and semester to release at once — re-releasing an already-released combination just reopens it, it won't create a duplicate.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">Batches</span>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {batchOptions.map((b) => (
+                <label
+                  key={b.value}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border cursor-pointer ${
+                    releaseBatches.includes(b.value)
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                      : "border-[var(--border-light)] text-[var(--text-primary)]"
+                  }`}
+                >
+                  <input type="checkbox" className="hidden" checked={releaseBatches.includes(b.value)} onChange={() => toggleReleaseBatch(b.value)} />
+                  {b.label}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">Semesters</span>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {SEMESTERS.map((s) => (
+                <label
+                  key={s}
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border cursor-pointer ${
+                    releaseSemesters.includes(s)
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                      : "border-[var(--border-light)] text-[var(--text-primary)]"
+                  }`}
+                >
+                  <input type="checkbox" className="hidden" checked={releaseSemesters.includes(s)} onChange={() => toggleReleaseSemester(s)} />
+                  Sem {s}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <button onClick={release} disabled={releasing} className="btn-premium text-sm px-4 py-2 disabled:opacity-40">
+          {releasing ? <Loader2 size={14} className="animate-spin" /> : "Release Choice Filling"}
+        </button>
+      </div>
+
       <div className="glass-card p-5 rounded-2xl flex flex-wrap items-end gap-3">
         <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
           Batch
@@ -120,9 +207,6 @@ export default function ChoiceMatrix() {
             ))}
           </select>
         </label>
-        <button onClick={release} disabled={releasing} className="btn-premium text-sm px-4 py-2 disabled:opacity-40">
-          {releasing ? <Loader2 size={14} className="animate-spin" /> : "Release Choice Filling"}
-        </button>
         <button
           onClick={loadMatrix}
           disabled={loading}
@@ -136,20 +220,20 @@ export default function ChoiceMatrix() {
         <>
           {!matrix.round ? (
             <div className="glass-card p-10 text-center rounded-3xl text-[var(--text-secondary)]">
-              No choice filling round for this batch/semester yet — click "Release Choice Filling" above.
+              No choice filling round for this batch/semester yet — release it above.
             </div>
           ) : (
             <div className="glass-card rounded-2xl overflow-hidden overflow-x-auto">
               <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)]">
                 Round {matrix.round.isOpen ? "open" : "closed"} · {matrix.subjects.length} subject(s)
               </div>
-              <table className="w-full text-sm min-w-[640px]">
+              <table className="w-full text-sm min-w-[900px]">
                 <thead>
                   <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
                     <th className="px-4 py-3">Subject Name</th>
-                    <th className="px-4 py-3">Priority 1</th>
-                    <th className="px-4 py-3">Priority 2</th>
-                    <th className="px-4 py-3">Priority 3</th>
+                    {PRIORITIES.map((p) => (
+                      <th key={p} className="px-4 py-3">Priority {p}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
@@ -160,7 +244,7 @@ export default function ChoiceMatrix() {
                         <td className="px-4 py-3 font-bold text-[var(--text-primary)]">
                           {s.subjectName} {s.subjectCode && <span className="text-[var(--text-secondary)] font-medium">({s.subjectCode})</span>}
                         </td>
-                        {[1, 2, 3].map((priority) => {
+                        {PRIORITIES.map((priority) => {
                           const atPriority = picks.filter((p) => p.priority === priority);
                           return (
                             <td key={priority} className="px-4 py-3">
@@ -194,7 +278,7 @@ export default function ChoiceMatrix() {
                   Subject
                   <select
                     value={rowForm.subjectId}
-                    onChange={(e) => setRowForm((f) => ({ ...f, subjectId: e.target.value, facultyId: "" }))}
+                    onChange={(e) => setRowForm((f) => ({ ...f, subjectId: e.target.value, facultyId: "", labSupportFacultyId: "" }))}
                     className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm min-w-[200px]"
                   >
                     <option value="">Select subject</option>
@@ -224,6 +308,23 @@ export default function ChoiceMatrix() {
                     ))}
                   </select>
                 </label>
+                {selectedSubjectHasLab && (
+                  <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+                    Lab Support Faculty (optional)
+                    <select
+                      value={rowForm.labSupportFacultyId}
+                      onChange={(e) => setRowForm((f) => ({ ...f, labSupportFacultyId: e.target.value }))}
+                      className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm min-w-[180px]"
+                    >
+                      <option value="">None</option>
+                      {facultyList.map((f) => (
+                        <option key={f._id} value={f._id}>
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <button onClick={addAssignment} className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5">
                   <Plus size={14} /> Add
                 </button>
@@ -236,6 +337,9 @@ export default function ChoiceMatrix() {
                       <span className="font-bold text-[var(--text-primary)]">{a.subjectName}</span>
                       <span>Section {a.section}</span>
                       <span className="text-[var(--text-secondary)]">→ {a.facultyName}</span>
+                      {a.labSupportFacultyName && (
+                        <span className="text-[var(--text-secondary)]">+ Lab: {a.labSupportFacultyName}</span>
+                      )}
                       <button onClick={() => removeAssignment(idx)} className="ml-auto">
                         <Trash2 size={12} className="text-red-400" />
                       </button>

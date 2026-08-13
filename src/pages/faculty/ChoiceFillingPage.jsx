@@ -3,7 +3,7 @@ import { ListChecks, Loader2, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 
-const PRIORITIES = [1, 2, 3];
+const PRIORITIES = [1, 2, 3, 4, 5];
 
 export default function ChoiceFillingPage() {
   const [rounds, setRounds] = useState([]);
@@ -19,7 +19,7 @@ export default function ChoiceFillingPage() {
         setRounds(data.data);
         const initial = {};
         data.data.forEach((r) => {
-          const bySlot = ["", "", ""];
+          const bySlot = PRIORITIES.map(() => "");
           (r.myPicks || []).forEach((p) => {
             bySlot[p.priority - 1] = p.subject;
           });
@@ -40,7 +40,7 @@ export default function ChoiceFillingPage() {
 
   const setPick = (roundId, priorityIdx, subjectId) => {
     setPicks((prev) => {
-      const slots = [...(prev[roundId] || ["", "", ""])];
+      const slots = [...(prev[roundId] || PRIORITIES.map(() => ""))];
       slots[priorityIdx] = subjectId;
       return { ...prev, [roundId]: slots };
     });
@@ -53,7 +53,7 @@ export default function ChoiceFillingPage() {
     const trimmed = [...slots];
     while (trimmed.length && !trimmed[trimmed.length - 1]) trimmed.pop();
     if (trimmed.some((s) => !s)) {
-      return toast.error("Fill priorities in order — Priority 1 first, then Priority 2, then Priority 3");
+      return toast.error("Fill priorities in order, starting from Priority 1 — no gaps");
     }
     if (trimmed.length === 0) return toast.error("Pick at least a Priority 1 subject");
 
@@ -99,7 +99,7 @@ export default function ChoiceFillingPage() {
         </div>
       ) : (
         rounds.map(({ round, subjects }) => {
-          const slots = picks[round._id] || ["", "", ""];
+          const slots = picks[round._id] || PRIORITIES.map(() => "");
           return (
             <div key={round._id} className="glass-card p-5 rounded-2xl space-y-3">
               <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
@@ -108,7 +108,7 @@ export default function ChoiceFillingPage() {
               {subjects.length === 0 ? (
                 <p className="text-xs text-[var(--text-secondary)]">No subjects defined for this semester yet.</p>
               ) : (
-                <div className="grid sm:grid-cols-3 gap-3">
+                <div className="grid sm:grid-cols-3 lg:grid-cols-5 gap-3">
                   {PRIORITIES.map((p) => {
                     const idx = p - 1;
                     const takenElsewhere = slots.filter((_, i) => i !== idx);

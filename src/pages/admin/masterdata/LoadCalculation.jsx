@@ -102,25 +102,49 @@ export default function LoadCalculation() {
       </div>
 
       {data.length > 0 && (
-        <div className="space-y-2">
-          {data.map((entry) => (
-            <div key={entry.faculty._id} className="glass-card rounded-2xl px-5 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-sm text-[var(--text-primary)]">{entry.faculty.name}</div>
-                  <div className="text-[11px] text-[var(--text-secondary)]">{entry.faculty.email}</div>
-                </div>
-                <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">{entry.totalHours} hrs/week</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {entry.subjects.map((s, i) => (
-                  <span key={i} className="badge">
-                    {s.subjectName} (Sec {s.section}) — {s.hours}h
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="glass-card rounded-2xl overflow-hidden overflow-x-auto">
+          <table className="w-full text-sm min-w-[760px]">
+            <thead>
+              <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
+                <th className="px-4 py-3">Faculty</th>
+                <th className="px-4 py-3">Subject</th>
+                <th className="px-4 py-3">Section</th>
+                <th className="px-4 py-3">Role</th>
+                <th className="px-4 py-3">Lecture</th>
+                <th className="px-4 py-3">Theory</th>
+                <th className="px-4 py-3">Practical</th>
+                <th className="px-4 py-3">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((entry) =>
+                entry.subjects.map((s, i) => (
+                  <tr key={`${entry.faculty._id}-${i}`} className="border-b border-[var(--border-light)]">
+                    {i === 0 && (
+                      <td className="px-4 py-3 align-top" rowSpan={entry.subjects.length}>
+                        <div className="font-bold text-[var(--text-primary)]">{entry.faculty.name}</div>
+                        <div className="text-[11px] text-[var(--text-secondary)]">{entry.faculty.email}</div>
+                        <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)] mt-1 inline-block">
+                          {entry.totalHours} hrs/week
+                        </span>
+                      </td>
+                    )}
+                    <td className="px-4 py-3">{s.subjectName}</td>
+                    <td className="px-4 py-3">{s.section}</td>
+                    <td className="px-4 py-3">
+                      <span className={`badge ${s.role === "Lab Support" ? "bg-amber-500/10 border-amber-500/20 text-amber-600" : ""}`}>
+                        {s.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{s.lecture}</td>
+                    <td className="px-4 py-3">{s.theory}</td>
+                    <td className="px-4 py-3">{s.practical}</td>
+                    <td className="px-4 py-3 font-bold text-[var(--text-primary)]">{s.total}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
