@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
-  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet
+  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -60,6 +60,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
@@ -77,6 +78,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const guideLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
@@ -98,6 +100,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const adminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
@@ -126,6 +129,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const super50AdminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
@@ -138,6 +142,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const tpAdminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/tp/enroll-students', icon: UserPlus, label: 'Enroll Students' },
     { to: '/tp/create-drive', icon: Briefcase, label: 'Create Drive' },
     { to: '/faculty/placement', icon: ClipboardList, label: 'View Drives' },
@@ -145,6 +150,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const pmsAdminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/pms/admin', icon: Database, label: 'PMS Dashboard' },
   ];
 
@@ -346,7 +352,14 @@ const Sidebar = ({ theme, toggleTheme }) => {
   );
 };
 
-const NavItem = ({ link, onClick, collapsed }) => (
+const NavItem = ({ link, onClick, collapsed }) => {
+  // Only the Chat link needs a live badge — read the unread total straight
+  // from the store here rather than threading it through every link array.
+  const chatUnread = useSelector((s) =>
+    link.to === '/chat' ? s.chat.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0) : 0
+  );
+
+  return (
   <NavLink
     to={link.to}
     onClick={onClick}
@@ -376,7 +389,12 @@ const NavItem = ({ link, onClick, collapsed }) => (
         />
         {!collapsed && (
           <>
-            <span className="relative z-10 font-bold text-sm tracking-tight">{link.label}</span>
+            <span className="relative z-10 font-bold text-sm tracking-tight flex-1">{link.label}</span>
+            {chatUnread > 0 && (
+              <span className={`relative z-10 text-[10px] font-black rounded-full px-1.5 py-0.5 min-w-[18px] text-center ${isActive ? 'bg-white text-[var(--primary)]' : 'bg-[var(--primary)] text-white'}`}>
+                {chatUnread > 9 ? '9+' : chatUnread}
+              </span>
+            )}
             {isActive && (
               <motion.div layoutId="activePill" className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-white shadow-[0_0_8px_white]" />
             )}
@@ -385,7 +403,8 @@ const NavItem = ({ link, onClick, collapsed }) => (
       </>
     )}
   </NavLink>
-);
+  );
+};
 
 // A parent menu item that expands into a flat list of NavItems — collapsed
 // by default, auto-opens when one of its children is the active route.
