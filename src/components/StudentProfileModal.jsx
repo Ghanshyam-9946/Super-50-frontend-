@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera } from 'lucide-react';
+import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera, Pencil, Trash2, Check } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUser } from '../features/auth/authSlice';
 import api from '../services/api';
@@ -73,6 +73,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
   };
 
   const [editingRGPVId, setEditingRGPVId] = useState(null);
+  const [editingSemAttId, setEditingSemAttId] = useState(null);
+  const [semAttEditForm, setSemAttEditForm] = useState({ attendancePercentage: 0 });
   const [rgpvEditForm, setRgpvEditForm] = useState({
     sgpa: '',
     cgpa: '',
@@ -105,7 +107,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
     try {
       const res = await api.put(`/rgpv/results/${rgpvId}`, rgpvEditForm);
       if (res.data.success) {
-        toast.success('RGPV results updated successfully!', { id: saveToast });
+        toast.success('RGPV Result updated successfully!', { id: saveToast });
         setData(prev => ({
           ...prev,
           rgpvResults: prev.rgpvResults.map(r => r._id === rgpvId ? { ...r, ...res.data.data } : r)
@@ -113,7 +115,46 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
         setEditingRGPVId(null);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update RGPV results', { id: saveToast });
+      toast.error(err.response?.data?.message || 'Failed to update result', { id: saveToast });
+    }
+  };
+
+  const startEditingSemAtt = (semAtt) => {
+    setSemAttEditForm({ attendancePercentage: semAtt.attendancePercentage || 0 });
+    setEditingSemAttId(semAtt._id);
+  };
+
+  const saveSemAtt = async (semAttId) => {
+    const saveToast = toast.loading('Saving attendance...');
+    try {
+      const res = await api.put(`/pms/admin/semester-attendance/${semAttId}`, semAttEditForm);
+      if (res.data.success) {
+        toast.success('Attendance updated successfully!', { id: saveToast });
+        setData(prev => ({
+          ...prev,
+          semesterAttendance: prev.semesterAttendance.map(r => r._id === semAttId ? { ...r, ...res.data.data } : r)
+        }));
+        setEditingSemAttId(null);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update attendance', { id: saveToast });
+    }
+  };
+
+  const deleteSemAtt = async (semAttId) => {
+    if (!window.confirm("Are you sure you want to delete this semester attendance record?")) return;
+    const saveToast = toast.loading('Deleting attendance...');
+    try {
+      const res = await api.delete(`/pms/admin/semester-attendance/${semAttId}`);
+      if (res.data.success) {
+        toast.success('Attendance deleted!', { id: saveToast });
+        setData(prev => ({
+          ...prev,
+          semesterAttendance: prev.semesterAttendance.filter(r => r._id !== semAttId)
+        }));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete attendance', { id: saveToast });
     }
   };
 
@@ -823,30 +864,73 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {data.semesterAttendance.map((semAtt) => (
                           <div key={semAtt._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h5 className="font-bold text-slate-900">Semester {semAtt.semester}</h5>
-                                {semAtt.sessionName && <p className="text-xs text-slate-500 mt-0.5">{semAtt.sessionName}</p>}
-                                {semAtt.projectName && <p className="text-xs font-semibold text-indigo-600 mt-1">Project: {semAtt.projectName}</p>}
+                            {editingSemAttId === semAtt._id ? (
+                              <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-bold text-slate-900">Editing Semester {semAtt.semester}</h4>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
+                                      onClick={() => setEditingSemAttId(null)}
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                    <button 
+                                      className="p-1.5 hover:bg-emerald-50 text-emerald-500 rounded-md transition-colors"
+                                      onClick={() => saveSemAtt(semAtt._id)}
+                                    >
+                                      <Check size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Attendance Percentage (%)</label>
+                                  <input 
+                                    type="number" 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold text-slate-800"
+                                    value={semAttEditForm.attendancePercentage}
+                                    onChange={(e) => setSemAttEditForm({ attendancePercentage: e.target.value })}
+                                  />
+                                </div>
                               </div>
-                              <span className={`px-2.5 py-1 rounded-md text-xs font-black font-mono ${
-                                semAtt.attendancePercentage >= 75
-                                  ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                                  : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                              }`}>
-                                {semAtt.attendancePercentage}%
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs font-bold pt-2 border-t border-slate-100">
-                              <div className="bg-slate-50 p-2 rounded-xl text-center">
-                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Total Days</span>
-                                <span className="text-slate-900">{semAtt.totalDays}</span>
-                              </div>
-                              <div className="bg-slate-50 p-2 rounded-xl text-center">
-                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Present Days</span>
-                                <span className="text-slate-900">{semAtt.totalPresent}</span>
-                              </div>
-                            </div>
+                            ) : (
+                              <>
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h5 className="font-bold text-slate-900 flex items-center gap-2">
+                                      Semester {semAtt.semester}
+                                      {user?.role !== 'student' && (
+                                        <div className="flex gap-1 ml-2">
+                                          <button onClick={() => startEditingSemAtt(semAtt)} className="text-slate-300 hover:text-indigo-500 transition-colors" title="Edit"><Pencil size={12} /></button>
+                                          <button onClick={() => deleteSemAtt(semAtt._id)} className="text-slate-300 hover:text-rose-500 transition-colors" title="Delete"><Trash2 size={12} /></button>
+                                        </div>
+                                      )}
+                                    </h5>
+                                    {semAtt.sessionName && <p className="text-xs text-slate-500 mt-0.5">{semAtt.sessionName}</p>}
+                                    {semAtt.projectName && <p className="text-xs font-semibold text-indigo-600 mt-1">Project: {semAtt.projectName}</p>}
+                                  </div>
+                                  <span className={`px-2.5 py-1 rounded-md text-xs font-black font-mono ${
+                                    semAtt.attendancePercentage >= 75
+                                      ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                      : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                  }`}>
+                                    {semAtt.attendancePercentage}%
+                                  </span>
+                                </div>
+                                {semAtt.totalDays > 0 && (
+                                  <div className="grid grid-cols-2 gap-2 text-xs font-bold pt-2 border-t border-slate-100">
+                                    <div className="bg-slate-50 p-2 rounded-xl text-center">
+                                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Total Days</span>
+                                      <span className="text-slate-900">{semAtt.totalDays}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-2 rounded-xl text-center">
+                                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Present Days</span>
+                                      <span className="text-slate-900">{semAtt.totalPresent}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>
