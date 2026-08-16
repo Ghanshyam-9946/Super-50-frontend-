@@ -89,7 +89,7 @@ export function Footer() {
                   <Mail className="h-5 w-5" />
                 </div>
                 <a href="mailto:seogn@sistec.ac.in" className="text-sm text-slate-400 hover:text-white transition-colors duration-200 font-medium">
-                  scope@sistec.ac.in
+                  mile@sistec.ac.in
                 </a>
               </li>
             </ul>
