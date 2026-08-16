@@ -2,6 +2,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import sistecLogo from "../assets/SISTec_Logo.png";
 
 const links = [
   { label: "Features", href: "#features" },
@@ -39,7 +40,7 @@ export function Navbar() {
       >
         <div onClick={() => navigate('/')} className="flex items-center gap-3 group cursor-pointer">
           <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-md group-hover:scale-110 transition-transform duration-300 overflow-hidden">
-            <img src="/upload/SISTec_Logo.png" alt="SISTec Logo" className="h-full w-full object-contain p-1" />
+            <img src={sistecLogo} alt="SISTec Logo" className="h-full w-full object-contain p-1" />
           </div>
           <div className="flex flex-col">
             <span className="font-display text-2xl font-black tracking-tight text-foreground leading-none">
