@@ -23,6 +23,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Core Links (All Students)
   const commonStudentLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { to: '/student/attendance', icon: ClipboardList, label: 'Attendance' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
     { to: '/student/mst', icon: FileText, label: 'MST Result' },
     { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
