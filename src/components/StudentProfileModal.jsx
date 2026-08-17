@@ -957,27 +957,65 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                             </div>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {Object.entries(mst.scores || {}).map(([subject, score], sIdx) => {
+                            {(() => {
                               const testNameLower = (mst.testName || '').toLowerCase();
-                              const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
-                              let maxMarks = 100;
-                              if (!isCrt) {
-                                if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
-                                  maxMarks = 28;
-                                } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
-                                  maxMarks = 42;
+                              let calculatedTotal = 0;
+                              let totalMaxMarks = 0;
+                              const scoreEntries = [];
+                              
+                              Object.entries(mst.scores || {}).forEach(([subject, score]) => {
+                                const lowerSub = subject.toLowerCase();
+                                if (lowerSub.includes('total') || lowerSub.includes('id') || lowerSub.includes('enrollment') || lowerSub.includes('roll')) {
+                                  return;
                                 }
+                                
+                                const numericScore = Number(score);
+                                if (!isNaN(numericScore)) {
+                                  calculatedTotal += numericScore;
+                                  
+                                  const isCrt = lowerSub.includes('crt') || lowerSub.includes('aptitude');
+                                  let maxMarks = 100;
+                                  if (!isCrt) {
+                                    if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                                      maxMarks = 28;
+                                    } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                                      maxMarks = 42;
+                                    }
+                                  }
+                                  totalMaxMarks += maxMarks;
+                                }
+                                scoreEntries.push([subject, score]);
+                              });
+
+                              if (scoreEntries.length > 0) {
+                                scoreEntries.push(['Grand Total', calculatedTotal, totalMaxMarks]);
                               }
-                              const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
-                              return (
-                                <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                  <span className="text-xs font-bold text-slate-700 capitalize truncate mr-2">{subject}</span>
-                                  <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">
-                                    {score} {!isIdKey && `/ ${maxMarks}`}
-                                  </span>
-                                </div>
-                              );
-                            })}
+
+                              return scoreEntries.map(([subject, score, customMax], sIdx) => {
+                                const isTotal = subject.toLowerCase().includes('total');
+                                let maxMarks = customMax;
+                                if (!isTotal) {
+                                  const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
+                                  maxMarks = 100;
+                                  if (!isCrt) {
+                                    if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                                      maxMarks = 28;
+                                    } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                                      maxMarks = 42;
+                                    }
+                                  }
+                                }
+
+                                return (
+                                  <div key={sIdx} className={`flex justify-between items-center p-3 rounded-xl border ${isTotal ? 'bg-indigo-50 border-indigo-100 col-span-full sm:col-span-2 md:col-span-3' : 'bg-slate-50 border-slate-100'}`}>
+                                    <span className={`text-xs capitalize truncate mr-2 ${isTotal ? 'font-black text-indigo-600 text-sm' : 'font-bold text-slate-700'}`}>{subject}</span>
+                                    <span className={`text-xs shrink-0 bg-white px-2 py-1 rounded border border-slate-100 ${isTotal ? 'font-black text-emerald-600 text-sm' : 'font-black text-slate-950'}`}>
+                                      {score} {maxMarks > 0 && `/ ${maxMarks}`}
+                                    </span>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
                       ))
