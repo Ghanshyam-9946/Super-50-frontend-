@@ -120,11 +120,18 @@ export default function NewChatModal({ onClose }) {
               chatUsers.map((u) => (
                 <label
                   key={u._id}
-                  onClick={() => (isGroup ? toggleSelect(u._id) : startDirect(u._id))}
+                  onClick={() => {
+                    // In group mode the checkbox owns the toggle (via its own
+                    // onChange, fired both by a direct click and by the
+                    // browser's native label->input forwarding) — handling
+                    // it here too used to double-toggle it, which is why a
+                    // mouse click looked like it wasn't registering.
+                    if (!isGroup) startDirect(u._id);
+                  }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer hover:bg-[var(--bg-hover)]"
                 >
                   {isGroup && (
-                    <input type="checkbox" readOnly checked={selected.includes(u._id)} className="pointer-events-none" />
+                    <input type="checkbox" checked={selected.includes(u._id)} onChange={() => toggleSelect(u._id)} />
                   )}
                   <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-bold text-xs shrink-0">
                     {u.name?.[0]?.toUpperCase()}

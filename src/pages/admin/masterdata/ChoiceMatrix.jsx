@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Grid3x3, Loader2, Plus, Trash2, Send, RefreshCw } from "lucide-react";
+import { Grid3x3, Loader2, Plus, Trash2, Send, RefreshCw, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
 import BatchSelect from "../../../components/BatchSelect";
@@ -20,6 +20,7 @@ export default function ChoiceMatrix() {
   const [assignments, setAssignments] = useState([]);
   const [rowForm, setRowForm] = useState({ subjectId: "", section: "", facultyId: "", labSupportFacultyId: "" });
   const [finalizing, setFinalizing] = useState(false);
+  const [deletingRound, setDeletingRound] = useState(false);
 
   useEffect(() => {
     api
@@ -73,6 +74,23 @@ export default function ChoiceMatrix() {
       toast.error(err.response?.data?.message || "Failed to load matrix");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const deleteRound = async () => {
+    if (!matrix?.round) return;
+    if (!window.confirm("Delete this choice filling round? Every faculty's submitted preferences for it will be removed too — this batch/semester can then be released fresh.")) return;
+    setDeletingRound(true);
+    try {
+      const { data } = await api.delete(`/master-data/choice-filling/rounds/${matrix.round._id}`);
+      if (data.success) {
+        toast.success(data.message);
+        setMatrix(null);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete round");
+    } finally {
+      setDeletingRound(false);
     }
   };
 
@@ -142,7 +160,7 @@ export default function ChoiceMatrix() {
       <div className="glass-card p-5 rounded-2xl space-y-3">
         <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">Release Choice Filling</h3>
         <p className="text-xs text-[var(--text-secondary)]">
-          Pick every batch and semester to release at once — re-releasing an already-released combination just reopens it, it won't create a duplicate.
+          Pick every batch and semester to release at once. A batch/semester can only be released once — if it's already been released, delete that round first (below, after loading its matrix) before releasing it again.
         </p>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -224,8 +242,18 @@ export default function ChoiceMatrix() {
             </div>
           ) : (
             <div className="glass-card rounded-2xl overflow-hidden overflow-x-auto">
-              <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)]">
-                Round {matrix.round.isOpen ? "open" : "closed"} · {matrix.subjects.length} subject(s)
+              <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)] flex items-center justify-between">
+                <span>
+                  Round {matrix.round.isOpen ? "open" : "closed"} · {matrix.subjects.length} subject(s)
+                </span>
+                <button
+                  onClick={deleteRound}
+                  disabled={deletingRound}
+                  className="flex items-center gap-1.5 text-red-500 hover:text-red-600 disabled:opacity-40"
+                  title="Delete this round so it can be released again"
+                >
+                  {deletingRound ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />} Delete Round
+                </button>
               </div>
               <table className="w-full text-sm min-w-[900px]">
                 <thead>
