@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight, Building } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import sistecLogo from "../assets/SISTec_Logo.png";
 
@@ -16,6 +16,7 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const [campusModal, setCampusModal] = useState<'login' | 'register' | null>(null);
 
   useEffect(() => {
     return scrollY.onChange((latest) => {
@@ -30,10 +31,11 @@ export function Navbar() {
   const top = useTransform(scrollY, [0, 100], ["0px", "20px"]);
 
   return (
-    <motion.header
-      style={{ width, maxWidth, top }}
-      className={`fixed left-1/2 z-50 -translate-x-1/2 transition-all duration-500`}
-    >
+    <>
+      <motion.header
+        style={{ width, maxWidth, top }}
+        className={`fixed left-1/2 z-50 -translate-x-1/2 transition-all duration-500`}
+      >
       <motion.nav
         style={{ paddingTop: padding, paddingBottom: padding, borderRadius }}
         className={`${isScrolled ? "glass-strong shadow-floating border-white/60" : "bg-transparent"} relative flex items-center justify-between px-8 transition-all duration-500`}
@@ -75,11 +77,11 @@ export function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-6 md:flex">
-          <button onClick={() => navigate('/login')} className="text-sm font-bold text-muted-foreground transition-colors hover:text-brand-indigo cursor-pointer">
+          <button onClick={() => setCampusModal('login')} className="text-sm font-bold text-muted-foreground transition-colors hover:text-brand-indigo cursor-pointer">
             Sign in
           </button>
           <button
-            onClick={() => navigate('/register')}
+            onClick={() => setCampusModal('register')}
             className="btn-premium h-11 px-8 text-sm group flex items-center justify-center cursor-pointer"
           >
             Registration <ArrowRight size={16} className="ml-2 transition-transform group-hover:translate-x-1" />
@@ -110,14 +112,69 @@ export function Navbar() {
             ))}
             <hr className="border-slate-100" />
             <div className="flex flex-col gap-4">
-              <button onClick={() => { navigate('/login'); setOpen(false); }} className="text-center font-bold text-slate-400 cursor-pointer">Sign in</button>
-              <button onClick={() => { navigate('/register'); setOpen(false); }} className="btn-premium h-14 w-full text-base flex items-center justify-center cursor-pointer">
+              <button onClick={() => { setCampusModal('login'); setOpen(false); }} className="text-center font-bold text-slate-400 cursor-pointer">Sign in</button>
+              <button onClick={() => { setCampusModal('register'); setOpen(false); }} className="btn-premium h-14 w-full text-base flex items-center justify-center cursor-pointer">
                 Registration
               </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.header>
+      </motion.header>
+
+      <AnimatePresence>
+        {campusModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm" style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl relative"
+              style={{ background: '#0f172a', zIndex: 101 }}
+            >
+              <button 
+                onClick={() => setCampusModal(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+              <h2 className="text-2xl font-bold text-white mb-2 text-center">Select Campus</h2>
+              <p className="text-slate-400 text-center mb-8">Choose your campus to continue</p>
+              
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    navigate(campusModal === 'login' ? '/login' : '/register');
+                    setCampusModal(null);
+                  }}
+                  className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-purple-500/50 transition-all group cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                >
+                  <div className="h-12 w-12 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Building size={24} className="text-purple-400" />
+                  </div>
+                  <span className="font-bold text-white">SISTec GN</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    window.location.href = campusModal === 'login' 
+                      ? 'https://milerb.sistec.ac.in/login' 
+                      : 'https://milerb.sistec.ac.in/register';
+                  }}
+                  className="flex-1 flex flex-col items-center gap-3 p-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-cyan-500/50 transition-all group cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                >
+                  <div className="h-12 w-12 rounded-xl bg-cyan-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Building size={24} className="text-cyan-400" />
+                  </div>
+                  <span className="font-bold text-white">SISTec RB</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
