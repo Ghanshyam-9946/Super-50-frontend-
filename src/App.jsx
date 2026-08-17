@@ -388,14 +388,14 @@ function AppRoutes({ theme, toggleTheme }) {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('super50_theme') || 'dark');
+  const [theme] = useState('light');
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('super50_theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('super50_theme', 'light');
+  }, []);
 
-  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => {};
 
   return (
     <Provider store={store}>

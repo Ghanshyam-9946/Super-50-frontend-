@@ -302,17 +302,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
             )}
           </div>
 
-          <div className={`flex gap-2 ${collapsed ? 'flex-col w-full' : ''}`}>
-            <button
-              onClick={toggleTheme}
-              className={`flex items-center justify-center h-10 rounded-xl bg-[var(--bg-app)] border border-[var(--border-light)] hover:border-[var(--primary)] text-[var(--text-secondary)] hover:text-[var(--primary)] transition-all ${collapsed ? 'w-full' : 'flex-1'}`}
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+          <div className="w-full">
             <button
               onClick={handleLogout}
-              className={`flex items-center justify-center gap-2 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all font-bold text-xs uppercase tracking-widest ${collapsed ? 'w-full px-0' : 'flex-[2] px-4'}`}
+              className={`flex items-center justify-center gap-2 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all font-bold text-xs uppercase tracking-widest w-full ${collapsed ? 'px-0' : 'px-4'}`}
               title="Logout"
             >
               <LogOut size={14} /> {!collapsed && "Logout"}
