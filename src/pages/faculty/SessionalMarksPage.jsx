@@ -87,7 +87,9 @@ export default function SessionalMarksPage() {
   const [tab, setTab] = useState(coordinator ? "create" : "entry");
 
   const tabs = [
-    ...(coordinator ? [{ id: "create", label: "Create Sheets", icon: Plus }] : []),
+    // Every faculty can create sheets now — coordinators for any subject,
+    // regular faculty scoped to their own assigned subject/section.
+    { id: "create", label: "Create Sheets", icon: Plus },
     { id: "entry", label: "Marks Entry", icon: ListChecks },
     ...(coordinator ? [{ id: "upload", label: "Bulk Upload", icon: Upload }] : []),
   ];
@@ -124,7 +126,7 @@ export default function SessionalMarksPage() {
         ))}
       </div>
 
-      {tab === "create" && coordinator && <CreateSheetsTab />}
+      {tab === "create" && <CreateSheetsTab coordinator={coordinator} />}
       {tab === "entry" && <EntryTab user={user} coordinator={coordinator} />}
       {tab === "upload" && coordinator && <UploadTab />}
     </div>
@@ -133,7 +135,7 @@ export default function SessionalMarksPage() {
 
 /* ─────────────────────────────  CREATE SHEETS  ───────────────────────────── */
 
-function CreateSheetsTab() {
+function CreateSheetsTab({ coordinator }) {
   const [form, setForm] = useState({ batch: "", semester: "", section: "", subjectCode: "", subjectName: "" });
   const [mappings, setMappings] = useState([]);
   const [students, setStudents] = useState([]);
@@ -142,13 +144,17 @@ function CreateSheetsTab() {
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
+    // A coordinator can create sheets for any subject/section; a regular
+    // faculty only sees (and may only pick from) the ones they're actually
+    // assigned to teach — the backend enforces the same restriction.
+    const endpoint = coordinator ? "/sessional-marks/mappings" : "/sessional-marks/my-sections";
     api
-      .get("/sessional-marks/mappings")
+      .get(endpoint)
       .then(({ data }) => {
         if (data.success) setMappings(data.data);
       })
       .catch(() => {});
-  }, []);
+  }, [coordinator]);
 
   const applyMapping = (m) =>
     setForm({ batch: m.batch, semester: String(m.semester), section: m.section, subjectCode: m.subjectCode, subjectName: m.subjectName });
@@ -203,7 +209,12 @@ function CreateSheetsTab() {
         <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
           Create Sheets for a Section + Subject
         </h3>
-        <MappingPicker mappings={mappings} onPick={applyMapping} />
+        <MappingPicker mappings={mappings} onPick={applyMapping} label={coordinator ? "Load from existing subject" : "Pick your subject"} />
+        {!coordinator && mappings.length === 0 && (
+          <p className="text-xs text-[var(--text-secondary)]">
+            You aren't assigned to any subject yet — ask the coordinator to finalize your Choice Filling allocation first.
+          </p>
+        )}
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
           <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
@@ -212,15 +223,22 @@ function CreateSheetsTab() {
             placeholder="Subject code"
             value={form.subjectCode}
             onChange={(e) => setForm((f) => ({ ...f, subjectCode: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+            disabled={!coordinator}
+            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm disabled:opacity-60"
           />
           <input
             placeholder="Subject name"
             value={form.subjectName}
             onChange={(e) => setForm((f) => ({ ...f, subjectName: e.target.value }))}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+            disabled={!coordinator}
+            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm disabled:opacity-60"
           />
         </div>
+        {!coordinator && (
+          <p className="text-xs text-[var(--text-secondary)]">
+            Subject fields are locked to your own assignment — pick it above via "Pick your subject."
+          </p>
+        )}
         <button
           onClick={search}
           className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5"
