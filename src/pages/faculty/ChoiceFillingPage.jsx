@@ -24,31 +24,50 @@ export default function ChoiceFillingPage() {
   const [picks, setPicks] = useState({}); // roundId -> [priority1SubjectId, priority2SubjectId, ...]
   const [submitting, setSubmitting] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  // A round the admin deletes (or a fresh one they release) needs to
+  // appear/disappear here without a manual page refresh — this app has no
+  // push channel for Master Data changes, so we poll lightly instead
+  // (on window focus, and every 30s while the page is open). Rounds that
+  // still exist keep whatever the faculty has locally selected/edited so
+  // far — a background refresh never wipes an in-progress, unsaved pick.
+  const load = async (isInitial) => {
+    if (isInitial) setLoading(true);
     try {
       const { data } = await api.get("/master-data/choice-filling/my-round");
       if (data.success) {
         setRounds(data.data);
-        const initial = {};
-        data.data.forEach((r) => {
-          const bySlot = PRIORITIES.map(() => "");
-          (r.myPicks || []).forEach((p) => {
-            bySlot[p.priority - 1] = p.subject;
+        setPicks((prev) => {
+          const next = {};
+          data.data.forEach((r) => {
+            if (prev[r.round._id]) {
+              next[r.round._id] = prev[r.round._id];
+              return;
+            }
+            const bySlot = PRIORITIES.map(() => "");
+            (r.myPicks || []).forEach((p) => {
+              bySlot[p.priority - 1] = p.subject;
+            });
+            next[r.round._id] = bySlot;
           });
-          initial[r.round._id] = bySlot;
+          return next;
         });
-        setPicks(initial);
       }
     } catch {
-      toast.error("Failed to load choice filling rounds");
+      if (isInitial) toast.error("Failed to load choice filling rounds");
     } finally {
-      setLoading(false);
+      if (isInitial) setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    load(true);
+    const onFocus = () => load(false);
+    window.addEventListener("focus", onFocus);
+    const interval = setInterval(() => load(false), 30000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   const setPick = (roundId, priorityIdx, subjectId) => {

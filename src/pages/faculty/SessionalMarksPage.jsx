@@ -207,41 +207,44 @@ function CreateSheetsTab({ coordinator }) {
     <div className="space-y-4">
       <div className="glass-card p-5 rounded-2xl space-y-3">
         <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
-          Create Sheets for a Section + Subject
+          {coordinator ? "Create Sheets for a Section + Subject" : "Create Sheets for Your Subject"}
         </h3>
-        <MappingPicker mappings={mappings} onPick={applyMapping} label={coordinator ? "Load from existing subject" : "Pick your subject"} />
-        {!coordinator && mappings.length === 0 && (
+        {coordinator ? (
+          <>
+            <MappingPicker mappings={mappings} onPick={applyMapping} label="Load from existing subject" />
+            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
+              <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
+              <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
+              <input
+                placeholder="Subject code"
+                value={form.subjectCode}
+                onChange={(e) => setForm((f) => ({ ...f, subjectCode: e.target.value }))}
+                className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+              />
+              <input
+                placeholder="Subject name"
+                value={form.subjectName}
+                onChange={(e) => setForm((f) => ({ ...f, subjectName: e.target.value }))}
+                className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          </>
+        ) : mappings.length === 0 ? (
           <p className="text-xs text-[var(--text-secondary)]">
             You aren't assigned to any subject yet — ask the coordinator to finalize your Choice Filling allocation first.
           </p>
-        )}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <BatchSelect value={form.batch} onChange={(e) => setForm((f) => ({ ...f, batch: e.target.value }))} />
-          <SemesterSelect value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} />
-          <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
-          <input
-            placeholder="Subject code"
-            value={form.subjectCode}
-            onChange={(e) => setForm((f) => ({ ...f, subjectCode: e.target.value }))}
-            disabled={!coordinator}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm disabled:opacity-60"
-          />
-          <input
-            placeholder="Subject name"
-            value={form.subjectName}
-            onChange={(e) => setForm((f) => ({ ...f, subjectName: e.target.value }))}
-            disabled={!coordinator}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm disabled:opacity-60"
-          />
-        </div>
-        {!coordinator && (
-          <p className="text-xs text-[var(--text-secondary)]">
-            Subject fields are locked to your own assignment — pick it above via "Pick your subject."
-          </p>
+        ) : (
+          // Faculty only ever create sheets for their own subject — a single
+          // picker (batch/semester/section/subject all come from the
+          // mapping) instead of separate filter fields that could be left
+          // mismatched and silently return zero students.
+          <MappingPicker mappings={mappings} onPick={applyMapping} label="Pick your subject" />
         )}
         <button
           onClick={search}
-          className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5"
+          disabled={!form.batch && !form.semester}
+          className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5 disabled:opacity-40"
         >
           <Search size={14} /> Find Students
         </button>
