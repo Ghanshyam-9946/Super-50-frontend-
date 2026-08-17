@@ -156,15 +156,16 @@ function CreateSheetsTab({ coordinator }) {
       .catch(() => {});
   }, [coordinator]);
 
-  const applyMapping = (m) =>
-    setForm({ batch: m.batch, semester: String(m.semester), section: m.section, subjectCode: m.subjectCode, subjectName: m.subjectName });
-
-  const search = async () => {
-    if (!form.batch && !form.semester) return toast.error("Enter at least batch or semester to search students");
+  // Picking a subject immediately loads that subject's own section's
+  // students — search() takes an optional override so it can search with
+  // the just-picked values directly instead of racing setForm()'s next render.
+  const search = async (overrideForm) => {
+    const f = overrideForm || form;
+    if (!f.batch && !f.semester) return toast.error("Enter at least batch or semester to search students");
     setLoading(true);
     try {
       const { data } = await api.get("/sessional-marks/students", {
-        params: { batch: form.batch, semester: form.semester },
+        params: { batch: f.batch, semester: f.semester, section: f.section },
       });
       if (data.success) setStudents(data.data);
     } catch {
@@ -172,6 +173,13 @@ function CreateSheetsTab({ coordinator }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyMapping = (m) => {
+    const next = { batch: m.batch, semester: String(m.semester), section: m.section, subjectCode: m.subjectCode, subjectName: m.subjectName };
+    setForm(next);
+    setSelected([]);
+    search(next);
   };
 
   const toggle = (id) => setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -241,8 +249,19 @@ function CreateSheetsTab({ coordinator }) {
           // mismatched and silently return zero students.
           <MappingPicker mappings={mappings} onPick={applyMapping} label="Pick your subject" />
         )}
+        {form.subjectName && (
+          <div className="text-xs bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 flex flex-wrap gap-x-4 gap-y-1 text-[var(--text-primary)]">
+            <span>
+              <span className="text-[var(--text-secondary)] font-bold uppercase text-[10px] mr-1">Selected:</span>
+              {form.subjectName} {form.subjectCode && `(${form.subjectCode})`}
+            </span>
+            <span>
+              Batch {form.batch} · Sem {form.semester} · Section {form.section}
+            </span>
+          </div>
+        )}
         <button
-          onClick={search}
+          onClick={() => search()}
           disabled={!form.batch && !form.semester}
           className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5 disabled:opacity-40"
         >
@@ -317,11 +336,14 @@ function EntryTab({ user, coordinator }) {
       .catch(() => {});
   }, [coordinator]);
 
-  const load = async () => {
+  // Takes an optional override so picking a subject can load with the
+  // just-picked values directly instead of racing setFilters()'s next render.
+  const load = async (overrideFilters) => {
+    const f = overrideFilters || filters;
     setLoading(true);
     try {
       const params = {};
-      Object.entries(filters).forEach(([k, v]) => {
+      Object.entries(f).forEach(([k, v]) => {
         if (v) params[k] = v;
       });
       const { data } = await api.get("/sessional-marks/sheets", { params });
@@ -333,8 +355,11 @@ function EntryTab({ user, coordinator }) {
     }
   };
 
-  const applyMapping = (m) =>
-    setFilters({ batch: m.batch, semester: String(m.semester), section: m.section, subjectCode: m.subjectCode, subjectName: m.subjectName });
+  const applyMapping = (m) => {
+    const next = { batch: m.batch, semester: String(m.semester), section: m.section, subjectCode: m.subjectCode, subjectName: m.subjectName };
+    setFilters(next);
+    load(next);
+  };
 
   const handleChange = (updated) => setSheets((prev) => prev.map((s) => (s._id === updated._id ? updated : s)));
 
@@ -366,39 +391,63 @@ function EntryTab({ user, coordinator }) {
   return (
     <div className="space-y-4">
       <div className="glass-card p-4 rounded-2xl flex flex-wrap items-end gap-3">
-        <MappingPicker mappings={pickerOptions} onPick={applyMapping} label="Load an existing subject" />
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-          batch
-          <BatchSelect value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
-        </label>
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-          section
-          <SectionSelect value={filters.section} onChange={(e) => setFilters((f) => ({ ...f, section: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
-        </label>
-        {["subjectCode", "subjectName"].map((k) => (
-          <label key={k} className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-            {k}
-            <input
-              value={filters[k]}
-              onChange={(e) => setFilters((f) => ({ ...f, [k]: e.target.value }))}
-              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
-            />
-          </label>
-        ))}
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-          semester
-          <SemesterSelect value={filters.semester} onChange={(e) => setFilters((f) => ({ ...f, semester: e.target.value }))} />
-        </label>
-        <button onClick={load} className="btn-premium text-xs px-4 py-2.5">
-          Load
-        </button>
-        {coordinator && (
-          <button
-            onClick={() => setSyncOpen((v) => !v)}
-            className="text-xs font-bold px-4 py-2.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5 text-[var(--text-primary)]"
-          >
-            <RefreshCw size={13} /> Sync MST
-          </button>
+        {coordinator ? (
+          <>
+            <MappingPicker mappings={pickerOptions} onPick={applyMapping} label="Load an existing subject" />
+            <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+              batch
+              <BatchSelect value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
+            </label>
+            <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+              section
+              <SectionSelect value={filters.section} onChange={(e) => setFilters((f) => ({ ...f, section: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs" />
+            </label>
+            {["subjectCode", "subjectName"].map((k) => (
+              <label key={k} className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+                {k}
+                <input
+                  value={filters[k]}
+                  onChange={(e) => setFilters((f) => ({ ...f, [k]: e.target.value }))}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                />
+              </label>
+            ))}
+            <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+              semester
+              <SemesterSelect value={filters.semester} onChange={(e) => setFilters((f) => ({ ...f, semester: e.target.value }))} />
+            </label>
+            <button onClick={() => load()} className="btn-premium text-xs px-4 py-2.5">
+              Load
+            </button>
+            <button
+              onClick={() => setSyncOpen((v) => !v)}
+              className="text-xs font-bold px-4 py-2.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5 text-[var(--text-primary)]"
+            >
+              <RefreshCw size={13} /> Sync MST
+            </button>
+          </>
+        ) : pickerOptions.length === 0 ? (
+          <p className="text-xs text-[var(--text-secondary)]">
+            You aren't assigned to any subject yet — ask the coordinator to finalize your Choice Filling allocation first.
+          </p>
+        ) : (
+          // A faculty only ever enters marks for their own subject — one
+          // picker instead of separate filter fields that could be left
+          // mismatched and silently show nothing.
+          <>
+            <MappingPicker mappings={pickerOptions} onPick={applyMapping} label="Pick your subject" />
+            {filters.subjectName && (
+              <div className="text-xs bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 flex flex-wrap gap-x-4 gap-y-1 text-[var(--text-primary)]">
+                <span>
+                  <span className="text-[var(--text-secondary)] font-bold uppercase text-[10px] mr-1">Selected:</span>
+                  {filters.subjectName} {filters.subjectCode && `(${filters.subjectCode})`}
+                </span>
+                <span>
+                  Batch {filters.batch} · Sem {filters.semester} · Section {filters.section}
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
 
