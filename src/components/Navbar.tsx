@@ -1,8 +1,9 @@
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Menu, X, ArrowRight, Building } from "lucide-react";
+import { Menu, X, ArrowRight, Building, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import sistecLogo from "../assets/SISTec_Logo.png";
+import ParentLoginModal from "./ParentLoginModal";
 
 const links = [
   { label: "Features", href: "#features" },
@@ -17,6 +18,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [campusModal, setCampusModal] = useState<'login' | 'register' | null>(null);
+  const [parentModalOpen, setParentModalOpen] = useState(false);
 
   useEffect(() => {
     return scrollY.onChange((latest) => {
@@ -76,7 +78,14 @@ export function Navbar() {
           ))}
         </ul>
 
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
+          <button
+            onClick={() => setParentModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-xs font-bold text-amber-700 hover:text-amber-800 transition-all cursor-pointer shadow-sm"
+          >
+            <Users size={14} className="text-amber-600" />
+            <span>Parent Portal</span>
+          </button>
           <button onClick={() => setCampusModal('login')} className="text-sm font-bold text-muted-foreground transition-colors hover:text-brand-indigo cursor-pointer">
             Sign in
           </button>
@@ -103,17 +112,26 @@ export function Navbar() {
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="glass-strong absolute inset-x-0 top-full mt-4 flex flex-col gap-5 rounded-[2rem] p-8 md:hidden shadow-floating border-white/60"
+            className="glass-strong absolute inset-x-0 top-full mt-4 flex flex-col gap-4 rounded-[2rem] p-6 md:hidden shadow-floating border-white/60"
           >
             {links.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-lg font-black text-slate-600 hover:text-brand-indigo transition-colors">
+              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-base font-black text-slate-600 hover:text-brand-indigo transition-colors">
                 {l.label}
               </a>
             ))}
             <hr className="border-slate-100" />
-            <div className="flex flex-col gap-4">
-              <button onClick={() => { setCampusModal('login'); setOpen(false); }} className="text-center font-bold text-slate-400 cursor-pointer">Sign in</button>
-              <button onClick={() => { setCampusModal('register'); setOpen(false); }} className="btn-premium h-14 w-full text-base flex items-center justify-center cursor-pointer">
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => { setParentModalOpen(true); setOpen(false); }}
+                className="flex items-center justify-center gap-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 py-3 text-sm font-bold text-amber-800 cursor-pointer"
+              >
+                <Users size={16} className="text-amber-600" />
+                <span>Parent Login</span>
+              </button>
+              <button onClick={() => { setCampusModal('login'); setOpen(false); }} className="text-center font-bold text-slate-500 py-2 cursor-pointer">
+                Sign in (Student / Faculty)
+              </button>
+              <button onClick={() => { setCampusModal('register'); setOpen(false); }} className="btn-premium h-12 w-full text-sm flex items-center justify-center cursor-pointer">
                 Registration
               </button>
             </div>
@@ -121,6 +139,9 @@ export function Navbar() {
         )}
       </AnimatePresence>
       </motion.header>
+
+      {/* Parent Login Modal */}
+      <ParentLoginModal isOpen={parentModalOpen} onClose={() => setParentModalOpen(false)} />
 
       <AnimatePresence>
         {campusModal && (

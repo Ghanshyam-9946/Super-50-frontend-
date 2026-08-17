@@ -1,7 +1,8 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
-import { ArrowRight, Sparkles, LogIn, Briefcase, Trophy } from "lucide-react";
+import { ArrowRight, Sparkles, LogIn, Briefcase, Trophy, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import ParentLoginModal from "./ParentLoginModal";
 
 const phrases = ["Monitoring Individual\nLearning\u00A0and\u00A0Excellence"];
 
@@ -46,6 +47,7 @@ function Typewriter() {
 export function Hero() {
   const containerRef = useRef(null);
   const navigate = useNavigate();
+  const [parentModalOpen, setParentModalOpen] = useState(false);
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end start"]
@@ -103,8 +105,16 @@ export function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full max-w-[280px] sm:max-w-none mx-auto"
+          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full max-w-[320px] sm:max-w-none mx-auto"
         >
+          <div data-magnetic className="w-full sm:w-auto">
+            <button
+              onClick={() => setParentModalOpen(true)}
+              className="flex w-full sm:w-auto h-14 px-8 sm:px-10 text-base shadow-md items-center justify-center rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:brightness-110 text-white font-bold transition-all cursor-pointer shadow-orange-500/20 active:scale-95"
+            >
+              <Users size={18} className="mr-2 text-white" /> Parent Login
+            </button>
+          </div>
 
           <div data-magnetic className="w-full sm:w-auto">
             <button onClick={() => navigate('/login')} className="flex w-full sm:w-auto h-14 px-8 sm:px-10 text-base shadow-sm items-center justify-center rounded-full bg-[#f1eff5]/80 hover:bg-[#e9e6ef] text-slate-700 font-semibold transition-colors border border-transparent hover:border-slate-200 cursor-pointer">
@@ -112,6 +122,9 @@ export function Hero() {
             </button>
           </div>
         </motion.div>
+
+        {/* Parent Login Modal */}
+        <ParentLoginModal isOpen={parentModalOpen} onClose={() => setParentModalOpen(false)} />
 
         {/* Simplified Dashboard Preview */}
         <motion.div
