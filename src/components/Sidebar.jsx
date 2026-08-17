@@ -324,7 +324,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       </button>
 
       <div className="hidden lg:block h-screen sticky top-0 z-40">
-        <SidebarContent />
+        {SidebarContent()}
       </div>
 
       <AnimatePresence>
@@ -332,7 +332,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] lg:hidden" />
             <motion.div initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-y-0 left-0 z-[100] lg:hidden">
-              <SidebarContent />
+              {SidebarContent()}
             </motion.div>
           </>
         )}
