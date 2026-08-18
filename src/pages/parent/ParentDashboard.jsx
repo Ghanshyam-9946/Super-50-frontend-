@@ -38,6 +38,7 @@ import {
   Activity,
   User,
   ClipboardList,
+  Target,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -142,6 +143,9 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   const super50Registration = data?.super50Registration || null;
   const noDuesForm = data?.noDuesForm || null;
   const studentSessionalMarks = data?.studentSessionalMarks || [];
+  const podAI = data?.podAI || { marks: [], analytics: { totalTests: 0, averageMarks: 0, highestMarks: 0, totalMarks: 0 } };
+  const podAIMarks = podAI.marks || data?.podAIMarks || [];
+  const podAIAnalytics = podAI.analytics || { totalTests: podAIMarks.length, averageMarks: 0, highestMarks: 0, totalMarks: 0 };
 
   const attPercent = student.attendancePercentage || 0;
   const cgpa = student.cgpa || 0;
@@ -153,6 +157,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
     { id: 'attendance', icon: Calendar, label: 'Attendance', desc: 'Semester breakdown & daily class logs', color: 'text-teal-500 bg-teal-500/10 border-teal-500/20' },
     { id: 'mst', icon: ClipboardList, label: 'MST Marks', desc: 'Subject-wise mid semester exam scores', color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
     { id: 'amcat', icon: Cpu, label: 'AMCAT Marks', desc: 'Employability assessment scores', color: 'text-purple-500 bg-purple-500/10 border-purple-500/20' },
+    { id: 'podai', icon: Target, label: 'Pod AI Marks', desc: 'Continuous assessment tests & AI scores', color: 'text-fuchsia-500 bg-fuchsia-500/10 border-fuchsia-500/20' },
     { id: 'projects', icon: BookOpen, label: 'PMS Projects', desc: 'Capstone project, guide & teammates', color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
     { id: 'certificates', icon: Award, label: 'Certificates', desc: 'Verified technical & skill certificates', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
     { id: 'activities', icon: Activity, label: 'Activities', desc: 'Hackathons, internships & workshops', color: 'text-rose-500 bg-rose-500/10 border-rose-500/20' },
@@ -325,8 +330,27 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                   <div className="text-sm font-bold text-[var(--text-primary)] mt-0.5">
                     {student.mentor.name}
                   </div>
-                  <div className="text-xs text-[var(--text-secondary)] mt-0.5 flex items-center gap-1 font-medium">
-                    <Mail size={11} /> {student.mentor.email}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs font-medium">
+                    {student.mentor.mobile && (
+                      <a
+                        href={`tel:${student.mentor.mobile}`}
+                        className="flex items-center gap-1 font-bold text-[var(--primary)] hover:underline"
+                        title="Call TG Mentor"
+                      >
+                        <Phone size={12} className="text-[var(--primary)] shrink-0" />
+                        <span>{student.mentor.mobile}</span>
+                      </a>
+                    )}
+                    {student.mentor.email && (
+                      <a
+                        href={`mailto:${student.mentor.email}`}
+                        className="flex items-center gap-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                        title="Email TG Mentor"
+                      >
+                        <Mail size={12} className="text-slate-400 shrink-0" />
+                        <span>{student.mentor.email}</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -535,6 +559,43 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                   Permanent Address
                 </span>
                 <span className="font-semibold text-[var(--text-primary)]">{student.address}</span>
+              </div>
+            )}
+
+            {student.mentor && (
+              <div className="p-4 rounded-2xl bg-purple-500/5 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center shrink-0 border border-purple-500/20">
+                    <UserCheck size={18} />
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase font-black tracking-widest text-[var(--primary)]">
+                      Assigned Tutor Guardian (TG Mentor)
+                    </div>
+                    <div className="text-sm font-bold text-[var(--text-primary)] mt-0.5">
+                      {student.mentor.name} {student.mentor.designation ? `• ${student.mentor.designation}` : ''}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 text-xs">
+                  {student.mentor.mobile && (
+                    <a
+                      href={`tel:${student.mentor.mobile}`}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-light)] font-bold text-[var(--primary)] hover:brightness-110 shadow-sm transition-all"
+                    >
+                      <Phone size={13} /> {student.mentor.mobile}
+                    </a>
+                  )}
+                  {student.mentor.email && (
+                    <a
+                      href={`mailto:${student.mentor.email}`}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-light)] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-sm transition-all"
+                    >
+                      <Mail size={13} /> {student.mentor.email}
+                    </a>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -864,6 +925,114 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Detail View: Pod AI Marks & Assessment Analytics */}
+        {activeTab === 'podai' && (
+          <div className="glass-card bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl p-6 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-fuchsia-500/10 text-fuchsia-500 flex items-center justify-center border border-fuchsia-500/20">
+                  <Target size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-primary)]">Pod AI Assessment Marks</h3>
+                  <p className="text-xs text-[var(--text-secondary)]">Continuous evaluated tests, quizzes & AI assessment performance</p>
+                </div>
+              </div>
+
+              {podAIMarks.length > 0 && (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 text-xs font-bold text-fuchsia-600">
+                  <Sparkles size={14} />
+                  <span>{podAIAnalytics.totalTests} Assessments Recorded</span>
+                </div>
+              )}
+            </div>
+
+            {/* Analytics KPI Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center gap-3.5 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20 shrink-0">
+                  <FileText size={18} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Tests</div>
+                  <div className="text-xl font-display font-black text-[var(--text-primary)] mt-0.5">
+                    {podAIAnalytics.totalTests}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center gap-3.5 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 shrink-0">
+                  <TrendingUp size={18} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Average Score</div>
+                  <div className="text-xl font-display font-black text-[var(--text-primary)] mt-0.5">
+                    {podAIAnalytics.averageMarks ? podAIAnalytics.averageMarks.toFixed(1) : '0.0'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center gap-3.5 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shrink-0">
+                  <Award size={18} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Highest Score</div>
+                  <div className="text-xl font-display font-black text-[var(--text-primary)] mt-0.5">
+                    {podAIAnalytics.highestMarks || 0}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Assessment History Table */}
+            {podAIMarks.length === 0 ? (
+              <div className="text-center py-12 text-[var(--text-secondary)]">
+                <Target size={40} className="mx-auto mb-2.5 text-slate-400 opacity-40" />
+                <h4 className="text-sm font-bold text-[var(--text-primary)]">No Pod AI Marks Uploaded Yet</h4>
+                <p className="text-xs mt-1">Student test scores will appear here once submitted and published by mentors/faculty.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-[var(--border-light)]">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[var(--bg-input)] text-slate-400 uppercase text-[10px] font-black tracking-wider border-b border-[var(--border-light)]">
+                    <tr>
+                      <th className="px-5 py-3.5">Assessment / Test Name</th>
+                      <th className="px-5 py-3.5">Semester</th>
+                      <th className="px-5 py-3.5">Test Date</th>
+                      <th className="px-5 py-3.5 text-right">Marks Obtained</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border-light)]">
+                    {podAIMarks.map((mark, i) => (
+                      <tr key={mark._id || i} className="hover:bg-[var(--bg-input)]/40 transition-colors">
+                        <td className="px-5 py-4 font-bold text-[var(--text-primary)]">
+                          {mark.testName}
+                        </td>
+                        <td className="px-5 py-4 font-semibold text-[var(--text-secondary)]">
+                          {mark.semester ? `Semester ${mark.semester}` : 'General'}
+                        </td>
+                        <td className="px-5 py-4 text-[var(--text-secondary)] font-medium">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={13} className="text-slate-400" />
+                            {mark.testDate ? new Date(mark.testDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <span className="inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-black bg-fuchsia-500/10 text-fuchsia-600 border border-fuchsia-500/20 shadow-sm">
+                            {mark.marks}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
