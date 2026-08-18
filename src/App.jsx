@@ -42,6 +42,7 @@ import DriveDetailsPage from './pages/admin/DriveDetailsPage';
 import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
 import FacultyTasksPage from './pages/faculty/FacultyTasksPage';
 import CallingTrackerPage from './pages/admin/CallingTrackerPage';
+import BulkCreateFacultyPage from './pages/admin/BulkCreateFacultyPage';
 
 import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
 import ProjectDashboard from './pages/student/ProjectDashboard';
@@ -102,13 +103,13 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
 
   if (!hasRole && !hasResponsibility) {
     const fallback = userRoles.includes('parent') ? '/parent/dashboard' :
-                     userRoles.includes('student') ? '/leaderboard' :
-                     userRoles.includes('admin') ? '/leaderboard' :
-                     userRoles.includes('super50_admin') ? '/leaderboard' :
-                     userRoles.includes('teacher') ? '/teacher/dashboard' :
-                     userRoles.includes('guide') ? '/pms/guide' :
-                     userRoles.includes('tp_admin') ? '/tp/enroll-students' :
-                     userRoles.includes('pms_admin') ? '/pms/admin' : '/login';
+      userRoles.includes('student') ? '/leaderboard' :
+        userRoles.includes('admin') ? '/leaderboard' :
+          userRoles.includes('super50_admin') ? '/leaderboard' :
+            userRoles.includes('teacher') ? '/teacher/dashboard' :
+              userRoles.includes('guide') ? '/pms/guide' :
+                userRoles.includes('tp_admin') ? '/tp/enroll-students' :
+                  userRoles.includes('pms_admin') ? '/pms/admin' : '/login';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -117,7 +118,7 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
 const Super50Guard = ({ children }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/" replace />;
-  
+
   const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
   const isPrivileged = userRoles.some(r => ['admin', 'teacher', 'super50_admin'].includes(r));
   if (isPrivileged) return children;
@@ -145,7 +146,7 @@ function IdleTimer() {
     };
 
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
+
     resetTimer();
 
     events.forEach((event) => {
@@ -264,6 +265,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/bulk-create" element={
           <RoleGuard allowed={['admin']}><BulkCreatePage /></RoleGuard>
+        } />
+        <Route path="/admin/bulk-create-faculty" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><BulkCreateFacultyPage /></RoleGuard>
         } />
         <Route path="/admin/master-data/sections" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataSections /></RoleGuard>
@@ -428,7 +432,7 @@ export default function App() {
     localStorage.setItem('super50_theme', 'light');
   }, []);
 
-  const toggleTheme = () => {};
+  const toggleTheme = () => { };
 
   return (
     <Provider store={store}>
