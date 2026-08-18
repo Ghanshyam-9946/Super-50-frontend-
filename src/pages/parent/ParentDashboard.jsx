@@ -152,7 +152,6 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   const duesFees = student.duesFees || 0;
 
   const menuOptions = [
-    { id: 'profile', icon: User, label: 'Overview', desc: 'Basic info, mentor & contact records', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
     { id: 'rgpv', icon: Award, label: 'RGPV Marks', desc: 'Official semester results & grade sheets', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
     { id: 'attendance', icon: Calendar, label: 'Attendance', desc: 'Semester breakdown & daily class logs', color: 'text-teal-500 bg-teal-500/10 border-teal-500/20' },
     { id: 'mst', icon: ClipboardList, label: 'MST Marks', desc: 'Subject-wise mid semester exam scores', color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
@@ -514,92 +513,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
           </div>
         )}
 
-        {/* Detail View 1: Profile Overview */}
-        {activeTab === 'profile' && (
-          <div className="glass-card bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20">
-                <User size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">Student Profile Overview</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Personal, Academic & Contact records</p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-              {[
-                { label: 'Full Name', val: student.name },
-                { label: 'Enrollment Number', val: student.enrollmentNumber || student.enrollmentNo },
-                { label: 'Email Address', val: student.email || 'N/A' },
-                { label: 'Department / Branch', val: student.department || 'N/A' },
-                { label: 'Batch Year', val: student.batch || 'N/A' },
-                { label: 'Current Semester', val: student.semester ? `${student.semester}th Semester` : 'N/A' },
-                { label: 'Class Section', val: student.section || 'N/A' },
-                { label: 'Residence Status', val: student.residenceType || 'Day Scholar' },
-                { label: '10th Percentage', val: student.tenthPercentage ? `${student.tenthPercentage}%` : 'N/A' },
-                { label: '12th Percentage', val: student.twelfthPercentage ? `${student.twelfthPercentage}%` : 'N/A' },
-                { label: 'Parent Mobile on Record', val: student.parentMobile || user?.parentMobile || 'N/A' },
-                { label: 'Student Mobile', val: student.mobile || 'N/A' },
-              ].map((item, idx) => (
-                <div key={idx} className="p-3.5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)]">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                    {item.label}
-                  </div>
-                  <div className="text-xs font-bold text-[var(--text-primary)] truncate">
-                    {item.val}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {student.address && (
-              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] text-xs">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">
-                  Permanent Address
-                </span>
-                <span className="font-semibold text-[var(--text-primary)]">{student.address}</span>
-              </div>
-            )}
-
-            {student.mentor && (
-              <div className="p-4 rounded-2xl bg-purple-500/5 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center shrink-0 border border-purple-500/20">
-                    <UserCheck size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase font-black tracking-widest text-[var(--primary)]">
-                      Assigned Tutor Guardian (TG Mentor)
-                    </div>
-                    <div className="text-sm font-bold text-[var(--text-primary)] mt-0.5">
-                      {student.mentor.name} {student.mentor.designation ? `• ${student.mentor.designation}` : ''}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2.5 text-xs">
-                  {student.mentor.mobile && (
-                    <a
-                      href={`tel:${student.mentor.mobile}`}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-light)] font-bold text-[var(--primary)] hover:brightness-110 shadow-sm transition-all"
-                    >
-                      <Phone size={13} /> {student.mentor.mobile}
-                    </a>
-                  )}
-                  {student.mentor.email && (
-                    <a
-                      href={`mailto:${student.mentor.email}`}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-light)] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-sm transition-all"
-                    >
-                      <Mail size={13} /> {student.mentor.email}
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Detail View 2: RGPV Marks */}
         {activeTab === 'rgpv' && (
@@ -844,7 +758,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
               </div>
               <div>
                 <h3 className="text-base font-bold text-[var(--text-primary)]">Mid-Semester Tests (MST)</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Internal college mid-term exam marks</p>
+                <p className="text-xs text-[var(--text-secondary)]">Subject-wise internal marks obtained in MST evaluations</p>
               </div>
             </div>
 
@@ -854,27 +768,103 @@ export default function ParentDashboard({ theme, toggleTheme }) {
               </div>
             ) : (
               <div className="space-y-4 pt-2">
-                {mstResults.map((mst) => (
-                  <div key={mst._id} className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
-                        Semester {mst.semester} — {mst.examName || 'Mid Semester Test'}
-                      </span>
-                    </div>
-                    {mst.subjects && Object.keys(mst.subjects).length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                        {Object.entries(mst.subjects).map(([sub, mark]) => (
-                          <div key={sub} className="bg-[var(--bg-card)] p-2.5 rounded-xl border border-[var(--border-light)]">
-                            <div className="text-[11px] font-bold text-[var(--text-secondary)] truncate">{sub}</div>
-                            <div className="text-sm font-black text-[var(--text-primary)] mt-1">{String(mark)}</div>
-                          </div>
-                        ))}
+                {mstResults.map((mst, mIdx) => {
+                  const testNameLower = (mst.testName || '').toLowerCase();
+                  let calculatedTotal = 0;
+                  let totalMaxMarks = 0;
+                  const scoreEntries = [];
+
+                  Object.entries(mst.scores || {}).forEach(([subject, score]) => {
+                    const lowerSub = subject.toLowerCase();
+                    if (
+                      lowerSub.includes('total') ||
+                      lowerSub.includes('id') ||
+                      lowerSub.includes('enrollment') ||
+                      lowerSub.includes('roll')
+                    ) {
+                      return;
+                    }
+
+                    const numericScore = Number(score);
+                    if (!isNaN(numericScore)) {
+                      calculatedTotal += numericScore;
+
+                      const isCrt = lowerSub.includes('crt') || lowerSub.includes('aptitude');
+                      let maxMarks = 100;
+                      if (!isCrt) {
+                        if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                          maxMarks = 28;
+                        } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                          maxMarks = 42;
+                        }
+                      }
+                      totalMaxMarks += maxMarks;
+                    }
+                    scoreEntries.push([subject, score]);
+                  });
+
+                  if (scoreEntries.length > 0) {
+                    scoreEntries.push(['Grand Total', calculatedTotal, totalMaxMarks]);
+                  }
+
+                  return (
+                    <div key={mst._id || mIdx} className="p-5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-light)] pb-3">
+                        <div>
+                          <h4 className="font-bold text-[var(--text-primary)] text-sm">
+                            {mst.testName || 'Mid Semester Test'}
+                          </h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">
+                            Semester {mst.semester} {mst.testDate ? `• Evaluated on ${new Date(mst.testDate).toLocaleDateString('en-IN')}` : ''}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-500">
+                          Semester {mst.semester}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="text-xs text-[var(--text-secondary)]">No subject marks breakdown recorded.</div>
-                    )}
-                  </div>
-                ))}
+
+                      {scoreEntries.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {scoreEntries.map(([subject, score, customMax], sIdx) => {
+                            const isTotal = subject.toLowerCase().includes('total');
+                            let maxMarks = customMax;
+                            if (!isTotal) {
+                              const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
+                              maxMarks = 100;
+                              if (!isCrt) {
+                                if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                                  maxMarks = 28;
+                                } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                                  maxMarks = 42;
+                                }
+                              }
+                            }
+
+                            return (
+                              <div
+                                key={sIdx}
+                                className={`flex justify-between items-center p-3 rounded-xl border ${
+                                  isTotal
+                                    ? 'bg-indigo-500/10 border-indigo-500/20 col-span-full sm:col-span-2 md:col-span-3'
+                                    : 'bg-[var(--bg-card)] border-[var(--border-light)]'
+                                }`}
+                              >
+                                <span className={`text-xs capitalize truncate mr-2 ${isTotal ? 'font-black text-indigo-600 dark:text-indigo-400 text-sm' : 'font-bold text-[var(--text-secondary)]'}`}>
+                                  {subject}
+                                </span>
+                                <span className={`text-xs shrink-0 px-2 py-1 rounded border border-[var(--border-light)] ${isTotal ? 'font-black text-emerald-600 dark:text-emerald-400 text-sm bg-[var(--bg-card)]' : 'font-black text-[var(--text-primary)] bg-[var(--bg-input)]'}`}>
+                                  {score} {maxMarks > 0 && `/ ${maxMarks}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-[var(--text-secondary)]">No subject marks breakdown recorded.</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -888,43 +878,73 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                 <Cpu size={20} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">AMCAT Employability Assessment</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Industry readiness & aptitude analytics</p>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">AMCAT / MCAT Assessment Scores</h3>
+                <p className="text-xs text-[var(--text-secondary)]">Sectional and employability readiness test scores</p>
               </div>
             </div>
 
             {amcatResults.length === 0 ? (
               <div className="text-center py-10 text-[var(--text-secondary)] text-xs">
-                No AMCAT scores uploaded yet.
+                No AMCAT / MCAT scores uploaded yet.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {amcatResults.map((amcat) => (
-                  <div key={amcat._id} className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-3">
-                    <div className="flex items-center justify-between text-xs font-bold text-purple-600">
-                      <span>Semester {amcat.semester} Assessment</span>
-                      <span>Total: {amcat.totalScore || 'N/A'}</span>
+              <div className="space-y-4 pt-2">
+                {amcatResults.map((amcat, aIdx) => {
+                  const scoreKeys = Object.keys(amcat.scores || {});
+                  const isIdKey = (k) =>
+                    k.toLowerCase().includes('id') ||
+                    k.toLowerCase().includes('enrollment') ||
+                    k.toLowerCase().includes('roll');
+                  const isTotalKey = (k) => k.toLowerCase().includes('total');
+                  const topicCount = scoreKeys.filter((k) => !isIdKey(k) && !isTotalKey(k)).length;
+
+                  return (
+                    <div key={amcat._id || aIdx} className="p-5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-light)] pb-3">
+                        <div>
+                          <h4 className="font-bold text-[var(--text-primary)] text-sm">
+                            {amcat.testName || 'AMCAT Assessment'}
+                          </h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">
+                            Semester {amcat.semester} {amcat.testDate ? `• Evaluated on ${new Date(amcat.testDate).toLocaleDateString('en-IN')}` : ''}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase text-purple-500">
+                          Semester {amcat.semester}
+                        </span>
+                      </div>
+
+                      {scoreKeys.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {Object.entries(amcat.scores || {}).map(([subject, score], sIdx) => {
+                            const idKey = isIdKey(subject);
+                            const totalKey = isTotalKey(subject);
+                            const denominator = totalKey ? topicCount * 100 : 100;
+                            return (
+                              <div
+                                key={sIdx}
+                                className={`flex justify-between items-center p-3 rounded-xl border ${
+                                  totalKey
+                                    ? 'bg-purple-500/10 border-purple-500/20 col-span-full sm:col-span-2 md:col-span-3'
+                                    : 'bg-[var(--bg-card)] border-[var(--border-light)]'
+                                }`}
+                              >
+                                <span className={`text-xs capitalize truncate mr-2 ${totalKey ? 'font-black text-purple-600 dark:text-purple-400 text-sm' : 'font-bold text-[var(--text-secondary)]'}`}>
+                                  {subject}
+                                </span>
+                                <span className={`text-xs shrink-0 px-2 py-1 rounded border border-[var(--border-light)] ${totalKey ? 'font-black text-emerald-600 dark:text-emerald-400 text-sm bg-[var(--bg-card)]' : 'font-black text-[var(--text-primary)] bg-[var(--bg-input)]'}`}>
+                                  {score} {!idKey && denominator > 0 && `/ ${denominator}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-[var(--text-secondary)]">No sectional scores recorded.</div>
+                      )}
                     </div>
-                    <div className="space-y-2 text-xs divide-y divide-[var(--border-light)]">
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>Quantitative Ability:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.quantitative || '-'}</strong>
-                      </div>
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>Logical Reasoning:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.logical || '-'}</strong>
-                      </div>
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>English Comprehension:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.english || '-'}</strong>
-                      </div>
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>Domain Knowledge:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.domain || '-'}</strong>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
