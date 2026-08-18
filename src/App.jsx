@@ -22,6 +22,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import StudentDashboard from './pages/student/StudentDashboard';
 import CertificatesPage from './pages/student/CertificatesPage';
 import ActivitiesPage from './pages/student/ActivitiesPage';
+import ParentDashboard from './pages/parent/ParentDashboard';
 
 // Admin/Teacher Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -62,6 +63,7 @@ import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
+import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import SessionalMarksAdminPage from './pages/admin/SessionalMarksAdminPage';
 import MasterDataSections from './pages/admin/masterdata/Sections';
 import MasterDataMentors from './pages/admin/masterdata/Mentors';
@@ -93,7 +95,8 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const hasResponsibility = allowResponsibility && (user.responsibilities || []).includes(allowResponsibility);
 
   if (!hasRole && !hasResponsibility) {
-    const fallback = userRoles.includes('student') ? '/leaderboard' :
+    const fallback = userRoles.includes('parent') ? '/parent/dashboard' :
+                     userRoles.includes('student') ? '/leaderboard' :
                      userRoles.includes('admin') ? '/leaderboard' :
                      userRoles.includes('super50_admin') ? '/leaderboard' :
                      userRoles.includes('teacher') ? '/teacher/dashboard' :
@@ -163,6 +166,7 @@ function AppRoutes({ theme, toggleTheme }) {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
+      <Route path="/parent/dashboard" element={<ParentDashboard theme={theme} toggleTheme={toggleTheme} />} />
 
       {/* Protected layout */}
       <Route element={<Layout theme={theme} toggleTheme={toggleTheme} />}>
@@ -213,6 +217,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/student/rgpv" element={
           <RoleGuard allowed={['student']}><StudentRGPVPage /></RoleGuard>
+        } />
+        <Route path="/student/attendance" element={
+          <RoleGuard allowed={['student']}><StudentAttendancePage /></RoleGuard>
         } />
 
         {/* Admin routes */}
@@ -388,14 +395,14 @@ function AppRoutes({ theme, toggleTheme }) {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('super50_theme') || 'dark');
+  const [theme] = useState('light');
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('super50_theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('super50_theme', 'light');
+  }, []);
 
-  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => {};
 
   return (
     <Provider store={store}>
