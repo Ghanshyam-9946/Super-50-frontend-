@@ -33,8 +33,6 @@ import {
   Star,
   Cpu,
   UserCheck2,
-  Sun,
-  Moon,
   Activity,
   User,
   ClipboardList,
@@ -208,16 +206,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
               </div>
             )}
 
-            {/* Theme Toggle if available */}
-            {toggleTheme && (
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-xl bg-[var(--bg-input)] hover:bg-[var(--bg-hover)] border border-[var(--border-light)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
-                title="Toggle Theme"
-              >
-                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-            )}
+
 
             <button
               onClick={handlePrint}
