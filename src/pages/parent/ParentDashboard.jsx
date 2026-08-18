@@ -167,7 +167,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] font-sans pb-24 selection:bg-purple-500 selection:text-white transition-colors duration-300">
       {/* Top Application Header */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-card)] border-b border-[var(--border-light)] px-4 sm:px-8 py-3.5 shadow-sm print:hidden">
+      <header className="sticky top-0 z-40 bg-[var(--bg-card)] border-b border-[var(--border-light)] px-4 sm:px-8 py-3.5 shadow-sm no-print">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-white p-1 flex items-center justify-center border border-[var(--border-light)] shadow-sm">
@@ -241,8 +241,37 @@ export default function ParentDashboard({ theme, toggleTheme }) {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-6 space-y-6">
+        {/* Global Print / Screen Style Tag */}
+        <style>{`
+          @media screen {
+            .print-only { display: none !important; }
+          }
+          @media print {
+            body, html, #root {
+              background: #ffffff !important;
+              color: #0f172a !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: visible !important;
+              height: auto !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+            .print-only {
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            @page {
+              size: A4 portrait;
+              margin: 10mm 10mm 10mm 10mm;
+            }
+          }
+        `}</style>
+
         {/* Screen Interactive UI Container */}
-        <div className="print:hidden space-y-6">
+        <div className="no-print space-y-6">
           {/* Read-Only Notice Badge */}
           <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-purple-500/5 border border-purple-500/20 text-xs text-[var(--text-secondary)] font-medium">
           <div className="flex items-center gap-2.5">
@@ -1398,7 +1427,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
         {/* ========================================================================= */}
         {/* COMPREHENSIVE OFFICIAL PRINTABLE ACADEMIC DOSSIER (VISIBLE ONLY ON PRINT) */}
         {/* ========================================================================= */}
-        <div className="hidden print:block font-sans text-slate-900 bg-white space-y-6 text-xs leading-normal">
+        <div className="print-only font-sans text-slate-900 bg-white space-y-6 text-xs leading-normal">
           {/* Institutional Header */}
           <div className="border-b-2 border-slate-900 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-3.5">
