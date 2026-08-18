@@ -35,7 +35,7 @@ export default function SelectionFormSection() {
 
   // States
   const [formSettings, setFormSettings] = useState({
-    formEnabled: true,
+    formEnabled: false,
     startDate: '',
     endDate: ''
   });
@@ -125,10 +125,23 @@ export default function SelectionFormSection() {
   const isFormOpen = () => {
     if (!formSettings.formEnabled) return false;
     const now = new Date();
-    const startDate = parseDateSafe(formSettings.startDate);
-    const endDate = parseDateSafe(formSettings.endDate);
-    if (startDate && startDate > now) return false;
-    if (endDate && endDate < now) return false;
+    
+    if (formSettings.startDate) {
+      const startDate = parseDateSafe(formSettings.startDate);
+      if (startDate) {
+        startDate.setHours(0, 0, 0, 0);
+        if (startDate > now) return false;
+      }
+    }
+    
+    if (formSettings.endDate) {
+      const endDate = parseDateSafe(formSettings.endDate);
+      if (endDate) {
+        endDate.setHours(23, 59, 59, 999);
+        if (endDate < now) return false;
+      }
+    }
+    
     return true;
   };
 
@@ -266,8 +279,8 @@ export default function SelectionFormSection() {
 
   const submitBtn = getSubmitButtonProps();
 
-  // If form is closed and the student hasn't submitted any response, hide the entire section completely
-  if (!isFormOpen() && !hasSubmitted) {
+  // If form is closed hide the entire section completely
+  if (!isFormOpen()) {
     return null;
   }
 

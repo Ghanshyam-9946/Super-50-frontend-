@@ -488,6 +488,14 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
   );
 }
 
+const formatBatch = (batchStr) => {
+  if (!batchStr) return '';
+  if (batchStr.toString().includes('-')) return batchStr;
+  const start = parseInt(batchStr, 10);
+  if (isNaN(start)) return batchStr;
+  return `${start}-${String(start + 4).slice(-2)}`;
+};
+
 export default function StudentsPage({ isSuper50 = false }) {
   const dispatch = useDispatch();
   const { allStudents, filters, loading, total } = useSelector((s) => s.students);
@@ -646,7 +654,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                 value={batch} onChange={(e) => setBatch(e.target.value)} id="students-batch-filter"
               >
                 <option value="">All Batches</option>
-                {filters.batches?.map(b => <option key={b} value={b}>{b}</option>)}
+                {filters.batches?.map(b => <option key={b} value={b}>{formatBatch(b)}</option>)}
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                 <ChevronDown size={14} />
@@ -714,7 +722,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold">{student.department}</td>
-                        <td className="px-6 py-4 font-bold">{student.batch}</td>
+                        <td className="px-6 py-4 font-bold">{formatBatch(student.batch)}</td>
                         <td className="px-6 py-4 font-bold">
                           <div className="flex flex-col gap-1 items-start">
                             {student.mentor ? (
@@ -816,19 +824,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                                 <RefreshCw size={16} />
                               </button>
                             )}
-                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
-                              <button
-                                onClick={() => {
-                                  if (window.confirm('Are you sure you want to delete this student?')) {
-                                    dispatch(deleteStudent(student._id)).then(r => !r.error ? toast.success('Student deleted') : toast.error('Failed to delete student'));
-                                  }
-                                }}
-                                className="p-1.5 text-rose-500 hover:text-rose-700 bg-rose-500/10 rounded-lg border border-rose-500/20 transition-all shadow-sm flex items-center justify-center"
-                                title="Delete Student"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            )}
+
                           </div>
                         </td>
                       </motion.tr>

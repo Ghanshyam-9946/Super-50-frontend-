@@ -23,6 +23,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Core Links (All Students)
   const commonStudentLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { to: '/student/attendance', icon: ClipboardList, label: 'Attendance' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
     { to: '/student/mst', icon: FileText, label: 'MST Result' },
     { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
@@ -311,17 +312,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
             )}
           </div>
 
-          <div className={`flex gap-2 ${collapsed ? 'flex-col w-full' : ''}`}>
-            <button
-              onClick={toggleTheme}
-              className={`flex items-center justify-center h-10 rounded-xl bg-[var(--bg-app)] border border-[var(--border-light)] hover:border-[var(--primary)] text-[var(--text-secondary)] hover:text-[var(--primary)] transition-all ${collapsed ? 'w-full' : 'flex-1'}`}
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+          <div className="w-full">
             <button
               onClick={handleLogout}
-              className={`flex items-center justify-center gap-2 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all font-bold text-xs uppercase tracking-widest ${collapsed ? 'w-full px-0' : 'flex-[2] px-4'}`}
+              className={`flex items-center justify-center gap-2 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all font-bold text-xs uppercase tracking-widest w-full ${collapsed ? 'px-0' : 'px-4'}`}
               title="Logout"
             >
               <LogOut size={14} /> {!collapsed && "Logout"}
@@ -339,7 +333,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       </button>
 
       <div className="hidden lg:block h-screen sticky top-0 z-40">
-        <SidebarContent />
+        {SidebarContent()}
       </div>
 
       <AnimatePresence>
@@ -347,7 +341,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] lg:hidden" />
             <motion.div initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-y-0 left-0 z-[100] lg:hidden">
-              <SidebarContent />
+              {SidebarContent()}
             </motion.div>
           </>
         )}
