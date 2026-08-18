@@ -76,6 +76,12 @@ import ChatPage from './pages/chat/ChatPage';
 import MySubjectActivities from './pages/faculty/MySubjectActivities';
 import SessionalMarksPage from './pages/faculty/SessionalMarksPage';
 import StudentSessionalMarksPage from './pages/student/StudentSessionalMarksPage';
+import FeedbackReleasePage from './pages/admin/feedback/FeedbackReleasePage';
+import FeedbackDashboardPage from './pages/admin/feedback/FeedbackDashboardPage';
+import StudentFeedbackPage from './pages/student/StudentFeedbackPage';
+import ClassObservationPage from './pages/admin/ClassObservationPage';
+import ClassEngagementPage from './pages/faculty/ClassEngagementPage';
+import ClassEngagementReportPage from './pages/admin/ClassEngagementReportPage';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -215,6 +221,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/sessional-marks" element={
           <RoleGuard allowed={['student']}><StudentSessionalMarksPage /></RoleGuard>
         } />
+        <Route path="/student/feedback" element={
+          <RoleGuard allowed={['student']}><StudentFeedbackPage /></RoleGuard>
+        } />
         <Route path="/student/rgpv" element={
           <RoleGuard allowed={['student']}><StudentRGPVPage /></RoleGuard>
         } />
@@ -301,6 +310,18 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/sessional-marks" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><SessionalMarksAdminPage /></RoleGuard>
         } />
+        <Route path="/admin/feedback" element={
+          <RoleGuard allowed={['admin']}><FeedbackReleasePage /></RoleGuard>
+        } />
+        <Route path="/admin/feedback/:formId" element={
+          <RoleGuard allowed={['admin']}><FeedbackDashboardPage /></RoleGuard>
+        } />
+        <Route path="/admin/class-observations" element={
+          <RoleGuard allowed={['admin']}><ClassObservationPage /></RoleGuard>
+        } />
+        <Route path="/admin/class-engagement-report" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><ClassEngagementReportPage /></RoleGuard>
+        } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
         } />
@@ -356,6 +377,11 @@ function AppRoutes({ theme, toggleTheme }) {
         {/* Sessional Marks — faculty/coordinator view, shared across staff roles */}
         <Route path="/faculty/sessional-marks" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><SessionalMarksPage /></RoleGuard>
+        } />
+
+        {/* Class Engagement — faculty view, shared across staff roles */}
+        <Route path="/faculty/class-engagement" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ClassEngagementPage /></RoleGuard>
         } />
 
         {/* Subject Choice Filling — faculty view, shared across staff roles */}

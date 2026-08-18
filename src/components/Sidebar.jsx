@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
-  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle
+  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +32,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
     { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
     { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/student/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
   ];
 
   // Training & Placement Section (ALL students)
@@ -66,6 +67,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+    ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
     { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
     { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Activities)' },
     ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
@@ -84,6 +87,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
     { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+    ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
     { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Activities)' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
@@ -109,6 +114,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
     { to: '/admin/sessional-marks', icon: GraduationCap, label: 'Sessional Marks Report' },
     { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks (Manage)' },
+    { to: '/admin/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
+    { to: '/admin/class-observations', icon: ClipboardCheck, label: 'Class Observation Form' },
+    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+    { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },

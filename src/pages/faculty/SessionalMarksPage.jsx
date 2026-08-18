@@ -568,11 +568,7 @@ function EntryTab({ user, coordinator }) {
 function SheetEditor({ sheet, onChange, coordinator, user }) {
   const uid = user?._id;
   const isAssignedFaculty = sheet.faculty?._id === uid || sheet.faculty === uid;
-  // A deadline is a live comparison against the stored date, not a separate
-  // lock flag — the coordinator extending it to a future date is the
-  // "unlock", nothing else to reset (mirrors the backend's isDeadlinePassed).
-  const deadlinePassed = !!sheet.deadline && new Date() > new Date(sheet.deadline);
-  const canEdit = (isAssignedFaculty || coordinator) && !sheet.locked && !deadlinePassed;
+  const canEdit = (isAssignedFaculty || coordinator) && !sheet.locked;
   const isAdmin = user?.role === "admin";
 
   // CA categories come from the linked Subject's marks-type Activities once
@@ -591,6 +587,15 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
     const activity = marksActivities.find((a) => a.label === category);
     return activity ? String(activity.maxMarks ?? "") : "";
   };
+  // Each Activity carries its own deadline now (set by the subject's
+  // faculty/coordinator on the Subject itself) — replaces the old
+  // whole-sheet deadline. A live comparison, not a stored flag: extending
+  // the Activity's deadline is the "unlock", nothing else to reset.
+  const deadlineFor = (category) => marksActivities.find((a) => a.label === category)?.deadline || null;
+  const isCategoryDeadlinePassed = (category) => {
+    const d = deadlineFor(category);
+    return !!d && new Date() > new Date(d);
+  };
 
   const [form, setForm] = useState({ category: categoryOptions[0] || "Assignment", kind: ACTIVITY_KINDS[0], unit: 1, obtained: "", max: defaultMaxFor(categoryOptions[0]), entryId: null });
   const [saving, setSaving] = useState(false);
@@ -602,27 +607,8 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
     viva: sheet.lab?.viva ?? "",
   });
   const [savingLab, setSavingLab] = useState(false);
-  const [deadlineInput, setDeadlineInput] = useState(sheet.deadline ? sheet.deadline.slice(0, 10) : "");
-  const [savingDeadline, setSavingDeadline] = useState(false);
 
   const resetForm = () => setForm({ category: categoryOptions[0] || "Assignment", kind: ACTIVITY_KINDS[0], unit: 1, obtained: "", max: defaultMaxFor(categoryOptions[0]), entryId: null });
-
-  const saveDeadline = async () => {
-    setSavingDeadline(true);
-    try {
-      const { data } = await api.patch(`/sessional-marks/sheets/${sheet._id}/deadline`, {
-        deadline: deadlineInput || null,
-      });
-      if (data.success) {
-        toast.success(data.message);
-        onChange(data.data);
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save deadline");
-    } finally {
-      setSavingDeadline(false);
-    }
-  };
 
   const saveLab = async () => {
     setSavingLab(true);
@@ -702,25 +688,6 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
 
   return (
     <div className="px-5 pb-5 pt-1 border-t border-[var(--border-light)] space-y-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className={`font-bold ${deadlinePassed ? "text-red-500" : "text-[var(--text-secondary)]"}`}>
-          Deadline: {sheet.deadline ? new Date(sheet.deadline).toLocaleDateString() : "Not set"}
-          {deadlinePassed && " — entries are blocked, extend to unlock"}
-        </span>
-        {coordinator && (
-          <>
-            <input
-              type="date"
-              value={deadlineInput}
-              onChange={(e) => setDeadlineInput(e.target.value)}
-              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2 py-1 text-xs"
-            />
-            <button onClick={saveDeadline} disabled={savingDeadline} className="text-xs font-bold px-2.5 py-1 rounded-lg border border-[var(--border-light)] disabled:opacity-40">
-              {savingDeadline ? <Loader2 size={12} className="animate-spin" /> : "Save"}
-            </button>
-          </>
-        )}
-      </div>
 
       {(sheet.mst?.test1?.testName || sheet.mst?.test2?.testName) && (
         <div className="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-4 gap-y-1">
@@ -797,10 +764,20 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
 
       {categoryOptions.map((cat) => {
         const entries = sheet.caEntries.filter((e) => e.category === cat);
+        const deadline = deadlineFor(cat);
+        const deadlinePassed = isCategoryDeadlinePassed(cat);
         return (
           <div key={cat}>
-            <div className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] mb-2">
-              {categoryLabel(cat)}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+                {categoryLabel(cat)}
+              </span>
+              {deadline && (
+                <span className={`text-[10px] font-bold ${deadlinePassed ? "text-red-500" : "text-[var(--text-secondary)]"}`}>
+                  Deadline: {new Date(deadline).toLocaleDateString()}
+                  {deadlinePassed && " (passed)"}
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {entries.map((e) => (
@@ -886,7 +863,12 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
               className="w-20 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2 py-1.5 text-xs"
             />
           </label>
-          <button onClick={saveEntry} disabled={saving} className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
+          <button
+            onClick={saveEntry}
+            disabled={saving || isCategoryDeadlinePassed(form.category)}
+            title={isCategoryDeadlinePassed(form.category) ? `The deadline for "${categoryLabel(form.category)}" has passed` : undefined}
+            className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40"
+          >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} {form.entryId ? "Update" : "Add"}
           </button>
           {form.entryId && (
@@ -897,7 +879,7 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
         </div>
       )}
 
-      {(coordinator || isAdmin) && (
+      {(isAssignedFaculty || coordinator || isAdmin) && (
         <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-light)]">
           {!sheet.locked ? (
             <button
