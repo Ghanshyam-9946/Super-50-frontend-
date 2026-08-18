@@ -85,14 +85,11 @@ export function Navbar() {
             <Users size={14} className="text-amber-600" />
             <span>Parent Portal</span>
           </button>
-          <button onClick={() => navigate('/login')} className="text-sm font-bold text-muted-foreground transition-colors hover:text-brand-indigo cursor-pointer">
-            Sign in
-          </button>
           <button
-            onClick={() => navigate('/register')}
+            onClick={() => navigate('/login')}
             className="btn-premium h-11 px-8 text-sm group flex items-center justify-center cursor-pointer"
           >
-            Registration <ArrowRight size={16} className="ml-2 transition-transform group-hover:translate-x-1" />
+            Sign in <ArrowRight size={16} className="ml-2 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
 
@@ -127,11 +124,8 @@ export function Navbar() {
                 <Users size={16} className="text-amber-600" />
                 <span>Parent Login</span>
               </button>
-              <button onClick={() => { navigate('/login'); setOpen(false); }} className="text-center font-bold text-slate-500 py-2 cursor-pointer">
+              <button onClick={() => { navigate('/login'); setOpen(false); }} className="btn-premium h-12 w-full text-sm flex items-center justify-center cursor-pointer">
                 Sign in (Student / Faculty)
-              </button>
-              <button onClick={() => { navigate('/register'); setOpen(false); }} className="btn-premium h-12 w-full text-sm flex items-center justify-center cursor-pointer">
-                Registration
               </button>
             </div>
           </motion.div>
