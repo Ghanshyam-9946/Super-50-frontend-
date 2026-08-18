@@ -38,7 +38,6 @@ import {
   Activity,
   User,
   ClipboardList,
-  Target,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -63,7 +62,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
     if (storedStudents) {
       try {
         setAllStudents(JSON.parse(storedStudents));
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -143,9 +142,6 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   const super50Registration = data?.super50Registration || null;
   const noDuesForm = data?.noDuesForm || null;
   const studentSessionalMarks = data?.studentSessionalMarks || [];
-  const podAI = data?.podAI || { marks: [], analytics: { totalTests: 0, averageMarks: 0, highestMarks: 0, totalMarks: 0 } };
-  const podAIMarks = podAI.marks || data?.podAIMarks || [];
-  const podAIAnalytics = podAI.analytics || { totalTests: podAIMarks.length, averageMarks: 0, highestMarks: 0, totalMarks: 0 };
 
   const attPercent = student.attendancePercentage || 0;
   const cgpa = student.cgpa || 0;
@@ -157,7 +153,6 @@ export default function ParentDashboard({ theme, toggleTheme }) {
     { id: 'attendance', icon: Calendar, label: 'Attendance', desc: 'Semester breakdown & daily class logs', color: 'text-teal-500 bg-teal-500/10 border-teal-500/20' },
     { id: 'mst', icon: ClipboardList, label: 'MST Marks', desc: 'Subject-wise mid semester exam scores', color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
     { id: 'amcat', icon: Cpu, label: 'AMCAT Marks', desc: 'Employability assessment scores', color: 'text-purple-500 bg-purple-500/10 border-purple-500/20' },
-    { id: 'podai', icon: Target, label: 'Pod AI Marks', desc: 'Continuous assessment tests & AI scores', color: 'text-fuchsia-500 bg-fuchsia-500/10 border-fuchsia-500/20' },
     { id: 'projects', icon: BookOpen, label: 'PMS Projects', desc: 'Capstone project, guide & teammates', color: 'text-violet-500 bg-violet-500/10 border-violet-500/20' },
     { id: 'certificates', icon: Award, label: 'Certificates', desc: 'Verified technical & skill certificates', color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
     { id: 'activities', icon: Activity, label: 'Activities', desc: 'Hackathons, internships & workshops', color: 'text-rose-500 bg-rose-500/10 border-rose-500/20' },
@@ -198,11 +193,10 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                     key={w._id}
                     onClick={() => handleSwitchWard(w)}
                     disabled={switching || w._id === student._id}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      w._id === student._id
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${w._id === student._id
                         ? 'bg-[var(--primary)] text-white shadow-sm'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
-                    }`}
+                      }`}
                   >
                     {w.name?.split(' ')[0]}
                   </button>
@@ -353,20 +347,18 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                 {attPercent.toFixed(1)}%
               </span>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  attPercent >= 75
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${attPercent >= 75
                     ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                     : 'bg-red-500/10 text-red-600 border border-red-500/20'
-                }`}
+                  }`}
               >
                 {attPercent >= 75 ? 'Regular' : 'Low (<75%)'}
               </span>
             </div>
             <div className="w-full bg-[var(--bg-input)] rounded-full h-1.5 mt-3 overflow-hidden border border-[var(--border-light)]">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  attPercent >= 75 ? 'bg-teal-500' : 'bg-red-500'
-                }`}
+                className={`h-full rounded-full transition-all duration-500 ${attPercent >= 75 ? 'bg-teal-500' : 'bg-red-500'
+                  }`}
                 style={{ width: `${Math.min(attPercent, 100)}%` }}
               />
             </div>
@@ -455,11 +447,10 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                 <button
                   key={opt.id}
                   onClick={() => setActiveTab(opt.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
-                    activeTab === opt.id
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${activeTab === opt.id
                       ? 'bg-[var(--primary)] text-white shadow-sm'
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
-                  }`}
+                    }`}
                 >
                   {opt.label}
                 </button>
@@ -571,11 +562,10 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                           Semester {r.semester}
                         </span>
                         <span
-                          className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                            r.resultDecision === 'PASS'
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full ${r.resultDecision === 'PASS'
                               ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                               : 'bg-red-500/10 text-red-600 border border-red-500/20'
-                          }`}
+                            }`}
                         >
                           {r.resultDecision || 'PASS'}
                         </span>
@@ -617,13 +607,12 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                               <td className="py-2.5 px-3 text-[var(--text-primary)] font-bold">{subject}</td>
                               <td className="py-2.5 px-3 text-right">
                                 <span
-                                  className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-black ${
-                                    ['A+', 'A', 'B+', 'B', 'PASS', 'O'].includes(String(grade).toUpperCase())
+                                  className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-black ${['A+', 'A', 'B+', 'B', 'PASS', 'O'].includes(String(grade).toUpperCase())
                                       ? 'bg-emerald-500/10 text-emerald-600'
                                       : ['F', 'FAIL', 'AB'].includes(String(grade).toUpperCase())
-                                      ? 'bg-red-500/10 text-red-600'
-                                      : 'bg-purple-500/10 text-[var(--primary)]'
-                                  }`}
+                                        ? 'bg-red-500/10 text-red-600'
+                                        : 'bg-purple-500/10 text-[var(--primary)]'
+                                    }`}
                                 >
                                   {String(grade)}
                                 </span>
@@ -712,20 +701,18 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                           Semester {sem.semester}
                         </span>
                         <span
-                          className={`font-black text-xs px-2 py-0.5 rounded-full ${
-                            sem.attendancePercentage >= 75
+                          className={`font-black text-xs px-2 py-0.5 rounded-full ${sem.attendancePercentage >= 75
                               ? 'bg-emerald-500/10 text-emerald-600'
                               : 'bg-red-500/10 text-red-600'
-                          }`}
+                            }`}
                         >
                           {sem.attendancePercentage}%
                         </span>
                       </div>
                       <div className="w-full bg-[var(--bg-card)] rounded-full h-1.5 overflow-hidden border border-[var(--border-light)]">
                         <div
-                          className={`h-full rounded-full ${
-                            sem.attendancePercentage >= 75 ? 'bg-teal-500' : 'bg-red-500'
-                          }`}
+                          className={`h-full rounded-full ${sem.attendancePercentage >= 75 ? 'bg-teal-500' : 'bg-red-500'
+                            }`}
                           style={{ width: `${Math.min(sem.attendancePercentage || 0, 100)}%` }}
                         />
                       </div>
@@ -769,11 +756,10 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                           </td>
                           <td className="py-2.5 px-3 text-right">
                             <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                log.status === 'present' || log.isPresent
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${log.status === 'present' || log.isPresent
                                   ? 'bg-emerald-500/10 text-emerald-600'
                                   : 'bg-red-500/10 text-red-600'
-                              }`}
+                                }`}
                             >
                               {log.status === 'present' || log.isPresent ? 'Present' : 'Absent'}
                             </span>
@@ -883,114 +869,6 @@ export default function ParentDashboard({ theme, toggleTheme }) {
           </div>
         )}
 
-        {/* Detail View: Pod AI Marks & Assessment Analytics */}
-        {activeTab === 'podai' && (
-          <div className="glass-card bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-fuchsia-500/10 text-fuchsia-500 flex items-center justify-center border border-fuchsia-500/20">
-                  <Target size={20} />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-[var(--text-primary)]">Pod AI Assessment Marks</h3>
-                  <p className="text-xs text-[var(--text-secondary)]">Continuous evaluated tests, quizzes & AI assessment performance</p>
-                </div>
-              </div>
-
-              {podAIMarks.length > 0 && (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20 text-xs font-bold text-fuchsia-600">
-                  <Sparkles size={14} />
-                  <span>{podAIAnalytics.totalTests} Assessments Recorded</span>
-                </div>
-              )}
-            </div>
-
-            {/* Analytics KPI Metric Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center gap-3.5 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20 shrink-0">
-                  <FileText size={18} />
-                </div>
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Tests</div>
-                  <div className="text-xl font-display font-black text-[var(--text-primary)] mt-0.5">
-                    {podAIAnalytics.totalTests}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center gap-3.5 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 shrink-0">
-                  <TrendingUp size={18} />
-                </div>
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Average Score</div>
-                  <div className="text-xl font-display font-black text-[var(--text-primary)] mt-0.5">
-                    {podAIAnalytics.averageMarks ? podAIAnalytics.averageMarks.toFixed(1) : '0.0'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center gap-3.5 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20 shrink-0">
-                  <Award size={18} />
-                </div>
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Highest Score</div>
-                  <div className="text-xl font-display font-black text-[var(--text-primary)] mt-0.5">
-                    {podAIAnalytics.highestMarks || 0}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Assessment History Table */}
-            {podAIMarks.length === 0 ? (
-              <div className="text-center py-12 text-[var(--text-secondary)]">
-                <Target size={40} className="mx-auto mb-2.5 text-slate-400 opacity-40" />
-                <h4 className="text-sm font-bold text-[var(--text-primary)]">No Pod AI Marks Uploaded Yet</h4>
-                <p className="text-xs mt-1">Student test scores will appear here once submitted and published by mentors/faculty.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto rounded-2xl border border-[var(--border-light)]">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[var(--bg-input)] text-slate-400 uppercase text-[10px] font-black tracking-wider border-b border-[var(--border-light)]">
-                    <tr>
-                      <th className="px-5 py-3.5">Assessment / Test Name</th>
-                      <th className="px-5 py-3.5">Semester</th>
-                      <th className="px-5 py-3.5">Test Date</th>
-                      <th className="px-5 py-3.5 text-right">Marks Obtained</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border-light)]">
-                    {podAIMarks.map((mark, i) => (
-                      <tr key={mark._id || i} className="hover:bg-[var(--bg-input)]/40 transition-colors">
-                        <td className="px-5 py-4 font-bold text-[var(--text-primary)]">
-                          {mark.testName}
-                        </td>
-                        <td className="px-5 py-4 font-semibold text-[var(--text-secondary)]">
-                          {mark.semester ? `Semester ${mark.semester}` : 'General'}
-                        </td>
-                        <td className="px-5 py-4 text-[var(--text-secondary)] font-medium">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar size={13} className="text-slate-400" />
-                            {mark.testDate ? new Date(mark.testDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <span className="inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-black bg-fuchsia-500/10 text-fuchsia-600 border border-fuchsia-500/20 shadow-sm">
-                            {mark.marks}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Detail View 6: PMS Projects */}
         {activeTab === 'projects' && (
           <div className="glass-card bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl p-6 shadow-sm space-y-4">
@@ -1091,13 +969,12 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                         {cert.title}
                       </div>
                       <span
-                        className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-full shrink-0 ${
-                          cert.verified === 'approved'
+                        className={`text-[9px] uppercase font-black px-2 py-0.5 rounded-full shrink-0 ${cert.verified === 'approved'
                             ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                             : cert.verified === 'rejected'
-                            ? 'bg-red-500/10 text-red-600 border border-red-500/20'
-                            : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                        }`}
+                              ? 'bg-red-500/10 text-red-600 border border-red-500/20'
+                              : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                          }`}
                       >
                         {cert.verified || 'Pending'}
                       </span>
@@ -1173,11 +1050,10 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                   <h3 className="text-sm font-bold text-[var(--text-primary)]">Super 50 Elite Batch Status</h3>
                 </div>
                 <span
-                  className={`text-xs font-bold px-3 py-1 rounded-full ${
-                    student.isSuper50
+                  className={`text-xs font-bold px-3 py-1 rounded-full ${student.isSuper50
                       ? 'bg-purple-500/10 text-[var(--primary)] border border-purple-500/20'
                       : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border border-[var(--border-light)]'
-                  }`}
+                    }`}
                 >
                   {student.isSuper50 ? 'Enrolled in Super 50' : 'General Batch Track'}
                 </span>
@@ -1247,13 +1123,12 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                           </td>
                           <td className="py-2.5 px-3 text-right">
                             <span
-                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                app.status === 'selected' || app.status === 'offered'
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${app.status === 'selected' || app.status === 'offered'
                                   ? 'bg-emerald-500/10 text-emerald-600'
                                   : app.status === 'rejected'
-                                  ? 'bg-red-500/10 text-red-600'
-                                  : 'bg-cyan-500/10 text-cyan-600'
-                              }`}
+                                    ? 'bg-red-500/10 text-red-600'
+                                    : 'bg-cyan-500/10 text-cyan-600'
+                                }`}
                             >
                               {app.status || 'Applied'}
                             </span>
@@ -1282,11 +1157,10 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                 </div>
               </div>
               <div
-                className={`px-3 py-1 rounded-xl text-xs font-bold ${
-                  duesFees === 0
+                className={`px-3 py-1 rounded-xl text-xs font-bold ${duesFees === 0
                     ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
                     : 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
-                }`}
+                  }`}
               >
                 {duesFees === 0 ? 'No Dues Pending' : `Pending: ₹${duesFees}`}
               </div>
@@ -1308,11 +1182,10 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                   >
                     <span className="font-semibold text-[var(--text-primary)]">{item.label}</span>
                     <span
-                      className={`font-black text-[10px] uppercase px-2.5 py-0.5 rounded-full ${
-                        ['approved', 'cleared', 'signed'].includes(String(item.status).toLowerCase())
+                      className={`font-black text-[10px] uppercase px-2.5 py-0.5 rounded-full ${['approved', 'cleared', 'signed'].includes(String(item.status).toLowerCase())
                           ? 'bg-emerald-500/10 text-emerald-600'
                           : 'bg-amber-500/10 text-amber-600'
-                      }`}
+                        }`}
                     >
                       {item.status || 'In Progress'}
                     </span>
