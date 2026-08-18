@@ -6,8 +6,11 @@ import api from "../../../services/api";
 
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
-const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false });
+const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null });
 const emptyForm = () => ({ subjectName: "", subjectCode: "", semester: "", noOfLectures: 0, noOfTheory: 0, noOfPractical: 0, activities: [] });
+// <input type="date"> needs "YYYY-MM-DD" — activity.deadline comes back
+// from the API as a full ISO string (or is null if never set).
+const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
 
 export default function Subjects() {
   const { user } = useSelector((s) => s.auth);
@@ -216,14 +219,25 @@ export default function Subjects() {
                 <option value="marks">Marks (Sessional)</option>
               </select>
               {a.type === "marks" && (
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Max marks"
-                  value={a.maxMarks}
-                  onChange={(e) => updateActivity(idx, { maxMarks: Number(e.target.value) })}
-                  className="w-24 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
-                />
+                <>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Max marks"
+                    value={a.maxMarks}
+                    onChange={(e) => updateActivity(idx, { maxMarks: Number(e.target.value) })}
+                    className="w-24 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                  />
+                  <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                    Deadline
+                    <input
+                      type="date"
+                      value={toDateInputValue(a.deadline)}
+                      onChange={(e) => updateActivity(idx, { deadline: e.target.value || null })}
+                      className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                    />
+                  </label>
+                </>
               )}
               <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
                 <input type="checkbox" checked={a.unitWise} onChange={(e) => updateActivity(idx, { unitWise: e.target.checked })} /> Unit-wise

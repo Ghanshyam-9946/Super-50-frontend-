@@ -3,7 +3,8 @@ import { BookOpen, Plus, Trash2, Loader2, Edit3, X } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 
-const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false });
+const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null });
+const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
 
 // Lets a Subject Faculty (anyone with a FacultySectionMap row for a
 // subject — not just the coordinator/admin) manage that subject's
@@ -133,14 +134,25 @@ export default function MySubjectActivities() {
                         <option value="marks">Marks (Sessional)</option>
                       </select>
                       {a.type === "marks" && (
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="Max marks"
-                          value={a.maxMarks}
-                          onChange={(e) => updateActivity(idx, { maxMarks: Number(e.target.value) })}
-                          className="w-24 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
-                        />
+                        <>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Max marks"
+                            value={a.maxMarks}
+                            onChange={(e) => updateActivity(idx, { maxMarks: Number(e.target.value) })}
+                            className="w-24 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                          />
+                          <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                            Deadline
+                            <input
+                              type="date"
+                              value={toDateInputValue(a.deadline)}
+                              onChange={(e) => updateActivity(idx, { deadline: e.target.value || null })}
+                              className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                            />
+                          </label>
+                        </>
                       )}
                       <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
                         <input type="checkbox" checked={a.unitWise} onChange={(e) => updateActivity(idx, { unitWise: e.target.checked })} /> Unit-wise
