@@ -199,12 +199,13 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                     key={w._id}
                     onClick={() => handleSwitchWard(w)}
                     disabled={switching || w._id === student._id}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${w._id === student._id
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${w._id === student._id
                         ? 'bg-[var(--primary)] text-white shadow-sm'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
                       }`}
                   >
-                    {w.name?.split(' ')[0]}
+                    <span>{w.name?.split(' ')[0]}</span>
+                    <span className="text-[9px] opacity-80 uppercase">({w.campus === 'ratibad' ? 'RB' : 'GN'})</span>
                   </button>
                 ))}
               </div>
