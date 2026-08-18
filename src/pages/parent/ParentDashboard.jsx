@@ -68,7 +68,11 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   const fetchStudentData = async (studentId) => {
     setLoading(true);
     try {
-      const url = studentId ? `/parents/student-data?studentId=${studentId}` : '/parents/student-data';
+      const activeCampus = user?.campus || '';
+      const campusParam = activeCampus ? `&campus=${activeCampus}` : '';
+      const url = studentId
+        ? `/parents/student-data?studentId=${studentId}${campusParam}`
+        : (activeCampus ? `/parents/student-data?campus=${activeCampus}` : '/parents/student-data');
       const res = await api.get(url);
       if (res.data.success) {
         setData(res.data.data);
