@@ -33,8 +33,6 @@ import {
   Star,
   Cpu,
   UserCheck2,
-  Sun,
-  Moon,
   Activity,
   User,
   ClipboardList,
@@ -70,7 +68,11 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   const fetchStudentData = async (studentId) => {
     setLoading(true);
     try {
-      const url = studentId ? `/parents/student-data?studentId=${studentId}` : '/parents/student-data';
+      const activeCampus = user?.campus || '';
+      const campusParam = activeCampus ? `&campus=${activeCampus}` : '';
+      const url = studentId
+        ? `/parents/student-data?studentId=${studentId}${campusParam}`
+        : (activeCampus ? `/parents/student-data?campus=${activeCampus}` : '/parents/student-data');
       const res = await api.get(url);
       if (res.data.success) {
         setData(res.data.data);
@@ -152,7 +154,6 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   const duesFees = student.duesFees || 0;
 
   const menuOptions = [
-    { id: 'profile', icon: User, label: 'Overview', desc: 'Basic info, mentor & contact records', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
     { id: 'rgpv', icon: Award, label: 'RGPV Marks', desc: 'Official semester results & grade sheets', color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
     { id: 'attendance', icon: Calendar, label: 'Attendance', desc: 'Semester breakdown & daily class logs', color: 'text-teal-500 bg-teal-500/10 border-teal-500/20' },
     { id: 'mst', icon: ClipboardList, label: 'MST Marks', desc: 'Subject-wise mid semester exam scores', color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
@@ -168,7 +169,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] font-sans pb-24 selection:bg-purple-500 selection:text-white transition-colors duration-300">
       {/* Top Application Header */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-card)] border-b border-[var(--border-light)] px-4 sm:px-8 py-3.5 shadow-sm print:hidden">
+      <header className="sticky top-0 z-40 bg-[var(--bg-card)] border-b border-[var(--border-light)] px-4 sm:px-8 py-3.5 shadow-sm no-print">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-white p-1 flex items-center justify-center border border-[var(--border-light)] shadow-sm">
@@ -198,27 +199,19 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                     key={w._id}
                     onClick={() => handleSwitchWard(w)}
                     disabled={switching || w._id === student._id}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${w._id === student._id
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${w._id === student._id
                         ? 'bg-[var(--primary)] text-white shadow-sm'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
                       }`}
                   >
-                    {w.name?.split(' ')[0]}
+                    <span>{w.name?.split(' ')[0]}</span>
+                    <span className="text-[9px] opacity-80 uppercase">({w.campus === 'ratibad' ? 'RB' : 'GN'})</span>
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Theme Toggle if available */}
-            {toggleTheme && (
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-xl bg-[var(--bg-input)] hover:bg-[var(--bg-hover)] border border-[var(--border-light)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
-                title="Toggle Theme"
-              >
-                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-            )}
+
 
             <button
               onClick={handlePrint}
@@ -242,8 +235,39 @@ export default function ParentDashboard({ theme, toggleTheme }) {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-6 space-y-6">
-        {/* Read-Only Notice Badge */}
-        <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-purple-500/5 border border-purple-500/20 text-xs text-[var(--text-secondary)] font-medium">
+        {/* Global Print / Screen Style Tag */}
+        <style>{`
+          @media screen {
+            .print-only { display: none !important; }
+          }
+          @media print {
+            body, html, #root {
+              background: #ffffff !important;
+              color: #0f172a !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: visible !important;
+              height: auto !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+            .print-only {
+              display: block !important;
+              visibility: visible !important;
+              opacity: 1 !important;
+            }
+            @page {
+              size: A4 portrait;
+              margin: 10mm 10mm 10mm 10mm;
+            }
+          }
+        `}</style>
+
+        {/* Screen Interactive UI Container */}
+        <div className="no-print space-y-6">
+          {/* Read-Only Notice Badge */}
+          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-purple-500/5 border border-purple-500/20 text-xs text-[var(--text-secondary)] font-medium">
           <div className="flex items-center gap-2.5">
             <ShieldCheck size={17} className="text-[var(--primary)] shrink-0" />
             <span>
@@ -514,92 +538,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
           </div>
         )}
 
-        {/* Detail View 1: Profile Overview */}
-        {activeTab === 'profile' && (
-          <div className="glass-card bg-[var(--bg-card)] border border-[var(--border-light)] rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center border border-blue-500/20">
-                <User size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">Student Profile Overview</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Personal, Academic & Contact records</p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
-              {[
-                { label: 'Full Name', val: student.name },
-                { label: 'Enrollment Number', val: student.enrollmentNumber || student.enrollmentNo },
-                { label: 'Email Address', val: student.email || 'N/A' },
-                { label: 'Department / Branch', val: student.department || 'N/A' },
-                { label: 'Batch Year', val: student.batch || 'N/A' },
-                { label: 'Current Semester', val: student.semester ? `${student.semester}th Semester` : 'N/A' },
-                { label: 'Class Section', val: student.section || 'N/A' },
-                { label: 'Residence Status', val: student.residenceType || 'Day Scholar' },
-                { label: '10th Percentage', val: student.tenthPercentage ? `${student.tenthPercentage}%` : 'N/A' },
-                { label: '12th Percentage', val: student.twelfthPercentage ? `${student.twelfthPercentage}%` : 'N/A' },
-                { label: 'Parent Mobile on Record', val: student.parentMobile || user?.parentMobile || 'N/A' },
-                { label: 'Student Mobile', val: student.mobile || 'N/A' },
-              ].map((item, idx) => (
-                <div key={idx} className="p-3.5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)]">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                    {item.label}
-                  </div>
-                  <div className="text-xs font-bold text-[var(--text-primary)] truncate">
-                    {item.val}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {student.address && (
-              <div className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] text-xs">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">
-                  Permanent Address
-                </span>
-                <span className="font-semibold text-[var(--text-primary)]">{student.address}</span>
-              </div>
-            )}
-
-            {student.mentor && (
-              <div className="p-4 rounded-2xl bg-purple-500/5 border border-purple-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-purple-500/10 text-[var(--primary)] flex items-center justify-center shrink-0 border border-purple-500/20">
-                    <UserCheck size={18} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] uppercase font-black tracking-widest text-[var(--primary)]">
-                      Assigned Tutor Guardian (TG Mentor)
-                    </div>
-                    <div className="text-sm font-bold text-[var(--text-primary)] mt-0.5">
-                      {student.mentor.name} {student.mentor.designation ? `• ${student.mentor.designation}` : ''}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2.5 text-xs">
-                  {student.mentor.mobile && (
-                    <a
-                      href={`tel:${student.mentor.mobile}`}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-light)] font-bold text-[var(--primary)] hover:brightness-110 shadow-sm transition-all"
-                    >
-                      <Phone size={13} /> {student.mentor.mobile}
-                    </a>
-                  )}
-                  {student.mentor.email && (
-                    <a
-                      href={`mailto:${student.mentor.email}`}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-card)] border border-[var(--border-light)] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] shadow-sm transition-all"
-                    >
-                      <Mail size={13} /> {student.mentor.email}
-                    </a>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Detail View 2: RGPV Marks */}
         {activeTab === 'rgpv' && (
@@ -844,7 +783,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
               </div>
               <div>
                 <h3 className="text-base font-bold text-[var(--text-primary)]">Mid-Semester Tests (MST)</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Internal college mid-term exam marks</p>
+                <p className="text-xs text-[var(--text-secondary)]">Subject-wise internal marks obtained in MST evaluations</p>
               </div>
             </div>
 
@@ -854,27 +793,103 @@ export default function ParentDashboard({ theme, toggleTheme }) {
               </div>
             ) : (
               <div className="space-y-4 pt-2">
-                {mstResults.map((mst) => (
-                  <div key={mst._id} className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase tracking-wider text-indigo-600">
-                        Semester {mst.semester} — {mst.examName || 'Mid Semester Test'}
-                      </span>
-                    </div>
-                    {mst.subjects && Object.keys(mst.subjects).length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                        {Object.entries(mst.subjects).map(([sub, mark]) => (
-                          <div key={sub} className="bg-[var(--bg-card)] p-2.5 rounded-xl border border-[var(--border-light)]">
-                            <div className="text-[11px] font-bold text-[var(--text-secondary)] truncate">{sub}</div>
-                            <div className="text-sm font-black text-[var(--text-primary)] mt-1">{String(mark)}</div>
-                          </div>
-                        ))}
+                {mstResults.map((mst, mIdx) => {
+                  const testNameLower = (mst.testName || '').toLowerCase();
+                  let calculatedTotal = 0;
+                  let totalMaxMarks = 0;
+                  const scoreEntries = [];
+
+                  Object.entries(mst.scores || {}).forEach(([subject, score]) => {
+                    const lowerSub = subject.toLowerCase();
+                    if (
+                      lowerSub.includes('total') ||
+                      lowerSub.includes('id') ||
+                      lowerSub.includes('enrollment') ||
+                      lowerSub.includes('roll')
+                    ) {
+                      return;
+                    }
+
+                    const numericScore = Number(score);
+                    if (!isNaN(numericScore)) {
+                      calculatedTotal += numericScore;
+
+                      const isCrt = lowerSub.includes('crt') || lowerSub.includes('aptitude');
+                      let maxMarks = 100;
+                      if (!isCrt) {
+                        if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                          maxMarks = 28;
+                        } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                          maxMarks = 42;
+                        }
+                      }
+                      totalMaxMarks += maxMarks;
+                    }
+                    scoreEntries.push([subject, score]);
+                  });
+
+                  if (scoreEntries.length > 0) {
+                    scoreEntries.push(['Grand Total', calculatedTotal, totalMaxMarks]);
+                  }
+
+                  return (
+                    <div key={mst._id || mIdx} className="p-5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-light)] pb-3">
+                        <div>
+                          <h4 className="font-bold text-[var(--text-primary)] text-sm">
+                            {mst.testName || 'Mid Semester Test'}
+                          </h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">
+                            Semester {mst.semester} {mst.testDate ? `• Evaluated on ${new Date(mst.testDate).toLocaleDateString('en-IN')}` : ''}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase text-indigo-500">
+                          Semester {mst.semester}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="text-xs text-[var(--text-secondary)]">No subject marks breakdown recorded.</div>
-                    )}
-                  </div>
-                ))}
+
+                      {scoreEntries.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {scoreEntries.map(([subject, score, customMax], sIdx) => {
+                            const isTotal = subject.toLowerCase().includes('total');
+                            let maxMarks = customMax;
+                            if (!isTotal) {
+                              const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
+                              maxMarks = 100;
+                              if (!isCrt) {
+                                if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                                  maxMarks = 28;
+                                } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                                  maxMarks = 42;
+                                }
+                              }
+                            }
+
+                            return (
+                              <div
+                                key={sIdx}
+                                className={`flex justify-between items-center p-3 rounded-xl border ${
+                                  isTotal
+                                    ? 'bg-indigo-500/10 border-indigo-500/20 col-span-full sm:col-span-2 md:col-span-3'
+                                    : 'bg-[var(--bg-card)] border-[var(--border-light)]'
+                                }`}
+                              >
+                                <span className={`text-xs capitalize truncate mr-2 ${isTotal ? 'font-black text-indigo-600 dark:text-indigo-400 text-sm' : 'font-bold text-[var(--text-secondary)]'}`}>
+                                  {subject}
+                                </span>
+                                <span className={`text-xs shrink-0 px-2 py-1 rounded border border-[var(--border-light)] ${isTotal ? 'font-black text-emerald-600 dark:text-emerald-400 text-sm bg-[var(--bg-card)]' : 'font-black text-[var(--text-primary)] bg-[var(--bg-input)]'}`}>
+                                  {score} {maxMarks > 0 && `/ ${maxMarks}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-[var(--text-secondary)]">No subject marks breakdown recorded.</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -888,43 +903,73 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                 <Cpu size={20} />
               </div>
               <div>
-                <h3 className="text-base font-bold text-[var(--text-primary)]">AMCAT Employability Assessment</h3>
-                <p className="text-xs text-[var(--text-secondary)]">Industry readiness & aptitude analytics</p>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">AMCAT / MCAT Assessment Scores</h3>
+                <p className="text-xs text-[var(--text-secondary)]">Sectional and employability readiness test scores</p>
               </div>
             </div>
 
             {amcatResults.length === 0 ? (
               <div className="text-center py-10 text-[var(--text-secondary)] text-xs">
-                No AMCAT scores uploaded yet.
+                No AMCAT / MCAT scores uploaded yet.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {amcatResults.map((amcat) => (
-                  <div key={amcat._id} className="p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-3">
-                    <div className="flex items-center justify-between text-xs font-bold text-purple-600">
-                      <span>Semester {amcat.semester} Assessment</span>
-                      <span>Total: {amcat.totalScore || 'N/A'}</span>
+              <div className="space-y-4 pt-2">
+                {amcatResults.map((amcat, aIdx) => {
+                  const scoreKeys = Object.keys(amcat.scores || {});
+                  const isIdKey = (k) =>
+                    k.toLowerCase().includes('id') ||
+                    k.toLowerCase().includes('enrollment') ||
+                    k.toLowerCase().includes('roll');
+                  const isTotalKey = (k) => k.toLowerCase().includes('total');
+                  const topicCount = scoreKeys.filter((k) => !isIdKey(k) && !isTotalKey(k)).length;
+
+                  return (
+                    <div key={amcat._id || aIdx} className="p-5 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-light)] pb-3">
+                        <div>
+                          <h4 className="font-bold text-[var(--text-primary)] text-sm">
+                            {amcat.testName || 'AMCAT Assessment'}
+                          </h4>
+                          <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">
+                            Semester {amcat.semester} {amcat.testDate ? `• Evaluated on ${new Date(amcat.testDate).toLocaleDateString('en-IN')}` : ''}
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 text-[10px] font-black uppercase text-purple-500">
+                          Semester {amcat.semester}
+                        </span>
+                      </div>
+
+                      {scoreKeys.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {Object.entries(amcat.scores || {}).map(([subject, score], sIdx) => {
+                            const idKey = isIdKey(subject);
+                            const totalKey = isTotalKey(subject);
+                            const denominator = totalKey ? topicCount * 100 : 100;
+                            return (
+                              <div
+                                key={sIdx}
+                                className={`flex justify-between items-center p-3 rounded-xl border ${
+                                  totalKey
+                                    ? 'bg-purple-500/10 border-purple-500/20 col-span-full sm:col-span-2 md:col-span-3'
+                                    : 'bg-[var(--bg-card)] border-[var(--border-light)]'
+                                }`}
+                              >
+                                <span className={`text-xs capitalize truncate mr-2 ${totalKey ? 'font-black text-purple-600 dark:text-purple-400 text-sm' : 'font-bold text-[var(--text-secondary)]'}`}>
+                                  {subject}
+                                </span>
+                                <span className={`text-xs shrink-0 px-2 py-1 rounded border border-[var(--border-light)] ${totalKey ? 'font-black text-emerald-600 dark:text-emerald-400 text-sm bg-[var(--bg-card)]' : 'font-black text-[var(--text-primary)] bg-[var(--bg-input)]'}`}>
+                                  {score} {!idKey && denominator > 0 && `/ ${denominator}`}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-[var(--text-secondary)]">No sectional scores recorded.</div>
+                      )}
                     </div>
-                    <div className="space-y-2 text-xs divide-y divide-[var(--border-light)]">
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>Quantitative Ability:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.quantitative || '-'}</strong>
-                      </div>
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>Logical Reasoning:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.logical || '-'}</strong>
-                      </div>
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>English Comprehension:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.english || '-'}</strong>
-                      </div>
-                      <div className="flex justify-between pt-1 text-[var(--text-secondary)]">
-                        <span>Domain Knowledge:</span>
-                        <strong className="text-[var(--text-primary)]">{amcat.domain || '-'}</strong>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1366,11 +1411,472 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                 <div className="flex items-center gap-2 text-emerald-600 font-bold">
                   <CheckCircle2 size={16} /> All college departmental clearances are in order.
                 </div>
-                <p>Digital No-Dues form will be activated during semester final examination clearance windows.</p>
               </div>
             )}
           </div>
         )}
+        </div>
+        {/* End of Screen Interactive UI */}
+
+        {/* ========================================================================= */}
+        {/* COMPREHENSIVE OFFICIAL PRINTABLE ACADEMIC DOSSIER (VISIBLE ONLY ON PRINT) */}
+        {/* ========================================================================= */}
+        <div className="print-only font-sans text-slate-900 bg-white space-y-6 text-xs leading-normal">
+          {/* Institutional Header */}
+          <div className="border-b-2 border-slate-900 pb-3 flex items-center justify-between">
+            <div className="flex items-center gap-3.5">
+              <img src={sistecLogo} alt="SISTec" className="h-14 w-14 object-contain" />
+              <div>
+                <h1 className="text-base font-black uppercase tracking-tight text-slate-950">
+                  Sagar Institute of Science and Technology (SISTec)
+                </h1>
+                <p className="text-[11px] font-bold text-slate-700">
+                  Comprehensive Student Academic Dossier & Performance Report
+                </p>
+                <p className="text-[9px] text-slate-500 font-semibold">
+                  MILE Parent Portal Verified Record • Sagar Group of Institutions, Bhopal
+                </p>
+              </div>
+            </div>
+            <div className="text-right space-y-0.5">
+              <div className="font-bold text-slate-900 text-[10px]">
+                Report Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </div>
+              <div className="text-[9px] font-mono font-bold text-slate-600 uppercase">
+                Official Confidential Record
+              </div>
+              {student.isSuper50 && (
+                <span className="inline-block bg-slate-900 text-white font-black text-[8px] uppercase px-2 py-0.5 rounded">
+                  Super 50 Elite Batch
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Student Profile & Ward Information Section */}
+          <div className="border border-slate-300 rounded-lg p-3.5 space-y-2.5 break-inside-avoid">
+            <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+              <span>Student Personal & Academic Profile</span>
+              <span className="text-slate-600 font-bold">Enrollment: {student.enrollmentNumber || student.enrollmentNo || 'N/A'}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-[11px]">
+              <div><span className="text-slate-500">Full Name:</span> <strong className="text-slate-900">{student.name}</strong></div>
+              <div><span className="text-slate-500">Branch / Dept:</span> <strong className="text-slate-900">{student.department || 'Engineering'}</strong></div>
+              <div><span className="text-slate-500">Batch / Year:</span> <strong className="text-slate-900">{student.batch || 'N/A'}</strong></div>
+              <div><span className="text-slate-500">Current Semester:</span> <strong className="text-slate-900">{student.semester ? `${student.semester}th Sem` : 'N/A'}</strong></div>
+              <div><span className="text-slate-500">Section:</span> <strong className="text-slate-900">{student.section || 'N/A'}</strong></div>
+              <div><span className="text-slate-500">Residence:</span> <strong className="text-slate-900">{student.residenceType || 'Day Scholar'}</strong></div>
+              <div><span className="text-slate-500">10th Score:</span> <strong className="text-slate-900">{student.tenthPercentage ? `${student.tenthPercentage}%` : 'N/A'}</strong></div>
+              <div><span className="text-slate-500">12th Score:</span> <strong className="text-slate-900">{student.twelfthPercentage ? `${student.twelfthPercentage}%` : 'N/A'}</strong></div>
+              <div><span className="text-slate-500">Parent Contact:</span> <strong className="text-slate-900">{student.parentMobile || user?.parentMobile || 'N/A'}</strong></div>
+              <div><span className="text-slate-500">Student Mobile:</span> <strong className="text-slate-900">{student.mobile || 'N/A'}</strong></div>
+              <div className="col-span-2"><span className="text-slate-500">Student Email:</span> <strong className="text-slate-900">{student.email || 'N/A'}</strong></div>
+            </div>
+
+            {student.mentor && (
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[11px] bg-slate-50 px-2.5 py-1.5 rounded">
+                <div>
+                  <span className="text-slate-500 font-medium">Assigned TG Mentor: </span>
+                  <strong className="text-slate-900">{student.mentor.name}</strong> {student.mentor.designation ? `(${student.mentor.designation})` : ''}
+                </div>
+                <div className="flex gap-4">
+                  {student.mentor.mobile && <span>Mobile: <strong>{student.mentor.mobile}</strong></span>}
+                  {student.mentor.email && <span>Email: <strong>{student.mentor.email}</strong></span>}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Academic Highlights & Key Performance Indicators */}
+          <div className="grid grid-cols-4 gap-2.5 break-inside-avoid">
+            <div className="border border-slate-300 p-2.5 rounded-lg text-center bg-slate-50">
+              <div className="text-[9px] font-bold uppercase text-slate-500">Cumulative CGPA</div>
+              <div className="text-lg font-black text-slate-900">{cgpa > 0 ? cgpa.toFixed(2) : 'N/A'} <span className="text-[10px] text-slate-500">/ 10</span></div>
+            </div>
+            <div className="border border-slate-300 p-2.5 rounded-lg text-center bg-slate-50">
+              <div className="text-[9px] font-bold uppercase text-slate-500">Overall Attendance</div>
+              <div className="text-lg font-black text-slate-900">{attPercent.toFixed(1)}%</div>
+            </div>
+            <div className="border border-slate-300 p-2.5 rounded-lg text-center bg-slate-50">
+              <div className="text-[9px] font-bold uppercase text-slate-500">Fee Clearance</div>
+              <div className="text-lg font-black text-slate-900">{duesFees === 0 ? 'CLEARED' : `₹${duesFees}`}</div>
+            </div>
+            <div className="border border-slate-300 p-2.5 rounded-lg text-center bg-slate-50">
+              <div className="text-[9px] font-bold uppercase text-slate-500">Certificates / Drives</div>
+              <div className="text-lg font-black text-slate-900">{certificates.length} / {placementApplications.length}</div>
+            </div>
+          </div>
+
+          {/* 1. RGPV Results */}
+          <div className="border border-slate-300 rounded-lg p-3 space-y-2 break-inside-avoid">
+            <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+              1. RGPV University Semester Examination Results
+            </div>
+            {rgpvResults.length === 0 ? (
+              <div className="text-slate-500 italic py-1">No official RGPV semester results uploaded yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {rgpvResults.map((r) => (
+                  <div key={r._id} className="border border-slate-200 rounded p-2.5 bg-slate-50/50 space-y-2">
+                    <div className="flex justify-between items-center text-[11px] font-bold border-b border-slate-200 pb-1">
+                      <span>Semester {r.semester} Result (Decision: {r.resultDecision || 'PASS'})</span>
+                      <span>SGPA: <strong>{r.sgpa ? r.sgpa.toFixed(2) : 'N/A'}</strong> | CGPA: <strong>{r.cgpa ? r.cgpa.toFixed(2) : 'N/A'}</strong></span>
+                    </div>
+                    {r.grades && Object.keys(r.grades).length > 0 && (
+                      <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                        {Object.entries(r.grades).map(([sub, grade]) => (
+                          <div key={sub} className="flex justify-between border-b border-slate-200 py-0.5">
+                            <span className="truncate mr-2 font-medium">{sub}</span>
+                            <span className="font-black text-slate-900">{String(grade)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 2. Sessional / Internal Marks Sheet */}
+          {studentSessionalMarks.length > 0 && (
+            <div className="border border-slate-300 rounded-lg p-3 space-y-2 break-inside-avoid">
+              <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+                2. Internal / Sessional Continuous Evaluations
+              </div>
+              <table className="w-full text-left text-[10px] border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-300 font-bold uppercase text-slate-600 bg-slate-100">
+                    <th className="py-1 px-2">Subject Name</th>
+                    <th className="py-1 px-2">Code</th>
+                    <th className="py-1 px-2">Evaluation</th>
+                    <th className="py-1 px-2 text-right">Marks</th>
+                    <th className="py-1 px-2 text-right">Grade</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 font-medium">
+                  {studentSessionalMarks.map((s, idx) => (
+                    <tr key={idx}>
+                      <td className="py-1 px-2 font-semibold text-slate-900">{s.subjectName}</td>
+                      <td className="py-1 px-2 text-slate-600">{s.subjectCode}</td>
+                      <td className="py-1 px-2 text-slate-600">{s.examType || 'Internal'}</td>
+                      <td className="py-1 px-2 text-right font-bold text-slate-900">{s.marks} / {s.maxMarks}</td>
+                      <td className="py-1 px-2 text-right font-bold">{s.grade || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 3. Mid-Semester Test (MST) Evaluations */}
+          <div className="border border-slate-300 rounded-lg p-3 space-y-2 break-inside-avoid">
+            <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+              3. Mid-Semester Tests (MST) Marks Breakdown
+            </div>
+            {mstResults.length === 0 ? (
+              <div className="text-slate-500 italic py-1">No Mid-Semester Test (MST) records uploaded yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {mstResults.map((mst, mIdx) => {
+                  const testNameLower = (mst.testName || '').toLowerCase();
+                  let calculatedTotal = 0;
+                  let totalMaxMarks = 0;
+                  const scoreEntries = [];
+
+                  Object.entries(mst.scores || {}).forEach(([subject, score]) => {
+                    const lowerSub = subject.toLowerCase();
+                    if (
+                      lowerSub.includes('total') ||
+                      lowerSub.includes('id') ||
+                      lowerSub.includes('enrollment') ||
+                      lowerSub.includes('roll')
+                    ) {
+                      return;
+                    }
+                    const numericScore = Number(score);
+                    if (!isNaN(numericScore)) {
+                      calculatedTotal += numericScore;
+                      const isCrt = lowerSub.includes('crt') || lowerSub.includes('aptitude');
+                      let maxMarks = 100;
+                      if (!isCrt) {
+                        if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                          maxMarks = 28;
+                        } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                          maxMarks = 42;
+                        }
+                      }
+                      totalMaxMarks += maxMarks;
+                    }
+                    scoreEntries.push([subject, score]);
+                  });
+
+                  if (scoreEntries.length > 0) {
+                    scoreEntries.push(['Grand Total', calculatedTotal, totalMaxMarks]);
+                  }
+
+                  return (
+                    <div key={mst._id || mIdx} className="border border-slate-200 rounded p-2.5 bg-slate-50/50 space-y-2">
+                      <div className="flex justify-between items-center text-[11px] font-bold border-b border-slate-200 pb-1">
+                        <span>{mst.testName || 'Mid Semester Test'} (Semester {mst.semester})</span>
+                        <span className="text-slate-500 font-normal">
+                          {mst.testDate ? `Evaluated: ${new Date(mst.testDate).toLocaleDateString('en-IN')}` : ''}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[10px]">
+                        {scoreEntries.map(([subject, score, customMax], sIdx) => {
+                          const isTotal = subject.toLowerCase().includes('total');
+                          let maxMarks = customMax;
+                          if (!isTotal) {
+                            const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
+                            maxMarks = 100;
+                            if (!isCrt) {
+                              if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                                maxMarks = 28;
+                              } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                                maxMarks = 42;
+                              }
+                            }
+                          }
+                          return (
+                            <div key={sIdx} className={`flex justify-between border-b border-slate-200 py-0.5 ${isTotal ? 'font-black text-slate-950 bg-slate-100 px-1 rounded' : ''}`}>
+                              <span className="truncate mr-2 capitalize">{subject}</span>
+                              <span className="font-bold text-slate-900">{score} {maxMarks > 0 && `/ ${maxMarks}`}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 4. AMCAT / MCAT Assessment Scores */}
+          <div className="border border-slate-300 rounded-lg p-3 space-y-2 break-inside-avoid">
+            <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+              4. AMCAT / MCAT Employability & Aptitude Assessment Scores
+            </div>
+            {amcatResults.length === 0 ? (
+              <div className="text-slate-500 italic py-1">No AMCAT / MCAT assessment records uploaded yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {amcatResults.map((amcat, aIdx) => {
+                  const scoreKeys = Object.keys(amcat.scores || {});
+                  const isIdKey = (k) =>
+                    k.toLowerCase().includes('id') ||
+                    k.toLowerCase().includes('enrollment') ||
+                    k.toLowerCase().includes('roll');
+                  const isTotalKey = (k) => k.toLowerCase().includes('total');
+                  const topicCount = scoreKeys.filter((k) => !isIdKey(k) && !isTotalKey(k)).length;
+
+                  return (
+                    <div key={amcat._id || aIdx} className="border border-slate-200 rounded p-2.5 bg-slate-50/50 space-y-2">
+                      <div className="flex justify-between items-center text-[11px] font-bold border-b border-slate-200 pb-1">
+                        <span>{amcat.testName || 'AMCAT Assessment'} (Semester {amcat.semester})</span>
+                        <span className="text-slate-500 font-normal">
+                          {amcat.testDate ? `Evaluated: ${new Date(amcat.testDate).toLocaleDateString('en-IN')}` : ''}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[10px]">
+                        {Object.entries(amcat.scores || {}).map(([subject, score], sIdx) => {
+                          const idKey = isIdKey(subject);
+                          const totalKey = isTotalKey(subject);
+                          const denominator = totalKey ? topicCount * 100 : 100;
+                          return (
+                            <div key={sIdx} className={`flex justify-between border-b border-slate-200 py-0.5 ${totalKey ? 'font-black text-slate-950 bg-slate-100 px-1 rounded' : ''}`}>
+                              <span className="truncate mr-2 capitalize">{subject}</span>
+                              <span className="font-bold text-slate-900">{score} {!idKey && denominator > 0 && `/ ${denominator}`}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 5. Pod AI Continuous Assessment Marks */}
+          <div className="border border-slate-300 rounded-lg p-3 space-y-2 break-inside-avoid">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-1">
+              <span className="font-black text-[11px] uppercase tracking-wider text-slate-900">
+                5. Pod AI Continuous Assessment Tests & Quizzes
+              </span>
+              <span className="text-[10px] text-slate-600 font-bold">
+                Tests: {podAIAnalytics.totalTests} | Avg: {podAIAnalytics.averageMarks ? podAIAnalytics.averageMarks.toFixed(1) : 0} | Highest: {podAIAnalytics.highestMarks || 0}
+              </span>
+            </div>
+            {podAIMarks.length === 0 ? (
+              <div className="text-slate-500 italic py-1">No Pod AI test assessments recorded yet.</div>
+            ) : (
+              <table className="w-full text-left text-[10px] border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-300 font-bold uppercase text-slate-600 bg-slate-100">
+                    <th className="py-1 px-2">Assessment Name</th>
+                    <th className="py-1 px-2">Semester</th>
+                    <th className="py-1 px-2">Date</th>
+                    <th className="py-1 px-2 text-right">Marks Obtained</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 font-medium">
+                  {podAIMarks.map((mark, i) => (
+                    <tr key={mark._id || i}>
+                      <td className="py-1 px-2 font-semibold text-slate-900">{mark.testName}</td>
+                      <td className="py-1 px-2 text-slate-600">{mark.semester ? `Sem ${mark.semester}` : 'General'}</td>
+                      <td className="py-1 px-2 text-slate-600">
+                        {mark.testDate ? new Date(mark.testDate).toLocaleDateString('en-IN') : '-'}
+                      </td>
+                      <td className="py-1 px-2 text-right font-black text-slate-900">{mark.marks}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* 6. Semester Attendance Record */}
+          <div className="border border-slate-300 rounded-lg p-3 space-y-2 break-inside-avoid">
+            <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+              <span>6. Attendance Records & Class Participation</span>
+              <span className="font-bold">Cumulative Attendance: {attPercent.toFixed(1)}%</span>
+            </div>
+            {semesterAttendance.length === 0 ? (
+              <div className="text-slate-500 italic py-1">No semester attendance breakdown recorded yet.</div>
+            ) : (
+              <table className="w-full text-left text-[10px] border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-300 font-bold uppercase text-slate-600 bg-slate-100">
+                    <th className="py-1 px-2">Semester</th>
+                    <th className="py-1 px-2">Classes Attended / Total</th>
+                    <th className="py-1 px-2">Extra Credit</th>
+                    <th className="py-1 px-2 text-right">Attendance %</th>
+                    <th className="py-1 px-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 font-medium">
+                  {semesterAttendance.map((sem) => (
+                    <tr key={sem._id}>
+                      <td className="py-1 px-2 font-bold text-slate-900">Semester {sem.semester}</td>
+                      <td className="py-1 px-2 text-slate-600">{sem.attendedClasses || '-'} / {sem.totalClasses || '-'}</td>
+                      <td className="py-1 px-2 text-slate-600">{sem.extraAttendanceCredit ? `+${sem.extraAttendanceCredit}%` : '-'}</td>
+                      <td className="py-1 px-2 text-right font-black text-slate-900">{sem.attendancePercentage}%</td>
+                      <td className="py-1 px-2 text-right font-bold text-slate-900">
+                        {sem.attendancePercentage >= 75 ? 'REGULAR' : 'SHORT ATTENDANCE'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* 7. PMS Projects, Certificates & Placements Summary Grid */}
+          <div className="grid grid-cols-2 gap-3 break-inside-avoid">
+            {/* PMS Projects */}
+            <div className="border border-slate-300 rounded-lg p-3 space-y-1.5">
+              <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+                7. PMS Capstone Academic Project
+              </div>
+              {team ? (
+                <div className="text-[10px] space-y-1">
+                  <div><strong>Title:</strong> {team.title || team.projectTitle || 'Major Academic Project'}</div>
+                  <div><strong>Guide:</strong> {team.guide?.name || 'Assigned Guide'} ({team.guide?.email || 'N/A'})</div>
+                  <div><strong>Team Leader:</strong> {team.teamLeader?.name || student.name}</div>
+                  {team.members && team.members.length > 0 && (
+                    <div>
+                      <strong>Members:</strong>{' '}
+                      {team.members.map((m) => m.student?.name || m.name).filter(Boolean).join(', ')}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-slate-500 italic text-[10px]">No active PMS project team assigned yet.</div>
+              )}
+            </div>
+
+            {/* Placements & Super 50 */}
+            <div className="border border-slate-300 rounded-lg p-3 space-y-1.5">
+              <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1">
+                8. Placement Drives & Super 50 Track
+              </div>
+              <div className="text-[10px] space-y-1">
+                <div><strong>Super 50 Status:</strong> {student.isSuper50 ? `Enrolled (${super50Registration?.domain || 'Advanced Training'})` : 'General Batch'}</div>
+                <div><strong>Campus Drives Applied:</strong> {placementApplications.length} Drives</div>
+                {placementApplications.slice(0, 3).map((app, idx) => (
+                  <div key={idx} className="truncate text-slate-700">
+                    • {app.drive?.companyName || 'Recruiter'} ({app.drive?.jobRole || 'Engineer'}) - <strong>{app.status || 'Applied'}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 8. Certifications & Clearances */}
+          <div className="grid grid-cols-2 gap-3 break-inside-avoid">
+            {/* Certificates */}
+            <div className="border border-slate-300 rounded-lg p-3 space-y-1.5">
+              <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+                <span>9. Verified Certifications</span>
+                <span>Total: {certificates.length}</span>
+              </div>
+              {certificates.length === 0 ? (
+                <div className="text-slate-500 italic text-[10px]">No certificates uploaded yet.</div>
+              ) : (
+                <div className="text-[10px] space-y-1">
+                  {certificates.slice(0, 5).map((cert, idx) => (
+                    <div key={idx} className="flex justify-between border-b border-slate-100 py-0.5">
+                      <span className="truncate mr-2 font-medium">{cert.title} ({cert.organization || 'Org'})</span>
+                      <span className="font-bold uppercase text-slate-900">{cert.verified || 'Pending'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Departmental No-Dues Clearances */}
+            <div className="border border-slate-300 rounded-lg p-3 space-y-1.5">
+              <div className="font-black text-[11px] uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-1 flex justify-between">
+                <span>10. Departmental Clearances</span>
+                <span>{duesFees === 0 ? 'No Dues Pending' : `Pending: ₹${duesFees}`}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-[10px]">
+                <div>TG Mentor: <strong>{noDuesForm?.mentorStatus || 'CLEARED'}</strong></div>
+                <div>HOD: <strong>{noDuesForm?.hodStatus || 'CLEARED'}</strong></div>
+                <div>Accounts: <strong>{noDuesForm?.accountsStatus || (duesFees === 0 ? 'CLEARED' : 'PENDING')}</strong></div>
+                <div>Library: <strong>{noDuesForm?.libraryStatus || 'CLEARED'}</strong></div>
+                <div>Lab/Workshop: <strong>{noDuesForm?.labStatus || 'CLEARED'}</strong></div>
+                <div>Hostel/Sports: <strong>{noDuesForm?.hostelStatus || 'CLEARED'}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Official Verification Signatures & Seal */}
+          <div className="border-t-2 border-slate-900 pt-8 mt-6 grid grid-cols-3 gap-6 text-center text-[10px] break-inside-avoid">
+            <div>
+              <div className="border-b border-slate-400 pb-1 font-bold">__________________________</div>
+              <div className="font-bold text-slate-900 mt-1">Parent / Guardian Signature</div>
+              <div className="text-slate-500 text-[9px]">Verified & Acknowledged</div>
+            </div>
+            <div>
+              <div className="border-b border-slate-400 pb-1 font-bold">__________________________</div>
+              <div className="font-bold text-slate-900 mt-1">{student.mentor?.name || 'Tutor Guardian (TG)'}</div>
+              <div className="text-slate-500 text-[9px]">Assigned TG Mentor Signature</div>
+            </div>
+            <div>
+              <div className="border-b border-slate-400 pb-1 font-bold">__________________________</div>
+              <div className="font-bold text-slate-900 mt-1">Principal / Academic Authority</div>
+              <div className="text-slate-500 text-[9px]">SISTec College Administration</div>
+            </div>
+          </div>
+
+          {/* Disclaimer Footer */}
+          <div className="text-center text-[8px] text-slate-400 border-t border-slate-200 pt-2 font-mono">
+            CONFIDENTIAL ACADEMIC DOSSIER • GENERATED VIA SISTec MILE PARENT PORTAL • SAGAR GROUP OF INSTITUTIONS, BHOPAL
+          </div>
+        </div>
       </main>
     </div>
   );

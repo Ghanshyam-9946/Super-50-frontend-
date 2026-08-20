@@ -96,7 +96,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Student Upload (existing Bulk Create page) now lives inside this group,
   // alongside the new Section/Mentor/Subject Catalog screens.
   const masterDataLinks = [
-    { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },
     { to: '/admin/master-data/sections', icon: Layers, label: 'Create Section' },
     { to: '/admin/master-data/mentors', icon: UserCheck, label: 'Assign Mentor' },
     { to: '/admin/master-data/subjects', icon: BookOpen, label: 'Create Subjects' },
@@ -120,6 +119,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },
+    { to: '/admin/bulk-create-faculty', icon: UserPlus, label: 'Faculty Upload' },
     { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
     { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
@@ -363,49 +364,49 @@ const NavItem = ({ link, onClick, collapsed }) => {
   );
 
   return (
-  <NavLink
-    to={link.to}
-    onClick={onClick}
-    className={({ isActive }) => `
+    <NavLink
+      to={link.to}
+      onClick={onClick}
+      className={({ isActive }) => `
       group relative flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300
       ${isActive
-        ? 'text-white font-bold'
-        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
-      }
+          ? 'text-white font-bold'
+          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+        }
       ${collapsed ? 'justify-center' : ''}
     `}
-    title={collapsed ? link.label : ''}
-  >
-    {({ isActive }) => (
-      <>
-        {isActive && (
-          <motion.div
-            layoutId="sidebarActiveBg"
-            className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-xl shadow-md shadow-[rgba(139,92,246,0.15)]"
-            initial={false}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      title={collapsed ? link.label : ''}
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <motion.div
+              layoutId="sidebarActiveBg"
+              className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-xl shadow-md shadow-[rgba(139,92,246,0.15)]"
+              initial={false}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+          )}
+          <link.icon
+            size={18}
+            className={`relative z-10 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}
           />
-        )}
-        <link.icon
-          size={18}
-          className={`relative z-10 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}
-        />
-        {!collapsed && (
-          <>
-            <span className="relative z-10 font-bold text-sm tracking-tight flex-1">{link.label}</span>
-            {chatUnread > 0 && (
-              <span className={`relative z-10 text-[10px] font-black rounded-full px-1.5 py-0.5 min-w-[18px] text-center ${isActive ? 'bg-white text-[var(--primary)]' : 'bg-[var(--primary)] text-white'}`}>
-                {chatUnread > 9 ? '9+' : chatUnread}
-              </span>
-            )}
-            {isActive && (
-              <motion.div layoutId="activePill" className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-white shadow-[0_0_8px_white]" />
-            )}
-          </>
-        )}
-      </>
-    )}
-  </NavLink>
+          {!collapsed && (
+            <>
+              <span className="relative z-10 font-bold text-sm tracking-tight flex-1">{link.label}</span>
+              {chatUnread > 0 && (
+                <span className={`relative z-10 text-[10px] font-black rounded-full px-1.5 py-0.5 min-w-[18px] text-center ${isActive ? 'bg-white text-[var(--primary)]' : 'bg-[var(--primary)] text-white'}`}>
+                  {chatUnread > 9 ? '9+' : chatUnread}
+                </span>
+              )}
+              {isActive && (
+                <motion.div layoutId="activePill" className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-white shadow-[0_0_8px_white]" />
+              )}
+            </>
+          )}
+        </>
+      )}
+    </NavLink>
   );
 };
 

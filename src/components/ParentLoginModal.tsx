@@ -239,8 +239,17 @@ export default function ParentLoginModal({ isOpen, onClose }: ParentLoginModalPr
                         )}
                       </div>
                       <div>
-                        <div className="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
-                          {w.name}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
+                            {w.name}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                            w.campus === 'ratibad'
+                              ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                              : 'bg-purple-500/10 text-purple-600 border border-purple-500/20'
+                          }`}>
+                            {w.campus === 'ratibad' ? 'Ratibad' : 'Gandhinagar'}
+                          </span>
                         </div>
                         <div className="text-[11px] text-[var(--text-secondary)]">
                           {w.enrollmentNumber} • {w.department} ({w.batch})
