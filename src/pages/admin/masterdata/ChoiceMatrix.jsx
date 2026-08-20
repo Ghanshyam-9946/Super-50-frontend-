@@ -18,7 +18,7 @@ export default function ChoiceMatrix() {
   const [matrix, setMatrix] = useState(null); // {round, subjects, preferences}
   const [facultyList, setFacultyList] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [rowForm, setRowForm] = useState({ subjectId: "", section: "", facultyId: "", labSupportFacultyId: "" });
+  const [rowForm, setRowForm] = useState({ subjectId: "", section: "", facultyId: "", support1FacultyId: "", support2FacultyId: "" });
   const [finalizing, setFinalizing] = useState(false);
   const [deletingRound, setDeletingRound] = useState(false);
 
@@ -97,22 +97,34 @@ export default function ChoiceMatrix() {
   const picksFor = (subjectId) => (matrix?.preferences || []).filter((p) => p.subject?._id === subjectId);
   const selectedSubject = matrix?.subjects.find((s) => s._id === rowForm.subjectId);
   const selectedSubjectHasLab = (selectedSubject?.noOfPractical || 0) > 0;
+  // Faculty who actually submitted a choice preference for the selected
+  // subject — the Faculty dropdown below lists everyone (not just these),
+  // but marks these with "(Chosen)" so that signal isn't lost.
+  const pickedFacultyIds = new Set(picksFor(rowForm.subjectId).map((p) => p.faculty._id));
 
   const addAssignment = () => {
     if (!rowForm.subjectId || !rowForm.section || !rowForm.facultyId) {
       return toast.error("Pick subject, section and faculty");
     }
     const subject = matrix.subjects.find((s) => s._id === rowForm.subjectId);
-    const faculty = picksFor(rowForm.subjectId).find((p) => p.faculty._id === rowForm.facultyId)?.faculty
-      || { _id: rowForm.facultyId, name: "(picked faculty)" };
-    const labSupportFaculty = rowForm.labSupportFacultyId
-      ? facultyList.find((f) => f._id === rowForm.labSupportFacultyId)
+    const faculty = facultyList.find((f) => f._id === rowForm.facultyId) || { _id: rowForm.facultyId, name: "(faculty)" };
+    const support1Faculty = rowForm.support1FacultyId
+      ? facultyList.find((f) => f._id === rowForm.support1FacultyId)
+      : null;
+    const support2Faculty = rowForm.support2FacultyId
+      ? facultyList.find((f) => f._id === rowForm.support2FacultyId)
       : null;
     setAssignments((prev) => [
       ...prev,
-      { ...rowForm, subjectName: subject.subjectName, facultyName: faculty.name, labSupportFacultyName: labSupportFaculty?.name || "" },
+      {
+        ...rowForm,
+        subjectName: subject.subjectName,
+        facultyName: faculty.name,
+        support1FacultyName: support1Faculty?.name || "",
+        support2FacultyName: support2Faculty?.name || "",
+      },
     ]);
-    setRowForm({ subjectId: "", section: "", facultyId: "", labSupportFacultyId: "" });
+    setRowForm({ subjectId: "", section: "", facultyId: "", support1FacultyId: "", support2FacultyId: "" });
   };
 
   const removeAssignment = (idx) => setAssignments((prev) => prev.filter((_, i) => i !== idx));
@@ -128,7 +140,8 @@ export default function ChoiceMatrix() {
           subjectId: a.subjectId,
           section: a.section,
           facultyId: a.facultyId,
-          labSupportFacultyId: a.labSupportFacultyId || null,
+          support1FacultyId: a.support1FacultyId || null,
+          support2FacultyId: a.support2FacultyId || null,
         })),
       });
       if (data.success) {
@@ -306,7 +319,7 @@ export default function ChoiceMatrix() {
                   Subject
                   <select
                     value={rowForm.subjectId}
-                    onChange={(e) => setRowForm((f) => ({ ...f, subjectId: e.target.value, facultyId: "", labSupportFacultyId: "" }))}
+                    onChange={(e) => setRowForm((f) => ({ ...f, subjectId: e.target.value, facultyId: "", support1FacultyId: "", support2FacultyId: "" }))}
                     className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm min-w-[200px]"
                   >
                     <option value="">Select subject</option>
@@ -329,29 +342,47 @@ export default function ChoiceMatrix() {
                     className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm min-w-[180px]"
                   >
                     <option value="">Select faculty</option>
-                    {picksFor(rowForm.subjectId).map((p) => (
-                      <option key={p.faculty._id} value={p.faculty._id}>
-                        {p.faculty.name}
+                    {facultyList.map((f) => (
+                      <option key={f._id} value={f._id}>
+                        {f.name}
+                        {pickedFacultyIds.has(f._id) ? " (Chosen)" : ""}
                       </option>
                     ))}
                   </select>
                 </label>
                 {selectedSubjectHasLab && (
-                  <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-                    Lab Support Faculty (optional)
-                    <select
-                      value={rowForm.labSupportFacultyId}
-                      onChange={(e) => setRowForm((f) => ({ ...f, labSupportFacultyId: e.target.value }))}
-                      className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm min-w-[180px]"
-                    >
-                      <option value="">None</option>
-                      {facultyList.map((f) => (
-                        <option key={f._id} value={f._id}>
-                          {f.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <>
+                    <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+                      Support 1 Faculty (optional)
+                      <select
+                        value={rowForm.support1FacultyId}
+                        onChange={(e) => setRowForm((f) => ({ ...f, support1FacultyId: e.target.value }))}
+                        className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm min-w-[180px]"
+                      >
+                        <option value="">None</option>
+                        {facultyList.map((f) => (
+                          <option key={f._id} value={f._id}>
+                            {f.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+                      Support 2 Faculty (optional)
+                      <select
+                        value={rowForm.support2FacultyId}
+                        onChange={(e) => setRowForm((f) => ({ ...f, support2FacultyId: e.target.value }))}
+                        className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm min-w-[180px]"
+                      >
+                        <option value="">None</option>
+                        {facultyList.map((f) => (
+                          <option key={f._id} value={f._id}>
+                            {f.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
                 )}
                 <button onClick={addAssignment} className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5">
                   <Plus size={14} /> Add
@@ -365,8 +396,11 @@ export default function ChoiceMatrix() {
                       <span className="font-bold text-[var(--text-primary)]">{a.subjectName}</span>
                       <span>Section {a.section}</span>
                       <span className="text-[var(--text-secondary)]">→ {a.facultyName}</span>
-                      {a.labSupportFacultyName && (
-                        <span className="text-[var(--text-secondary)]">+ Lab: {a.labSupportFacultyName}</span>
+                      {a.support1FacultyName && (
+                        <span className="text-[var(--text-secondary)]">+ Support 1: {a.support1FacultyName}</span>
+                      )}
+                      {a.support2FacultyName && (
+                        <span className="text-[var(--text-secondary)]">+ Support 2: {a.support2FacultyName}</span>
                       )}
                       <button onClick={() => removeAssignment(idx)} className="ml-auto">
                         <Trash2 size={12} className="text-red-400" />
