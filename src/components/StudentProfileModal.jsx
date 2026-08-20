@@ -242,14 +242,14 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm no-print"
         />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] no-print"
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
@@ -307,7 +307,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>

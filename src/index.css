@@ -295,24 +295,38 @@ body {
     overflow: visible !important;
     height: auto !important;
     min-height: auto !important;
+    max-height: none !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    position: static !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Force hide all screen interactive navigation and chrome */
-  header, nav, .no-print, [data-print-hide], .print-hide {
+  /* Force hide all screen interactive navigation, sidebars, modals and chrome */
+  header, nav, aside, footer, button, .no-print, [data-print-hide], .print-hide, [role="dialog"], .fixed, .sticky, .backdrop-blur-sm {
     display: none !important;
+    visibility: hidden !important;
   }
 
-  /* Force show printable dossiers */
+  /* Force show printable dossiers naturally across all pages */
   .print-only, [data-print-show], .print-show {
     display: block !important;
     visibility: visible !important;
-    opacity: 1 !important;
     position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    overflow: visible !important;
+  }
+
+  .print-only *, [data-print-show] *, .print-show * {
+    visibility: visible !important;
   }
 
   .print-table {
@@ -323,6 +337,15 @@ body {
   .break-inside-avoid {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  table {
+    page-break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
   }
 
   @page {
