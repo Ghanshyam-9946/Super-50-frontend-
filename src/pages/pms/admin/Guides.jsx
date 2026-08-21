@@ -9,18 +9,22 @@ import { getInitial } from '../../../utils/pms/helpers';
 const Guides = () => {
   const [guides, setGuides] = useState([]);
   const [years, setYears] = useState([]);
+  const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
-    name: '', email: '', mobile: '', academicYear: '', assignedSemester: '', password: 'guide@123',
+    userId: '', academicYear: '', assignedSemester: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [gRes, yRes] = await Promise.all([adminAPI.listGuides(), adminAPI.listYears()]);
+      const [gRes, yRes, fRes] = await Promise.all([
+        adminAPI.listGuides(), adminAPI.listYears(), adminAPI.listFacultyCandidates(),
+      ]);
       setGuides(gRes.data.guides);
       setYears(yRes.data.years);
+      setFaculty(fRes.data.faculty);
       const active = yRes.data.years.find((y) => y.isActive);
       if (active && !form.academicYear) setForm((f) => ({ ...f, academicYear: active._id }));
     } catch (err) {
@@ -32,23 +36,28 @@ const Guides = () => {
 
   useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, []);
 
+  // Faculty already tagged as a guide don't need to show up again as candidates.
+  const guideIds = new Set(guides.map((g) => g._id));
+  const availableFaculty = faculty.filter((f) => !guideIds.has(f._id));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.userId) return toast.error('Select a faculty member');
     setSubmitting(true);
     try {
-      await adminAPI.createGuide(form);
-      toast.success('Guide created');
-      setForm({ ...form, name: '', email: '', mobile: '', assignedSemester: '' });
+      await adminAPI.assignGuideRole(form);
+      toast.success('Faculty assigned as Project Guide');
+      setForm((f) => ({ ...f, userId: '', assignedSemester: '' }));
       fetchData();
     } catch (err) { toast.error(handleError(err)); }
     finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id) => {
-    if (!confirmAction('Delete this guide?')) return;
+    if (!confirmAction('Remove guide access for this faculty member? Their account and other roles are unaffected.')) return;
     try {
-      await adminAPI.deleteGuide(id);
-      toast.success('Deleted');
+      await adminAPI.removeGuideRole(id);
+      toast.success('Guide access removed');
       fetchData();
     } catch (err) { toast.error(handleError(err)); }
   };
@@ -62,11 +71,18 @@ const Guides = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-4">
-          <Card title="Add Guide" icon={UserPlus}>
+          <Card title="Assign Project Guide" icon={UserPlus}>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div><label className="form-label">Full Name</label><input className="form-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required /></div>
-              <div><label className="form-label">Email</label><input type="email" className="form-input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></div>
-              <div><label className="form-label">Mobile</label><input type="tel" pattern="[0-9]{10}" className="form-input" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></div>
+              <div>
+                <label className="form-label">Faculty</label>
+                <select className="form-select" value={form.userId} onChange={(e) => setForm({ ...form, userId: e.target.value })} required>
+                  <option value="">Select faculty</option>
+                  {availableFaculty.map((f) => (
+                    <option key={f._id} value={f._id}>{f.name} ({f.email}) — {f.role}</option>
+                  ))}
+                </select>
+                <p className="form-help">No new account is created — this only grants an existing faculty account access to PMS as a guide.</p>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="form-label">Academic Year</label>
@@ -83,13 +99,8 @@ const Guides = () => {
                   </select>
                 </div>
               </div>
-              <div>
-                <label className="form-label">Default Password</label>
-                <input className="form-input" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
-                <p className="form-help">Guide can change after first login.</p>
-              </div>
               <button type="submit" disabled={submitting} className="btn-primary w-full">
-                {submitting ? <Spinner size="sm" className="text-white" /> : 'Create Guide'}
+                {submitting ? <Spinner size="sm" className="text-white" /> : 'Assign as Guide'}
               </button>
             </form>
           </Card>
@@ -122,7 +133,7 @@ const Guides = () => {
                           <td><span className="badge-primary">{g.assignedProject?.projectName || '—'}</span></td>
                           <td className="text-sm">{g.academicYear?.yearName}</td>
                           <td className="text-right">
-                            <button onClick={() => handleDelete(g._id)} className="btn-secondary btn-sm">
+                            <button onClick={() => handleDelete(g._id)} title="Remove guide access (account is kept)" className="btn-secondary btn-sm">
                               <Trash2 className="w-3 h-3" />
                             </button>
                           </td>

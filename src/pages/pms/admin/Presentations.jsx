@@ -1,20 +1,27 @@
 import { useState, useEffect } from 'react';
-import { CalendarPlus, Presentation, Trash2, Info } from 'lucide-react';
+import { CalendarPlus, Presentation, Trash2, Info, Pencil, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, EmptyState, confirmAction } from '../../../components/pms/Common';
 import { formatDate } from '../../../utils/pms/helpers';
 
+const blankForm = {
+  academicYear: '', semester: '', presentationTitle: '',
+  presentationNo: '1', presentationDate: '', totalMarks: '100', criteria: '',
+};
+
 const Presentations = () => {
   const [presentations, setPresentations] = useState([]);
   const [years, setYears] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
-    academicYear: '', semester: '', presentationTitle: '',
-    presentationNo: '1', presentationDate: '', totalMarks: '100', criteria: '',
-  });
+  const [form, setForm] = useState(blankForm);
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const selectedYear = years.find((y) => y._id === form.academicYear);
+  const dateMin = selectedYear?.startDate ? selectedYear.startDate.slice(0, 10) : undefined;
+  const dateMax = selectedYear?.endDate ? selectedYear.endDate.slice(0, 10) : undefined;
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,13 +45,38 @@ const Presentations = () => {
 
   useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, []);
 
+  const startEdit = (p) => {
+    setEditingId(p._id);
+    setForm({
+      academicYear: p.academicYear?._id || '',
+      semester: String(p.semester),
+      presentationTitle: p.presentationTitle,
+      presentationNo: String(p.presentationNo),
+      presentationDate: p.presentationDate?.slice(0, 10) || '',
+      totalMarks: String(p.totalMarks),
+      criteria: p.criteria || '',
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(blankForm);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await adminAPI.createPresentation(form);
-      toast.success('Presentation scheduled');
-      setForm({ ...form, presentationTitle: '', presentationDate: '', criteria: '' });
+      if (editingId) {
+        await adminAPI.updatePresentation(editingId, form);
+        toast.success('Presentation updated');
+        setEditingId(null);
+        setForm(blankForm);
+      } else {
+        await adminAPI.createPresentation(form);
+        toast.success('Presentation scheduled');
+        setForm({ ...form, presentationTitle: '', presentationDate: '', criteria: '' });
+      }
       fetchData();
     } catch (err) {
       toast.error(handleError(err));
@@ -71,7 +103,7 @@ const Presentations = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-4">
-          <Card title="New Presentation" icon={CalendarPlus}>
+          <Card title={editingId ? 'Edit Presentation' : 'New Presentation'} icon={editingId ? Pencil : CalendarPlus}>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="form-label">Academic Year</label>
@@ -107,7 +139,20 @@ const Presentations = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="form-label">Date</label>
-                  <input type="date" className="form-input" value={form.presentationDate} onChange={(e) => setForm({ ...form, presentationDate: e.target.value })} required />
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={form.presentationDate}
+                    onChange={(e) => setForm({ ...form, presentationDate: e.target.value })}
+                    min={dateMin}
+                    max={dateMax}
+                    required
+                  />
+                  {selectedYear && (
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Must fall within {selectedYear.yearName} ({formatDate(selectedYear.startDate)} – {formatDate(selectedYear.endDate)})
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="form-label">Total Marks</label>
@@ -119,9 +164,16 @@ const Presentations = () => {
                 <textarea className="form-input" rows="2" value={form.criteria} onChange={(e) => setForm({ ...form, criteria: e.target.value })} />
               </div>
               <div className="alert-info text-xs"><Info className="w-4 h-4 flex-shrink-0" /> Project type auto-mapped from semester.</div>
-              <button type="submit" disabled={submitting} className="btn-primary w-full">
-                {submitting ? <Spinner size="sm" className="text-white" /> : 'Schedule'}
-              </button>
+              <div className="flex gap-2">
+                <button type="submit" disabled={submitting} className="btn-primary w-full">
+                  {submitting ? <Spinner size="sm" className="text-white" /> : editingId ? 'Update' : 'Schedule'}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={cancelEdit} className="btn-secondary">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </form>
           </Card>
         </div>
@@ -146,9 +198,14 @@ const Presentations = () => {
                           <td>{formatDate(p.presentationDate)}</td>
                           <td>{p.totalMarks}</td>
                           <td className="text-right">
-                            <button onClick={() => handleDelete(p._id)} className="btn-secondary btn-sm">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            <div className="flex justify-end gap-1">
+                              <button onClick={() => startEdit(p)} className="btn-outline btn-sm">
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button onClick={() => handleDelete(p._id)} className="btn-secondary btn-sm">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

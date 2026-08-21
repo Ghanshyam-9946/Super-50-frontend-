@@ -1,10 +1,11 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../features/auth/authSlice';
 import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
-  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup
+  Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
+  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,13 +23,17 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Core Links (All Students)
   const commonStudentLinks = [
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { to: '/student/attendance', icon: ClipboardList, label: 'Attendance' },
     { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
     { to: '/student/mst', icon: FileText, label: 'MST Result' },
     { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
     { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
     { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/student/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
+    { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/student/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
   ];
 
   // Training & Placement Section (ALL students)
@@ -51,42 +56,91 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
   const isSuper50Mentor = (user?.responsibilities || []).includes('Super 50 Mentor');
+  // Grants full PMS admin access, same as a real admin/pms_admin — mirrors
+  // isAcademicCoordinator above (see PMSRoutes.jsx's RoleGuard and
+  // adminRoutes.js's PMS_ADMIN gate on the backend).
+  const isProjectCoordinator = (user?.responsibilities || []).includes('Project Coordinator');
+  // A teacher only sees PMS guide features once they've actually been
+  // assigned as a Project Guide (roles array gets 'guide' added — see
+  // pms/admin/Guides.jsx) — being a teacher alone is no longer enough.
+  const isProjectGuide = user?.role === 'guide' || (user?.roles || []).includes('guide');
 
   const teacherLinks = [
     { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
+    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+    ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
+    { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
+    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
+    { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
+    ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
+    ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     ...(isSuper50Mentor ? [
       { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
     ] : []),
   ];
 
   const guideLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
     ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
+    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+    ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
+    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
+    { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
+    ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
+  // Student Upload (existing Bulk Create page) now lives inside this group,
+  // alongside the new Section/Mentor/Subject Catalog screens.
+  const masterDataLinks = [
+    { to: '/admin/master-data/sections', icon: Layers, label: 'Create Section' },
+    { to: '/admin/master-data/mentors', icon: UserCheck, label: 'Assign Mentor' },
+    { to: '/admin/master-data/subjects', icon: BookOpen, label: 'Create Subjects' },
+    { to: '/admin/master-data/choice-matrix', icon: Grid3x3, label: 'Choice Filling Matrix' },
+    { to: '/admin/master-data/load-calculation', icon: Gauge, label: 'Load Calculation' },
+    { to: '/admin/master-data/allocation-sheet', icon: FileSpreadsheet, label: 'Allocation Sheet' },
+  ];
+
   const adminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
+    { to: '/admin/sessional-marks', icon: GraduationCap, label: 'Sessional Marks Report' },
+    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks (Manage)' },
+    { to: '/admin/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
+    { to: '/admin/class-observations', icon: ClipboardCheck, label: 'Class Observation Form' },
+    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+    { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
+    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },
+    { to: '/admin/bulk-create-faculty', icon: UserPlus, label: 'Faculty Upload' },
     { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
     { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
     { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
-    { to: '/admin/bulk-create', icon: UserPlus, label: 'Bulk Create' },
+    { label: 'Master Data', icon: Layers, children: masterDataLinks },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
@@ -100,9 +154,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const super50AdminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
     { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
-    { to: '/admin/super50-students', icon: Users, label: 'Super 50 Students' },
+    { to: '/admin/students', icon: Users, label: 'All Students' },
+    { to: '/admin/super50-students', icon: Star, label: 'Super 50 Students' },
     { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
     { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
     { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
@@ -111,6 +167,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const tpAdminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/tp/enroll-students', icon: UserPlus, label: 'Enroll Students' },
     { to: '/tp/create-drive', icon: Briefcase, label: 'Create Drive' },
     { to: '/faculty/placement', icon: ClipboardList, label: 'View Drives' },
@@ -118,6 +175,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   ];
 
   const pmsAdminLinks = [
+    { to: '/chat', icon: MessageCircle, label: 'Chat' },
     { to: '/pms/admin', icon: Database, label: 'PMS Dashboard' },
   ];
 
@@ -141,8 +199,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
       else if (role === 'guide') roleLinks = guideLinks;
 
       roleLinks.forEach(link => {
-        if (!seen.has(link.to)) {
-          seen.add(link.to);
+        const key = link.to || link.label; // groups (no `to`, has `children`) dedupe by label
+        if (!seen.has(key)) {
+          seen.add(key);
 
           let adjustedLabel = link.label;
           if (hasMultipleRoles) {
@@ -201,9 +260,13 @@ const Sidebar = ({ theme, toggleTheme }) => {
         {/* Core Nav */}
         <div className="space-y-1.5">
           {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4">Core</p>}
-          {getNavLinks().map((link) => (
-            <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-          ))}
+          {getNavLinks().map((link) =>
+            link.children ? (
+              <NavGroup key={link.label} group={link} collapsed={collapsed} onNavigate={() => setMobileOpen(false)} />
+            ) : (
+              <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
+            )
+          )}
         </div>
 
         {/* T&P Section (Students Only) */}
@@ -264,17 +327,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
             )}
           </div>
 
-          <div className={`flex gap-2 ${collapsed ? 'flex-col w-full' : ''}`}>
-            <button
-              onClick={toggleTheme}
-              className={`flex items-center justify-center h-10 rounded-xl bg-[var(--bg-app)] border border-[var(--border-light)] hover:border-[var(--primary)] text-[var(--text-secondary)] hover:text-[var(--primary)] transition-all ${collapsed ? 'w-full' : 'flex-1'}`}
-              title="Toggle Theme"
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+          <div className="w-full">
             <button
               onClick={handleLogout}
-              className={`flex items-center justify-center gap-2 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all font-bold text-xs uppercase tracking-widest ${collapsed ? 'w-full px-0' : 'flex-[2] px-4'}`}
+              className={`flex items-center justify-center gap-2 h-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 transition-all font-bold text-xs uppercase tracking-widest w-full ${collapsed ? 'px-0' : 'px-4'}`}
               title="Logout"
             >
               <LogOut size={14} /> {!collapsed && "Logout"}
@@ -292,7 +348,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       </button>
 
       <div className="hidden lg:block h-screen sticky top-0 z-40">
-        <SidebarContent />
+        {SidebarContent()}
       </div>
 
       <AnimatePresence>
@@ -300,7 +356,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] lg:hidden" />
             <motion.div initial={{ x: '-100%' }} animate={{ x: 0 }} exit={{ x: '-100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-y-0 left-0 z-[100] lg:hidden">
-              <SidebarContent />
+              {SidebarContent()}
             </motion.div>
           </>
         )}
@@ -314,45 +370,107 @@ const Sidebar = ({ theme, toggleTheme }) => {
   );
 };
 
-const NavItem = ({ link, onClick, collapsed }) => (
-  <NavLink
-    to={link.to}
-    onClick={onClick}
-    className={({ isActive }) => `
+const NavItem = ({ link, onClick, collapsed }) => {
+  // Only the Chat link needs a live badge — read the unread total straight
+  // from the store here rather than threading it through every link array.
+  const chatUnread = useSelector((s) =>
+    link.to === '/chat' ? s.chat.conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0) : 0
+  );
+
+  return (
+    <NavLink
+      to={link.to}
+      onClick={onClick}
+      className={({ isActive }) => `
       group relative flex items-center gap-4 px-3.5 py-3 rounded-xl transition-all duration-300
       ${isActive
-        ? 'text-white font-bold'
-        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
-      }
+          ? 'text-white font-bold'
+          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+        }
       ${collapsed ? 'justify-center' : ''}
     `}
-    title={collapsed ? link.label : ''}
-  >
-    {({ isActive }) => (
-      <>
-        {isActive && (
-          <motion.div
-            layoutId="sidebarActiveBg"
-            className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-xl shadow-md shadow-[rgba(139,92,246,0.15)]"
-            initial={false}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      title={collapsed ? link.label : ''}
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <motion.div
+              layoutId="sidebarActiveBg"
+              className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-xl shadow-md shadow-[rgba(139,92,246,0.15)]"
+              initial={false}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+          )}
+          <link.icon
+            size={18}
+            className={`relative z-10 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}
           />
-        )}
-        <link.icon
-          size={18}
-          className={`relative z-10 transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-white' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}
-        />
-        {!collapsed && (
-          <>
-            <span className="relative z-10 font-bold text-sm tracking-tight">{link.label}</span>
-            {isActive && (
-              <motion.div layoutId="activePill" className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-white shadow-[0_0_8px_white]" />
-            )}
-          </>
-        )}
+          {!collapsed && (
+            <>
+              <span className="relative z-10 font-bold text-sm tracking-tight flex-1">{link.label}</span>
+              {chatUnread > 0 && (
+                <span className={`relative z-10 text-[10px] font-black rounded-full px-1.5 py-0.5 min-w-[18px] text-center ${isActive ? 'bg-white text-[var(--primary)]' : 'bg-[var(--primary)] text-white'}`}>
+                  {chatUnread > 9 ? '9+' : chatUnread}
+                </span>
+              )}
+              {isActive && (
+                <motion.div layoutId="activePill" className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 rounded-r-full bg-white shadow-[0_0_8px_white]" />
+              )}
+            </>
+          )}
+        </>
+      )}
+    </NavLink>
+  );
+};
+
+// A parent menu item that expands into a flat list of NavItems — collapsed
+// by default, auto-opens when one of its children is the active route.
+// No such grouping existed anywhere in this file before Master Data.
+const NavGroup = ({ group, collapsed, onNavigate }) => {
+  const location = useLocation();
+  const hasActiveChild = group.children.some((c) => location.pathname === c.to);
+  const [open, setOpen] = useState(hasActiveChild);
+
+  if (collapsed) {
+    // No room to show a label + chevron when collapsed — just render the
+    // children flat, same as any other icon-only link.
+    return (
+      <>
+        {group.children.map((child) => (
+          <NavItem key={child.to} link={child} collapsed={collapsed} onClick={onNavigate} />
+        ))}
       </>
-    )}
-  </NavLink>
-);
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center gap-4 px-3.5 py-3 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all duration-300"
+      >
+        <group.icon size={18} />
+        <span className="flex-1 text-left font-bold text-sm tracking-tight">{group.label}</span>
+        <ChevronDown size={14} className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden pl-4 space-y-1"
+          >
+            {group.children.map((child) => (
+              <NavItem key={child.to} link={child} collapsed={collapsed} onClick={onNavigate} />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default Sidebar;

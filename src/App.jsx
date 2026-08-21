@@ -22,6 +22,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import StudentDashboard from './pages/student/StudentDashboard';
 import CertificatesPage from './pages/student/CertificatesPage';
 import ActivitiesPage from './pages/student/ActivitiesPage';
+import ParentDashboard from './pages/parent/ParentDashboard';
 
 // Admin/Teacher Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -41,6 +42,7 @@ import DriveDetailsPage from './pages/admin/DriveDetailsPage';
 import VerifyGuidesPage from './pages/admin/VerifyGuidesPage';
 import FacultyTasksPage from './pages/faculty/FacultyTasksPage';
 import CallingTrackerPage from './pages/admin/CallingTrackerPage';
+import BulkCreateFacultyPage from './pages/admin/BulkCreateFacultyPage';
 
 import StudentPlacementDashboard from './pages/student/StudentPlacementDashboard';
 import ProjectDashboard from './pages/student/ProjectDashboard';
@@ -57,11 +59,34 @@ import AdminRGPVPage from './pages/admin/AdminRGPVPage';
 import StudentRGPVPage from './pages/student/StudentRGPVPage';
 import TimetableManagePage from './pages/admin/TimetableManagePage';
 import StudentTimetablePage from './pages/student/StudentTimetablePage';
+import AcademicCalendarManagePage from './pages/admin/AcademicCalendarManagePage';
+import StudentAcademicCalendarPage from './pages/student/StudentAcademicCalendarPage';
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
 import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
+import StudentAttendancePage from './pages/student/StudentAttendancePage';
+import SessionalMarksAdminPage from './pages/admin/SessionalMarksAdminPage';
+import MasterDataSections from './pages/admin/masterdata/Sections';
+import MasterDataMentors from './pages/admin/masterdata/Mentors';
+import MasterDataSubjects from './pages/admin/masterdata/Subjects';
+import MasterDataChoiceMatrix from './pages/admin/masterdata/ChoiceMatrix';
+import MasterDataLoadCalculation from './pages/admin/masterdata/LoadCalculation';
+import MasterDataAllocationSheet from './pages/admin/masterdata/AllocationSheet';
+import ChoiceFillingPage from './pages/faculty/ChoiceFillingPage';
+import ChatPage from './pages/chat/ChatPage';
+import MySubjectActivities from './pages/faculty/MySubjectActivities';
+import MyLoad from './pages/faculty/MyLoad';
+import MyProfile from './pages/faculty/MyProfile';
+import SessionalMarksPage from './pages/faculty/SessionalMarksPage';
+import StudentSessionalMarksPage from './pages/student/StudentSessionalMarksPage';
+import FeedbackReleasePage from './pages/admin/feedback/FeedbackReleasePage';
+import FeedbackDashboardPage from './pages/admin/feedback/FeedbackDashboardPage';
+import StudentFeedbackPage from './pages/student/StudentFeedbackPage';
+import ClassObservationPage from './pages/admin/ClassObservationPage';
+import ClassEngagementPage from './pages/faculty/ClassEngagementPage';
+import ClassEngagementReportPage from './pages/admin/ClassEngagementReportPage';
 
 // Shared
 import LeaderboardPage from './pages/shared/LeaderboardPage';
@@ -81,13 +106,14 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const hasResponsibility = allowResponsibility && (user.responsibilities || []).includes(allowResponsibility);
 
   if (!hasRole && !hasResponsibility) {
-    const fallback = userRoles.includes('student') ? '/leaderboard' :
-                     userRoles.includes('admin') ? '/leaderboard' :
-                     userRoles.includes('super50_admin') ? '/leaderboard' :
-                     userRoles.includes('teacher') ? '/teacher/dashboard' :
-                     userRoles.includes('guide') ? '/pms/guide' :
-                     userRoles.includes('tp_admin') ? '/tp/enroll-students' :
-                     userRoles.includes('pms_admin') ? '/pms/admin' : '/login';
+    const fallback = userRoles.includes('parent') ? '/parent/dashboard' :
+      userRoles.includes('student') ? '/leaderboard' :
+        userRoles.includes('admin') ? '/leaderboard' :
+          userRoles.includes('super50_admin') ? '/leaderboard' :
+            userRoles.includes('teacher') ? '/teacher/dashboard' :
+              userRoles.includes('guide') ? '/pms/guide' :
+                userRoles.includes('tp_admin') ? '/tp/enroll-students' :
+                  userRoles.includes('pms_admin') ? '/pms/admin' : '/login';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -96,7 +122,7 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
 const Super50Guard = ({ children }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/" replace />;
-  
+
   const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
   const isPrivileged = userRoles.some(r => ['admin', 'teacher', 'super50_admin'].includes(r));
   if (isPrivileged) return children;
@@ -124,7 +150,7 @@ function IdleTimer() {
     };
 
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
+
     resetTimer();
 
     events.forEach((event) => {
@@ -151,6 +177,7 @@ function AppRoutes({ theme, toggleTheme }) {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
+      <Route path="/parent/dashboard" element={<ParentDashboard theme={theme} toggleTheme={toggleTheme} />} />
 
       {/* Protected layout */}
       <Route element={<Layout theme={theme} toggleTheme={toggleTheme} />}>
@@ -193,11 +220,23 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/timetable" element={
           <RoleGuard allowed={['student']}><StudentTimetablePage /></RoleGuard>
         } />
+        <Route path="/student/academic-calendar" element={
+          <RoleGuard allowed={['student']}><StudentAcademicCalendarPage /></RoleGuard>
+        } />
         <Route path="/student/no-dues" element={
           <RoleGuard allowed={['student']}><StudentNoDuesPage /></RoleGuard>
         } />
+        <Route path="/student/sessional-marks" element={
+          <RoleGuard allowed={['student']}><StudentSessionalMarksPage /></RoleGuard>
+        } />
+        <Route path="/student/feedback" element={
+          <RoleGuard allowed={['student']}><StudentFeedbackPage /></RoleGuard>
+        } />
         <Route path="/student/rgpv" element={
           <RoleGuard allowed={['student']}><StudentRGPVPage /></RoleGuard>
+        } />
+        <Route path="/student/attendance" element={
+          <RoleGuard allowed={['student']}><StudentAttendancePage /></RoleGuard>
         } />
 
         {/* Admin routes */}
@@ -234,6 +273,27 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/bulk-create" element={
           <RoleGuard allowed={['admin']}><BulkCreatePage /></RoleGuard>
         } />
+        <Route path="/admin/bulk-create-faculty" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><BulkCreateFacultyPage /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/sections" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataSections /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/mentors" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataMentors /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/subjects" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataSubjects /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/choice-matrix" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataChoiceMatrix /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/load-calculation" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataLoadCalculation /></RoleGuard>
+        } />
+        <Route path="/admin/master-data/allocation-sheet" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><MasterDataAllocationSheet /></RoleGuard>
+        } />
         <Route path="/admin/super50-selection" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><Super50SelectionPage /></RoleGuard>
         } />
@@ -255,8 +315,26 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/timetable" element={
           <RoleGuard allowed={['admin', 'teacher']}><TimetableManagePage /></RoleGuard>
         } />
+        <Route path="/admin/academic-calendar" element={
+          <RoleGuard allowed={['admin', 'teacher']}><AcademicCalendarManagePage /></RoleGuard>
+        } />
         <Route path="/admin/no-dues" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><NoDuesAdminPage /></RoleGuard>
+        } />
+        <Route path="/admin/sessional-marks" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><SessionalMarksAdminPage /></RoleGuard>
+        } />
+        <Route path="/admin/feedback" element={
+          <RoleGuard allowed={['admin']}><FeedbackReleasePage /></RoleGuard>
+        } />
+        <Route path="/admin/feedback/:formId" element={
+          <RoleGuard allowed={['admin']}><FeedbackDashboardPage /></RoleGuard>
+        } />
+        <Route path="/admin/class-observations" element={
+          <RoleGuard allowed={['admin']}><ClassObservationPage /></RoleGuard>
+        } />
+        <Route path="/admin/class-engagement-report" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><ClassEngagementReportPage /></RoleGuard>
         } />
         <Route path="/admin/drive-eligibility" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><DriveEligibilityPage /></RoleGuard>
@@ -309,6 +387,41 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/faculty/no-dues" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><NoDuesPage /></RoleGuard>
         } />
+
+        {/* Sessional Marks — faculty/coordinator view, shared across staff roles */}
+        <Route path="/faculty/sessional-marks" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><SessionalMarksPage /></RoleGuard>
+        } />
+
+        {/* Class Engagement — faculty view, shared across staff roles */}
+        <Route path="/faculty/class-engagement" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ClassEngagementPage /></RoleGuard>
+        } />
+
+        {/* Subject Choice Filling — faculty view, shared across staff roles */}
+        <Route path="/faculty/choice-filling" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ChoiceFillingPage /></RoleGuard>
+        } />
+
+        {/* My Subjects (Assessment) — Subject Faculty manages their own subjects' activities + CO1-5 */}
+        <Route path="/faculty/my-subjects" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MySubjectActivities /></RoleGuard>
+        } />
+
+        {/* My Teaching Load — faculty self-service view of Load Calculation */}
+        <Route path="/faculty/my-load" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MyLoad /></RoleGuard>
+        } />
+
+        {/* My Profile — LinkedIn-style rich faculty profile + PDF export */}
+        <Route path="/faculty/my-profile" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MyProfile /></RoleGuard>
+        } />
+
+        {/* Internal Chat — faculty/admin only, never students */}
+        <Route path="/chat" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ChatPage /></RoleGuard>
+        } />
       </Route>
 
       {/* PMS Routes - outside main Layout so PMS gets its own Sidebar + Topbar */}
@@ -332,14 +445,14 @@ function AppRoutes({ theme, toggleTheme }) {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('super50_theme') || 'dark');
+  const [theme] = useState('light');
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('super50_theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('super50_theme', 'light');
+  }, []);
 
-  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
+  const toggleTheme = () => { };
 
   return (
     <Provider store={store}>

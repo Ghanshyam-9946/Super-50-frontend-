@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState } from '../../../components/pms/Common';
 
 // Columns: P1=5, P2=5, P3=5, P4=15, P5=20 → Total 50
@@ -27,6 +28,7 @@ const GuideRubrics = () => {
   const [attendanceMap, setAttendanceMap] = useState({}); // 🆕
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -126,14 +128,22 @@ const GuideRubrics = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <a
-            href={guideAPI.rubricPdfUrl(teamId)}
-            target="_blank"
-            rel="noreferrer"
+          <button
             className="btn-outline"
+            disabled={downloadingPdf}
+            onClick={async () => {
+              setDownloadingPdf(true);
+              try {
+                await downloadFile(guideAPI.rubricPdfUrl(teamId), `rubric_${team.groupNo}.pdf`);
+              } catch (err) {
+                toast.error(handleError(err));
+              } finally {
+                setDownloadingPdf(false);
+              }
+            }}
           >
-            <FileText className="w-4 h-4" /> Download PDF
-          </a>
+            {downloadingPdf ? <Spinner size="sm" /> : <><FileText className="w-4 h-4" /> Download PDF</>}
+          </button>
         </div>
       </div>
 

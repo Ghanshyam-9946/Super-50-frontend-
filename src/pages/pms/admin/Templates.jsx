@@ -6,6 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState, Modal, confirmAction } from '../../../components/pms/Common';
 import { formatDate } from '../../../utils/pms/helpers';
 
@@ -244,15 +245,13 @@ const AdminTemplates = () => {
                       <td className="text-sm">{formatDate(t.createdAt)}</td>
                       <td className="text-right">
                         <div className="flex justify-end gap-1">
-                          <a
-                            href={adminAPI.templateDownloadUrl(t._id)}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            onClick={() => downloadFile(adminAPI.templateDownloadUrl(t._id), t.originalName || t.filename || t.title).catch((err) => toast.error(handleError(err)))}
                             className="btn-outline btn-sm"
                             title="Download"
                           >
                             <Download className="w-3 h-3" />
-                          </a>
+                          </button>
                           <button onClick={() => setEditTpl(t)} className="btn-secondary btn-sm">
                             <Edit3 className="w-3 h-3" />
                           </button>

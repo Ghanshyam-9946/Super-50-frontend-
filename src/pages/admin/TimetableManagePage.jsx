@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarClock, Plus, Pencil, Trash2, Eye, EyeOff, Loader2, ArrowLeft,
-  Save, X, Table2, FileText, Upload, ExternalLink,
+  Save, X, Table2, FileText, Upload, ExternalLink, Download, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -56,6 +56,27 @@ function ListView({ onCreate, onEdit }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [semesterFilter, setSemesterFilter] = useState('');
+  const [previewId, setPreviewId] = useState(null);
+
+  // Same fix as StudentTimetablePage.jsx — a plain <a download> is silently
+  // ignored cross-origin, so fetch the blob and save it via a same-origin
+  // object URL instead.
+  const downloadPdf = async (tt) => {
+    try {
+      const res = await fetch(getImageUrl(tt.pdfUrl));
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = tt.pdfFileName || 'Timetable.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error('Failed to download timetable');
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -166,14 +187,29 @@ function ListView({ onCreate, onEdit }) {
 
               {tt.roomNo && <p className="text-xs text-[var(--text-secondary)]">Room No {tt.roomNo}</p>}
 
-              <a
-                href={getImageUrl(tt.pdfUrl)}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-xs font-bold text-[var(--primary)] hover:underline"
-              >
-                <FileText size={14} /> {tt.pdfFileName || 'View PDF'} <ExternalLink size={12} />
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href={getImageUrl(tt.pdfUrl)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline min-w-0"
+                >
+                  <FileText size={14} className="shrink-0" /> <span className="truncate">{tt.pdfFileName || 'View PDF'}</span> <ExternalLink size={12} className="shrink-0" />
+                </a>
+                <button
+                  onClick={() => setPreviewId((p) => (p === tt._id ? null : tt._id))}
+                  className="ml-auto shrink-0 flex items-center gap-1 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  title="Preview inline"
+                >
+                  {previewId === tt._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+              </div>
+
+              {previewId === tt._id && (
+                <div className="rounded-xl overflow-hidden border border-[var(--border-light)]">
+                  <iframe src={getImageUrl(tt.pdfUrl)} title={tt.pdfFileName || 'Timetable preview'} className="w-full border-0" style={{ height: '50vh' }} />
+                </div>
+              )}
 
               <div className="flex items-center gap-2 mt-2 pt-3 border-t border-[var(--border-light)]">
                 <button
@@ -181,6 +217,13 @@ function ListView({ onCreate, onEdit }) {
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border-light)] text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all"
                 >
                   <Pencil size={13} /> Edit
+                </button>
+                <button
+                  onClick={() => downloadPdf(tt)}
+                  className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border-light)] text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all"
+                  title="Download PDF"
+                >
+                  <Download size={13} />
                 </button>
                 <button
                   onClick={() => togglePublish(tt._id)}
