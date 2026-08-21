@@ -3,6 +3,7 @@ import { FileText, Download, Users, ScrollText, ExternalLink, Filter, Layers } f
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState } from '../../../components/pms/Common';
 
 const Forms = () => {
@@ -10,6 +11,18 @@ const Forms = () => {
   const [teams, setTeams] = useState([]);
   const [filters, setFilters] = useState({ yearId: '', semester: '' });
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState('');
+
+  const download = async (url, filename, key) => {
+    setDownloading(key);
+    try {
+      await downloadFile(url, filename);
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setDownloading('');
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -68,14 +81,13 @@ const Forms = () => {
             Each group's form is on its own page in SISTec format.
           </p>
           <div className="space-y-2">
-            <a
-              href={adminAPI.bulkInitiationFormsUrl(pdfParams)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={() => download(adminAPI.bulkInitiationFormsUrl(pdfParams), 'all_initiation_forms.pdf', 'bulk-initiation')}
+              disabled={downloading === 'bulk-initiation'}
               className="btn-primary w-full"
             >
-              <Download className="w-4 h-4" /> Download Bulk Initiation Forms PDF
-            </a>
+              {downloading === 'bulk-initiation' ? <Spinner size="sm" className="text-white" /> : <><Download className="w-4 h-4" /> Download Bulk Initiation Forms PDF</>}
+            </button>
             <p className="form-help">Will include {teams.length} teams</p>
           </div>
         </Card>
@@ -85,14 +97,13 @@ const Forms = () => {
             Generate the official guide allotment list PDF (landscape) showing all teams, members, project titles, and assigned guides.
           </p>
           <div className="space-y-2">
-            <a
-              href={adminAPI.guideAllotmentUrl(pdfParams)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={() => download(adminAPI.guideAllotmentUrl(pdfParams), 'guide_allotment_list.pdf', 'guide-allotment')}
+              disabled={downloading === 'guide-allotment'}
               className="btn-primary w-full"
             >
-              <Download className="w-4 h-4" /> Download Guide Allotment PDF
-            </a>
+              {downloading === 'guide-allotment' ? <Spinner size="sm" className="text-white" /> : <><Download className="w-4 h-4" /> Download Guide Allotment PDF</>}
+            </button>
             <p className="form-help">Will include {teams.length} teams</p>
           </div>
         </Card>
@@ -117,14 +128,13 @@ const Forms = () => {
                       <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
                       <td className="text-sm">{t.guide?.name || '—'}</td>
                       <td className="text-right">
-                        <a
-                          href={adminAPI.initiationFormUrl(t._id)}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          onClick={() => download(adminAPI.initiationFormUrl(t._id), `initiation_form_${t.groupNo}.pdf`, t._id)}
+                          disabled={downloading === t._id}
                           className="btn-outline btn-sm"
                         >
-                          <FileText className="w-3 h-3" /> Download
-                        </a>
+                          {downloading === t._id ? <Spinner size="sm" /> : <><FileText className="w-3 h-3" /> Download</>}
+                        </button>
                       </td>
                     </tr>
                   ))}

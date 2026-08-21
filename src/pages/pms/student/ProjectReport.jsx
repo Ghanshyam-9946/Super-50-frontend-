@@ -11,6 +11,7 @@ import {
 import toast from 'react-hot-toast';
 import { studentAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState, Modal, confirmAction } from '../../../components/pms/Common';
 import { cn } from '../../../utils/pms/helpers';
 
@@ -116,6 +117,7 @@ const ProjectReport = () => {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('cover');
   const [dirty, setDirty] = useState(false);
+  const [downloadingReport, setDownloadingReport] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -229,19 +231,25 @@ const ProjectReport = () => {
           <p className="text-sm text-slate-500 mt-1">Edit all sections following SISTec format. Download as Word document anytime.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <a
-            href={studentAPI.reportDownloadUrl}
-            target="_blank"
-            rel="noreferrer"
+          <button
             className="btn-outline"
-            onClick={(e) => {
+            disabled={downloadingReport}
+            onClick={async () => {
               if (dirty && !window.confirm('You have unsaved changes. Download anyway? (only saved content will be exported)')) {
-                e.preventDefault();
+                return;
+              }
+              setDownloadingReport(true);
+              try {
+                await downloadFile(studentAPI.reportDownloadUrl, 'Project-Report.docx');
+              } catch (err) {
+                toast.error(handleError(err));
+              } finally {
+                setDownloadingReport(false);
               }
             }}
           >
-            <Download className="w-4 h-4" /> Download DOCX
-          </a>
+            {downloadingReport ? <Spinner size="sm" /> : <><Download className="w-4 h-4" /> Download DOCX</>}
+          </button>
           <button onClick={handleSave} disabled={saving || !dirty} className="btn-primary">
             {saving ? <Spinner size="sm" className="text-white" /> : <><Save className="w-4 h-4" /> {dirty ? 'Save Changes' : 'Saved'}</>}
           </button>

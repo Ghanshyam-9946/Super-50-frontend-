@@ -7,7 +7,10 @@ import api from "../../../services/api";
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null });
-const emptyForm = () => ({ subjectName: "", subjectCode: "", semester: "", noOfLectures: 0, noOfTheory: 0, noOfPractical: 0, activities: [] });
+const emptyForm = () => ({
+  subjectName: "", subjectCode: "", semester: "", noOfLectures: 0, noOfTheory: 0, noOfPractical: 0, activities: [],
+  co1: "", co2: "", co3: "", co4: "", co5: "",
+});
 // <input type="date"> needs "YYYY-MM-DD" — activity.deadline comes back
 // from the API as a full ISO string (or is null if never set).
 const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
@@ -77,6 +80,8 @@ export default function Subjects() {
       noOfTheory: subject.noOfTheory || 0,
       noOfPractical: subject.noOfPractical || 0,
       activities: subject.activities.map((a) => ({ ...a })),
+      co1: subject.co1 || "", co2: subject.co2 || "", co3: subject.co3 || "",
+      co4: subject.co4 || "", co5: subject.co5 || "",
     });
   };
 
@@ -193,6 +198,23 @@ export default function Subjects() {
           onChange={(e) => setForm((f) => ({ ...f, noOfPractical: e.target.value }))}
           className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-full sm:w-96"
         />
+
+        <div className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Course Outcomes (NBA)</span>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <label key={n} className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">CO{n}</span>
+                <input
+                  value={form[`co${n}`]}
+                  onChange={(e) => setForm((f) => ({ ...f, [`co${n}`]: e.target.value }))}
+                  placeholder={`Course Outcome ${n}`}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                />
+              </label>
+            ))}
+          </div>
+        </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">

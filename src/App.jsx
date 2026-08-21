@@ -59,6 +59,8 @@ import AdminRGPVPage from './pages/admin/AdminRGPVPage';
 import StudentRGPVPage from './pages/student/StudentRGPVPage';
 import TimetableManagePage from './pages/admin/TimetableManagePage';
 import StudentTimetablePage from './pages/student/StudentTimetablePage';
+import AcademicCalendarManagePage from './pages/admin/AcademicCalendarManagePage';
+import StudentAcademicCalendarPage from './pages/student/StudentAcademicCalendarPage';
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
 import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
@@ -75,6 +77,8 @@ import MasterDataAllocationSheet from './pages/admin/masterdata/AllocationSheet'
 import ChoiceFillingPage from './pages/faculty/ChoiceFillingPage';
 import ChatPage from './pages/chat/ChatPage';
 import MySubjectActivities from './pages/faculty/MySubjectActivities';
+import MyLoad from './pages/faculty/MyLoad';
+import MyProfile from './pages/faculty/MyProfile';
 import SessionalMarksPage from './pages/faculty/SessionalMarksPage';
 import StudentSessionalMarksPage from './pages/student/StudentSessionalMarksPage';
 import FeedbackReleasePage from './pages/admin/feedback/FeedbackReleasePage';
@@ -216,6 +220,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/timetable" element={
           <RoleGuard allowed={['student']}><StudentTimetablePage /></RoleGuard>
         } />
+        <Route path="/student/academic-calendar" element={
+          <RoleGuard allowed={['student']}><StudentAcademicCalendarPage /></RoleGuard>
+        } />
         <Route path="/student/no-dues" element={
           <RoleGuard allowed={['student']}><StudentNoDuesPage /></RoleGuard>
         } />
@@ -308,6 +315,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/timetable" element={
           <RoleGuard allowed={['admin', 'teacher']}><TimetableManagePage /></RoleGuard>
         } />
+        <Route path="/admin/academic-calendar" element={
+          <RoleGuard allowed={['admin', 'teacher']}><AcademicCalendarManagePage /></RoleGuard>
+        } />
         <Route path="/admin/no-dues" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><NoDuesAdminPage /></RoleGuard>
         } />
@@ -393,9 +403,19 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ChoiceFillingPage /></RoleGuard>
         } />
 
-        {/* My Subjects (Activities) — Subject Faculty manages their own subjects' activities */}
+        {/* My Subjects (Assessment) — Subject Faculty manages their own subjects' activities + CO1-5 */}
         <Route path="/faculty/my-subjects" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MySubjectActivities /></RoleGuard>
+        } />
+
+        {/* My Teaching Load — faculty self-service view of Load Calculation */}
+        <Route path="/faculty/my-load" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MyLoad /></RoleGuard>
+        } />
+
+        {/* My Profile — LinkedIn-style rich faculty profile + PDF export */}
+        <Route path="/faculty/my-profile" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MyProfile /></RoleGuard>
         } />
 
         {/* Internal Chat — faculty/admin only, never students */}

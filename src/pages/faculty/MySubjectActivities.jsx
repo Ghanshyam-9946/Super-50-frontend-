@@ -16,6 +16,7 @@ export default function MySubjectActivities() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [co, setCo] = useState({ co1: "", co2: "", co3: "", co4: "", co5: "" });
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -37,11 +38,16 @@ export default function MySubjectActivities() {
   const startEdit = (subject) => {
     setEditingId(subject._id);
     setActivities(subject.activities.map((a) => ({ ...a })));
+    setCo({
+      co1: subject.co1 || "", co2: subject.co2 || "", co3: subject.co3 || "",
+      co4: subject.co4 || "", co5: subject.co5 || "",
+    });
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setActivities([]);
+    setCo({ co1: "", co2: "", co3: "", co4: "", co5: "" });
   };
 
   const addActivity = () => setActivities((prev) => [...prev, emptyActivity()]);
@@ -52,9 +58,9 @@ export default function MySubjectActivities() {
   const save = async () => {
     setSaving(true);
     try {
-      const { data } = await api.patch(`/master-data/subjects/${editingId}/activities`, { activities });
+      const { data } = await api.patch(`/master-data/subjects/${editingId}/activities`, { activities, ...co });
       if (data.success) {
-        toast.success("Activities saved");
+        toast.success("Assessment saved");
         cancelEdit();
         load();
       }
@@ -72,9 +78,9 @@ export default function MySubjectActivities() {
           <BookOpen size={26} />
         </div>
         <div>
-          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">My Subjects — Activities</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">My Subjects — Assessment</h1>
           <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">
-            Manage the Activities for subjects you're assigned to teach — feeds No Dues checklists and Sessional Marks CA categories automatically.
+            Manage Activities and Course Outcomes (NBA) for subjects you're assigned to teach — feeds No Dues checklists and Sessional Marks CA categories automatically.
           </p>
         </div>
       </header>
@@ -103,13 +109,29 @@ export default function MySubjectActivities() {
                 </div>
                 {editingId !== s._id && (
                   <button onClick={() => startEdit(s)} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
-                    <Edit3 size={12} /> Manage Activities
+                    <Edit3 size={12} /> Manage Assessment
                   </button>
                 )}
               </div>
 
               {editingId === s._id && (
-                <div className="mt-4 space-y-2 border-t border-[var(--border-light)] pt-4">
+                <div className="mt-4 space-y-4 border-t border-[var(--border-light)] pt-4">
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Course Outcomes (NBA)</span>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <label key={n} className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">CO{n}</span>
+                          <input
+                            value={co[`co${n}`]}
+                            onChange={(e) => setCo((prev) => ({ ...prev, [`co${n}`]: e.target.value }))}
+                            placeholder={`Course Outcome ${n}`}
+                            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Activities</span>
                     <button onClick={addActivity} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
@@ -167,7 +189,7 @@ export default function MySubjectActivities() {
                   ))}
                   <div className="flex gap-2 pt-1">
                     <button onClick={save} disabled={saving} className="btn-premium text-sm px-4 py-2 flex items-center gap-1.5 disabled:opacity-40">
-                      {saving ? <Loader2 size={14} className="animate-spin" /> : "Save Activities"}
+                      {saving ? <Loader2 size={14} className="animate-spin" /> : "Save Assessment"}
                     </button>
                     <button onClick={cancelEdit} className="text-sm font-bold px-4 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1.5">
                       <X size={14} /> Cancel

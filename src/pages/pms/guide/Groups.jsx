@@ -52,16 +52,16 @@ const GuideGroups = () => {
                     <td className="text-sm">{g.academicYear?.yearName}</td>
                     <td className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Link to={`/guide/review/${g._id}`} className="btn-outline btn-sm" title="Review submissions">
+                        <Link to={`/pms/guide/review/${g._id}`} className="btn-outline btn-sm" title="Review submissions">
                           <ArrowRight className="w-3 h-3" />
                         </Link>
-                        <Link to={`/guide/status/${g._id}`} className="btn-secondary btn-sm" title="Project status">
+                        <Link to={`/pms/guide/status/${g._id}`} className="btn-secondary btn-sm" title="Project status">
                           <Activity className="w-3 h-3" />
                         </Link>
-                        <Link to={`/guide/rubrics/${g._id}`} className="btn-secondary btn-sm" title="Rubric marks">
+                        <Link to={`/pms/guide/rubrics/${g._id}`} className="btn-secondary btn-sm" title="Rubric marks">
                           <Award className="w-3 h-3" />
                         </Link>
-                        <Link to={`/guide/attendance?teamId=${g._id}`} className="btn-secondary btn-sm" title="Attendance">
+                        <Link to={`/pms/guide/attendance?teamId=${g._id}`} className="btn-secondary btn-sm" title="Attendance">
                           <CheckSquare className="w-3 h-3" />
                         </Link>
                       </div>
