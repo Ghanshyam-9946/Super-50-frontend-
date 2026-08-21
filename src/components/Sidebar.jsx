@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
-  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck
+  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,6 +30,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
     { to: '/certificates', icon: Award, label: 'Certificates' },
     { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/student/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
     { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
     { to: '/student/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
@@ -55,6 +56,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
 
   const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
   const isSuper50Mentor = (user?.responsibilities || []).includes('Super 50 Mentor');
+  // Grants full PMS admin access, same as a real admin/pms_admin — mirrors
+  // isAcademicCoordinator above (see PMSRoutes.jsx's RoleGuard and
+  // adminRoutes.js's PMS_ADMIN gate on the backend).
+  const isProjectCoordinator = (user?.responsibilities || []).includes('Project Coordinator');
   // A teacher only sees PMS guide features once they've actually been
   // assigned as a Project Guide (roles array gets 'guide' added — see
   // pms/admin/Guides.jsx) — being a teacher alone is no longer enough.
@@ -70,12 +75,16 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
     ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
     { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
-    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Activities)' },
+    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
+    { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
     ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
+    ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     ...(isSuper50Mentor ? [
       { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
     ] : []),
@@ -89,7 +98,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
     { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
     ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
-    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Activities)' },
+    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
+    { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
+    ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
@@ -109,6 +121,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
     { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
+    { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
     { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
     { to: '/admin/sessional-marks', icon: GraduationCap, label: 'Sessional Marks Report' },
@@ -117,6 +130,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/class-observations', icon: ClipboardCheck, label: 'Class Observation Form' },
     { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
     { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
+    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/admin/students', icon: Users, label: 'All Students' },
     { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },

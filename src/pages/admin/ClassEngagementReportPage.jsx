@@ -87,6 +87,7 @@ export default function ClassEngagementReportPage() {
             <thead>
               <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
                 <th className="px-4 py-3">Date / Time</th>
+                <th className="px-4 py-3">Class</th>
                 <th className="px-4 py-3">Requested By</th>
                 <th className="px-4 py-3">Engaged By</th>
                 <th className="px-4 py-3">Reason</th>
@@ -101,6 +102,7 @@ export default function ClassEngagementReportPage() {
                     {new Date(r.date).toLocaleDateString()}
                     <div className="text-xs text-[var(--text-secondary)]">{r.fromTime} - {r.toTime}</div>
                   </td>
+                  <td className="px-4 py-3">Sem {r.semester} - {r.section}</td>
                   <td className="px-4 py-3">{r.requestedBy?.name}</td>
                   <td className="px-4 py-3">{r.engagedBy?.name}</td>
                   <td className="px-4 py-3 text-[var(--text-secondary)]">{r.reason}</td>

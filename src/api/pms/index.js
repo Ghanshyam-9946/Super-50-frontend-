@@ -15,18 +15,31 @@ export const adminAPI = {
   // Years
   listYears: () => api.get('/pms/admin/years'),
   createYear: (data) => api.post('/pms/admin/years', data),
+  updateYear: (id, data) => api.put(`/pms/admin/years/${id}`, data),
   setActiveYear: (id) => api.put(`/pms/admin/years/${id}/activate`),
   deleteYear: (id) => api.delete(`/pms/admin/years/${id}`),
 
   // Projects
   listProjects: () => api.get('/pms/admin/projects'),
   createProject: (data) => api.post('/pms/admin/projects', data),
+  updateProject: (id, data) => api.put(`/pms/admin/projects/${id}`, data),
   deleteProject: (id) => api.delete(`/pms/admin/projects/${id}`),
 
   // Presentations
   listPresentations: () => api.get('/pms/admin/presentations'),
   createPresentation: (data) => api.post('/pms/admin/presentations', data),
+  updatePresentation: (id, data) => api.put(`/pms/admin/presentations/${id}`, data),
   deletePresentation: (id) => api.delete(`/pms/admin/presentations/${id}`),
+
+  // 🆕 Team Configuration (min/max team size, max teams per guide) +
+  // Allocation Sheet finalize/unlock
+  getTeamConfig: (params) => api.get('/pms/admin/team-config', { params }),
+  upsertTeamConfig: (data) => api.put('/pms/admin/team-config', data),
+  setAllocationFinalized: (data) => api.patch('/pms/admin/team-config/finalize', data),
+
+  // 🆕 Admin daily attendance marking (group-wise + student-wise, any team)
+  getAttendanceForTeam: (teamId) => api.get(`/pms/admin/attendance/team/${teamId}`),
+  markAttendance: (data) => api.post('/pms/admin/attendance', data),
 
   // Guides — tagging an existing faculty account, never creating a new one
   listGuides: () => api.get('/pms/admin/guides'),
@@ -70,7 +83,7 @@ export const adminAPI = {
     }),
   updateTemplate: (id, data) => api.put(`/pms/admin/templates/${id}`, data),
   deleteTemplate: (id) => api.delete(`/pms/admin/templates/${id}`),
-  templateDownloadUrl: (id) => `/api/pms/student/templates/${id}/download`, // admin can also use student route
+  templateDownloadUrl: (id) => `/pms/student/templates/${id}/download`, // admin can also use student route
 
   // 🆕 Progress overview (all teams)
   progressOverview: (params) => api.get('/pms/admin/progress-overview', { params }),
@@ -86,17 +99,22 @@ export const adminAPI = {
     }),
   deleteSemesterAttendance: (id) => api.delete(`/pms/admin/semester-attendance/${id}`),
   bulkDeleteSemesterAttendance: (data) => api.post('/pms/admin/semester-attendance/bulk-delete', data),
-  semesterAttendanceSampleUrl: '/api/pms/admin/semester-attendance/sample-template',
+  semesterAttendanceSampleUrl: '/pms/admin/semester-attendance/sample-template',
 
-  // 🆕 PDF download URLs (direct browser navigation works because cookies travel)
-  initiationFormUrl: (teamId) => `/api/pms/admin/teams/${teamId}/initiation-form.pdf`,
+  // PDF/file download paths — relative to the shared `api` instance's own
+  // baseURL (which already includes `/api`), consumed via downloadFile()
+  // (utils/downloadFile.js) rather than raw <a href> navigation. A bare
+  // <a href> can't carry the Bearer token this app actually uses (login
+  // never sets an auth cookie), so every one of these previously 401'd
+  // silently on click.
+  initiationFormUrl: (teamId) => `/pms/admin/teams/${teamId}/initiation-form.pdf`,
   bulkInitiationFormsUrl: (params) => {
     const q = new URLSearchParams(params || {}).toString();
-    return `/api/pms/admin/initiation-forms.pdf${q ? `?${q}` : ''}`;
+    return `/pms/admin/initiation-forms.pdf${q ? `?${q}` : ''}`;
   },
   guideAllotmentUrl: (params) => {
     const q = new URLSearchParams(params || {}).toString();
-    return `/api/pms/admin/guide-allotment.pdf${q ? `?${q}` : ''}`;
+    return `/pms/admin/guide-allotment.pdf${q ? `?${q}` : ''}`;
   },
 };
 
@@ -134,13 +152,13 @@ export const studentAPI = {
   getCodeDiagnostics: () => api.get('/pms/student/code/diagnostics'),
   // 🆕 Templates
   listTemplates: () => api.get('/pms/student/templates'),
-  templateDownloadUrl: (id) => `/api/pms/student/templates/${id}/download`,
+  templateDownloadUrl: (id) => `/pms/student/templates/${id}/download`,
 
   // 🆕 Online Project Report
   getReport: () => api.get('/pms/student/report'),
   updateReport: (data) => api.put('/pms/student/report', data),
   submitReport: () => api.post('/pms/student/report/submit'),
-  reportDownloadUrl: '/api/pms/student/report/download',
+  reportDownloadUrl: '/pms/student/report/download',
 };
 
 // ============ GUIDE ============
@@ -155,8 +173,8 @@ export const guideAPI = {
   // 🆕 Rubric Evaluation
   getRubrics: (teamId) => api.get(`/pms/guide/rubrics/${teamId}`),
   saveRubrics: (data) => api.post('/pms/guide/rubrics', data),
-  rubricPdfUrl: (teamId) => `/api/pms/guide/rubrics/${teamId}/pdf`,
-  bulkRubricsPdfUrl: () => `/api/pms/guide/rubrics-all/pdf`,
+  rubricPdfUrl: (teamId) => `/pms/guide/rubrics/${teamId}/pdf`,
+  bulkRubricsPdfUrl: () => `/pms/guide/rubrics-all/pdf`,
   // 🆕 Status
   getAllGroupsStatus: () => api.get('/pms/guide/status'),
   getGroupStatus: (teamId) => api.get(`/pms/guide/status/${teamId}`),

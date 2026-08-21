@@ -3,6 +3,9 @@ import { useSelector } from "react-redux";
 import { UserCheck, Loader2, Send, Check, X } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import SectionSelect from "../../components/SectionSelect";
+
+const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const STATUS_BADGE = {
   pending: "bg-amber-500/10 text-amber-500",
@@ -55,7 +58,7 @@ function RejectControl({ onReject, busy }) {
 export default function ClassEngagementPage() {
   const { user } = useSelector((s) => s.auth);
   const [facultyList, setFacultyList] = useState([]);
-  const [form, setForm] = useState({ date: "", fromTime: "", toTime: "", engagedBy: "", reason: "" });
+  const [form, setForm] = useState({ semester: "", section: "", date: "", fromTime: "", toTime: "", engagedBy: "", reason: "" });
   const [submitting, setSubmitting] = useState(false);
   const [myRequests, setMyRequests] = useState([]);
   const [assignedToMe, setAssignedToMe] = useState([]);
@@ -90,15 +93,15 @@ export default function ClassEngagementPage() {
   }, []);
 
   const submit = async () => {
-    if (!form.date || !form.fromTime || !form.toTime || !form.engagedBy || !form.reason.trim()) {
-      return toast.error("Date, from/to time, engaged-by faculty and reason are all required");
+    if (!form.semester || !form.section || !form.date || !form.fromTime || !form.toTime || !form.engagedBy || !form.reason.trim()) {
+      return toast.error("Semester, section, date, from/to time, engaged-by faculty and reason are all required");
     }
     setSubmitting(true);
     try {
       const { data } = await api.post("/class-engagements", form);
       if (data.success) {
         toast.success(data.message);
-        setForm({ date: "", fromTime: "", toTime: "", engagedBy: "", reason: "" });
+        setForm({ semester: "", section: "", date: "", fromTime: "", toTime: "", engagedBy: "", reason: "" });
         loadLists();
       }
     } catch (err) {
@@ -139,7 +142,22 @@ export default function ClassEngagementPage() {
 
       <div className="glass-card p-5 rounded-2xl space-y-3">
         <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">New Request</h3>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+            Semester
+            <select value={form.semester} onChange={(e) => setForm((f) => ({ ...f, semester: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm">
+              <option value="">Select semester</option>
+              {SEMESTERS.map((n) => (
+                <option key={n} value={n}>
+                  Semester {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+            Section
+            <SectionSelect value={form.section} onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))} />
+          </label>
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Date
             <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
@@ -195,6 +213,7 @@ export default function ClassEngagementPage() {
                 <thead>
                   <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
                     <th className="px-4 py-3">Date / Time</th>
+                    <th className="px-4 py-3">Class</th>
                     <th className="px-4 py-3">Requested By</th>
                     <th className="px-4 py-3">Reason</th>
                     <th className="px-4 py-3">Status</th>
@@ -208,6 +227,7 @@ export default function ClassEngagementPage() {
                         {new Date(r.date).toLocaleDateString()}
                         <div className="text-xs text-[var(--text-secondary)]">{r.fromTime} - {r.toTime}</div>
                       </td>
+                      <td className="px-4 py-3">Sem {r.semester} - {r.section}</td>
                       <td className="px-4 py-3">{r.requestedBy?.name}</td>
                       <td className="px-4 py-3 text-[var(--text-secondary)]">{r.reason}</td>
                       <td className="px-4 py-3">
@@ -252,6 +272,7 @@ export default function ClassEngagementPage() {
                 <thead>
                   <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
                     <th className="px-4 py-3">Date / Time</th>
+                    <th className="px-4 py-3">Class</th>
                     <th className="px-4 py-3">Engaged By</th>
                     <th className="px-4 py-3">Reason</th>
                     <th className="px-4 py-3">Status</th>
@@ -264,6 +285,7 @@ export default function ClassEngagementPage() {
                         {new Date(r.date).toLocaleDateString()}
                         <div className="text-xs text-[var(--text-secondary)]">{r.fromTime} - {r.toTime}</div>
                       </td>
+                      <td className="px-4 py-3">Sem {r.semester} - {r.section}</td>
                       <td className="px-4 py-3">{r.engagedBy?.name}</td>
                       <td className="px-4 py-3 text-[var(--text-secondary)]">{r.reason}</td>
                       <td className="px-4 py-3">

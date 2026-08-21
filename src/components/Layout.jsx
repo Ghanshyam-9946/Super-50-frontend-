@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import { fetchMe } from '../features/auth/authSlice';
 import { ChatSocketProvider } from '../context/ChatSocketContext';
+import FloatingChatBubble from './chat/FloatingChatBubble';
 
 export default function Layout({ theme, toggleTheme }) {
   const { user, token } = useSelector((s) => s.auth);
@@ -45,6 +46,7 @@ export default function Layout({ theme, toggleTheme }) {
             </motion.div>
           </AnimatePresence>
         </main>
+        <FloatingChatBubble />
       </div>
     </ChatSocketProvider>
   );

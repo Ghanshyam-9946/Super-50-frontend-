@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState, Modal, confirmAction } from '../../../components/pms/Common';
 
 const DOMAIN_OPTS = ['WEB DEVELOPMENT', 'MOBILE APP DEVELOPMENT', 'ML', 'DATA SCIENCE / DATA ANALYTICS', 'IOT', 'OTHER'];
@@ -570,15 +571,13 @@ const Teams = () => {
                             >
                               {t.isLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                             </button>
-                            <a
-                              href={adminAPI.initiationFormUrl(t._id)}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              onClick={() => downloadFile(adminAPI.initiationFormUrl(t._id), `initiation_form_${t.groupNo}.pdf`).catch((err) => toast.error(handleError(err)))}
                               className="btn-secondary btn-sm"
                               title="Download initiation form"
                             >
                               <FileText className="w-3 h-3" />
-                            </a>
+                            </button>
                             <button onClick={() => handleDelete(t)} className="btn-secondary btn-sm text-red-600" title="Delete team">
                               <Trash2 className="w-3 h-3" />
                             </button>
