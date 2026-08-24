@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { printStudentDossier } from '../../utils/printDossier';
 import {
   Users,
   GraduationCap,
@@ -117,7 +118,9 @@ export default function ParentDashboard({ theme, toggleTheme }) {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (data) {
+      printStudentDossier(data, 'MILE Parent Portal Verified Record');
+    }
   };
 
   if (loading) {
@@ -166,14 +169,37 @@ export default function ParentDashboard({ theme, toggleTheme }) {
     { id: 'clearance', icon: ShieldCheck, label: 'Fees & No Dues', desc: 'Departmental clearance checklist', color: 'text-orange-500 bg-orange-500/10 border-orange-500/20' },
   ];
 
+  const campus = String(student.campus || user?.campus || '').toLowerCase();
+  const enroll = String(student.enrollmentNumber || student.enrollmentNo || '').toUpperCase();
+  const dept = String(student.department || '').toLowerCase();
+  const college = String(student.collegeName || student.institute || '').toLowerCase();
+
+  const isRatibad =
+    campus.includes('ratibad') ||
+    college.includes('sistec-r') ||
+    college.includes('research') ||
+    college.includes('ratibad') ||
+    dept.includes('sistec-r') ||
+    dept.includes('(r)') ||
+    dept.includes('ratibad') ||
+    enroll.includes('0193') ||
+    enroll.includes('0194') ||
+    enroll.includes('0517');
+
+  const institutionName = isRatibad
+    ? 'Sagar Institute of Science Technology & Research (SISTec-R)'
+    : 'Sagar Institute of Science and Technology (SISTec)';
+
+  const campusLocation = isRatibad ? 'Ratibad Campus, Bhopal' : 'Gandhinagar Campus, Bhopal';
+
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] font-sans pb-24 selection:bg-purple-500 selection:text-white transition-colors duration-300">
-      {/* Top Application Header */}
-      <header className="sticky top-0 z-40 bg-[var(--bg-card)] border-b border-[var(--border-light)] px-4 sm:px-8 py-3.5 shadow-sm no-print">
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] transition-colors duration-200 pb-16 font-body">
+      {/* Official Top Navigation Bar */}
+      <header className="sticky top-0 z-40 bg-[var(--bg-modal)]/80 backdrop-blur-md border-b border-[var(--border-light)] py-3.5 px-4 sm:px-8 shadow-sm no-print">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-white p-1 flex items-center justify-center border border-[var(--border-light)] shadow-sm">
-              <img src={sistecLogo} alt="SISTec" className="h-full w-full object-contain" />
+            <div className="h-10 w-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-[var(--primary)] shrink-0">
+              <GraduationCap size={20} />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -185,7 +211,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                 </span>
               </div>
               <p className="text-[10px] font-bold text-[var(--text-secondary)]">
-                Sagar Group of Institutions (SISTec)
+                {institutionName} • {campusLocation}
               </p>
             </div>
           </div>
@@ -211,15 +237,13 @@ export default function ParentDashboard({ theme, toggleTheme }) {
               </div>
             )}
 
-
-
             <button
               onClick={handlePrint}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--bg-input)] hover:bg-[var(--bg-hover)] border border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer shadow-sm"
               title="Print Academic Report"
             >
               <Printer size={14} />
-              <span className="hidden sm:inline">Print</span>
+              <span className="hidden sm:inline">Print Report</span>
             </button>
 
             <button

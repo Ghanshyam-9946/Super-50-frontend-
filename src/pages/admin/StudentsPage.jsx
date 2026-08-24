@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
+import { printStudentDossier } from '../../utils/printDossier';
 
 function AddStudentModal({ onClose }) {
   const dispatch = useDispatch();
@@ -510,6 +511,29 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [printingStudentId, setPrintingStudentId] = useState(null);
+
+  const handleDirectPrint = async (studentId, studentName) => {
+    setPrintingStudentId(studentId);
+    const toastId = toast.loading(`Preparing dossier for ${studentName || 'student'}...`);
+    try {
+      const res = await api.get(`/students/${studentId}`);
+      if (res.data?.data) {
+        toast.success('Dossier generated! Opening print...', { id: toastId });
+        printStudentDossier(
+          res.data.data,
+          user?.role === 'admin' ? 'Administrative Verified Official Record' : 'TG Mentorship Verified Official Record'
+        );
+      } else {
+        toast.error('Student academic record not found', { id: toastId });
+      }
+    } catch (err) {
+      console.error('Print dossier fetch error:', err);
+      toast.error('Failed to load student dossier for printing', { id: toastId });
+    } finally {
+      setPrintingStudentId(null);
+    }
+  };
 
   // Pagination State (20 items per page)
   const [currentPage, setCurrentPage] = useState(1);
@@ -780,9 +804,22 @@ export default function StudentsPage({ isSuper50 = false }) {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setSelectedStudentId(student._id)}
-                              className="btn-outline-premium text-xs py-1.5 px-3 flex items-center gap-1.5 shadow-sm"
+                              className="btn-outline-premium text-xs py-2 px-3.5 flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
-                              <Eye size={14} /> View Data
+                              <Eye size={15} /> View Data
+                            </button>
+                            <button
+                              onClick={() => handleDirectPrint(student._id, student.name)}
+                              disabled={printingStudentId === student._id}
+                              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all cursor-pointer disabled:opacity-50"
+                              title="Direct 1-Click Print Official Academic Dossier"
+                            >
+                              {printingStudentId === student._id ? (
+                                <Loader2 size={15} className="animate-spin" />
+                              ) : (
+                                <Printer size={15} />
+                              )}
+                              <span>Print Dossier</span>
                             </button>
                             {(user?.role === 'admin' || user?.role === 'super50_admin') && (
                               <button
