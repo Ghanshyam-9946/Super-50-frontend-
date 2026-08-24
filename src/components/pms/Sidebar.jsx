@@ -30,6 +30,7 @@ const adminNav = [
   { to: '/pms/admin/attendance', label: 'Daily Attendance', icon: CheckSquare },
   { to: '/pms/admin/attendance-mark', label: 'Mark Attendance', icon: CalendarPlus },
   { to: '/pms/admin/semester-attendance', label: 'Semester Attendance', icon: CalendarCheck },
+  { to: '/pms/admin/weekly-reports', label: 'Weekly Reports', icon: FileText },
   { to: '/pms/admin/reports', label: 'Reports', icon: BarChart3 },
 
   { section: 'Documents' },
@@ -51,6 +52,7 @@ const studentNav = [
   { to: '/pms/student/presentations', label: 'Presentations', icon: CloudUpload },
   { to: '/pms/student/marks', label: 'Marks & Status', icon: ClipboardCheck },
   { to: '/pms/student/report', label: 'Project Report', icon: FileEdit },
+  { to: '/pms/student/weekly-reports', label: 'Weekly Report', icon: FileText },
 
   { section: 'Tools' },
   { to: '/pms/student/code-editor', label: 'Code Editor', icon: Code2 },
@@ -68,6 +70,7 @@ const guideNav = [
   { to: '/pms/guide/groups', label: 'My Groups', icon: Layers },
   { to: '/pms/guide/status', label: 'Project Status', icon: Activity },
   { to: '/pms/guide/attendance', label: 'Attendance', icon: CheckSquare },
+  { to: '/pms/guide/weekly-reports', label: 'Weekly Reports', icon: FileText },
 
   { section: 'Reports' },
   { to: '/pms/guide/reports', label: 'Reports', icon: BarChart3 },

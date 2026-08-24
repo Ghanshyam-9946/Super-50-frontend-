@@ -223,6 +223,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/student/academic-calendar" element={
           <RoleGuard allowed={['student']}><StudentAcademicCalendarPage /></RoleGuard>
         } />
+        <Route path="/faculty/academic-calendar" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><StudentAcademicCalendarPage /></RoleGuard>
+        } />
         <Route path="/student/no-dues" element={
           <RoleGuard allowed={['student']}><StudentNoDuesPage /></RoleGuard>
         } />
@@ -313,10 +316,10 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/amcat" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminAMCATPage /></RoleGuard>} />
         <Route path="/admin/mst" element={<RoleGuard allowed={['admin', 'super50_admin', 'teacher']}><AdminMSTPage /></RoleGuard>} />
         <Route path="/admin/timetable" element={
-          <RoleGuard allowed={['admin', 'teacher']}><TimetableManagePage /></RoleGuard>
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><TimetableManagePage /></RoleGuard>
         } />
         <Route path="/admin/academic-calendar" element={
-          <RoleGuard allowed={['admin', 'teacher']}><AcademicCalendarManagePage /></RoleGuard>
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><AcademicCalendarManagePage /></RoleGuard>
         } />
         <Route path="/admin/no-dues" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><NoDuesAdminPage /></RoleGuard>

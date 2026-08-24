@@ -1116,7 +1116,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
                   <div>
                     <span className="text-[var(--text-secondary)]">Faculty Project Guide:</span>
                     <div className="text-[var(--text-primary)] font-bold mt-0.5">
-                      {team.guide?.name || 'Assigned Guide'} ({team.guide?.email || 'N/A'})
+                      {(team.guides || []).map((g) => g.name).join(', ') || 'Assigned Guide'} ({(team.guides || []).map((g) => g.email).join(', ') || 'N/A'})
                     </div>
                   </div>
                   <div>
@@ -1783,7 +1783,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
               {team ? (
                 <div className="text-[10px] space-y-1">
                   <div><strong>Title:</strong> {team.title || team.projectTitle || 'Major Academic Project'}</div>
-                  <div><strong>Guide:</strong> {team.guide?.name || 'Assigned Guide'} ({team.guide?.email || 'N/A'})</div>
+                  <div><strong>Guide:</strong> {(team.guides || []).map((g) => g.name).join(', ') || 'Assigned Guide'} ({(team.guides || []).map((g) => g.email).join(', ') || 'N/A'})</div>
                   <div><strong>Team Leader:</strong> {team.teamLeader?.name || student.name}</div>
                   {team.members && team.members.length > 0 && (
                     <div>

@@ -22,6 +22,7 @@ const PAGE_TITLES = {
   '/pms/admin/guidelines': 'Student Guidelines',
   '/pms/admin/templates': 'Templates & Resources',
   '/pms/admin/settings': 'App Settings',
+  '/pms/admin/weekly-reports': 'Weekly Report Compliance',
 
   '/pms/student': 'Dashboard',
   '/pms/student/dashboard': 'Dashboard',
@@ -33,6 +34,7 @@ const PAGE_TITLES = {
   '/pms/student/code-editor': 'Code Editor',
   '/pms/student/resources': 'Templates & Formats',
   '/pms/student/guidelines': 'Guidelines',
+  '/pms/student/weekly-reports': 'Weekly Report',
 
   '/pms/guide': 'Dashboard',
   '/pms/guide/dashboard': 'Dashboard',
@@ -40,6 +42,7 @@ const PAGE_TITLES = {
   '/pms/guide/status': 'Project Status',
   '/pms/guide/attendance': 'Attendance',
   '/pms/guide/reports': 'Reports',
+  '/pms/guide/weekly-reports': 'Weekly Reports',
 };
 
 const PMSLayoutInner = () => {

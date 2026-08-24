@@ -755,12 +755,16 @@ const StudentTeam = () => {
           </div>
         </Card>
 
-        <Card title="Project Guide" icon={UserCheck}>
-          {team.guide ? (
-            <div className="space-y-2 text-sm">
-              <div className="font-semibold text-base">{team.guide.name}</div>
-              <div className="text-slate-500">{team.guide.email}</div>
-              {team.guide.mobile && <div className="text-slate-500">📱 {team.guide.mobile}</div>}
+        <Card title={(team.guides || []).length > 1 ? 'Project Guides' : 'Project Guide'} icon={UserCheck}>
+          {team.guides?.length ? (
+            <div className="space-y-3 text-sm">
+              {team.guides.map((g) => (
+                <div key={g._id}>
+                  <div className="font-semibold text-base">{g.name}</div>
+                  <div className="text-slate-500">{g.email}</div>
+                  {g.mobile && <div className="text-slate-500">📱 {g.mobile}</div>}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="alert-warning text-xs">

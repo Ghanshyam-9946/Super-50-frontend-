@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -14,6 +14,7 @@ import {
   Save,
   Search,
   ListChecks,
+  Grid3x3,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -319,6 +320,9 @@ function EntryTab({ user, coordinator }) {
   const [sheets, setSheets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [openId, setOpenId] = useState(null);
+  // Grid is the default entry mode — fill marks for every student in one
+  // spreadsheet-like table instead of expanding one accordion row at a time.
+  const [view, setView] = useState("grid");
   const [pickerOptions, setPickerOptions] = useState([]);
   const [syncOpen, setSyncOpen] = useState(false);
   const [syncForm, setSyncForm] = useState({ test1Name: "", test1Max: "", test2Name: "", test2Max: "" });
@@ -512,6 +516,30 @@ function EntryTab({ user, coordinator }) {
           No sheets loaded — set filters and click Load, or create sheets from the "Create Sheets" tab.
         </div>
       ) : (
+        <>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setView("grid")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${view === "grid" ? "bg-[var(--primary)] text-white" : "border border-[var(--border-light)] text-[var(--text-primary)]"}`}
+            >
+              <Grid3x3 size={13} /> Grid Entry
+            </button>
+            <button
+              onClick={() => setView("accordion")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${view === "accordion" ? "bg-[var(--primary)] text-white" : "border border-[var(--border-light)] text-[var(--text-primary)]"}`}
+            >
+              <ListChecks size={13} /> One-by-One
+            </button>
+          </div>
+
+          {view === "grid" ? (
+            <div className="space-y-4">
+              <CaMarksGrid sheets={sheets} onChange={handleChange} coordinator={coordinator} user={user} />
+              {(sheets[0]?.subjectRef?.noOfPractical || 0) > 0 && (
+                <LabMarksGrid sheets={sheets} onChange={handleChange} coordinator={coordinator} user={user} />
+              )}
+            </div>
+          ) : (
         <div className="space-y-3">
           {sheets.map((sheet) => {
             const open = openId === sheet._id;
@@ -560,7 +588,317 @@ function EntryTab({ user, coordinator }) {
             );
           })}
         </div>
+          )}
+        </>
       )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────  GRID ENTRY (spreadsheet-style, autosaving)  ───────────────────────────── */
+
+function CaMarksGrid({ sheets, onChange, coordinator, user }) {
+  const uid = user?._id;
+  const first = sheets[0];
+  const subjectActivities = first?.subjectRef?.activities || [];
+  const marksActivities = subjectActivities.filter((a) => a.type === "marks");
+  const categoryOptions = marksActivities.length ? marksActivities.map((a) => a.label) : CA_CATEGORIES;
+  const defaultMaxFor = (category) => {
+    const activity = marksActivities.find((a) => a.label === category);
+    return activity ? String(activity.maxMarks ?? "") : "";
+  };
+  const deadlineFor = (category) => marksActivities.find((a) => a.label === category)?.deadline || null;
+  const isCategoryDeadlinePassed = (category) => {
+    const d = deadlineFor(category);
+    return !!d && new Date() > new Date(d);
+  };
+
+  const [category, setCategory] = useState(categoryOptions[0] || "Assignment");
+  const [kind, setKind] = useState(ACTIVITY_KINDS[0]);
+  const [unit, setUnit] = useState(1);
+  const [max, setMax] = useState(defaultMaxFor(categoryOptions[0]));
+  const [cells, setCells] = useState({});
+  const timers = useRef({});
+  const inputRefs = useRef({});
+
+  // Recompute each row's visible value + entryId whenever the
+  // category/kind/unit selection changes, or sheets update after a save.
+  useEffect(() => {
+    const next = {};
+    sheets.forEach((s) => {
+      const entry = (s.caEntries || []).find(
+        (e) => e.category === category && Number(e.unit) === Number(unit) && (category !== "Activity" || e.kind === kind)
+      );
+      next[s._id] = { value: entry ? String(entry.obtained) : "", entryId: entry?._id || null, status: "idle" };
+    });
+    setCells(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheets, category, kind, unit]);
+
+  useEffect(() => {
+    setMax(defaultMaxFor(category));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
+  const canEditSheet = (sheet) => {
+    if (sheet.locked) return false;
+    const assigned = sheet.faculty?._id === uid || sheet.faculty === uid;
+    if (!assigned && !coordinator) return false;
+    if (!coordinator && isCategoryDeadlinePassed(category)) return false;
+    return true;
+  };
+
+  const saveCell = async (sheetId, value) => {
+    if (value === "" || max === "") return;
+    setCells((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "saving" } }));
+    try {
+      const { data } = await api.patch(`/sessional-marks/sheets/${sheetId}/ca`, {
+        entryId: cells[sheetId]?.entryId || null,
+        category,
+        kind,
+        unit: Number(unit),
+        obtained: Number(value),
+        max: Number(max),
+      });
+      if (data.success) {
+        onChange(data.data);
+        const savedEntry = (data.data.caEntries || []).find(
+          (e) => e.category === category && Number(e.unit) === Number(unit) && (category !== "Activity" || e.kind === kind)
+        );
+        setCells((prev) => ({
+          ...prev,
+          [sheetId]: { value: String(savedEntry?.obtained ?? value), entryId: savedEntry?._id || null, status: "saved" },
+        }));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save");
+      setCells((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "error" } }));
+    }
+  };
+
+  const onCellChange = (sheetId, rawValue) => {
+    setCells((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], value: rawValue, status: "idle" } }));
+    clearTimeout(timers.current[sheetId]);
+    timers.current[sheetId] = setTimeout(() => saveCell(sheetId, rawValue), 600);
+  };
+
+  const focusRow = (index) => {
+    const sheet = sheets[index];
+    if (sheet) inputRefs.current[sheet._id]?.focus();
+  };
+  const onKeyDown = (e, index) => {
+    if (e.key === "Enter" || e.key === "ArrowDown") {
+      e.preventDefault();
+      focusRow(index + 1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      focusRow(index - 1);
+    }
+  };
+
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="flex flex-wrap items-end gap-3 p-4 border-b border-[var(--border-light)]">
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          Category
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm">
+            {categoryOptions.map((c) => (
+              <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>
+            ))}
+          </select>
+        </label>
+        {category === "Activity" && (
+          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+            Kind
+            <select value={kind} onChange={(e) => setKind(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm">
+              {ACTIVITY_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+            </select>
+          </label>
+        )}
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          Unit
+          <input type="number" min="1" value={unit} onChange={(e) => setUnit(e.target.value)} className="w-20 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
+        </label>
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          Max Marks
+          <input type="number" min="0" value={max} onChange={(e) => setMax(e.target.value)} className="w-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
+        </label>
+        {isCategoryDeadlinePassed(category) && !coordinator && (
+          <span className="text-xs text-red-500 font-bold">Deadline passed — read-only for you</span>
+        )}
+        <span className="text-xs text-[var(--text-secondary)] ml-auto">Type a value and press Enter — saves automatically.</span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
+              <th className="sticky left-0 bg-[var(--bg-card)] px-4 py-3 min-w-[220px]">Student</th>
+              <th className="px-4 py-3 min-w-[140px]">Obtained / {max || "?"}</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sheets.map((sheet, i) => {
+              const cell = cells[sheet._id] || { value: "", status: "idle" };
+              const editable = canEditSheet(sheet);
+              return (
+                <tr key={sheet._id} className="border-b border-[var(--border-light)]">
+                  <td className="sticky left-0 bg-[var(--bg-card)] px-4 py-2.5">
+                    <div className="font-bold text-[var(--text-primary)]">{sheet.student?.name}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">{sheet.student?.enrollmentNumber}</div>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <input
+                      ref={(el) => (inputRefs.current[sheet._id] = el)}
+                      type="number"
+                      min="0"
+                      max={max || undefined}
+                      disabled={!editable || max === ""}
+                      value={cell.value}
+                      onChange={(e) => onCellChange(sheet._id, e.target.value)}
+                      onKeyDown={(e) => onKeyDown(e, i)}
+                      className="w-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40"
+                    />
+                  </td>
+                  <td className="px-4 py-2.5 text-xs">
+                    {cell.status === "saving" && (
+                      <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                        <Loader2 size={12} className="animate-spin" /> Saving…
+                      </span>
+                    )}
+                    {cell.status === "saved" && <span className="text-emerald-500 font-bold">Saved ✓</span>}
+                    {cell.status === "error" && <span className="text-red-500 font-bold">Failed — retry</span>}
+                    {sheet.locked && <span className="text-[var(--text-secondary)]">Locked</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function LabMarksGrid({ sheets, onChange, coordinator, user }) {
+  const uid = user?._id;
+  const [rows, setRows] = useState({});
+  const timers = useRef({});
+  const fieldRefs = useRef({});
+
+  useEffect(() => {
+    const next = {};
+    sheets.forEach((s) => {
+      next[s._id] = {
+        attendance: s.lab?.attendance ?? "",
+        submission: s.lab?.submission ?? "",
+        viva: s.lab?.viva ?? "",
+        status: "idle",
+      };
+    });
+    setRows(next);
+  }, [sheets]);
+
+  const canEditSheet = (sheet) => {
+    const assigned = sheet.faculty?._id === uid || sheet.faculty === uid;
+    return (assigned || coordinator) && !sheet.locked;
+  };
+
+  const saveRow = async (sheetId) => {
+    const row = rows[sheetId];
+    if (!row) return;
+    setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "saving" } }));
+    try {
+      const payload = {};
+      if (row.attendance !== "") payload.attendance = Number(row.attendance);
+      if (row.submission !== "") payload.submission = Number(row.submission);
+      if (row.viva !== "") payload.viva = Number(row.viva);
+      const { data } = await api.patch(`/sessional-marks/sheets/${sheetId}/lab`, payload);
+      if (data.success) {
+        onChange(data.data);
+        setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "saved" } }));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save lab marks");
+      setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "error" } }));
+    }
+  };
+
+  const onFieldChange = (sheetId, field, value) => {
+    setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], [field]: value, status: "idle" } }));
+    clearTimeout(timers.current[sheetId]);
+    timers.current[sheetId] = setTimeout(() => saveRow(sheetId), 600);
+  };
+
+  const focusField = (index, field) => {
+    const sheet = sheets[index];
+    if (sheet) fieldRefs.current[`${sheet._id}-${field}`]?.focus();
+  };
+  const onKeyDown = (e, index, field) => {
+    if (e.key === "Enter" || e.key === "ArrowDown") {
+      e.preventDefault();
+      focusField(index + 1, field);
+    }
+  };
+
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+        Lab (Attendance / Submission / Viva → Lab Marks /20)
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
+              <th className="sticky left-0 bg-[var(--bg-card)] px-4 py-3 min-w-[220px]">Student</th>
+              <th className="px-4 py-3">Attendance /10</th>
+              <th className="px-4 py-3">Submission /10</th>
+              <th className="px-4 py-3">Viva /10</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sheets.map((sheet, i) => {
+              const row = rows[sheet._id] || { attendance: "", submission: "", viva: "", status: "idle" };
+              const editable = canEditSheet(sheet);
+              return (
+                <tr key={sheet._id} className="border-b border-[var(--border-light)]">
+                  <td className="sticky left-0 bg-[var(--bg-card)] px-4 py-2.5">
+                    <div className="font-bold text-[var(--text-primary)]">{sheet.student?.name}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">{sheet.student?.enrollmentNumber}</div>
+                  </td>
+                  {["attendance", "submission", "viva"].map((field) => (
+                    <td key={field} className="px-4 py-2.5">
+                      <input
+                        ref={(el) => (fieldRefs.current[`${sheet._id}-${field}`] = el)}
+                        type="number"
+                        min="0"
+                        max="10"
+                        disabled={!editable}
+                        value={row[field]}
+                        onChange={(e) => onFieldChange(sheet._id, field, e.target.value)}
+                        onKeyDown={(e) => onKeyDown(e, i, field)}
+                        className="w-20 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40"
+                      />
+                    </td>
+                  ))}
+                  <td className="px-4 py-2.5 text-xs">
+                    {row.status === "saving" && (
+                      <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                        <Loader2 size={12} className="animate-spin" /> Saving…
+                      </span>
+                    )}
+                    {row.status === "saved" && <span className="text-emerald-500 font-bold">Saved ✓</span>}
+                    {row.status === "error" && <span className="text-red-500 font-bold">Failed — retry</span>}
+                    {sheet.locked && <span className="text-[var(--text-secondary)]">Locked</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

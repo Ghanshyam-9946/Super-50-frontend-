@@ -56,7 +56,7 @@ export const adminAPI = {
   updateTeam: (id, data) => api.put(`/pms/admin/teams/${id}`, data),
   deleteTeam: (id) => api.delete(`/pms/admin/teams/${id}`),
   toggleTeamLock: (id) => api.put(`/pms/admin/teams/${id}/lock`),   // 🆕
-  assignGuide: (teamId, guideId) => api.put(`/pms/admin/teams/${teamId}/assign-guide`, { guideId }),
+  assignGuide: (teamId, guideIds) => api.put(`/pms/admin/teams/${teamId}/assign-guide`, { guideIds }),
 
   // Attendance
   attendanceOverview: (params) => api.get('/pms/admin/attendance', { params }),
@@ -116,6 +116,9 @@ export const adminAPI = {
     const q = new URLSearchParams(params || {}).toString();
     return `/pms/admin/guide-allotment.pdf${q ? `?${q}` : ''}`;
   },
+
+  // Weekly Reports — compliance overview
+  weeklyReportCompliance: (params) => api.get('/pms/admin/weekly-reports/compliance', { params }),
 };
 
 // ============ STUDENT ============
@@ -159,6 +162,10 @@ export const studentAPI = {
   updateReport: (data) => api.put('/pms/student/report', data),
   submitReport: () => api.post('/pms/student/report/submit'),
   reportDownloadUrl: '/pms/student/report/download',
+
+  // Weekly Reports
+  submitWeeklyReport: (data) => api.post('/pms/student/weekly-reports', data),
+  getMyWeeklyReports: () => api.get('/pms/student/weekly-reports'),
 };
 
 // ============ GUIDE ============
@@ -178,6 +185,9 @@ export const guideAPI = {
   // 🆕 Status
   getAllGroupsStatus: () => api.get('/pms/guide/status'),
   getGroupStatus: (teamId) => api.get(`/pms/guide/status/${teamId}`),
+  // Weekly Reports
+  getTeamWeeklyReports: (teamId) => api.get(`/pms/guide/weekly-reports/${teamId}`),
+  reviewWeeklyReport: (id, data) => api.patch(`/pms/guide/weekly-reports/${id}/review`, data),
 };
 
 // ============ NOTIFICATIONS ============

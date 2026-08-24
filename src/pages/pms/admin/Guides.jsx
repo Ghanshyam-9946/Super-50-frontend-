@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { UserPlus, Users, Trash2, UserCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { UserPlus, Users, Trash2, UserCheck, IdCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
@@ -133,9 +134,14 @@ const Guides = () => {
                           <td><span className="badge-primary">{g.assignedProject?.projectName || '—'}</span></td>
                           <td className="text-sm">{g.academicYear?.yearName}</td>
                           <td className="text-right">
-                            <button onClick={() => handleDelete(g._id)} title="Remove guide access (account is kept)" className="btn-secondary btn-sm">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            <div className="flex justify-end gap-1">
+                              <Link to={`/pms/admin/guides/${g._id}/profile`} title="View full profile" className="btn-outline btn-sm">
+                                <IdCard className="w-3 h-3" />
+                              </Link>
+                              <button onClick={() => handleDelete(g._id)} title="Remove guide access (account is kept)" className="btn-secondary btn-sm">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

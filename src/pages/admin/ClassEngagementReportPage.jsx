@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { UserCheck, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import SectionSelect from "../../components/SectionSelect";
+
+const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const STATUS_BADGE = {
   pending: "bg-amber-500/10 text-amber-500",
@@ -20,7 +23,7 @@ function StatusBadge({ status }) {
 export default function ClassEngagementReportPage() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ status: "", from: "", to: "" });
+  const [filters, setFilters] = useState({ status: "", from: "", to: "", semester: "", section: "" });
 
   const load = async () => {
     setLoading(true);
@@ -29,6 +32,8 @@ export default function ClassEngagementReportPage() {
       if (filters.status) params.status = filters.status;
       if (filters.from) params.from = filters.from;
       if (filters.to) params.to = filters.to;
+      if (filters.semester) params.semester = filters.semester;
+      if (filters.section) params.section = filters.section;
       const { data } = await api.get("/class-engagements", { params });
       if (data.success) setRequests(data.data);
     } catch (err) {
@@ -41,7 +46,7 @@ export default function ClassEngagementReportPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.status, filters.from, filters.to]);
+  }, [filters.status, filters.from, filters.to, filters.semester, filters.section]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
@@ -72,6 +77,19 @@ export default function ClassEngagementReportPage() {
         <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
           To
           <input type="date" value={filters.to} onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
+        </label>
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          Semester
+          <select value={filters.semester} onChange={(e) => setFilters((f) => ({ ...f, semester: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm">
+            <option value="">All</option>
+            {SEMESTERS.map((n) => (
+              <option key={n} value={n}>Semester {n}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+          Section
+          <SectionSelect value={filters.section} onChange={(e) => setFilters((f) => ({ ...f, section: e.target.value }))} placeholder="All" />
         </label>
       </div>
 
