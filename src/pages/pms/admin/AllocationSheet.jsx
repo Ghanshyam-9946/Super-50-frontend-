@@ -46,13 +46,15 @@ const AllocationSheet = () => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const guideLoad = (guideId) => teams.filter((t) => t.guide?._id === guideId).length;
+  const guideLoad = (guideId) => teams.filter((t) => (t.guides || []).some((g) => g._id === guideId)).length;
 
-  const setGuideForTeam = async (teamId, guideId) => {
-    setSavingRow(teamId);
+  const toggleGuideForTeam = async (team, guideId) => {
+    const current = (team.guides || []).map((g) => g._id);
+    const next = current.includes(guideId) ? current.filter((id) => id !== guideId) : [...current, guideId];
+    setSavingRow(team._id);
     try {
-      await adminAPI.assignGuide(teamId, guideId || null);
-      toast.success('Guide updated');
+      await adminAPI.assignGuide(team._id, next);
+      toast.success('Guides updated');
       fetchAll();
     } catch (err) {
       toast.error(handleError(err));
@@ -176,15 +178,26 @@ const AllocationSheet = () => {
                         <td>{t.projectTitle}</td>
                         <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
                         <td>
-                          <select
-                            className="form-select"
-                            value={t.guide?._id || ''}
-                            disabled={!!config?.finalized || savingRow === t._id}
-                            onChange={(e) => setGuideForTeam(t._id, e.target.value)}
-                          >
-                            <option value="">Unassigned</option>
-                            {guides.map((g) => <option key={g._id} value={g._id}>{g.name}</option>)}
-                          </select>
+                          <div className="flex flex-wrap gap-1.5 max-w-xs">
+                            {guides.map((g) => {
+                              const checked = (t.guides || []).some((tg) => tg._id === g._id);
+                              return (
+                                <label
+                                  key={g._id}
+                                  className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs cursor-pointer border ${checked ? 'bg-[var(--primary,#4f46e5)]/10 border-[var(--primary,#4f46e5)]/30' : 'border-slate-200'}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    disabled={!!config?.finalized || savingRow === t._id}
+                                    onChange={() => toggleGuideForTeam(t, g._id)}
+                                  />
+                                  {g.name}
+                                </label>
+                              );
+                            })}
+                            {(t.guides || []).length === 0 && <span className="badge-warning text-xs">Unassigned</span>}
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -82,15 +82,28 @@ export default function ClassEngagementPage() {
   };
 
   useEffect(() => {
-    api
-      .get("/class-engagements/faculty-list")
-      .then(({ data }) => {
-        if (data.success) setFacultyList(data.data.filter((f) => f._id !== user?._id));
-      })
-      .catch(() => {});
     loadLists();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Faculty picker narrows to whoever actually teaches the selected
+  // semester+section (via FacultySectionMap on the backend) — refetches
+  // whenever either changes, and clears a now-invalid selection.
+  useEffect(() => {
+    const params = {};
+    if (form.semester) params.semester = form.semester;
+    if (form.section) params.section = form.section;
+    api
+      .get("/class-engagements/faculty-list", { params })
+      .then(({ data }) => {
+        if (!data.success) return;
+        const list = data.data.filter((f) => f._id !== user?._id);
+        setFacultyList(list);
+        setForm((f) => (f.engagedBy && !list.some((fac) => fac._id === f.engagedBy) ? { ...f, engagedBy: "" } : f));
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.semester, form.section]);
 
   const submit = async () => {
     if (!form.semester || !form.section || !form.date || !form.fromTime || !form.toTime || !form.engagedBy || !form.reason.trim()) {
@@ -171,7 +184,7 @@ export default function ClassEngagementPage() {
             <input type="time" value={form.toTime} onChange={(e) => setForm((f) => ({ ...f, toTime: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
           </label>
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-            Engaged By
+            Engaged By {(form.semester || form.section) && <span className="normal-case font-medium text-[var(--text-secondary)]/70">(filtered to Sem {form.semester || "any"} / {form.section || "any"})</span>}
             <select value={form.engagedBy} onChange={(e) => setForm((f) => ({ ...f, engagedBy: e.target.value }))} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm">
               <option value="">Select faculty</option>
               {facultyList.map((f) => (

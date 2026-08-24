@@ -126,7 +126,7 @@ const Forms = () => {
                       <td>{t.projectTitle}</td>
                       <td><span className="badge-info">{t.semester}th</span></td>
                       <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
-                      <td className="text-sm">{t.guide?.name || '—'}</td>
+                      <td className="text-sm">{(t.guides || []).map((g) => g.name).join(', ') || '—'}</td>
                       <td className="text-right">
                         <button
                           onClick={() => download(adminAPI.initiationFormUrl(t._id), `initiation_form_${t.groupNo}.pdf`, t._id)}

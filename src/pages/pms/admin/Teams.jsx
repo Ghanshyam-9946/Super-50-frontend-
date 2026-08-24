@@ -379,19 +379,22 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
 
 // ============= ASSIGN GUIDE MODAL =============
 const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
-  const [selectedGuideId, setSelectedGuideId] = useState('');
+  // A team can have multiple guides — all get equal, full access.
+  const [selectedGuideIds, setSelectedGuideIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (team) setSelectedGuideId(team.guide?._id || '');
+    if (team) setSelectedGuideIds((team.guides || []).map((g) => g._id));
   }, [team]);
 
+  const toggleGuide = (id) =>
+    setSelectedGuideIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
   const handleSubmit = async () => {
-    if (!selectedGuideId) return toast.error('Select a guide');
     setSubmitting(true);
     try {
-      await adminAPI.assignGuide(team._id, selectedGuideId);
-      toast.success('Guide assigned');
+      await adminAPI.assignGuide(team._id, selectedGuideIds);
+      toast.success('Guides assigned');
       onSaved();
       onClose();
     } catch (err) { toast.error(handleError(err)); }
@@ -404,7 +407,7 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
     <Modal
       open={open}
       onClose={onClose}
-      title={`Assign Guide — ${team.groupNo}`}
+      title={`Assign Guides — ${team.groupNo}`}
       footer={
         <>
           <button onClick={onClose} className="btn-secondary">Cancel</button>
@@ -420,20 +423,24 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
         <div><strong>Sem:</strong> {team.semester}th — {team.project?.projectName}</div>
       </div>
 
-      <label className="form-label">Select Guide</label>
-      <select className="form-select" value={selectedGuideId} onChange={(e) => setSelectedGuideId(e.target.value)} required>
-        <option value="">— Select a guide —</option>
+      <label className="form-label">Select Guide(s)</label>
+      <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
         {guides.map((g) => {
           const eligible = g.academicYear?._id === team.academicYear?._id
             && g.assignedSemester === team.semester;
           return (
-            <option key={g._id} value={g._id}>
-              {g.name} · {g.email} (Sem {g.assignedSemester}){!eligible && ' — different sem/year'}
-            </option>
+            <label key={g._id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+              <input
+                type="checkbox"
+                checked={selectedGuideIds.includes(g._id)}
+                onChange={() => toggleGuide(g._id)}
+              />
+              <span>{g.name} · {g.email} (Sem {g.assignedSemester}){!eligible && ' — different sem/year'}</span>
+            </label>
           );
         })}
-      </select>
-      <div className="alert-info text-xs mt-3"><Info className="w-4 h-4 flex-shrink-0" /> Both guide and team members will be notified.</div>
+      </div>
+      <div className="alert-info text-xs mt-3"><Info className="w-4 h-4 flex-shrink-0" /> Every selected guide and all team members will be notified.</div>
     </Modal>
   );
 };
@@ -550,8 +557,15 @@ const Teams = () => {
                         <td><span className="badge-primary">{t.project?.projectName}</span></td>
                         <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
                         <td>
-                          {t.guide ? (
-                            <span className="font-medium text-sm">{t.guide.name}</span>
+                          {t.guides?.length ? (
+                            <span className="font-medium text-sm space-x-1">
+                              {t.guides.map((g, i) => (
+                                <span key={g._id}>
+                                  <Link to={`/pms/admin/guides/${g._id}/profile`} className="hover:underline text-[var(--primary,#4f46e5)]">{g.name}</Link>
+                                  {i < t.guides.length - 1 && ','}
+                                </span>
+                              ))}
+                            </span>
                           ) : (
                             <span className="badge-warning"><AlertTriangle className="w-3 h-3" /> Unassigned</span>
                           )}

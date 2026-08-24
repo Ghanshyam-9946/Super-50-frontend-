@@ -159,8 +159,8 @@ const GuideRubrics = () => {
             <div className="font-semibold mt-1">{team.semester}th — {team.project?.projectName}</div>
           </div>
           <div>
-            <div className="text-xs text-slate-500 uppercase tracking-wider">Guide</div>
-            <div className="font-semibold mt-1">{team.guide?.name}</div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider">Guide{(team.guides || []).length > 1 ? 's' : ''}</div>
+            <div className="font-semibold mt-1">{(team.guides || []).map((g) => g.name).join(', ')}</div>
           </div>
         </div>
       </Card>

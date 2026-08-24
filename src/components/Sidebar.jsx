@@ -83,8 +83,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     { to: '/teacher/students', icon: Users, label: 'All Students' },
     { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
-    { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+    { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+    ...(isAcademicCoordinator ? [
+      { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
+      { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
+    ] : []),
     ...(isSuper50Mentor ? [
       { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
     ] : []),
@@ -102,6 +105,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
     { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
     ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
+    { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+    ...(isAcademicCoordinator ? [
+      { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
+      { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
+    ] : []),
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 
