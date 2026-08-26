@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Award, Zap, Trophy, Users, ShieldCheck,
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
-  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard
+  Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
+  StickyNote, BellRing
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,40 +20,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-
-  // Core Links (All Students)
-  const commonStudentLinks = [
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/student/attendance', icon: ClipboardList, label: 'Attendance' },
-    { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
-    { to: '/student/mst', icon: FileText, label: 'MST Result' },
-    { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
-    { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
-    { to: '/certificates', icon: Award, label: 'Certificates' },
-    { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
-    { to: '/student/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
-    { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
-    { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
-    { to: '/student/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
-  ];
-
-  // Training & Placement Section (ALL students)
-  const tpLinks = [
-    { to: '/placement', icon: Briefcase, label: 'T&P Dashboard' },
-    { to: '/placement/results', icon: ClipboardList, label: 'Drive Results' },
-  ];
-
-  // PMS Section (ALL students)
-  const pmsStudentLinks = [
-    { to: '/pms/student', icon: FolderOpen, label: 'Major Project (PMS)' },
-  ];
-
-  // Super 50 Exclusive Section
-  const super50Links = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Super 50 Portal' },
-    { to: '/projects', icon: Layout, label: 'Projects' },
-    { to: '/activities', icon: Zap, label: 'Activities' },
-  ];
+  const [search, setSearch] = useState('');
 
   const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
   const isSuper50Mentor = (user?.responsibilities || []).includes('Super 50 Mentor');
@@ -65,56 +33,128 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // pms/admin/Guides.jsx) — being a teacher alone is no longer enough.
   const isProjectGuide = user?.role === 'guide' || (user?.roles || []).includes('guide');
 
-  const teacherLinks = [
-    { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/chat', icon: MessageCircle, label: 'Chat' },
-    { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
-    { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
-    ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
-    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
-    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
-    ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
-    { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
-    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
-    { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
-    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
-    ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
-    ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
-    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
-    { to: '/teacher/students', icon: Users, label: 'All Students' },
-    { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
-    ...(isAcademicCoordinator ? [
-      { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
-      { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
-    ] : []),
-    ...(isSuper50Mentor ? [
-      { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' }
-    ] : []),
+  // Every role's menu is now { category, links[] } groups instead of one
+  // flat list — same link objects as before, just organized so a long
+  // menu (30+ items for admin) reads as sections instead of a wall of
+  // items. The search box below flattens across all of this at render time.
+
+  const studentGroups = [
+    { category: 'Overview', links: [
+      { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+      { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
+    ] },
+    { category: 'Academics', links: [
+      { to: '/student/attendance', icon: ClipboardList, label: 'Attendance' },
+      { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
+      { to: '/student/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+      { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+      { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
+    ] },
+    { category: 'Results & Marks', links: [
+      { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
+      { to: '/student/mst', icon: FileText, label: 'MST Result' },
+      { to: '/student/rgpv', icon: Award, label: 'RGPV Marks' },
+      { to: '/student/podai-marks', icon: FileText, label: 'Pod AI Marks' },
+      { to: '/certificates', icon: Award, label: 'Certificates' },
+    ] },
+    { category: 'Feedback & Surveys', links: [
+      { to: '/student/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
+      { to: '/student/course-exit-survey', icon: ClipboardCheck, label: 'Course Exit Survey' },
+    ] },
+    { category: 'Placements', links: [
+      { to: '/placement', icon: Briefcase, label: 'T&P Dashboard' },
+      { to: '/placement/results', icon: ClipboardList, label: 'Drive Results' },
+    ] },
+    ...(user?.enrollmentNo ? [{ category: 'Projects (PMS)', links: [
+      { to: '/pms/student', icon: FolderOpen, label: 'Major Project (PMS)' },
+    ] }] : []),
+    ...(user?.isSuper50 ? [{ category: 'Super 50', links: [
+      { to: '/dashboard', icon: LayoutDashboard, label: 'Super 50 Portal' },
+      { to: '/projects', icon: Layout, label: 'Projects' },
+      { to: '/activities', icon: Zap, label: 'Activities' },
+    ] }] : []),
   ];
 
-  const guideLinks = [
-    { to: '/chat', icon: MessageCircle, label: 'Chat' },
-    { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
-    { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
-    ...(isAcademicCoordinator ? [{ to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' }] : []),
-    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
-    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
-    ...(isAcademicCoordinator ? [{ to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' }] : []),
-    { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
-    { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
-    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
-    ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
-    { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
-    ...(isAcademicCoordinator ? [
+  const teacherGroups = [
+    { category: 'Overview', links: [
+      { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
+    ] },
+    { category: 'Teaching', links: [
+      { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+      { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+      { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
+      { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
+      { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+      { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+    ] },
+    { category: 'My Work', links: [
+      { to: '/teacher/tasks', icon: ListChecks, label: 'Task Manager' },
+      { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
+      { to: '/faculty/weekly-work-report', icon: ClipboardList, label: 'Weekly Work Report' },
+      { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
+      { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
+    ] },
+    ...(isProjectGuide || isProjectCoordinator ? [{ category: 'PMS', links: [
+      ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
+      ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
+    ] }] : []),
+    { category: 'Students & Placements', links: [
+      { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+      { to: '/teacher/students', icon: Users, label: 'All Students' },
+      { to: '/teacher/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+    ] },
+    ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
+      { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
+      { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
       { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
-    ] : []),
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+      { to: '/admin/course-exit-survey', icon: ClipboardCheck, label: 'Course Exit Survey' },
+    ] }] : []),
+    ...(isSuper50Mentor ? [{ category: 'Super 50', links: [
+      { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
+    ] }] : []),
   ];
 
-  // Student Upload (existing Bulk Create page) now lives inside this group,
-  // alongside the new Section/Mentor/Subject Catalog screens.
+  const guideGroups = [
+    { category: 'Overview', links: [
+      { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
+    ] },
+    { category: 'PMS', links: [
+      { to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' },
+      ...(isProjectCoordinator ? [{ to: '/pms/admin', icon: Database, label: 'PMS Admin' }] : []),
+    ] },
+    { category: 'Teaching', links: [
+      { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+      { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+      { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
+      { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+      { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+    ] },
+    { category: 'My Work', links: [
+      { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
+      { to: '/faculty/weekly-work-report', icon: ClipboardList, label: 'Weekly Work Report' },
+      { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
+      { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
+    ] },
+    ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
+      { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
+      { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
+      { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
+      { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
+      { to: '/admin/course-exit-survey', icon: ClipboardCheck, label: 'Course Exit Survey' },
+    ] }] : []),
+    { category: 'General', links: [
+      { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    ] },
+  ];
+
+  // Student Upload (existing Bulk Create page) lives inside this group,
+  // alongside the Section/Mentor/Subject Catalog screens — still an
+  // expand/collapse NavGroup within the "Master Data" category, unchanged
+  // from before this reorganization.
   const masterDataLinks = [
     { to: '/admin/master-data/sections', icon: Layers, label: 'Create Section' },
     { to: '/admin/master-data/mentors', icon: UserCheck, label: 'Assign Mentor' },
@@ -124,109 +164,185 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { to: '/admin/master-data/allocation-sheet', icon: FileSpreadsheet, label: 'Allocation Sheet' },
   ];
 
-  const adminLinks = [
-    { to: '/chat', icon: MessageCircle, label: 'Chat' },
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
-    { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
-    { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
-    { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
-    { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
-    { to: '/admin/sessional-marks', icon: GraduationCap, label: 'Sessional Marks Report' },
-    { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks (Manage)' },
-    { to: '/admin/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
-    { to: '/admin/class-observations', icon: ClipboardCheck, label: 'Class Observation Form' },
-    { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
-    { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
-    { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
-    { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
-    { to: '/admin/students', icon: Users, label: 'All Students' },
-    { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },
-    { to: '/admin/bulk-create-faculty', icon: UserPlus, label: 'Faculty Upload' },
-    { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
-    { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
-    { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
-    { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
-    { label: 'Master Data', icon: Layers, children: masterDataLinks },
-    { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
-    { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
-    { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
-    { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
-    { to: '/admin/all-student-podai', icon: FileText, label: 'All Student Pod AI Sheet' },
-    { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
-    { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
-    { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
-    { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
-    { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
+  const adminGroups = [
+    { category: 'Overview', links: [
+      { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+      { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
+      { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
+    ] },
+    { category: 'Academics', links: [
+      { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
+      { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+      { to: '/admin/sessional-marks', icon: GraduationCap, label: 'Sessional Marks Report' },
+      { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks (Manage)' },
+      { to: '/admin/class-observations', icon: ClipboardCheck, label: 'Class Observation Form' },
+      { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
+      { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
+    ] },
+    { category: 'Compliance', links: [
+      { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
+      { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
+    ] },
+    { category: 'Feedback & Surveys', links: [
+      { to: '/admin/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
+      { to: '/admin/course-exit-survey', icon: ClipboardCheck, label: 'Course Exit Survey' },
+    ] },
+    { category: 'My Work', links: [
+      { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
+      { to: '/faculty/weekly-work-report', icon: ClipboardList, label: 'Weekly Work Report' },
+      { to: '/admin/weekly-work-report', icon: ClipboardList, label: 'Weekly Work Report (Admin)' },
+      { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
+    ] },
+    { category: 'Students', links: [
+      { to: '/admin/students', icon: Users, label: 'All Students' },
+      { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },
+      { to: '/admin/bulk-create-faculty', icon: UserPlus, label: 'Faculty Upload' },
+      { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
+      { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
+      { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+      { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
+      { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+    ] },
+    { category: 'PMS', links: [
+      { to: '/pms/admin', icon: Database, label: 'PMS Admin' },
+    ] },
+    { category: 'Master Data', links: [
+      { label: 'Master Data', icon: Layers, children: masterDataLinks },
+    ] },
+    { category: 'Super 50', links: [
+      { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+      { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
+    ] },
+    { category: 'Reports & Dashboards', links: [
+      { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
+      { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
+      { to: '/admin/all-student-podai', icon: FileText, label: 'All Student Pod AI Sheet' },
+      { to: '/admin/amcat', icon: FileText, label: 'AMCAT Dashboard' },
+      { to: '/admin/mst', icon: FileText, label: 'MST Marks Dashboard' },
+      { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
+    ] },
+    { category: 'System', links: [
+      { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
+      { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
+    ] },
   ];
 
-  const super50AdminLinks = [
-    { to: '/chat', icon: MessageCircle, label: 'Chat' },
-    { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
-    { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
-    { to: '/admin/students', icon: Users, label: 'All Students' },
-    { to: '/admin/super50-students', icon: Star, label: 'Super 50 Students' },
-    { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
-    { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
-    { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
-    { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  const super50AdminGroups = [
+    { category: 'Overview', links: [
+      { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+      { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
+    ] },
+    { category: 'Super 50', links: [
+      { to: '/admin/super50-selection', icon: Star, label: 'Super 50 Selection' },
+      { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
+      { to: '/admin/students', icon: Users, label: 'All Students' },
+      { to: '/admin/super50-students', icon: Star, label: 'Super 50 Students' },
+      { to: '/admin/podai-upload', icon: Upload, label: 'Pod AI Marks Upload' },
+      { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
+      { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
+      { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
+    ] },
   ];
 
-  const tpAdminLinks = [
-    { to: '/chat', icon: MessageCircle, label: 'Chat' },
-    { to: '/tp/enroll-students', icon: UserPlus, label: 'Enroll Students' },
-    { to: '/tp/create-drive', icon: Briefcase, label: 'Create Drive' },
-    { to: '/faculty/placement', icon: ClipboardList, label: 'View Drives' },
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  const tpAdminGroups = [
+    { category: 'Overview', links: [
+      { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+      { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
+    ] },
+    { category: 'Placements', links: [
+      { to: '/tp/enroll-students', icon: UserPlus, label: 'Enroll Students' },
+      { to: '/tp/create-drive', icon: Briefcase, label: 'Create Drive' },
+      { to: '/faculty/placement', icon: ClipboardList, label: 'View Drives' },
+    ] },
   ];
 
-  const pmsAdminLinks = [
-    { to: '/chat', icon: MessageCircle, label: 'Chat' },
-    { to: '/pms/admin', icon: Database, label: 'PMS Dashboard' },
+  const pmsAdminGroups = [
+    { category: 'Overview', links: [
+      { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
+    ] },
+    { category: 'PMS', links: [
+      { to: '/pms/admin', icon: Database, label: 'PMS Dashboard' },
+    ] },
   ];
 
-  const getNavLinks = () => {
+  // Merges every role a user holds into one ordered list of { category,
+  // links } groups — same categories from different roles combine into one
+  // section instead of repeating, same dedupe-by-`to` behavior as before.
+  const getNavGroups = () => {
     const roles = user?.roles && user.roles.length > 0 ? user.roles : [user?.role];
     if (roles.includes('student')) {
-      return commonStudentLinks;
+      return studentGroups;
     }
 
-    const combined = [];
+    const categoryOrder = [];
+    const categoryMap = new Map();
     const seen = new Set();
     const hasMultipleRoles = roles.length > 1;
 
-    roles.forEach(role => {
-      let roleLinks = [];
-      if (role === 'admin') roleLinks = adminLinks;
-      else if (role === 'super50_admin') roleLinks = super50AdminLinks;
-      else if (role === 'tp_admin') roleLinks = tpAdminLinks;
-      else if (role === 'pms_admin') roleLinks = pmsAdminLinks;
-      else if (role === 'teacher') roleLinks = teacherLinks;
-      else if (role === 'guide') roleLinks = guideLinks;
+    roles.forEach((role) => {
+      let roleGroups = [];
+      if (role === 'admin') roleGroups = adminGroups;
+      else if (role === 'super50_admin') roleGroups = super50AdminGroups;
+      else if (role === 'tp_admin') roleGroups = tpAdminGroups;
+      else if (role === 'pms_admin') roleGroups = pmsAdminGroups;
+      else if (role === 'teacher') roleGroups = teacherGroups;
+      else if (role === 'guide') roleGroups = guideGroups;
 
-      roleLinks.forEach(link => {
-        const key = link.to || link.label; // groups (no `to`, has `children`) dedupe by label
-        if (!seen.has(key)) {
+      roleGroups.forEach((group) => {
+        group.links.forEach((link) => {
+          const key = link.to || link.label;
+          if (seen.has(key)) return;
           seen.add(key);
 
           let adjustedLabel = link.label;
           if (hasMultipleRoles) {
-            if (link.to === '/admin/dashboard') {
-              adjustedLabel = 'Dashboard (Admin)';
-            } else if (link.to === '/teacher/dashboard') {
-              adjustedLabel = 'Dashboard (Faculty)';
-            }
+            if (link.to === '/admin/dashboard') adjustedLabel = 'Dashboard (Admin)';
+            else if (link.to === '/teacher/dashboard') adjustedLabel = 'Dashboard (Faculty)';
           }
 
-          combined.push({ ...link, label: adjustedLabel });
-        }
+          if (!categoryMap.has(group.category)) {
+            categoryMap.set(group.category, []);
+            categoryOrder.push(group.category);
+          }
+          categoryMap.get(group.category).push({ ...link, label: adjustedLabel });
+        });
       });
     });
 
-    return combined.length > 0 ? combined : commonStudentLinks;
+    const merged = categoryOrder.map((category) => ({ category, links: categoryMap.get(category) }));
+    return merged.length > 0 ? merged : studentGroups;
   };
+
+  const navGroups = getNavGroups();
+
+  // While searching, a NavGroup's (Master Data's) children are flattened
+  // directly into the results — so a sub-item is one keystroke away
+  // instead of needing the group expanded first, and matching the group
+  // label itself ("master data") surfaces all of its children.
+  const filteredGroups = (() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return navGroups;
+    return navGroups
+      .map((group) => {
+        const matched = [];
+        group.links.forEach((link) => {
+          if (link.children) {
+            const groupLabelMatches = link.label.toLowerCase().includes(q);
+            link.children.forEach((child) => {
+              if (groupLabelMatches || child.label.toLowerCase().includes(q)) matched.push(child);
+            });
+          } else if (link.label.toLowerCase().includes(q)) {
+            matched.push(link);
+          }
+        });
+        return { ...group, links: matched };
+      })
+      .filter((group) => group.links.length > 0);
+  })();
 
   const handleLogout = () => {
     dispatch(logout());
@@ -263,48 +379,51 @@ const Sidebar = ({ theme, toggleTheme }) => {
         </button>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto custom-scrollbar">
-        {/* Core Nav */}
-        <div className="space-y-1.5">
-          {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4">Core</p>}
-          {getNavLinks().map((link) =>
-            link.children ? (
-              <NavGroup key={link.label} group={link} collapsed={collapsed} onNavigate={() => setMobileOpen(false)} />
-            ) : (
-              <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-            )
-          )}
+      {/* Menu search */}
+      {!collapsed && (
+        <div className="px-6 pt-2 pb-1">
+          <div className="relative">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] opacity-60 pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search menu..."
+              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl pl-9 pr-8 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] transition-colors"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
         </div>
+      )}
 
-        {/* T&P Section (Students Only) */}
-        {user?.role === 'student' && (
-          <div className="space-y-1.5">
-            {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4">Placements</p>}
-            {tpLinks.map((link) => (
-              <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-            ))}
-          </div>
-        )}
-
-        {/* PMS Section (Students Only) */}
-        {user?.role === 'student' && user?.enrollmentNo && (
-          <div className="space-y-1.5">
-            {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4 mt-6">Academics</p>}
-            {pmsStudentLinks.map((link) => (
-              <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-            ))}
-          </div>
-        )}
-
-        {/* Super 50 Section (Students Only) */}
-        {user?.role === 'student' && user?.isSuper50 && (
-          <div className="space-y-1.5">
-            {!collapsed && <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-4 mt-6">Super 50</p>}
-            {super50Links.map((link) => (
-              <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
-            ))}
-          </div>
+      {/* Navigation */}
+      <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto custom-scrollbar">
+        {filteredGroups.length === 0 ? (
+          <p className="px-4 text-xs text-[var(--text-secondary)] opacity-70">No matching menu items.</p>
+        ) : (
+          filteredGroups.map((group) => (
+            <div key={group.category} className="space-y-1.5">
+              {!collapsed && (
+                <p className="px-4 text-[10px] font-black text-[var(--text-secondary)] opacity-60 uppercase tracking-[0.2em] mb-2">
+                  {group.category}
+                </p>
+              )}
+              {group.links.map((link) =>
+                link.children ? (
+                  <NavGroup key={link.label} group={link} collapsed={collapsed} onNavigate={() => setMobileOpen(false)} />
+                ) : (
+                  <NavItem key={link.to} link={link} collapsed={collapsed} onClick={() => setMobileOpen(false)} />
+                )
+              )}
+            </div>
+          ))
         )}
       </nav>
 
@@ -434,7 +553,8 @@ const NavItem = ({ link, onClick, collapsed }) => {
 
 // A parent menu item that expands into a flat list of NavItems — collapsed
 // by default, auto-opens when one of its children is the active route.
-// No such grouping existed anywhere in this file before Master Data.
+// Only rendered outside of a search (search flattens children directly
+// into the results instead — see filteredGroups above).
 const NavGroup = ({ group, collapsed, onNavigate }) => {
   const location = useLocation();
   const hasActiveChild = group.children.some((c) => location.pathname === c.to);

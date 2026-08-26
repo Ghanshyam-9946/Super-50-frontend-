@@ -137,7 +137,7 @@ export default function FloatingChatBubble() {
     <>
       <button
         onClick={toggleOpen}
-        className="fixed bottom-6 right-6 z-[200] w-14 h-14 rounded-full bg-[var(--primary)] text-white shadow-xl flex items-center justify-center hover:scale-105 transition-transform"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[200] w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[var(--primary)] text-white shadow-xl flex items-center justify-center hover:scale-105 transition-transform"
         title="Chat"
       >
         {open ? <X size={22} /> : <MessageCircle size={22} />}
@@ -149,7 +149,7 @@ export default function FloatingChatBubble() {
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-6 z-[200] w-[360px] h-[520px] max-h-[70vh]">
+        <div className="fixed bottom-20 right-4 left-4 sm:left-auto sm:bottom-24 sm:right-6 z-[200] w-auto sm:w-[360px] h-[min(520px,70vh)]">
         {/*
           Two nested divs on purpose: `.glass-card` (src/index.css) sets its
           own `position: relative`, which — combined on the same element as

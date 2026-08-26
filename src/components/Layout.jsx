@@ -6,6 +6,7 @@ import Sidebar from './Sidebar';
 import { fetchMe } from '../features/auth/authSlice';
 import { ChatSocketProvider } from '../context/ChatSocketContext';
 import FloatingChatBubble from './chat/FloatingChatBubble';
+import ReminderAlarm from './reminders/ReminderAlarm';
 
 export default function Layout({ theme, toggleTheme }) {
   const { user, token } = useSelector((s) => s.auth);
@@ -47,6 +48,7 @@ export default function Layout({ theme, toggleTheme }) {
           </AnimatePresence>
         </main>
         <FloatingChatBubble />
+        <ReminderAlarm />
       </div>
     </ChatSocketProvider>
   );

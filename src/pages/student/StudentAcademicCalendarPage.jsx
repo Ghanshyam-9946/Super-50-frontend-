@@ -1,34 +1,30 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDays, Download, Info, Layers, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CalendarDays, Download, Info, Layers, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/imageUrl';
+import AcademicCalendarGrid from '../../components/AcademicCalendarGrid';
 
-const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
-const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const MONTH_LABELS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-const STATUS_STYLE = {
-  teaching: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400',
-  off: 'bg-slate-500/10 border-slate-500/20 text-slate-400',
-  event: 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400',
-};
-
-// Beautiful month-grid calendar for the parsed-Excel path (events[]), with
-// a graceful fallback to the legacy inline PDF viewer for older
-// PDF-only calendars (pre-Excel-upload). Shared by both the student route
-// (/student/academic-calendar) and the faculty/admin view-only route
-// (/faculty/academic-calendar) — App.jsx mounts the same component twice.
+// Beautiful full-calendar view for the parsed-Excel path (events[]), with a
+// graceful fallback to the legacy inline PDF viewer for older PDF-only
+// calendars (pre-Excel-upload). Shared by three routes — the student route
+// (/student/academic-calendar), the faculty/admin view-only route
+// (/faculty/academic-calendar), and an optional admin deep-link to one
+// specific calendar (/academic-calendar/view/:id) — App.jsx mounts the same
+// component for all three; the `:id` param, when present, skips the "most
+// recent published" default and the session picker entirely.
 export default function StudentAcademicCalendarPage() {
   const { user } = useSelector((s) => s.auth);
+  const { id: pinnedId } = useParams();
+  const FACULTY_ROLES = ['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin'];
+  const isFacultyRole = (user?.roles?.length ? user.roles : [user?.role]).some((r) => FACULTY_ROLES.includes(r));
   const [options, setOptions] = useState([]);
   const [calendar, setCalendar] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [semester, setSemester] = useState(user?.semester || 1);
-  const [viewMonth, setViewMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
 
   const storageKey = 'mile_academic_calendar_choice';
 
@@ -36,6 +32,14 @@ export default function StudentAcademicCalendarPage() {
     (async () => {
       setLoading(true);
       try {
+        if (pinnedId) {
+          const { data } = await api.get(`/academic-calendars/${pinnedId}`);
+          if (data.success) {
+            setOptions([]);
+            setCalendar(data.data);
+          }
+          return;
+        }
         const { data } = await api.get('/academic-calendars/my');
         if (data.success) {
           const opts = data.options || (data.data ? [data.data] : []);
@@ -52,7 +56,7 @@ export default function StudentAcademicCalendarPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [pinnedId]);
 
   const selectOption = (id) => {
     const chosen = options.find((o) => o._id === id);
@@ -82,40 +86,6 @@ export default function StudentAcademicCalendarPage() {
     } catch {
       toast.error("Failed to download academic calendar");
     }
-  };
-
-  const eventsByDate = useMemo(() => {
-    if (!hasEvents) return {};
-    const map = {};
-    calendar.events
-      .filter((e) => e.semester === Number(semester))
-      .forEach((e) => {
-        const key = new Date(e.date).toDateString();
-        map[key] = e;
-      });
-    return map;
-  }, [calendar, semester, hasEvents]);
-
-  const grid = useMemo(() => {
-    const year = viewMonth.getFullYear();
-    const month = viewMonth.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstWeekday = new Date(year, month, 1).getDay();
-    const cells = [];
-    for (let i = 0; i < firstWeekday; i++) cells.push(null);
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month, d);
-      cells.push({ date, event: eventsByDate[date.toDateString()] || null });
-    }
-    return cells;
-  }, [viewMonth, eventsByDate]);
-
-  const changeMonth = (delta) => {
-    setViewMonth((prev) => {
-      const next = new Date(prev);
-      next.setMonth(next.getMonth() + delta);
-      return next;
-    });
   };
 
   return (
@@ -152,10 +122,10 @@ export default function StudentAcademicCalendarPage() {
         </div>
       ) : (
         <>
-          {options.length > 1 && (
+          {!pinnedId && options.length > 0 && (
             <div className="glass-card p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)]">
-                <Layers size={16} className="text-[var(--primary)]" /> {message || 'Multiple calendars found — select one:'}
+                <Layers size={16} className="text-[var(--primary)]" /> {message || 'Session'}
               </div>
               <select
                 value={calendar._id}
@@ -172,65 +142,9 @@ export default function StudentAcademicCalendarPage() {
           )}
 
           {hasEvents ? (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-4">
-              <div className="glass-card p-4 md:p-6 rounded-3xl space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => changeMonth(-1)} className="w-9 h-9 rounded-xl border border-[var(--border-light)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all">
-                      <ChevronLeft size={16} />
-                    </button>
-                    <span className="font-display font-black text-lg text-[var(--text-primary)] min-w-[160px] text-center">
-                      {MONTH_LABELS[viewMonth.getMonth()]} {viewMonth.getFullYear()}
-                    </span>
-                    <button onClick={() => changeMonth(1)} className="w-9 h-9 rounded-xl border border-[var(--border-light)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all">
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                  <label className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">
-                    Semester
-                    <select
-                      value={semester}
-                      onChange={(e) => setSemester(Number(e.target.value))}
-                      className="bg-[var(--bg-select)] border border-[var(--border-light)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] normal-case font-bold"
-                    >
-                      {SEMESTERS.map((n) => <option key={n} value={n}>Semester {n}</option>)}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-7 gap-1.5 text-center">
-                  {WEEKDAY_LABELS.map((w, i) => (
-                    <div key={i} className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] py-1">{w}</div>
-                  ))}
-                  <AnimatePresence mode="wait">
-                    {grid.map((cell, i) =>
-                      cell ? (
-                        <motion.div
-                          key={cell.date.toISOString()}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(i * 0.005, 0.15) }}
-                          title={cell.event?.label || (cell.event?.status === 'teaching' ? `Teaching day ${cell.event.dayNumber}` : cell.event?.status === 'off' ? 'Off day' : '')}
-                          className={`aspect-square rounded-xl border flex flex-col items-center justify-center text-xs font-bold p-1 ${cell.event ? STATUS_STYLE[cell.event.status] : 'border-[var(--border-light)] text-[var(--text-secondary)]'}`}
-                        >
-                          <span>{cell.date.getDate()}</span>
-                          {cell.event?.status === 'teaching' && <span className="text-[9px] font-medium opacity-80">Day {cell.event.dayNumber}</span>}
-                          {cell.event?.status === 'event' && <span className="text-[8px] font-medium leading-tight truncate w-full px-0.5">{cell.event.label}</span>}
-                        </motion.div>
-                      ) : (
-                        <div key={`blank-${i}`} />
-                      )
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-[var(--border-light)] text-[11px] font-bold text-[var(--text-secondary)]">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500/60" /> Teaching day</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-slate-400/60" /> Off / weekend</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-500/60" /> Holiday / exam / event</span>
-                </div>
-              </div>
-            </motion.div>
+            <div className="glass-card p-4 md:p-6 rounded-3xl">
+              <AcademicCalendarGrid calendar={calendar} defaultSemester={user?.semester} canSetReminders={isFacultyRole} />
+            </div>
           ) : (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)] px-1">
