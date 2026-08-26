@@ -7,6 +7,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/imageUrl';
+import AcademicCalendarGrid from '../../components/AcademicCalendarGrid';
 
 const emptyForm = () => ({
   session: '',
@@ -145,7 +146,7 @@ function ListView({ onCreate, onEdit }) {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="glass-card p-5 rounded-2xl flex flex-col gap-3"
+              className={`glass-card p-5 rounded-2xl flex flex-col gap-3 ${previewId === cal._id ? 'md:col-span-2 xl:col-span-3' : ''}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -159,9 +160,13 @@ function ListView({ onCreate, onEdit }) {
               </div>
 
               {cal.events?.length > 0 && (
-                <a href={`/academic-calendar/view/${cal._id}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs font-bold text-emerald-500 hover:underline min-w-0">
-                  <CalendarDays size={14} className="shrink-0" /> <span className="truncate">View calendar ({cal.events.length} entries)</span> <ExternalLink size={12} className="shrink-0" />
-                </a>
+                <button
+                  onClick={() => setPreviewId((p) => (p === cal._id ? null : cal._id))}
+                  className="flex items-center gap-1.5 text-xs font-bold text-emerald-500 min-w-0"
+                >
+                  <CalendarDays size={14} className="shrink-0" /> <span className="truncate flex-1 text-left">{cal.events.length} entries</span>
+                  {previewId === cal._id ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
+                </button>
               )}
 
               {cal.pdfUrl && (
@@ -174,20 +179,28 @@ function ListView({ onCreate, onEdit }) {
                   >
                     <FileText size={14} className="shrink-0" /> <span className="truncate">{cal.pdfFileName || 'View PDF'}</span> <ExternalLink size={12} className="shrink-0" />
                   </a>
-                  <button
-                    onClick={() => setPreviewId((p) => (p === cal._id ? null : cal._id))}
-                    className="ml-auto shrink-0 flex items-center gap-1 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                    title="Preview inline"
-                  >
-                    {previewId === cal._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </button>
+                  {!cal.events?.length && (
+                    <button
+                      onClick={() => setPreviewId((p) => (p === cal._id ? null : cal._id))}
+                      className="ml-auto shrink-0 flex items-center gap-1 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      title="Preview inline"
+                    >
+                      {previewId === cal._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                  )}
                 </div>
               )}
 
-              {previewId === cal._id && cal.pdfUrl && (
-                <div className="rounded-xl overflow-hidden border border-[var(--border-light)]">
-                  <iframe src={getImageUrl(cal.pdfUrl)} title={cal.pdfFileName || 'Academic calendar preview'} className="w-full border-0" style={{ height: '50vh' }} />
-                </div>
+              {previewId === cal._id && (
+                cal.events?.length > 0 ? (
+                  <div className="rounded-xl border border-[var(--border-light)] p-3 max-h-[60vh] overflow-y-auto">
+                    <AcademicCalendarGrid calendar={cal} canSetReminders />
+                  </div>
+                ) : cal.pdfUrl ? (
+                  <div className="rounded-xl overflow-hidden border border-[var(--border-light)]">
+                    <iframe src={getImageUrl(cal.pdfUrl)} title={cal.pdfFileName || 'Academic calendar preview'} className="w-full border-0" style={{ height: '50vh' }} />
+                  </div>
+                ) : null
               )}
 
               <div className="flex items-center gap-2 mt-2 pt-3 border-t border-[var(--border-light)]">

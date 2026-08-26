@@ -17,6 +17,7 @@ export default function MySubjectActivities() {
   const [editingId, setEditingId] = useState(null);
   const [activities, setActivities] = useState([]);
   const [co, setCo] = useState({ co1: "", co2: "", co3: "", co4: "", co5: "" });
+  const [surveyQuestions, setSurveyQuestions] = useState(["", "", "", "", ""]);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
@@ -42,13 +43,18 @@ export default function MySubjectActivities() {
       co1: subject.co1 || "", co2: subject.co2 || "", co3: subject.co3 || "",
       co4: subject.co4 || "", co5: subject.co5 || "",
     });
+    setSurveyQuestions([...(subject.surveyQuestions || []), "", "", "", "", ""].slice(0, 5));
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setActivities([]);
     setCo({ co1: "", co2: "", co3: "", co4: "", co5: "" });
+    setSurveyQuestions(["", "", "", "", ""]);
   };
+
+  const updateSurveyQuestion = (idx, value) =>
+    setSurveyQuestions((prev) => prev.map((q, i) => (i === idx ? value : q)));
 
   const addActivity = () => setActivities((prev) => [...prev, emptyActivity()]);
   const updateActivity = (idx, patch) =>
@@ -58,7 +64,7 @@ export default function MySubjectActivities() {
   const save = async () => {
     setSaving(true);
     try {
-      const { data } = await api.patch(`/master-data/subjects/${editingId}/activities`, { activities, ...co });
+      const { data } = await api.patch(`/master-data/subjects/${editingId}/activities`, { activities, ...co, surveyQuestions });
       if (data.success) {
         toast.success("Assessment saved");
         cancelEdit();
@@ -126,6 +132,25 @@ export default function MySubjectActivities() {
                             value={co[`co${n}`]}
                             onChange={(e) => setCo((prev) => ({ ...prev, [`co${n}`]: e.target.value }))}
                             placeholder={`Course Outcome ${n}`}
+                            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Course Exit Survey Questions</span>
+                    <p className="text-[11px] text-[var(--text-secondary)]">
+                      Up to 5 statements students will rate on a fixed scale — Strongly Agree (5), Agree (4), Neutral (3), Disagree (2), Strongly Disagree (1).
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {surveyQuestions.map((q, idx) => (
+                        <label key={idx} className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">Question {idx + 1}</span>
+                          <input
+                            value={q}
+                            onChange={(e) => updateSurveyQuestion(idx, e.target.value)}
+                            placeholder={`e.g. "The course objectives were clearly communicated"`}
                             className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
                           />
                         </label>

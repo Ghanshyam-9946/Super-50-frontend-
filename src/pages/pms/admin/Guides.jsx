@@ -13,7 +13,7 @@ const Guides = () => {
   const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
-    userId: '', academicYear: '', assignedSemester: '',
+    userIds: [], academicYear: '', assignedSemester: '',
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,14 +41,26 @@ const Guides = () => {
   const guideIds = new Set(guides.map((g) => g._id));
   const availableFaculty = faculty.filter((f) => !guideIds.has(f._id));
 
+  const toggleFaculty = (id) =>
+    setForm((f) => ({ ...f, userIds: f.userIds.includes(id) ? f.userIds.filter((x) => x !== id) : [...f.userIds, id] }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.userId) return toast.error('Select a faculty member');
+    if (form.userIds.length === 0) return toast.error('Select at least one faculty member');
     setSubmitting(true);
     try {
-      await adminAPI.assignGuideRole(form);
-      toast.success('Faculty assigned as Project Guide');
-      setForm((f) => ({ ...f, userId: '', assignedSemester: '' }));
+      const results = await Promise.allSettled(
+        form.userIds.map((userId) =>
+          adminAPI.assignGuideRole({ userId, academicYear: form.academicYear, assignedSemester: form.assignedSemester })
+        )
+      );
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length === 0) {
+        toast.success(`${form.userIds.length} faculty assigned as Project Guide`);
+      } else {
+        toast.error(`${form.userIds.length - failed.length} assigned, ${failed.length} failed`);
+      }
+      setForm((f) => ({ ...f, userIds: [], assignedSemester: '' }));
       fetchData();
     } catch (err) { toast.error(handleError(err)); }
     finally { setSubmitting(false); }
@@ -75,14 +87,20 @@ const Guides = () => {
           <Card title="Assign Project Guide" icon={UserPlus}>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="form-label">Faculty</label>
-                <select className="form-select" value={form.userId} onChange={(e) => setForm({ ...form, userId: e.target.value })} required>
-                  <option value="">Select faculty</option>
-                  {availableFaculty.map((f) => (
-                    <option key={f._id} value={f._id}>{f.name} ({f.email}) — {f.role}</option>
-                  ))}
-                </select>
-                <p className="form-help">No new account is created — this only grants an existing faculty account access to PMS as a guide.</p>
+                <label className="form-label">Faculty (select one or more)</label>
+                <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+                  {availableFaculty.length === 0 ? (
+                    <p className="text-sm text-slate-400 px-3 py-2">No available faculty to assign.</p>
+                  ) : (
+                    availableFaculty.map((f) => (
+                      <label key={f._id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+                        <input type="checkbox" checked={form.userIds.includes(f._id)} onChange={() => toggleFaculty(f._id)} />
+                        <span>{f.name} ({f.email}) — {f.role}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="form-help">No new account is created — this only grants existing faculty accounts access to PMS as a guide.</p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -101,7 +119,7 @@ const Guides = () => {
                 </div>
               </div>
               <button type="submit" disabled={submitting} className="btn-primary w-full">
-                {submitting ? <Spinner size="sm" className="text-white" /> : 'Assign as Guide'}
+                {submitting ? <Spinner size="sm" className="text-white" /> : `Assign as Guide${form.userIds.length > 1 ? ` (${form.userIds.length})` : ''}`}
               </button>
             </form>
           </Card>

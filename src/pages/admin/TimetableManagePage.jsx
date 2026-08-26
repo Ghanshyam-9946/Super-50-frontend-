@@ -171,7 +171,7 @@ function ListView({ onCreate, onEdit }) {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="glass-card p-5 rounded-2xl flex flex-col gap-3"
+              className={`glass-card p-5 rounded-2xl flex flex-col gap-3 ${previewId === tt._id ? 'md:col-span-2 xl:col-span-3' : ''}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -187,27 +187,17 @@ function ListView({ onCreate, onEdit }) {
 
               {tt.roomNo && <p className="text-xs text-[var(--text-secondary)]">Room No {tt.roomNo}</p>}
 
-              <div className="flex items-center gap-2">
-                <a
-                  href={getImageUrl(tt.pdfUrl)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline min-w-0"
-                >
-                  <FileText size={14} className="shrink-0" /> <span className="truncate">{tt.pdfFileName || 'View PDF'}</span> <ExternalLink size={12} className="shrink-0" />
-                </a>
-                <button
-                  onClick={() => setPreviewId((p) => (p === tt._id ? null : tt._id))}
-                  className="ml-auto shrink-0 flex items-center gap-1 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  title="Preview inline"
-                >
-                  {previewId === tt._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </button>
-              </div>
+              <button
+                onClick={() => setPreviewId((p) => (p === tt._id ? null : tt._id))}
+                className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] min-w-0"
+              >
+                <FileText size={14} className="shrink-0" /> <span className="truncate flex-1 text-left">{tt.pdfFileName || 'Timetable PDF'}</span>
+                {previewId === tt._id ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
+              </button>
 
               {previewId === tt._id && (
                 <div className="rounded-xl overflow-hidden border border-[var(--border-light)]">
-                  <iframe src={getImageUrl(tt.pdfUrl)} title={tt.pdfFileName || 'Timetable preview'} className="w-full border-0" style={{ height: '50vh' }} />
+                  <iframe src={getImageUrl(tt.pdfUrl)} title={tt.pdfFileName || 'Timetable preview'} className="w-full border-0" style={{ height: '75vh' }} />
                 </div>
               )}
 

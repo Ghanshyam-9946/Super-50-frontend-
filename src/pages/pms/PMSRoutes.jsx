@@ -21,7 +21,6 @@ import Students from './admin/Students';
 import TeamConfig from './admin/TeamConfig';
 import AllocationSheet from './admin/AllocationSheet';
 import AttendanceMark from './admin/AttendanceMark';
-import WeeklyReportCompliance from './admin/WeeklyReportCompliance';
 
 // Student
 import StudentDashboard from './student/Dashboard';
@@ -33,7 +32,6 @@ import StudentProgress from './student/Progress';
 import StudentResources from './student/Resources';
 import CodeEditor from './student/CodeEditor';
 import ProjectReport from './student/ProjectReport';
-import StudentWeeklyReport from './student/WeeklyReport';
 
 // Guide
 import GuideDashboard from './guide/Dashboard';
@@ -44,7 +42,6 @@ import GuideReports from './guide/Reports';
 import GuideRubrics from './guide/Rubrics';
 import GuideStatus from './guide/Status';
 import GuideStatusDetail from './guide/StatusDetail';
-import GuideWeeklyReports from './guide/WeeklyReports';
 
 // Role guard component. `allowResponsibility` additionally lets through any
 // user (regardless of role) who holds that responsibility tag — mirrors
@@ -78,7 +75,6 @@ export default function PMSRoutes() {
         <Route path="admin/presentations" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Presentations /></RoleGuard>} />
         <Route path="admin/team-config" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><TeamConfig /></RoleGuard>} />
         <Route path="admin/allocation-sheet" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AllocationSheet /></RoleGuard>} />
-        <Route path="admin/weekly-reports" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><WeeklyReportCompliance /></RoleGuard>} />
         <Route path="admin/guides" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Guides /></RoleGuard>} />
         <Route path="admin/guides/:userId/profile" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><GuideProfileView /></RoleGuard>} />
         <Route path="admin/students" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Students /></RoleGuard>} />
@@ -103,7 +99,6 @@ export default function PMSRoutes() {
         <Route path="student/code-editor" element={<RoleGuard allowed={['student']}><CodeEditor /></RoleGuard>} />
         <Route path="student/resources" element={<RoleGuard allowed={['student']}><StudentResources /></RoleGuard>} />
         <Route path="student/guidelines" element={<RoleGuard allowed={['student']}><StudentGuidelines /></RoleGuard>} />
-        <Route path="student/weekly-reports" element={<RoleGuard allowed={['student']}><StudentWeeklyReport /></RoleGuard>} />
 
         {/* Guide — /pms/guide/dashboard alias for sidebar nav link */}
         <Route path="guide" element={<RoleGuard allowed={['guide']}><GuideDashboard /></RoleGuard>} />
@@ -115,7 +110,6 @@ export default function PMSRoutes() {
         <Route path="guide/status" element={<RoleGuard allowed={['guide']}><GuideStatus /></RoleGuard>} />
         <Route path="guide/status/:teamId" element={<RoleGuard allowed={['guide']}><GuideStatusDetail /></RoleGuard>} />
         <Route path="guide/reports" element={<RoleGuard allowed={['guide']}><GuideReports /></RoleGuard>} />
-        <Route path="guide/weekly-reports" element={<RoleGuard allowed={['guide']}><GuideWeeklyReports /></RoleGuard>} />
 
       </Route>
     </Routes>

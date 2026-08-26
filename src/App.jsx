@@ -84,6 +84,13 @@ import StudentSessionalMarksPage from './pages/student/StudentSessionalMarksPage
 import FeedbackReleasePage from './pages/admin/feedback/FeedbackReleasePage';
 import FeedbackDashboardPage from './pages/admin/feedback/FeedbackDashboardPage';
 import StudentFeedbackPage from './pages/student/StudentFeedbackPage';
+import ReleaseSurveyPage from './pages/admin/courseExitSurvey/ReleaseSurveyPage';
+import SurveyDashboardPage from './pages/admin/courseExitSurvey/SurveyDashboardPage';
+import StudentCourseExitSurveyPage from './pages/student/StudentCourseExitSurveyPage';
+import WeeklyWorkReportPage from './pages/faculty/WeeklyWorkReportPage';
+import WeeklyWorkReportAdminPage from './pages/admin/WeeklyWorkReportAdminPage';
+import StickyNotesPage from './pages/StickyNotesPage';
+import CalendarRemindersPage from './pages/faculty/CalendarRemindersPage';
 import ClassObservationPage from './pages/admin/ClassObservationPage';
 import ClassEngagementPage from './pages/faculty/ClassEngagementPage';
 import ClassEngagementReportPage from './pages/admin/ClassEngagementReportPage';
@@ -226,6 +233,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/faculty/academic-calendar" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><StudentAcademicCalendarPage /></RoleGuard>
         } />
+        <Route path="/academic-calendar/view/:id" element={
+          <RoleGuard allowed={['student', 'teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><StudentAcademicCalendarPage /></RoleGuard>
+        } />
         <Route path="/student/no-dues" element={
           <RoleGuard allowed={['student']}><StudentNoDuesPage /></RoleGuard>
         } />
@@ -234,6 +244,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/student/feedback" element={
           <RoleGuard allowed={['student']}><StudentFeedbackPage /></RoleGuard>
+        } />
+        <Route path="/student/course-exit-survey" element={
+          <RoleGuard allowed={['student']}><StudentCourseExitSurveyPage /></RoleGuard>
         } />
         <Route path="/student/rgpv" element={
           <RoleGuard allowed={['student']}><StudentRGPVPage /></RoleGuard>
@@ -333,6 +346,15 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/feedback/:formId" element={
           <RoleGuard allowed={['admin']}><FeedbackDashboardPage /></RoleGuard>
         } />
+        <Route path="/admin/course-exit-survey" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><ReleaseSurveyPage /></RoleGuard>
+        } />
+        <Route path="/admin/course-exit-survey/:releaseId" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><SurveyDashboardPage /></RoleGuard>
+        } />
+        <Route path="/admin/weekly-work-report" element={
+          <RoleGuard allowed={['admin']}><WeeklyWorkReportAdminPage /></RoleGuard>
+        } />
         <Route path="/admin/class-observations" element={
           <RoleGuard allowed={['admin']}><ClassObservationPage /></RoleGuard>
         } />
@@ -419,6 +441,15 @@ function AppRoutes({ theme, toggleTheme }) {
         {/* My Profile — LinkedIn-style rich faculty profile + PDF export */}
         <Route path="/faculty/my-profile" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MyProfile /></RoleGuard>
+        } />
+        <Route path="/faculty/weekly-work-report" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><WeeklyWorkReportPage /></RoleGuard>
+        } />
+        <Route path="/faculty/calendar-reminders" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><CalendarRemindersPage /></RoleGuard>
+        } />
+        <Route path="/sticky-notes" element={
+          <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><StickyNotesPage /></RoleGuard>
         } />
 
         {/* Internal Chat — faculty/admin only, never students */}

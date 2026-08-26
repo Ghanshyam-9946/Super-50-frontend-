@@ -62,19 +62,35 @@ const AttendanceMark = () => {
       setMembers(res.data.members || []);
       setPresentations(res.data.presentations || []);
       setRecords(res.data.records || []);
-
-      const initialAtt = {};
-      (res.data.members || []).forEach((m) => { initialAtt[m.student._id] = 'present'; });
-      setMarking((p) => ({ ...p, attendance: initialAtt }));
     } catch (err) { toast.error(handleError(err)); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAttendance(teamId); }, [teamId]);
 
+  // Re-derive the marking grid whenever the selected date (or the loaded
+  // records/members) changes — pulls in whatever was already recorded for
+  // that date so it can be reviewed and edited, instead of always
+  // resetting everyone to "present" and silently overwriting real values
+  // on save.
+  useEffect(() => {
+    const dateStr = marking.attendanceDate;
+    const attForDate = {};
+    members.forEach((m) => {
+      const existing = records.find(
+        (r) => r.student?._id === m.student._id && String(r.attendanceDate).slice(0, 10) === dateStr
+      );
+      attForDate[m.student._id] = existing ? existing.status : 'present';
+    });
+    setMarking((p) => ({ ...p, attendance: attForDate }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marking.attendanceDate, records, members]);
+
   const setStatus = (studentId, status) => {
     setMarking((p) => ({ ...p, attendance: { ...p.attendance, [studentId]: status } }));
   };
+
+  const recordedForDate = records.filter((r) => String(r.attendanceDate).slice(0, 10) === marking.attendanceDate).length;
 
   const submitAttendance = async (e) => {
     e.preventDefault();
@@ -184,6 +200,11 @@ const AttendanceMark = () => {
                     onChange={(e) => setMarking({ ...marking, attendanceDate: e.target.value })}
                     required
                   />
+                  {recordedForDate > 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      {recordedForDate} of {members.length} student(s) already marked for this date — editing will overwrite their status.
+                    </p>
+                  )}
                 </div>
               </div>
 
