@@ -30,6 +30,11 @@ export const adminAPI = {
   createPresentation: (data) => api.post('/pms/admin/presentations', data),
   updatePresentation: (id, data) => api.put(`/pms/admin/presentations/${id}`, data),
   deletePresentation: (id) => api.delete(`/pms/admin/presentations/${id}`),
+  // 🆕 Per-team presentation date assignment (multi-date scheduling)
+  getPresentationSchedule: (id) => api.get(`/pms/admin/presentations/${id}/schedule`),
+  assignPresentationDate: (id, data) => api.post(`/pms/admin/presentations/${id}/assign-date`, data),
+  // 🆕 Bulk evaluation PDF — every team's guide evaluation for one round
+  evaluationsPdfUrl: (id) => `/pms/admin/presentations/${id}/evaluations.pdf`,
 
   // 🆕 Team Configuration (min/max team size, max teams per guide) +
   // Allocation Sheet finalize/unlock
@@ -126,6 +131,8 @@ export const studentAPI = {
   createTeam: (data) => api.post('/pms/student/team', data),
   updateMyTeam: (data) => api.put('/pms/student/team', data),
   searchStudents: (q) => api.get('/pms/student/team/search-students', { params: { q } }),  // 🆕
+  getAvailableGuides: () => api.get('/pms/student/available-guides'),
+  chooseGuide: (guideId) => api.post('/pms/student/team/choose-guide', { guideId }),
   proposeLeader: (proposedLeaderId) => api.post('/pms/student/team/propose-leader', { proposedLeaderId }),
   voteLeader: (vote) => api.post('/pms/student/team/vote-leader', { vote }),
   getPresentations: () => api.get('/pms/student/presentations'),
@@ -167,6 +174,7 @@ export const guideAPI = {
   getMyGroups: () => api.get('/pms/guide/groups'),
   getTeamForReview: (teamId) => api.get(`/pms/guide/review/${teamId}`),
   reviewSubmission: (data) => api.post('/pms/guide/review', data),
+  saveEvaluation: (data) => api.post('/pms/guide/evaluation', data), // 🆕 Presentation evaluation (meeting/feedback log)
   getAttendance: (params) => api.get('/pms/guide/attendance', { params }),
   markAttendance: (data) => api.post('/pms/guide/attendance', data),
   reports: () => api.get('/pms/guide/reports'),

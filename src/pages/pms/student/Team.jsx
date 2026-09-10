@@ -661,6 +661,11 @@ const StudentTeam = () => {
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [guidePickerOpen, setGuidePickerOpen] = useState(false);
+  const [availableGuides, setAvailableGuides] = useState([]);
+  const [guidesLoading, setGuidesLoading] = useState(false);
+  const [guidesLocked, setGuidesLocked] = useState(false);
+  const [selectingGuideId, setSelectingGuideId] = useState(null);
 
   const fetchTeam = async () => {
     setLoading(true);
@@ -672,6 +677,34 @@ const StudentTeam = () => {
   };
 
   useEffect(() => { fetchTeam(); }, []);
+
+  const openGuidePicker = async () => {
+    setGuidePickerOpen(true);
+    setGuidesLoading(true);
+    try {
+      const res = await studentAPI.getAvailableGuides();
+      setAvailableGuides(res.data.data);
+      setGuidesLocked(res.data.locked);
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setGuidesLoading(false);
+    }
+  };
+
+  const chooseGuide = async (guideId) => {
+    setSelectingGuideId(guideId);
+    try {
+      const res = await studentAPI.chooseGuide(guideId);
+      toast.success(res.data.message || 'Guide selected');
+      setTeam(res.data.team);
+      setGuidePickerOpen(false);
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setSelectingGuideId(null);
+    }
+  };
 
   if (loading) return <div className="py-20 flex justify-center"><Spinner size="lg" /></div>;
 
@@ -765,15 +798,69 @@ const StudentTeam = () => {
                   {g.mobile && <div className="text-slate-500">📱 {g.mobile}</div>}
                 </div>
               ))}
+              {!team.isLocked && (
+                <button onClick={openGuidePicker} className="btn-secondary btn-sm mt-1">
+                  <UserCog className="w-3.5 h-3.5" /> Change Guide
+                </button>
+              )}
             </div>
           ) : (
-            <div className="alert-warning text-xs">
-              <Info className="w-4 h-4 flex-shrink-0" />
-              Guide will be assigned by admin shortly.
+            <div className="space-y-3">
+              <div className="alert-info text-xs">
+                <Info className="w-4 h-4 flex-shrink-0" />
+                Pick your own project guide, subject to the admin's configured limit per guide.
+              </div>
+              {!team.isLocked && (
+                <button onClick={openGuidePicker} className="btn-primary btn-sm w-full">
+                  <UserCog className="w-3.5 h-3.5" /> Choose Guide
+                </button>
+              )}
             </div>
           )}
         </Card>
       </div>
+
+      <Modal
+        open={guidePickerOpen}
+        onClose={() => setGuidePickerOpen(false)}
+        title="Choose Your Project Guide"
+        footer={<button onClick={() => setGuidePickerOpen(false)} className="btn-secondary">Close</button>}
+      >
+        {guidesLoading ? (
+          <div className="py-10 flex justify-center"><Spinner /></div>
+        ) : guidesLocked ? (
+          <div className="alert-warning text-sm">
+            <Lock className="w-4 h-4 flex-shrink-0" />
+            Guide allocation has been finalized by the admin — it can no longer be changed.
+          </div>
+        ) : availableGuides.length === 0 ? (
+          <EmptyState icon={UserCheck} title="No guides available yet" message="Ask your admin to assign guides for your semester first." />
+        ) : (
+          <div className="space-y-2">
+            {availableGuides.map((g) => (
+              <div key={g._id} className="flex items-center justify-between gap-3 border border-slate-200 rounded-lg p-3">
+                <div className="min-w-0">
+                  <div className="font-semibold text-sm truncate">{g.name}</div>
+                  <div className="text-xs text-slate-500 truncate">{g.department || g.designation || g.email}</div>
+                  <div className="text-xs mt-0.5">
+                    <span className={g.isFull ? 'badge-danger' : 'badge-secondary'}>
+                      {g.currentTeams}{g.maxTeams != null ? ` / ${g.maxTeams}` : ''} team{g.currentTeams === 1 ? '' : 's'}
+                      {g.isFull ? ' — Full' : ''}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => chooseGuide(g._id)}
+                  disabled={g.isFull || selectingGuideId === g._id || g._id === (team.guides?.[0]?._id)}
+                  className="btn-primary btn-sm shrink-0"
+                >
+                  {selectingGuideId === g._id ? <Spinner size="sm" className="text-white" /> : g._id === team.guides?.[0]?._id ? 'Current' : 'Select'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
 
       <Card title="Team Members" icon={Users} noPadding>
         <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 text-xs text-slate-600 flex items-center gap-1.5">

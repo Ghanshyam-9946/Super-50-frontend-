@@ -4,6 +4,16 @@ import { Bell, X, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
+// Building a lookup key from plain (year, month, day) integers — instead of
+// round-tripping through a Date object's .toDateString() — keeps event
+// matching correct regardless of the viewer's browser timezone. A calendar
+// event date coming from the backend is UTC-anchored (see
+// parseAcademicCalendarExcel.js), so it's read with getUTC*(); a grid
+// cell's date is built locally from (year, month, day) we already know, so
+// those integers are used directly with no Date round-trip at all.
+const dateKey = (y, m, d) => `${y}-${m}-${d}`;
+const utcDateKey = (date) => dateKey(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const MONTH_LABELS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -76,7 +86,7 @@ export default function AcademicCalendarGrid({ calendar, defaultSemester, canSet
 
   const eventsByDate = useMemo(() => {
     const map = {};
-    semesterEvents.forEach((e) => { map[new Date(e.date).toDateString()] = e; });
+    semesterEvents.forEach((e) => { map[utcDateKey(new Date(e.date))] = e; });
     return map;
   }, [semesterEvents]);
 
@@ -85,10 +95,12 @@ export default function AcademicCalendarGrid({ calendar, defaultSemester, canSet
     const months = [];
     semesterEvents.forEach((e) => {
       const d = new Date(e.date);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const year = d.getUTCFullYear();
+      const month = d.getUTCMonth();
+      const key = `${year}-${month}`;
       if (!seen.has(key)) {
         seen.add(key);
-        months.push({ year: d.getFullYear(), month: d.getMonth() });
+        months.push({ year, month });
       }
     });
     months.sort((a, b) => (a.year - b.year) || (a.month - b.month));
@@ -102,7 +114,7 @@ export default function AcademicCalendarGrid({ calendar, defaultSemester, canSet
     for (let i = 0; i < firstWeekday; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month, d);
-      cells.push({ date, event: eventsByDate[date.toDateString()] || null });
+      cells.push({ date, event: eventsByDate[dateKey(year, month, d)] || null });
     }
     return cells;
   };

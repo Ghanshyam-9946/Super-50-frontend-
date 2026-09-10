@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Users, ChevronLeft, FolderOpen, FileText, Github, Hash,
-  CheckCircle2, XCircle, Calendar, Inbox, ClipboardCheck, Crown, Lock, AlertTriangle,
+  CheckCircle2, XCircle, Calendar, Inbox, ClipboardCheck, Crown, Lock, AlertTriangle, ClipboardEdit,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
@@ -81,6 +81,72 @@ const ReviewForm = ({ submission, presentation, onReviewed }) => {
           <XCircle className="w-4 h-4" /> Reject
         </button>
       </div>
+    </div>
+  );
+};
+
+// The college's "Minor-I Project Evaluation Format" meeting/feedback log —
+// Meeting Number, Date, Guide Name and Student Details are all derived
+// (read-only here), so the guide only ever has to write the Feedback.
+const EvaluationForm = ({ team, presentation, evaluation, onSaved }) => {
+  const [feedback, setFeedback] = useState(evaluation?.feedback || '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await guideAPI.saveEvaluation({ teamId: team._id, presentationId: presentation._id, feedback });
+      toast.success('Evaluation saved');
+      onSaved();
+    } catch (err) { toast.error(handleError(err)); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-3">
+      <h6 className="font-semibold text-sm flex items-center gap-1.5">
+        <ClipboardEdit className="w-4 h-4 text-brand-600" /> Evaluation Format
+      </h6>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div>
+          <div className="text-slate-500 uppercase tracking-wide font-semibold">Meeting No</div>
+          <div className="font-semibold mt-0.5">{presentation.presentationNo}</div>
+        </div>
+        <div>
+          <div className="text-slate-500 uppercase tracking-wide font-semibold">Date</div>
+          <div className="font-semibold mt-0.5">{presentation.assignedDate ? formatDate(presentation.assignedDate) : '—'}</div>
+        </div>
+        <div>
+          <div className="text-slate-500 uppercase tracking-wide font-semibold">Guide Name</div>
+          <div className="font-semibold mt-0.5">{(team.guides || []).map((g) => g.name).join(', ') || '—'}</div>
+        </div>
+        <div>
+          <div className="text-slate-500 uppercase tracking-wide font-semibold">Student Details</div>
+          <div className="font-semibold mt-0.5">
+            {(team.members || []).map((m) => (
+              <div key={m.student?._id}>{m.student?.enrollmentNo} - {m.student?.name}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div>
+        <label className="form-label">Feedback</label>
+        <textarea
+          className="form-input"
+          rows="3"
+          placeholder="Meeting notes / feedback for this evaluation round"
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+        />
+      </div>
+      {evaluation?.submittedAt && (
+        <p className="text-xs text-slate-500">
+          Last saved {formatDate(evaluation.submittedAt)} by {evaluation.submittedBy?.name || 'you'}
+        </p>
+      )}
+      <button onClick={save} disabled={saving} className="btn-primary">
+        {saving ? <Spinner size="sm" className="text-white" /> : 'Save Evaluation'}
+      </button>
     </div>
   );
 };
@@ -172,7 +238,7 @@ const GuideReview = () => {
           <Card><EmptyState icon={Inbox} title="No presentations scheduled yet" /></Card>
         ) : (
           <div className="space-y-4">
-            {reviews.map(({ presentation, submission }) => (
+            {reviews.map(({ presentation, submission, evaluation }) => (
               <Card key={presentation._id}>
                 <div className="flex justify-between items-start flex-wrap gap-3 mb-4">
                   <div className="min-w-0 flex-1">
@@ -181,7 +247,7 @@ const GuideReview = () => {
                       {submission?.isLocked && <span className="badge-success"><Lock className="w-3 h-3" /> Locked</span>}
                     </h3>
                     <div className="text-sm text-slate-500">
-                      <Calendar className="w-3 h-3 inline mr-1" /> {formatDate(presentation.presentationDate)}
+                      <Calendar className="w-3 h-3 inline mr-1" /> {presentation.assignedDate ? formatDate(presentation.assignedDate) : 'Date not yet assigned'}
                       <span className="mx-2">•</span>
                       Marks: <strong>{presentation.totalMarks}</strong>
                       <span className="mx-2">•</span>
@@ -236,6 +302,8 @@ const GuideReview = () => {
                     )}
                   </>
                 )}
+
+                <EvaluationForm team={team} presentation={presentation} evaluation={evaluation} onSaved={fetchData} />
               </Card>
             ))}
           </div>

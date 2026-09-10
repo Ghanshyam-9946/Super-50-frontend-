@@ -6,7 +6,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing
+  StickyNote, BellRing, ClipboardEdit
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,6 +47,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/student/attendance', icon: ClipboardList, label: 'Attendance' },
       { to: '/student/timetable', icon: CalendarClock, label: 'Time Table' },
       { to: '/student/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
+      { to: '/student/assignments', icon: ClipboardEdit, label: 'Assignments' },
       { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
       { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
     ] },

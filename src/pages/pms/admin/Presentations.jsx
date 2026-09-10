@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { CalendarPlus, Presentation, Trash2, Info, Pencil, X } from 'lucide-react';
+import { CalendarPlus, Presentation, Trash2, Info, Pencil, X, Plus, CalendarCheck, ClipboardEdit } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
-import { Card, Spinner, EmptyState, confirmAction } from '../../../components/pms/Common';
+import { Card, Spinner, EmptyState, Modal, confirmAction } from '../../../components/pms/Common';
 import { formatDate } from '../../../utils/pms/helpers';
+import { downloadFile } from '../../../utils/downloadFile';
 
 const blankForm = {
   academicYear: '', semester: '', presentationTitle: '',
-  presentationNo: '1', presentationDate: '', totalMarks: '100', criteria: '',
+  presentationNo: '1', presentationDates: [''], totalMarks: '100', criteria: '',
 };
 
 const Presentations = () => {
@@ -18,6 +19,12 @@ const Presentations = () => {
   const [form, setForm] = useState(blankForm);
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const [scheduleFor, setScheduleFor] = useState(null); // presentation object or null
+  const [teamSchedule, setTeamSchedule] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [savingTeamId, setSavingTeamId] = useState(null);
+  const [downloadingEvalsId, setDownloadingEvalsId] = useState(null);
 
   const selectedYear = years.find((y) => y._id === form.academicYear);
   const dateMin = selectedYear?.startDate ? selectedYear.startDate.slice(0, 10) : undefined;
@@ -52,7 +59,9 @@ const Presentations = () => {
       semester: String(p.semester),
       presentationTitle: p.presentationTitle,
       presentationNo: String(p.presentationNo),
-      presentationDate: p.presentationDate?.slice(0, 10) || '',
+      presentationDates: (p.presentationDates || []).map((d) => d?.slice(0, 10)).filter(Boolean).length
+        ? p.presentationDates.map((d) => d.slice(0, 10))
+        : [''],
       totalMarks: String(p.totalMarks),
       criteria: p.criteria || '',
     });
@@ -63,19 +72,40 @@ const Presentations = () => {
     setForm(blankForm);
   };
 
+  const setDateAt = (idx, value) => {
+    setForm((f) => {
+      const next = [...f.presentationDates];
+      next[idx] = value;
+      return { ...f, presentationDates: next };
+    });
+  };
+
+  const addDateRow = () => setForm((f) => ({ ...f, presentationDates: [...f.presentationDates, ''] }));
+
+  const removeDateRow = (idx) => setForm((f) => ({
+    ...f,
+    presentationDates: f.presentationDates.length > 1 ? f.presentationDates.filter((_, i) => i !== idx) : f.presentationDates,
+  }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const cleanDates = form.presentationDates.filter(Boolean);
+    if (cleanDates.length === 0) {
+      toast.error('At least one date is required');
+      return;
+    }
     setSubmitting(true);
     try {
+      const payload = { ...form, presentationDates: cleanDates };
       if (editingId) {
-        await adminAPI.updatePresentation(editingId, form);
+        await adminAPI.updatePresentation(editingId, payload);
         toast.success('Presentation updated');
         setEditingId(null);
         setForm(blankForm);
       } else {
-        await adminAPI.createPresentation(form);
+        await adminAPI.createPresentation(payload);
         toast.success('Presentation scheduled');
-        setForm({ ...form, presentationTitle: '', presentationDate: '', criteria: '' });
+        setForm({ ...form, presentationTitle: '', presentationDates: [''], criteria: '' });
       }
       fetchData();
     } catch (err) {
@@ -94,11 +124,50 @@ const Presentations = () => {
     } catch (err) { toast.error(handleError(err)); }
   };
 
+  const openSchedule = async (p) => {
+    setScheduleFor(p);
+    setScheduleLoading(true);
+    try {
+      const res = await adminAPI.getPresentationSchedule(p._id);
+      setTeamSchedule(res.data.teamSchedule);
+    } catch (err) {
+      toast.error(handleError(err));
+      setScheduleFor(null);
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
+  const assignDate = async (teamId, assignedDate) => {
+    if (!assignedDate) return;
+    setSavingTeamId(teamId);
+    try {
+      await adminAPI.assignPresentationDate(scheduleFor._id, { teamId, assignedDate });
+      setTeamSchedule((prev) => prev.map((t) => (t.teamId === teamId ? { ...t, assignedDate } : t)));
+      toast.success('Date assigned');
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setSavingTeamId(null);
+    }
+  };
+
+  const downloadEvaluations = async (p) => {
+    setDownloadingEvalsId(p._id);
+    try {
+      await downloadFile(adminAPI.evaluationsPdfUrl(p._id), `evaluations_${p.presentationTitle.replace(/[/\s]/g, '_')}.pdf`);
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setDownloadingEvalsId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Schedule Presentations</h1>
-        <p className="text-sm text-slate-500 mt-1">Project type is auto-resolved from semester.</p>
+        <p className="text-sm text-slate-500 mt-1">Project type is auto-resolved from semester. Add multiple candidate dates, then assign one to each group.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -136,28 +205,43 @@ const Presentations = () => {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="form-label">Date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={form.presentationDate}
-                    onChange={(e) => setForm({ ...form, presentationDate: e.target.value })}
-                    min={dateMin}
-                    max={dateMax}
-                    required
-                  />
-                  {selectedYear && (
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      Must fall within {selectedYear.yearName} ({formatDate(selectedYear.startDate)} – {formatDate(selectedYear.endDate)})
-                    </p>
-                  )}
+              <div>
+                <label className="form-label">Candidate Date(s)</label>
+                <div className="space-y-2">
+                  {form.presentationDates.map((d, idx) => (
+                    <div key={idx} className="flex gap-2">
+                      <input
+                        type="date"
+                        className="form-input flex-1"
+                        value={d}
+                        onChange={(e) => setDateAt(idx, e.target.value)}
+                        min={dateMin}
+                        max={dateMax}
+                        required
+                      />
+                      <button type="button" onClick={() => removeDateRow(idx)} disabled={form.presentationDates.length === 1} className="btn-outline btn-sm disabled:opacity-30">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <label className="form-label">Total Marks</label>
-                  <input type="number" className="form-input" value={form.totalMarks} onChange={(e) => setForm({ ...form, totalMarks: e.target.value })} required />
-                </div>
+                <button type="button" onClick={addDateRow} className="btn-outline btn-sm mt-2">
+                  <Plus className="w-3 h-3" /> Add another date
+                </button>
+                {selectedYear && (
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Must fall within {selectedYear.yearName} ({formatDate(selectedYear.startDate)} – {formatDate(selectedYear.endDate)})
+                  </p>
+                )}
+                {form.presentationDates.filter(Boolean).length > 1 && (
+                  <p className="text-[11px] text-brand-600 mt-1">
+                    Multiple dates — after saving, use "Assign Dates" to give each group its own date.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="form-label">Total Marks</label>
+                <input type="number" className="form-input" value={form.totalMarks} onChange={(e) => setForm({ ...form, totalMarks: e.target.value })} required />
               </div>
               <div>
                 <label className="form-label">Criteria</label>
@@ -186,7 +270,7 @@ const Presentations = () => {
                 <div className="overflow-x-auto">
                   <table className="data-table">
                     <thead>
-                      <tr><th>Title</th><th>Year</th><th>Sem</th><th>Project</th><th>Date</th><th>Marks</th><th className="text-right">Actions</th></tr>
+                      <tr><th>Title</th><th>Year</th><th>Sem</th><th>Project</th><th>Date(s)</th><th>Marks</th><th className="text-right">Actions</th></tr>
                     </thead>
                     <tbody>
                       {presentations.map((p) => (
@@ -195,10 +279,25 @@ const Presentations = () => {
                           <td>{p.academicYear?.yearName}</td>
                           <td><span className="badge-info">{p.semester}th</span></td>
                           <td><span className="badge-primary">{p.project?.projectName}</span></td>
-                          <td>{formatDate(p.presentationDate)}</td>
+                          <td>
+                            {p.presentationDates?.length > 1
+                              ? <span className="badge-warning">{p.presentationDates.length} dates</span>
+                              : formatDate(p.presentationDates?.[0])}
+                          </td>
                           <td>{p.totalMarks}</td>
                           <td className="text-right">
                             <div className="flex justify-end gap-1">
+                              <button onClick={() => openSchedule(p)} className="btn-outline btn-sm" title="Assign dates to groups">
+                                <CalendarCheck className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => downloadEvaluations(p)}
+                                disabled={downloadingEvalsId === p._id}
+                                className="btn-outline btn-sm"
+                                title="Download all groups' evaluation PDFs for this round"
+                              >
+                                {downloadingEvalsId === p._id ? <Spinner size="sm" /> : <ClipboardEdit className="w-3 h-3" />}
+                              </button>
                               <button onClick={() => startEdit(p)} className="btn-outline btn-sm">
                                 <Pencil className="w-3 h-3" />
                               </button>
@@ -216,6 +315,42 @@ const Presentations = () => {
           </Card>
         </div>
       </div>
+
+      <Modal open={!!scheduleFor} onClose={() => setScheduleFor(null)} title={scheduleFor ? `Assign Dates — ${scheduleFor.presentationTitle}` : ''} size="lg">
+        {scheduleLoading ? (
+          <div className="py-10 flex justify-center"><Spinner /></div>
+        ) : teamSchedule.length === 0 ? (
+          <EmptyState icon={Presentation} title="No groups found for this year/semester" />
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-500 mb-2">
+              Pick one of this presentation's candidate dates for each group. Students will only see their own group's date.
+            </p>
+            {teamSchedule.map((t) => (
+              <div key={t.teamId} className="flex items-center justify-between gap-3 p-2.5 bg-slate-50 rounded-lg">
+                <div className="min-w-0">
+                  <div className="font-medium text-sm truncate">{t.groupName}</div>
+                  <div className="text-xs text-slate-500">{t.groupNo}</div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {savingTeamId === t.teamId && <Spinner size="sm" />}
+                  <select
+                    className="form-select text-sm py-1"
+                    value={t.assignedDate ? t.assignedDate.slice(0, 10) : ''}
+                    onChange={(e) => assignDate(t.teamId, e.target.value)}
+                    disabled={savingTeamId === t.teamId}
+                  >
+                    <option value="">— Not assigned —</option>
+                    {(scheduleFor?.presentationDates || []).map((d) => (
+                      <option key={d} value={d.slice(0, 10)}>{formatDate(d)}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

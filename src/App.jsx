@@ -66,6 +66,7 @@ import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
+import StudentAssignmentsPage from './pages/student/StudentAssignmentsPage';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import SessionalMarksAdminPage from './pages/admin/SessionalMarksAdminPage';
 import MasterDataSections from './pages/admin/masterdata/Sections';
@@ -238,6 +239,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/student/no-dues" element={
           <RoleGuard allowed={['student']}><StudentNoDuesPage /></RoleGuard>
+        } />
+        <Route path="/student/assignments" element={
+          <RoleGuard allowed={['student']}><StudentAssignmentsPage /></RoleGuard>
         } />
         <Route path="/student/sessional-marks" element={
           <RoleGuard allowed={['student']}><StudentSessionalMarksPage /></RoleGuard>
