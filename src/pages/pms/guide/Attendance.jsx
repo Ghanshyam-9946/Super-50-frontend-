@@ -174,7 +174,7 @@ const GuideAttendance = () => {
                       <option value="">Select</option>
                       {presentations.map((p) => (
                         <option key={p._id} value={p._id}>
-                          {p.presentationTitle} ({formatDate(p.presentationDate)})
+                          {p.presentationTitle} ({formatDate(p.presentationDates?.[0])})
                         </option>
                       ))}
                     </select>

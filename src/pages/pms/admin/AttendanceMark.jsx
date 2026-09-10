@@ -187,7 +187,7 @@ const AttendanceMark = () => {
                   >
                     <option value="">— Not tied to a presentation —</option>
                     {presentations.map((p) => (
-                      <option key={p._id} value={p._id}>{p.presentationTitle} ({formatDate(p.presentationDate)})</option>
+                      <option key={p._id} value={p._id}>{p.presentationTitle} ({formatDate(p.presentationDates?.[0])})</option>
                     ))}
                   </select>
                 </div>

@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Plus, Trash2, Loader2, Edit3, X } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, Edit3, X, Paperclip, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { getImageUrl } from "../../utils/imageUrl";
 
-const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null });
+const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null, pdfUrl: null, pdfFileName: null });
 const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
+const MAX_PDF_BYTES = 5 * 1024 * 1024;
 
 // Lets a Subject Faculty (anyone with a FacultySectionMap row for a
 // subject — not just the coordinator/admin) manage that subject's
@@ -19,6 +21,7 @@ export default function MySubjectActivities() {
   const [co, setCo] = useState({ co1: "", co2: "", co3: "", co4: "", co5: "" });
   const [surveyQuestions, setSurveyQuestions] = useState(["", "", "", "", ""]);
   const [saving, setSaving] = useState(false);
+  const [uploadingIdx, setUploadingIdx] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -67,13 +70,48 @@ export default function MySubjectActivities() {
       const { data } = await api.patch(`/master-data/subjects/${editingId}/activities`, { activities, ...co, surveyQuestions });
       if (data.success) {
         toast.success("Assessment saved");
-        cancelEdit();
-        load();
+        // Stay in edit mode with the saved subject's real activity _ids
+        // (a freshly-added activity has none until now) so a PDF can be
+        // attached to it right away, without reopening.
+        setActivities(data.data.activities.map((a) => ({ ...a })));
+        setSubjects((prev) => prev.map((s) => (s._id === editingId ? data.data : s)));
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save activities");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadAttachment = async (idx, activityId, file) => {
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Only PDF files are allowed");
+      return;
+    }
+    if (file.size > MAX_PDF_BYTES) {
+      toast.error("PDF must be 5MB or smaller");
+      return;
+    }
+    setUploadingIdx(idx);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await api.post(
+        `/master-data/subjects/${editingId}/activities/${activityId}/attachment`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      if (data.success) {
+        const updated = data.data.activities.find((a) => a._id === activityId);
+        if (updated) updateActivity(idx, { pdfUrl: updated.pdfUrl, pdfFileName: updated.pdfFileName });
+        setSubjects((prev) => prev.map((s) => (s._id === editingId ? data.data : s)));
+        toast.success("PDF attached");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to upload PDF");
+    } finally {
+      setUploadingIdx(null);
     }
   };
 
@@ -199,6 +237,31 @@ export default function MySubjectActivities() {
                               className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
                             />
                           </label>
+                          {!a._id ? (
+                            <span className="text-[11px] text-[var(--text-secondary)] italic">Save first to attach a PDF</span>
+                          ) : a.pdfUrl ? (
+                            <a
+                              href={getImageUrl(a.pdfUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] underline"
+                              title={a.pdfFileName}
+                            >
+                              <FileText size={12} /> {a.pdfFileName?.length > 18 ? `${a.pdfFileName.slice(0, 18)}…` : a.pdfFileName}
+                            </a>
+                          ) : (
+                            <label className="flex items-center gap-1 text-[11px] font-bold px-2 py-1.5 rounded-lg border border-dashed border-[var(--border-light)] cursor-pointer text-[var(--text-secondary)]">
+                              {uploadingIdx === idx ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
+                              Attach PDF (max 5MB)
+                              <input
+                                type="file"
+                                accept="application/pdf"
+                                className="hidden"
+                                disabled={uploadingIdx === idx}
+                                onChange={(e) => uploadAttachment(idx, a._id, e.target.files[0])}
+                              />
+                            </label>
+                          )}
                         </>
                       )}
                       <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
