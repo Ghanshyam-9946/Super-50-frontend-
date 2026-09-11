@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Users, ChevronLeft, FolderOpen, FileText, Github, Hash,
-  CheckCircle2, XCircle, Calendar, Inbox, ClipboardCheck, Crown, Lock, AlertTriangle, ClipboardEdit,
+  CheckCircle2, XCircle, Calendar, Inbox, ClipboardCheck, Crown, Lock, AlertTriangle, ClipboardEdit, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
@@ -82,6 +82,113 @@ const ReviewForm = ({ submission, presentation, onReviewed }) => {
         </button>
       </div>
     </div>
+  );
+};
+
+// Project details (title/description/tech/domain) go through a one-time
+// approval cycle: student submits -> guide approves (final) or rejects
+// (with a reason, student can then edit and resubmit).
+const DetailsApproval = ({ team, onReviewed }) => {
+  const [reason, setReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const status = team.detailsApprovalStatus || 'draft';
+
+  const act = async (action) => {
+    if (action === 'reject' && !reason.trim()) {
+      toast.error('A reason is required to reject');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await guideAPI.reviewTeamDetails({ teamId: team._id, action, reason: reason.trim() });
+      toast.success(action === 'approve' ? 'Approved' : 'Rejected');
+      setRejecting(false);
+      setReason('');
+      onReviewed();
+    } catch (err) { toast.error(handleError(err)); }
+    finally { setSubmitting(false); }
+  };
+
+  if (status === 'draft') {
+    return (
+      <Card title="Project Details Approval" icon={ClipboardCheck}>
+        <div className="alert-info text-sm">
+          <Inbox className="w-4 h-4 flex-shrink-0" /> Team hasn't submitted project details for approval yet.
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card title="Project Details Approval" icon={ClipboardCheck}>
+      <div className="space-y-3 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Project Title</div>
+            <div className="font-semibold">{team.projectTitle}</div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">SDG / Theme</div>
+            <div>{team.sdgSuggestion || '—'}</div>
+          </div>
+        </div>
+        {team.projectDescription && (
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Description</div>
+            <div className="text-slate-700">{team.projectDescription}</div>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {[...(team.projectDomain || []), ...(team.frontendTech || []), ...(team.backendTech || []), ...(team.database || [])].map((t) => (
+            <span key={t} className="badge-secondary">{t}</span>
+          ))}
+        </div>
+
+        {status === 'pending' && (
+          <div className="pt-3 border-t border-slate-100 space-y-2">
+            <div className="alert-warning text-xs"><Clock className="w-4 h-4 flex-shrink-0" /> Awaiting your decision.</div>
+            {rejecting ? (
+              <div className="space-y-2">
+                <textarea
+                  className="form-input"
+                  rows="2"
+                  placeholder="Reason for rejection (required)"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => act('reject')} disabled={submitting} className="btn-danger btn-sm">
+                    {submitting ? <Spinner size="sm" className="text-white" /> : 'Confirm Reject'}
+                  </button>
+                  <button onClick={() => { setRejecting(false); setReason(''); }} className="btn-secondary btn-sm">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => act('approve')} disabled={submitting} className="btn-success btn-sm">
+                  {submitting ? <Spinner size="sm" className="text-white" /> : <><CheckCircle2 className="w-4 h-4" /> Approve</>}
+                </button>
+                <button onClick={() => setRejecting(true)} disabled={submitting} className="btn-danger btn-sm">
+                  <XCircle className="w-4 h-4" /> Reject
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {status === 'approved' && (
+          <div className="alert-success text-xs"><CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Approved — final.</div>
+        )}
+
+        {status === 'rejected' && (
+          <div className="alert-danger text-xs">
+            <XCircle className="w-4 h-4 flex-shrink-0" />
+            <div>Rejected: "{team.detailsRejectionReason}" — waiting for student to resubmit.</div>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 };
 
@@ -220,6 +327,8 @@ const GuideReview = () => {
           </table>
         </div>
       </Card>
+
+      <DetailsApproval team={team} onReviewed={fetchData} />
 
       {/* SDG */}
       {team.sdgSuggestion && (

@@ -421,6 +421,12 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
         <div><strong>Team:</strong> {team.groupName}</div>
         <div><strong>Project:</strong> {team.projectTitle}</div>
         <div><strong>Sem:</strong> {team.semester}th — {team.project?.projectName}</div>
+        <div>
+          <strong>Student's Preferences:</strong>{' '}
+          {team.guidePreferences?.length
+            ? team.guidePreferences.map((g, i) => `${i + 1}. ${g.name}`).join('  ')
+            : <span className="text-slate-400">Not submitted yet</span>}
+        </div>
       </div>
 
       <label className="form-label">Select Guide(s)</label>
@@ -567,7 +573,12 @@ const Teams = () => {
                               ))}
                             </span>
                           ) : (
-                            <span className="badge-warning"><AlertTriangle className="w-3 h-3" /> Unassigned</span>
+                            <div className="space-y-0.5">
+                              <span className="badge-warning"><AlertTriangle className="w-3 h-3" /> Unassigned</span>
+                              {t.guidePreferences?.length > 0 && (
+                                <div className="text-[11px] text-slate-500">{t.guidePreferences.length} preference(s) submitted</div>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td className="text-right">
