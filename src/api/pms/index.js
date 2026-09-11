@@ -62,6 +62,7 @@ export const adminAPI = {
   deleteTeam: (id) => api.delete(`/pms/admin/teams/${id}`),
   toggleTeamLock: (id) => api.put(`/pms/admin/teams/${id}/lock`),   // 🆕
   assignGuide: (teamId, guideIds) => api.put(`/pms/admin/teams/${teamId}/assign-guide`, { guideIds }),
+  reviewTeamDetails: (teamId, data) => api.post(`/pms/admin/teams/${teamId}/review-details`, data), // 🆕
 
   // Attendance
   attendanceOverview: (params) => api.get('/pms/admin/attendance', { params }),
@@ -133,7 +134,6 @@ export const studentAPI = {
   submitDetailsForApproval: () => api.post('/pms/student/team/submit-for-approval'), // 🆕
   searchStudents: (q) => api.get('/pms/student/team/search-students', { params: { q } }),  // 🆕
   getAvailableGuides: () => api.get('/pms/student/available-guides'),
-  submitGuidePreferences: (guideIds) => api.post('/pms/student/team/guide-preferences', { guideIds }),
   proposeLeader: (proposedLeaderId) => api.post('/pms/student/team/propose-leader', { proposedLeaderId }),
   voteLeader: (vote) => api.post('/pms/student/team/vote-leader', { vote }),
   getPresentations: () => api.get('/pms/student/presentations'),
@@ -176,7 +176,6 @@ export const guideAPI = {
   getTeamForReview: (teamId) => api.get(`/pms/guide/review/${teamId}`),
   reviewSubmission: (data) => api.post('/pms/guide/review', data),
   saveEvaluation: (data) => api.post('/pms/guide/evaluation', data), // 🆕 Presentation evaluation (meeting/feedback log)
-  reviewTeamDetails: (data) => api.post('/pms/guide/team/review-details', data), // 🆕 Approve/reject project details
   getAttendance: (params) => api.get('/pms/guide/attendance', { params }),
   markAttendance: (data) => api.post('/pms/guide/attendance', data),
   reports: () => api.get('/pms/guide/reports'),

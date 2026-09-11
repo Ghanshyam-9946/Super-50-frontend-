@@ -85,111 +85,14 @@ const ReviewForm = ({ submission, presentation, onReviewed }) => {
   );
 };
 
-// Project details (title/description/tech/domain) go through a one-time
-// approval cycle: student submits -> guide approves (final) or rejects
-// (with a reason, student can then edit and resubmit).
-const DetailsApproval = ({ team, onReviewed }) => {
-  const [reason, setReason] = useState('');
-  const [rejecting, setRejecting] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const status = team.detailsApprovalStatus || 'draft';
-
-  const act = async (action) => {
-    if (action === 'reject' && !reason.trim()) {
-      toast.error('A reason is required to reject');
-      return;
-    }
-    setSubmitting(true);
-    try {
-      await guideAPI.reviewTeamDetails({ teamId: team._id, action, reason: reason.trim() });
-      toast.success(action === 'approve' ? 'Approved' : 'Rejected');
-      setRejecting(false);
-      setReason('');
-      onReviewed();
-    } catch (err) { toast.error(handleError(err)); }
-    finally { setSubmitting(false); }
-  };
-
-  if (status === 'draft') {
-    return (
-      <Card title="Project Details Approval" icon={ClipboardCheck}>
-        <div className="alert-info text-sm">
-          <Inbox className="w-4 h-4 flex-shrink-0" /> Team hasn't submitted project details for approval yet.
-        </div>
-      </Card>
-    );
-  }
-
-  return (
-    <Card title="Project Details Approval" icon={ClipboardCheck}>
-      <div className="space-y-3 text-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Project Title</div>
-            <div className="font-semibold">{team.projectTitle}</div>
-          </div>
-          <div>
-            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">SDG / Theme</div>
-            <div>{team.sdgSuggestion || '—'}</div>
-          </div>
-        </div>
-        {team.projectDescription && (
-          <div>
-            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Description</div>
-            <div className="text-slate-700">{team.projectDescription}</div>
-          </div>
-        )}
-        <div className="flex flex-wrap gap-1.5">
-          {[...(team.projectDomain || []), ...(team.frontendTech || []), ...(team.backendTech || []), ...(team.database || [])].map((t) => (
-            <span key={t} className="badge-secondary">{t}</span>
-          ))}
-        </div>
-
-        {status === 'pending' && (
-          <div className="pt-3 border-t border-slate-100 space-y-2">
-            <div className="alert-warning text-xs"><Clock className="w-4 h-4 flex-shrink-0" /> Awaiting your decision.</div>
-            {rejecting ? (
-              <div className="space-y-2">
-                <textarea
-                  className="form-input"
-                  rows="2"
-                  placeholder="Reason for rejection (required)"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                />
-                <div className="flex gap-2">
-                  <button onClick={() => act('reject')} disabled={submitting} className="btn-danger btn-sm">
-                    {submitting ? <Spinner size="sm" className="text-white" /> : 'Confirm Reject'}
-                  </button>
-                  <button onClick={() => { setRejecting(false); setReason(''); }} className="btn-secondary btn-sm">Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => act('approve')} disabled={submitting} className="btn-success btn-sm">
-                  {submitting ? <Spinner size="sm" className="text-white" /> : <><CheckCircle2 className="w-4 h-4" /> Approve</>}
-                </button>
-                <button onClick={() => setRejecting(true)} disabled={submitting} className="btn-danger btn-sm">
-                  <XCircle className="w-4 h-4" /> Reject
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {status === 'approved' && (
-          <div className="alert-success text-xs"><CheckCircle2 className="w-4 h-4 flex-shrink-0" /> Approved — final.</div>
-        )}
-
-        {status === 'rejected' && (
-          <div className="alert-danger text-xs">
-            <XCircle className="w-4 h-4 flex-shrink-0" />
-            <div>Rejected: "{team.detailsRejectionReason}" — waiting for student to resubmit.</div>
-          </div>
-        )}
-      </div>
-    </Card>
-  );
+// Project details approval is admin's call, not the guide's — this is
+// read-only context so the guide knows where things stand (see
+// adminController.js's reviewTeamDetails for the actual decision).
+const DETAILS_STATUS_BADGE = {
+  draft: null,
+  pending: <span className="badge-warning"><Clock className="w-3 h-3" /> Details Pending Admin Approval</span>,
+  approved: <span className="badge-success"><CheckCircle2 className="w-3 h-3" /> Details Approved</span>,
+  rejected: <span className="badge-danger"><XCircle className="w-3 h-3" /> Details Rejected — Awaiting Resubmission</span>,
 };
 
 // The college's "Minor-I Project Evaluation Format" meeting/feedback log —
@@ -286,7 +189,10 @@ const GuideReview = () => {
           <Link to="/pms/guide/groups" className="text-sm text-brand-600 hover:underline inline-flex items-center gap-1 mb-2">
             <ChevronLeft className="w-3 h-3" /> Back to groups
           </Link>
-          <h1 className="text-2xl font-bold">{team.groupName}</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            {team.groupName}
+            {DETAILS_STATUS_BADGE[team.detailsApprovalStatus || 'draft']}
+          </h1>
           <p className="text-sm text-slate-500 mt-1">{team.projectTitle}</p>
         </div>
       </div>
@@ -327,8 +233,6 @@ const GuideReview = () => {
           </table>
         </div>
       </Card>
-
-      <DetailsApproval team={team} onReviewed={fetchData} />
 
       {/* SDG */}
       {team.sdgSuggestion && (
