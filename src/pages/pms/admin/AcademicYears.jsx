@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Plus, CheckCircle2, Trash2, ListChecks, Calendar } from 'lucide-react';
+import { Plus, CheckCircle2, Trash2, ListChecks, Calendar, Pencil, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, EmptyState, confirmAction } from '../../../components/pms/Common';
 import { formatDate } from '../../../utils/pms/helpers';
 
+const emptyForm = { yearName: '', startDate: '', endDate: '', isActive: true };
+
 const AcademicYears = () => {
   const [years, setYears] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ yearName: '', startDate: '', endDate: '', isActive: true });
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchYears = async () => {
@@ -26,13 +29,29 @@ const AcademicYears = () => {
 
   useEffect(() => { fetchYears(); }, []);
 
+  const startEdit = (y) => {
+    setEditingId(y._id);
+    setForm({ yearName: y.yearName, startDate: y.startDate?.slice(0, 10) || '', endDate: y.endDate?.slice(0, 10) || '', isActive: y.isActive });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await adminAPI.createYear(form);
-      toast.success('Academic year created');
-      setForm({ yearName: '', startDate: '', endDate: '', isActive: true });
+      if (editingId) {
+        await adminAPI.updateYear(editingId, form);
+        toast.success('Academic year updated');
+      } else {
+        await adminAPI.createYear(form);
+        toast.success('Academic year created');
+      }
+      setForm(emptyForm);
+      setEditingId(null);
       fetchYears();
     } catch (err) {
       toast.error(handleError(err));
@@ -66,9 +85,9 @@ const AcademicYears = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Add form */}
+        {/* Add / Edit form */}
         <div className="lg:col-span-4">
-          <Card title="Add Academic Year" icon={Plus}>
+          <Card title={editingId ? 'Edit Academic Year' : 'Add Academic Year'} icon={editingId ? Pencil : Plus}>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="form-label">Year Name</label>
@@ -100,18 +119,27 @@ const AcademicYears = () => {
                   required
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={form.isActive}
-                  onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                  className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
-                />
-                Set as active year
-              </label>
-              <button type="submit" disabled={submitting} className="btn-primary w-full">
-                {submitting ? <Spinner size="sm" className="text-white" /> : 'Save Year'}
-              </button>
+              {!editingId && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.isActive}
+                    onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                    className="rounded border-slate-300 text-brand-600 focus:ring-brand-600"
+                  />
+                  Set as active year
+                </label>
+              )}
+              <div className="flex gap-2">
+                <button type="submit" disabled={submitting} className="btn-primary w-full">
+                  {submitting ? <Spinner size="sm" className="text-white" /> : editingId ? 'Update Year' : 'Save Year'}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={cancelEdit} className="btn-secondary">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </form>
           </Card>
         </div>
@@ -151,6 +179,9 @@ const AcademicYears = () => {
                                 <CheckCircle2 className="w-3 h-3" /> Set Active
                               </button>
                             )}
+                            <button onClick={() => startEdit(y)} className="btn-outline btn-sm">
+                              <Pencil className="w-3 h-3" />
+                            </button>
                             <button onClick={() => handleDelete(y._id)} className="btn-secondary btn-sm">
                               <Trash2 className="w-3 h-3" />
                             </button>

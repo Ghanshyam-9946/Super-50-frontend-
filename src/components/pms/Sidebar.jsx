@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Calendar, FolderOpen, Presentation, UserCheck, Users,
-  Layers, ArrowUpCircle, BarChart3, CheckSquare, Settings, GraduationCap,
+  Layers, BarChart3, CheckSquare, Settings, GraduationCap,
   CloudUpload, ClipboardCheck, Bell, FileText, BookOpen, Award,
   Code2, TrendingUp, FolderArchive, Activity, CalendarCheck, FileEdit,
+  SlidersHorizontal, ClipboardList, CalendarPlus,
 } from 'lucide-react';
 import { useAuth } from '../../context/pms/AuthContext';
 import { useNotifications } from '../../context/pms/NotificationContext';
@@ -22,10 +23,12 @@ const adminNav = [
   { to: '/pms/admin/guides', label: 'Project Guides', icon: UserCheck },
   { to: '/pms/admin/students', label: 'Students', icon: Users },
   { to: '/pms/admin/teams', label: 'Teams & Assign Guide', icon: Layers },
-  { to: '/pms/admin/promote', label: 'Promote', icon: ArrowUpCircle },
+  { to: '/pms/admin/team-config', label: 'Team Configuration', icon: SlidersHorizontal },
+  { to: '/pms/admin/allocation-sheet', label: 'Allocation Sheet', icon: ClipboardList },
 
   { section: 'Tracking' },
   { to: '/pms/admin/attendance', label: 'Daily Attendance', icon: CheckSquare },
+  { to: '/pms/admin/attendance-mark', label: 'Mark Attendance', icon: CalendarPlus },
   { to: '/pms/admin/semester-attendance', label: 'Semester Attendance', icon: CalendarCheck },
   { to: '/pms/admin/reports', label: 'Reports', icon: BarChart3 },
 
@@ -82,7 +85,13 @@ const Sidebar = ({ open, onClose }) => {
       return studentNav;
     }
     
-    const hasAdmin = roles.includes('admin') || roles.includes('pms_admin');
+    // A teacher tagged "Project Coordinator" gets full PMS admin access
+    // (adminRoutes.js's PMS_ADMIN gate on the backend, App.jsx/PMSRoutes.jsx's
+    // allowResponsibility on the frontend) — without this, they could still
+    // reach every /pms/admin/* page directly by URL, but had no way to
+    // discover them since this sidebar only ever showed them guide nav.
+    const isProjectCoordinator = (user.responsibilities || []).includes('Project Coordinator');
+    const hasAdmin = roles.includes('admin') || roles.includes('pms_admin') || isProjectCoordinator;
     const hasGuide = roles.includes('guide') || roles.includes('teacher');
     
     if (hasAdmin && hasGuide) {

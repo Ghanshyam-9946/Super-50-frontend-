@@ -6,6 +6,7 @@ import {
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState, Modal, confirmAction } from '../../../components/pms/Common';
 import { formatDate } from '../../../utils/pms/helpers';
 
@@ -115,9 +116,13 @@ const UploadModal = ({ open, onClose, years, onUploaded }) => {
               <strong>Required columns:</strong> Student Name, Enrollment No, Total Days, Total Present.
               <br />Attendance % is auto-calculated.
               <br />
-              <a href={adminAPI.semesterAttendanceSampleUrl} className="text-brand-700 font-semibold inline-flex items-center gap-1 mt-1.5">
+              <button
+                type="button"
+                onClick={() => downloadFile(adminAPI.semesterAttendanceSampleUrl, 'semester_attendance_template.csv').catch((err) => toast.error(handleError(err)))}
+                className="text-brand-700 font-semibold inline-flex items-center gap-1 mt-1.5"
+              >
                 <Download className="w-3 h-3" /> Download sample CSV template
-              </a>
+              </button>
             </div>
           </div>
 

@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+const rawApiUrl = import.meta.env.VITE_API_URL || '/api';
+const cleanBaseURL = rawApiUrl
+  .toString()
+  .replace(/[\u2010-\u2015\u2212\uFF0D]/g, '-')
+  .replace(/[^\x20-\x7E]/g, '')
+  .trim()
+  .replace(/\/+$/, '');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: cleanBaseURL || '/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -9,11 +17,11 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('super50_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  
+
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }
-  
+
   return config;
 });
 
@@ -25,7 +33,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !isAuthRoute) {
       localStorage.removeItem('super50_token');
       localStorage.removeItem('super50_user');
-      
+
       // Don't redirect if we are already on a public page
       const publicPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
       const isPublicPath = publicPaths.some(path => window.location.pathname === path || window.location.pathname.startsWith('/reset-password'));

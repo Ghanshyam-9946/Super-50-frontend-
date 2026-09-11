@@ -6,12 +6,13 @@ import { uploadAttendance, fetchAttendanceHistory } from '../../features/attenda
 import { ClipboardList, Upload, FileSpreadsheet, CheckCircle, Users, Loader2, Info, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import BatchSelect from '../../components/BatchSelect';
 
 export default function AttendancePage() {
   const dispatch = useDispatch();
   const { history, lastUploadResult, loading } = useSelector((s) => s.attendance);
   const [file, setFile] = useState(null);
-  const [meta, setMeta] = useState({ batch: '', semester: '', totalWorkingDays: '' });
+  const [meta, setMeta] = useState({ batch: '', semester: '' });
   const [backfilling, setBackfilling] = useState(false);
 
   // One-time setup after the raw/credit attendance split was introduced —
@@ -46,11 +47,12 @@ export default function AttendancePage() {
 
   const handleUpload = async () => {
     if (!file) { toast.error('Please select an Excel file'); return; }
+    if (!meta.batch) { toast.error('Please select a batch'); return; }
+    if (!meta.semester) { toast.error('Please select a semester'); return; }
     const fd = new FormData();
     fd.append('attendance', file);
-    if (meta.batch) fd.append('batch', meta.batch);
-    if (meta.semester) fd.append('semester', meta.semester);
-    if (meta.totalWorkingDays) fd.append('totalWorkingDays', meta.totalWorkingDays);
+    fd.append('batch', meta.batch);
+    fd.append('semester', meta.semester);
     const result = await dispatch(uploadAttendance(fd));
     if (!result.error) {
       toast.success(result.payload.message);
@@ -152,29 +154,26 @@ export default function AttendancePage() {
             {/* Optional metadata */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Batch (optional)</label>
-                <input 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
-                  placeholder="e.g., 2023-27"
-                  value={meta.batch} onChange={(e) => setMeta({ ...meta, batch: e.target.value })} id="att-batch" 
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Batch</label>
+                <BatchSelect
+                  value={meta.batch}
+                  onChange={(e) => setMeta({ ...meta, batch: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Semester (optional)</label>
-                <input 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
-                  placeholder="e.g., Sem 4"
-                  value={meta.semester} onChange={(e) => setMeta({ ...meta, semester: e.target.value })} id="att-semester" 
-                />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Semester</label>
+                <select
+                  value={meta.semester}
+                  onChange={(e) => setMeta({ ...meta, semester: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                >
+                  <option value="">-- Select Semester --</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                    <option key={s} value={s}>Semester {s}</option>
+                  ))}
+                </select>
               </div>
-            </div>
-            <div className="mb-6">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Total Working Days (optional)</label>
-              <input 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
-                type="number" placeholder="e.g., 90"
-                value={meta.totalWorkingDays} onChange={(e) => setMeta({ ...meta, totalWorkingDays: e.target.value })} id="att-working-days" 
-              />
             </div>
 
             <button 

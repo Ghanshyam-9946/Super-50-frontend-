@@ -125,7 +125,7 @@ const GuideStatus = () => {
                       {r.lastUpdateAt ? formatDateTime(r.lastUpdateAt) : '—'}
                     </td>
                     <td className="text-right">
-                      <Link to={`/guide/status/${r.team._id}`} className="btn-outline btn-sm">
+                      <Link to={`/pms/guide/status/${r.team._id}`} className="btn-outline btn-sm">
                         <ArrowRight className="w-3 h-3" /> Details
                       </Link>
                     </td>

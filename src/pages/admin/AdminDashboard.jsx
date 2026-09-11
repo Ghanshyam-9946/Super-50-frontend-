@@ -341,7 +341,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <span className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 block">Guide</span>
-                        <span className="font-bold text-[var(--text-primary)] text-sm">{selectedStudentDetails.team.guide?.name || 'Assigned soon'}</span>
+                        <span className="font-bold text-[var(--text-primary)] text-sm">{(selectedStudentDetails.team.guides || []).map((g) => g.name).join(', ') || 'Assigned soon'}</span>
                       </div>
                     </div>
                     <div>

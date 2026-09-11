@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   Layers, UserCheck, Filter, AlertTriangle, Info, Edit3, Trash2, FileText, Plus, X,
-  Lock, Unlock, Search,
+  Lock, Unlock, Search, ClipboardCheck, Clock,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState, Modal, confirmAction } from '../../../components/pms/Common';
 
 const DOMAIN_OPTS = ['WEB DEVELOPMENT', 'MOBILE APP DEVELOPMENT', 'ML', 'DATA SCIENCE / DATA ANALYTICS', 'IOT', 'OTHER'];
@@ -20,6 +21,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
   const [form, setForm] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [pickerBatch, setPickerBatch] = useState('');
   const [pickerResults, setPickerResults] = useState([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerLoading, setPickerLoading] = useState(false);
@@ -47,6 +49,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         members: initMembers,
       });
       setPickerQuery('');
+      setPickerBatch('');
       setPickerResults([]);
       setPickerOpen(false);
     }
@@ -61,6 +64,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         const res = await adminAPI.searchAvailableStudents({
           q: pickerQuery,
           semester: team.semester,
+          batch: pickerBatch,
           excludeTeamId: team._id,
         });
         // Exclude already-added members
@@ -73,7 +77,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
       }
     }, 300);
     return () => clearTimeout(t);
-  }, [pickerQuery, pickerOpen, team, form.members]);
+  }, [pickerQuery, pickerBatch, pickerOpen, team, form.members]);
 
   const addMemberFromPicker = (student) => {
     // Check for duplicate by student ID or enrollment number
@@ -310,14 +314,24 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
           {(form.members?.length || 0) < 5 && (
             <div className="relative">
               <label className="form-label">Add member (search admin-uploaded students)</label>
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    className="form-input pl-10"
+                    placeholder={`Search Sem ${team.semester} students by name or enrollment…`}
+                    value={pickerQuery}
+                    onChange={(e) => { setPickerQuery(e.target.value); setPickerOpen(true); }}
+                    onFocus={() => setPickerOpen(true)}
+                  />
+                </div>
                 <input
                   type="text"
-                  className="form-input pl-10"
-                  placeholder={`Search Sem ${team.semester} students by name or enrollment…`}
-                  value={pickerQuery}
-                  onChange={(e) => { setPickerQuery(e.target.value); setPickerOpen(true); }}
+                  className="form-input w-32"
+                  placeholder="Batch"
+                  value={pickerBatch}
+                  onChange={(e) => { setPickerBatch(e.target.value); setPickerOpen(true); }}
                   onFocus={() => setPickerOpen(true)}
                 />
               </div>
@@ -365,19 +379,22 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
 
 // ============= ASSIGN GUIDE MODAL =============
 const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
-  const [selectedGuideId, setSelectedGuideId] = useState('');
+  // A team can have multiple guides — all get equal, full access.
+  const [selectedGuideIds, setSelectedGuideIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (team) setSelectedGuideId(team.guide?._id || '');
+    if (team) setSelectedGuideIds((team.guides || []).map((g) => g._id));
   }, [team]);
 
+  const toggleGuide = (id) =>
+    setSelectedGuideIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
   const handleSubmit = async () => {
-    if (!selectedGuideId) return toast.error('Select a guide');
     setSubmitting(true);
     try {
-      await adminAPI.assignGuide(team._id, selectedGuideId);
-      toast.success('Guide assigned');
+      await adminAPI.assignGuide(team._id, selectedGuideIds);
+      toast.success('Guides assigned');
       onSaved();
       onClose();
     } catch (err) { toast.error(handleError(err)); }
@@ -390,7 +407,7 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
     <Modal
       open={open}
       onClose={onClose}
-      title={`Assign Guide — ${team.groupNo}`}
+      title={`Assign Guides — ${team.groupNo}`}
       footer={
         <>
           <button onClick={onClose} className="btn-secondary">Cancel</button>
@@ -404,22 +421,134 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
         <div><strong>Team:</strong> {team.groupName}</div>
         <div><strong>Project:</strong> {team.projectTitle}</div>
         <div><strong>Sem:</strong> {team.semester}th — {team.project?.projectName}</div>
+        <div>
+          <strong>Student's Preferences:</strong>{' '}
+          {team.guidePreferences?.length
+            ? team.guidePreferences.map((g, i) => `${i + 1}. ${g.name}`).join('  ')
+            : <span className="text-slate-400">Not submitted yet</span>}
+        </div>
       </div>
 
-      <label className="form-label">Select Guide</label>
-      <select className="form-select" value={selectedGuideId} onChange={(e) => setSelectedGuideId(e.target.value)} required>
-        <option value="">— Select a guide —</option>
+      <label className="form-label">Select Guide(s)</label>
+      <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
         {guides.map((g) => {
           const eligible = g.academicYear?._id === team.academicYear?._id
             && g.assignedSemester === team.semester;
           return (
-            <option key={g._id} value={g._id}>
-              {g.name} · {g.email} (Sem {g.assignedSemester}){!eligible && ' — different sem/year'}
-            </option>
+            <label key={g._id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+              <input
+                type="checkbox"
+                checked={selectedGuideIds.includes(g._id)}
+                onChange={() => toggleGuide(g._id)}
+              />
+              <span>{g.name} · {g.email} (Sem {g.assignedSemester}){!eligible && ' — different sem/year'}</span>
+            </label>
           );
         })}
-      </select>
-      <div className="alert-info text-xs mt-3"><Info className="w-4 h-4 flex-shrink-0" /> Both guide and team members will be notified.</div>
+      </div>
+      <div className="alert-info text-xs mt-3"><Info className="w-4 h-4 flex-shrink-0" /> Every selected guide and all team members will be notified.</div>
+    </Modal>
+  );
+};
+
+// ============= REVIEW PROJECT DETAILS MODAL =============
+// Student submits project details (+ guide preferences) for approval;
+// admin approves (final, student can't edit further) or rejects with a
+// reason (student can then edit and resubmit). See adminController.js's
+// reviewTeamDetails.
+const ReviewDetailsModal = ({ open, onClose, team, onSaved }) => {
+  // Mounted only while open (and keyed by team in the parent), so this
+  // state starts fresh on every open — no reset effect needed.
+  const [reason, setReason] = useState('');
+  const [rejecting, setRejecting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!team) return null;
+  const status = team.detailsApprovalStatus || 'draft';
+
+  const act = async (action) => {
+    if (action === 'reject' && !reason.trim()) {
+      toast.error('A reason is required to reject');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await adminAPI.reviewTeamDetails(team._id, { action, reason: reason.trim() });
+      toast.success(action === 'approve' ? 'Approved' : 'Rejected');
+      onSaved();
+      onClose();
+    } catch (err) { toast.error(handleError(err)); }
+    finally { setSubmitting(false); }
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Review Project Details — ${team.groupNo}`} size="lg">
+      <div className="space-y-3 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Project Title</div>
+            <div className="font-semibold">{team.projectTitle}</div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">SDG / Theme</div>
+            <div>{team.sdgSuggestion || '—'}</div>
+          </div>
+        </div>
+        {team.projectDescription && (
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Description</div>
+            <div className="text-slate-700">{team.projectDescription}</div>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {[...(team.projectDomain || []), ...(team.frontendTech || []), ...(team.backendTech || []), ...(team.database || [])].map((t) => (
+            <span key={t} className="badge-secondary">{t}</span>
+          ))}
+        </div>
+        <div>
+          <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Guide Preferences</div>
+          {team.guidePreferences?.length
+            ? <div>{team.guidePreferences.map((g, i) => `${i + 1}. ${g.name}`).join('  ')}</div>
+            : <span className="text-slate-400">Not submitted</span>}
+        </div>
+
+        {status === 'pending' && (
+          <div className="pt-3 border-t border-slate-100 space-y-2">
+            {rejecting ? (
+              <div className="space-y-2">
+                <textarea
+                  className="form-input"
+                  rows="2"
+                  placeholder="Reason for rejection (required)"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => act('reject')} disabled={submitting} className="btn-danger btn-sm">
+                    {submitting ? <Spinner size="sm" className="text-white" /> : 'Confirm Reject'}
+                  </button>
+                  <button onClick={() => { setRejecting(false); setReason(''); }} className="btn-secondary btn-sm">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={() => act('approve')} disabled={submitting} className="btn-success btn-sm">
+                  {submitting ? <Spinner size="sm" className="text-white" /> : 'Approve'}
+                </button>
+                <button onClick={() => setRejecting(true)} disabled={submitting} className="btn-danger btn-sm">Reject</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {status === 'approved' && <div className="alert-success text-xs">Approved — final.</div>}
+        {status === 'rejected' && (
+          <div className="alert-danger text-xs">Rejected: "{team.detailsRejectionReason}" — waiting for student to resubmit.</div>
+        )}
+        {status === 'draft' && (
+          <div className="alert-info text-xs">Team hasn't submitted project details for approval yet.</div>
+        )}
+      </div>
     </Modal>
   );
 };
@@ -433,6 +562,7 @@ const Teams = () => {
   const [loading, setLoading] = useState(true);
   const [editTeam, setEditTeam] = useState(null);
   const [assignTeam, setAssignTeam] = useState(null);
+  const [reviewTeam, setReviewTeam] = useState(null);
 
   const fetchTeams = async () => {
     setLoading(true);
@@ -531,21 +661,48 @@ const Teams = () => {
                           </div>
                           <div className="text-xs text-slate-500">{t.groupName}</div>
                         </td>
-                        <td>{t.projectTitle}</td>
+                        <td>
+                          {t.projectTitle}
+                          {t.detailsApprovalStatus === 'pending' && (
+                            <div className="mt-0.5"><span className="badge-warning text-[10px]"><Clock className="w-2.5 h-2.5" /> Pending Approval</span></div>
+                          )}
+                          {t.detailsApprovalStatus === 'rejected' && (
+                            <div className="mt-0.5"><span className="badge-danger text-[10px]">Rejected — Resubmit Pending</span></div>
+                          )}
+                        </td>
                         <td><span className="badge-info">{t.semester}th</span></td>
                         <td><span className="badge-primary">{t.project?.projectName}</span></td>
                         <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
                         <td>
-                          {t.guide ? (
-                            <span className="font-medium text-sm">{t.guide.name}</span>
+                          {t.guides?.length ? (
+                            <span className="font-medium text-sm space-x-1">
+                              {t.guides.map((g, i) => (
+                                <span key={g._id}>
+                                  <Link to={`/pms/admin/guides/${g._id}/profile`} className="hover:underline text-[var(--primary,#4f46e5)]">{g.name}</Link>
+                                  {i < t.guides.length - 1 && ','}
+                                </span>
+                              ))}
+                            </span>
                           ) : (
-                            <span className="badge-warning"><AlertTriangle className="w-3 h-3" /> Unassigned</span>
+                            <div className="space-y-0.5">
+                              <span className="badge-warning"><AlertTriangle className="w-3 h-3" /> Unassigned</span>
+                              {t.guidePreferences?.length > 0 && (
+                                <div className="text-[11px] text-slate-500">{t.guidePreferences.length} preference(s) submitted</div>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td className="text-right">
                           <div className="flex justify-end gap-1">
                             <button onClick={() => setEditTeam(t)} className="btn-outline btn-sm" title="Edit team">
                               <Edit3 className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() => setReviewTeam(t)}
+                              className={t.detailsApprovalStatus === 'pending' ? 'btn-primary btn-sm' : 'btn-outline btn-sm'}
+                              title="Review project details"
+                            >
+                              <ClipboardCheck className="w-3 h-3" />
                             </button>
                             <button onClick={() => setAssignTeam(t)} className="btn-secondary btn-sm" title="Assign guide">
                               <UserCheck className="w-3 h-3" />
@@ -557,15 +714,13 @@ const Teams = () => {
                             >
                               {t.isLocked ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                             </button>
-                            <a
-                              href={adminAPI.initiationFormUrl(t._id)}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              onClick={() => downloadFile(adminAPI.initiationFormUrl(t._id), `initiation_form_${t.groupNo}.pdf`).catch((err) => toast.error(handleError(err)))}
                               className="btn-secondary btn-sm"
                               title="Download initiation form"
                             >
                               <FileText className="w-3 h-3" />
-                            </a>
+                            </button>
                             <button onClick={() => handleDelete(t)} className="btn-secondary btn-sm text-red-600" title="Delete team">
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -581,6 +736,15 @@ const Teams = () => {
 
       <EditTeamModal open={!!editTeam} onClose={() => setEditTeam(null)} team={editTeam} onSaved={fetchTeams} />
       <AssignGuideModal open={!!assignTeam} onClose={() => setAssignTeam(null)} team={assignTeam} guides={guides} onSaved={fetchTeams} />
+      {reviewTeam && (
+        <ReviewDetailsModal
+          key={reviewTeam._id}
+          open
+          onClose={() => setReviewTeam(null)}
+          team={reviewTeam}
+          onSaved={fetchTeams}
+        />
+      )}
     </div>
   );
 };

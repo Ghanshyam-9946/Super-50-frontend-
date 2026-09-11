@@ -2,12 +2,12 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Users, Plus, Sparkles, Crown, Hash, FolderOpen, UserCheck, Info,
   Settings as SettingsIcon, Save, Edit3, Search, X, Lock,
-  UserCog, Vote, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2,
+  UserCog, Vote, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2, Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { studentAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
-import { Card, Spinner, StatCard, EmptyState, Modal, confirmAction } from '../../../components/pms/Common';
+import { Card, Spinner, StatCard, Modal, confirmAction } from '../../../components/pms/Common';
 import { useAuth } from '../../../context/pms/AuthContext';
 import { semesterToProject, formatDateTime } from '../../../utils/pms/helpers';
 
@@ -661,6 +661,12 @@ const StudentTeam = () => {
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [submittingApproval, setSubmittingApproval] = useState(false);
+  // Inline guide-preference picker, right on the Project Guide card.
+  const [availableGuides, setAvailableGuides] = useState([]);
+  const [guidesLocked, setGuidesLocked] = useState(false);
+  const [picked, setPicked] = useState([]); // ordered guide ids, max 3
+  const [savingPicks, setSavingPicks] = useState(false);
 
   const fetchTeam = async () => {
     setLoading(true);
@@ -671,7 +677,57 @@ const StudentTeam = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchTeam(); }, []);
+  const fetchGuides = async () => {
+    try {
+      const res = await studentAPI.getAvailableGuides();
+      setAvailableGuides(res.data.data);
+      setGuidesLocked(res.data.locked);
+    } catch {
+      // Not in a team yet (404) or guides not set up — the card handles
+      // the empty case on its own, no need to nag with a toast.
+    }
+  };
+
+  useEffect(() => { fetchTeam(); fetchGuides(); }, []);
+
+  const togglePick = (guideId) => {
+    setPicked((prev) => {
+      if (prev.includes(guideId)) return prev.filter((id) => id !== guideId);
+      if (prev.length >= 3) return prev;
+      return [...prev, guideId];
+    });
+  };
+
+  const savePicks = async () => {
+    if (picked.length === 0) {
+      toast.error('Pick at least 1 guide');
+      return;
+    }
+    setSavingPicks(true);
+    try {
+      await studentAPI.updateMyTeam({ guidePreferences: picked });
+      toast.success('Guide preferences saved — these cannot be changed now.');
+      await fetchTeam();
+      await fetchGuides();
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setSavingPicks(false);
+    }
+  };
+
+  const submitForApproval = async () => {
+    setSubmittingApproval(true);
+    try {
+      const res = await studentAPI.submitDetailsForApproval();
+      toast.success(res.data.message || 'Submitted for approval');
+      await fetchTeam(); // full refetch — the response's team isn't populated
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setSubmittingApproval(false);
+    }
+  };
 
   if (loading) return <div className="py-20 flex justify-center"><Spinner size="lg" /></div>;
 
@@ -689,6 +745,15 @@ const StudentTeam = () => {
   }
 
   // ============ HAS TEAM ============
+  const approvalStatus = team.detailsApprovalStatus || 'draft';
+  const canEditDetails = !team.isLocked && approvalStatus !== 'pending' && approvalStatus !== 'approved';
+  const APPROVAL_BADGE = {
+    draft: null,
+    pending: <span className="badge-warning"><Clock className="w-3 h-3" /> Pending Admin Approval</span>,
+    approved: <span className="badge-success"><CheckCircle2 className="w-3 h-3" /> Approved — Final</span>,
+    rejected: <span className="badge-danger"><XCircle className="w-3 h-3" /> Rejected — Revise &amp; Resubmit</span>,
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start flex-wrap gap-3">
@@ -696,14 +761,22 @@ const StudentTeam = () => {
           <h1 className="text-2xl font-bold flex items-center gap-2">
             My Team
             {team.isLocked && <span className="badge-secondary"><Lock className="w-3 h-3" /> Locked by Admin</span>}
+            {APPROVAL_BADGE[approvalStatus]}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">All your team details. {!team.isLocked && 'Click Edit Team to update.'}</p>
+          <p className="text-sm text-slate-500 mt-1">All your team details. {canEditDetails && 'Click Edit Team to update.'}</p>
         </div>
-        {!team.isLocked && (
-          <button onClick={() => setEditOpen(true)} className="btn-primary">
-            <Edit3 className="w-4 h-4" /> Edit Team
-          </button>
-        )}
+        <div className="flex gap-2">
+          {canEditDetails && (
+            <button onClick={() => setEditOpen(true)} className="btn-primary">
+              <Edit3 className="w-4 h-4" /> Edit Team
+            </button>
+          )}
+          {!team.isLocked && (approvalStatus === 'draft' || approvalStatus === 'rejected') && (
+            <button onClick={submitForApproval} disabled={submittingApproval} className="btn-success">
+              {submittingApproval ? <Spinner size="sm" className="text-white" /> : <><CheckCircle2 className="w-4 h-4" /> Submit for Approval</>}
+            </button>
+          )}
+        </div>
       </div>
 
       {team.isLocked && (
@@ -712,6 +785,37 @@ const StudentTeam = () => {
           <div>
             <strong>This team is locked by admin.</strong>
             <p className="text-xs mt-1">You cannot edit team details, members, or change the leader until admin unlocks it. Contact your administrator to make changes.</p>
+          </div>
+        </div>
+      )}
+
+      {!team.isLocked && approvalStatus === 'pending' && (
+        <div className="alert-warning">
+          <Clock className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <strong>Your project details are pending guide approval.</strong>
+            <p className="text-xs mt-1">You can't edit them until your guide approves or rejects the submission.</p>
+          </div>
+        </div>
+      )}
+
+      {!team.isLocked && approvalStatus === 'approved' && (
+        <div className="alert-success">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <strong>Your project details have been approved and are now final.</strong>
+            <p className="text-xs mt-1">Contact admin if you need to make further changes.</p>
+          </div>
+        </div>
+      )}
+
+      {!team.isLocked && approvalStatus === 'rejected' && (
+        <div className="alert-danger">
+          <XCircle className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <strong>Your project details were rejected by your guide.</strong>
+            <p className="text-xs mt-1">Reason: "{team.detailsRejectionReason}"</p>
+            <p className="text-xs mt-1">Edit your team details, then submit for approval again.</p>
           </div>
         </div>
       )}
@@ -755,17 +859,87 @@ const StudentTeam = () => {
           </div>
         </Card>
 
-        <Card title="Project Guide" icon={UserCheck}>
-          {team.guide ? (
-            <div className="space-y-2 text-sm">
-              <div className="font-semibold text-base">{team.guide.name}</div>
-              <div className="text-slate-500">{team.guide.email}</div>
-              {team.guide.mobile && <div className="text-slate-500">📱 {team.guide.mobile}</div>}
+        <Card title={(team.guides || []).length > 1 ? 'Project Guides' : 'Project Guide'} icon={UserCheck}>
+          {team.guides?.length ? (
+            // Final allotment — set only by admin, students cannot change it.
+            <div className="space-y-3 text-sm">
+              {team.guides.map((g) => (
+                <div key={g._id}>
+                  <div className="font-semibold text-base">{g.name}</div>
+                  <div className="text-slate-500">{g.email}</div>
+                  {g.mobile && <div className="text-slate-500">📱 {g.mobile}</div>}
+                </div>
+              ))}
+            </div>
+          ) : team.guidePreferences?.length ? (
+            // Preferences submitted (as part of the project-details form),
+            // admin hasn't done the final allotment yet.
+            <div className="space-y-3">
+              <div className="alert-info text-xs">
+                <Info className="w-4 h-4 flex-shrink-0" />
+                Waiting for admin's final allotment.
+              </div>
+              <div className="space-y-1.5 text-sm">
+                {team.guidePreferences.map((g, i) => (
+                  <div key={g._id} className="flex items-center gap-2">
+                    <span className="badge-secondary w-5 h-5 rounded-full flex items-center justify-center p-0 flex-shrink-0">{i + 1}</span>
+                    <span className="font-medium">{g.name}</span>
+                    <span className="text-slate-500 text-xs">{g.department || g.designation}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : guidesLocked ? (
+            // Can't pick any more — details already submitted/approved, team
+            // locked, or the allocation was finalized without a pick.
+            <div className="alert-warning text-xs">
+              <Lock className="w-4 h-4 flex-shrink-0" />
+              Guide preferences can't be submitted right now. Contact admin.
+            </div>
+          ) : availableGuides.length === 0 ? (
+            <div className="alert-info text-xs">
+              <Info className="w-4 h-4 flex-shrink-0" />
+              No guides available yet for your year/semester — check back once admin adds them.
             </div>
           ) : (
-            <div className="alert-warning text-xs">
-              <Info className="w-4 h-4 flex-shrink-0" />
-              Guide will be assigned by admin shortly.
+            // Inline picker — pick right here, no Edit Team detour.
+            <div className="space-y-3">
+              <p className="text-xs text-slate-500">
+                Tap up to 3 guides in order of preference. <strong>Once saved they can't be changed</strong> — admin does the final allotment.
+              </p>
+              <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                {availableGuides.map((g) => {
+                  const rank = picked.indexOf(g._id);
+                  const isSelected = rank !== -1;
+                  return (
+                    <button
+                      key={g._id}
+                      type="button"
+                      onClick={() => togglePick(g._id)}
+                      disabled={!isSelected && picked.length >= 3}
+                      className={`w-full flex items-center justify-between gap-3 border rounded-lg p-2.5 text-left transition-colors ${
+                        isSelected ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:bg-slate-50'
+                      } disabled:opacity-40 disabled:cursor-not-allowed`}
+                    >
+                      <div className="min-w-0">
+                        <div className="font-semibold text-sm truncate">{g.name}</div>
+                        <div className="text-xs text-slate-500 truncate">{g.department || g.designation || g.email}</div>
+                        <div className="text-xs mt-0.5">
+                          <span className={g.isFull ? 'badge-danger' : 'badge-secondary'}>
+                            {g.currentTeams}{g.maxTeams != null ? ` / ${g.maxTeams}` : ''} team{g.currentTeams === 1 ? '' : 's'}
+                          </span>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="badge-primary w-6 h-6 rounded-full flex items-center justify-center p-0 flex-shrink-0 font-bold">{rank + 1}</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <button onClick={savePicks} disabled={savingPicks || picked.length === 0} className="btn-primary btn-sm w-full">
+                {savingPicks ? <Spinner size="sm" className="text-white" /> : `Save Preferences (${picked.length}/3)`}
+              </button>
             </div>
           )}
         </Card>

@@ -15,7 +15,6 @@ const PAGE_TITLES = {
   '/pms/admin/guides': 'Project Guides',
   '/pms/admin/students': 'Students',
   '/pms/admin/teams': 'Teams & Assign Guide',
-  '/pms/admin/promote': 'Promote Students',
   '/pms/admin/attendance': 'Daily Attendance',
   '/pms/admin/semester-attendance': 'Semester Attendance',
   '/pms/admin/reports': 'Reports',
