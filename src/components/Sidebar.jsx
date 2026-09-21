@@ -66,8 +66,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/placement', icon: Briefcase, label: 'T&P Dashboard' },
       { to: '/placement/results', icon: ClipboardList, label: 'Drive Results' },
     ] },
-    ...(user?.enrollmentNo ? [{ category: 'Projects (PMS)', links: [
-      { to: '/pms/student', icon: FolderOpen, label: 'Major Project (PMS)' },
+    // Only when the student's semester has an active Minor/Major project
+    // (user.pmsProject, from /auth/login + /auth/me) — labelled with that
+    // project, e.g. "Minor-1 Project (PMS)".
+    ...(user?.pmsProject ? [{ category: 'Projects (PMS)', links: [
+      { to: '/pms/student', icon: FolderOpen, label: `${user.pmsProject.projectName} Project (PMS)` },
     ] }] : []),
     ...(user?.isSuper50 ? [{ category: 'Super 50', links: [
       { to: '/dashboard', icon: LayoutDashboard, label: 'Super 50 Portal' },

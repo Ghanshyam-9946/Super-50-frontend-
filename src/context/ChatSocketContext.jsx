@@ -8,7 +8,7 @@ import {
   typingUpdated,
   fetchConversations,
 } from "../features/chat/chatSlice";
-import { announceNewMessage } from "../utils/speak";
+import { announceNewMessage, unlockAudioOnFirstGesture } from "../utils/speak";
 
 // Same base the REST client (services/api.js) uses, minus the trailing
 // "/api" — Socket.io connects to the server origin, not an API path.
@@ -47,21 +47,24 @@ export function ChatSocketProvider({ children }) {
     const token = localStorage.getItem("super50_token");
     if (!token) return undefined;
 
+    unlockAudioOnFirstGesture();
     const socket = io(SOCKET_URL, { auth: { token }, transports: ["websocket", "polling"] });
     socketRef.current = socket;
 
     socket.on("message:new", (message) => {
       dispatch(messageReceived(message));
-      // Spoken alert (Hindi + English) — skip your own sent messages (the
-      // server broadcasts to every participant, sender included) and skip
-      // whichever conversation you're actively looking at right now,
-      // whether that's the full /chat page or the floating bubble (both
-      // dispatch setActiveConversation on open, so this one check covers
-      // either UI).
+      // Chime + spoken alert (Hindi + English) — skip your own sent messages
+      // (the server broadcasts to every participant, sender included) and
+      // skip the conversation you're actually looking at right now: open in
+      // the /chat page or the bubble (both set activeConversationId, and
+      // both clear it when closed/left) AND this tab is on screen. If you've
+      // switched to another tab, you still want to hear it.
       const senderId = message.sender?._id || message.sender;
       const isOwnMessage = senderId === user._id;
-      const isActiveConversation = message.conversation === activeConversationIdRef.current;
-      if (!isOwnMessage && !isActiveConversation) {
+      const isViewingIt =
+        message.conversation === activeConversationIdRef.current &&
+        document.visibilityState === "visible";
+      if (!isOwnMessage && !isViewingIt) {
         announceNewMessage(message.sender?.name);
       }
     });

@@ -102,6 +102,58 @@ const StudentPicker = ({ onPick, excludeIds = [] }) => {
   );
 };
 
+// =============== GUIDE PREFERENCE PICKER ===============
+// Tap up to 3 guides; tap order is the preference rank (1/2/3). Used by
+// both the Create Team form and the My Team page's Project Guide card.
+const GuidePreferencePicker = ({ guides, picked, onToggle }) => {
+  if (guides.length === 0) {
+    return (
+      <div className="alert-info text-xs">
+        <Info className="w-4 h-4 flex-shrink-0" />
+        No guides available yet for your year/semester — check back once admin adds them.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-1.5 max-h-72 overflow-y-auto">
+      {guides.map((g) => {
+        const rank = picked.indexOf(g._id);
+        const isSelected = rank !== -1;
+        return (
+          <button
+            key={g._id}
+            type="button"
+            onClick={() => onToggle(g._id)}
+            disabled={!isSelected && picked.length >= 3}
+            className={`w-full flex items-center justify-between gap-3 border rounded-lg p-2.5 text-left transition-colors ${
+              isSelected ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:bg-slate-50'
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            <div className="min-w-0">
+              <div className="font-semibold text-sm truncate">{g.name}</div>
+              <div className="text-xs text-slate-500 truncate">{g.department || g.designation || g.email}</div>
+              <div className="text-xs mt-0.5">
+                <span className={g.isFull ? 'badge-danger' : 'badge-secondary'}>
+                  {g.currentTeams}{g.maxTeams != null ? ` / ${g.maxTeams}` : ''} team{g.currentTeams === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+            {isSelected && (
+              <span className="badge-primary w-6 h-6 rounded-full flex items-center justify-center p-0 flex-shrink-0 font-bold">{rank + 1}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const togglePick = (prev, guideId) => {
+  if (prev.includes(guideId)) return prev.filter((id) => id !== guideId);
+  if (prev.length >= 3) return prev;
+  return [...prev, guideId];
+};
+
 // =============== EDIT TEAM MODAL ===============
 const EditTeamModal = ({ open, onClose, team, currentUser, onSaved }) => {
   const [form, setForm] = useState({});
@@ -498,6 +550,14 @@ const CreateTeamForm = ({ user, onCreated }) => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
+  const [guides, setGuides] = useState([]);
+  const [guidePrefs, setGuidePrefs] = useState([]); // ordered guide ids, max 3
+
+  useEffect(() => {
+    studentAPI.getAvailableGuides()
+      .then((res) => setGuides(res.data.data))
+      .catch(() => {}); // no guides yet — the picker shows its own empty state
+  }, []);
 
   const addMember = (student) => {
     if (form.members.length >= 4) {
@@ -550,6 +610,7 @@ const CreateTeamForm = ({ user, onCreated }) => {
     try {
       const res = await studentAPI.createTeam({
         ...form,
+        guidePreferences: guidePrefs,
         additionalMembers: form.members.map((m) => ({
           enrollmentNo: m.enrollmentNo,
           name: m.name,
@@ -596,6 +657,15 @@ const CreateTeamForm = ({ user, onCreated }) => {
             onChange={(e) => setForm({ ...form, sdgSuggestion: e.target.value })}
             placeholder="Click 'Suggest SDG' for AI-powered ideas"
           />
+        </div>
+
+        {/* Guide preferences — picked up front, alongside the project details */}
+        <div>
+          <h6 className="font-semibold text-sm mb-1">Guide Preferences ({guidePrefs.length}/3)</h6>
+          <p className="text-xs text-slate-500 mb-3">
+            Tap up to 3 guides in order of preference. <strong>These can't be changed after the team is created</strong> — admin does the final allotment.
+          </p>
+          <GuidePreferencePicker guides={guides} picked={guidePrefs} onToggle={(id) => setGuidePrefs((p) => togglePick(p, id))} />
         </div>
 
         <hr className="border-slate-100" />
@@ -690,14 +760,6 @@ const StudentTeam = () => {
 
   useEffect(() => { fetchTeam(); fetchGuides(); }, []);
 
-  const togglePick = (guideId) => {
-    setPicked((prev) => {
-      if (prev.includes(guideId)) return prev.filter((id) => id !== guideId);
-      if (prev.length >= 3) return prev;
-      return [...prev, guideId];
-    });
-  };
-
   const savePicks = async () => {
     if (picked.length === 0) {
       toast.error('Pick at least 1 guide');
@@ -747,6 +809,7 @@ const StudentTeam = () => {
   // ============ HAS TEAM ============
   const approvalStatus = team.detailsApprovalStatus || 'draft';
   const canEditDetails = !team.isLocked && approvalStatus !== 'pending' && approvalStatus !== 'approved';
+  const hasGuidePrefs = (team.guidePreferences || []).length > 0;
   const APPROVAL_BADGE = {
     draft: null,
     pending: <span className="badge-warning"><Clock className="w-3 h-3" /> Pending Admin Approval</span>,
@@ -772,7 +835,12 @@ const StudentTeam = () => {
             </button>
           )}
           {!team.isLocked && (approvalStatus === 'draft' || approvalStatus === 'rejected') && (
-            <button onClick={submitForApproval} disabled={submittingApproval} className="btn-success">
+            <button
+              onClick={submitForApproval}
+              disabled={submittingApproval || !hasGuidePrefs}
+              className="btn-success"
+              title={hasGuidePrefs ? '' : 'Pick your guide preferences first (Project Guide card below)'}
+            >
               {submittingApproval ? <Spinner size="sm" className="text-white" /> : <><CheckCircle2 className="w-4 h-4" /> Submit for Approval</>}
             </button>
           )}
@@ -789,12 +857,22 @@ const StudentTeam = () => {
         </div>
       )}
 
+      {!team.isLocked && (approvalStatus === 'draft' || approvalStatus === 'rejected') && !hasGuidePrefs && !team.guides?.length && (
+        <div className="alert-info">
+          <UserCheck className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <strong>Pick your guide preferences first.</strong>
+            <p className="text-xs mt-1">Choose up to 3 guides in the Project Guide card below — you can submit for approval after that.</p>
+          </div>
+        </div>
+      )}
+
       {!team.isLocked && approvalStatus === 'pending' && (
         <div className="alert-warning">
           <Clock className="w-5 h-5 flex-shrink-0" />
           <div>
-            <strong>Your project details are pending guide approval.</strong>
-            <p className="text-xs mt-1">You can't edit them until your guide approves or rejects the submission.</p>
+            <strong>Your project details are pending admin approval.</strong>
+            <p className="text-xs mt-1">You can't edit them until admin approves or rejects the submission.</p>
           </div>
         </div>
       )}
@@ -813,7 +891,7 @@ const StudentTeam = () => {
         <div className="alert-danger">
           <XCircle className="w-5 h-5 flex-shrink-0" />
           <div>
-            <strong>Your project details were rejected by your guide.</strong>
+            <strong>Your project details were rejected by admin.</strong>
             <p className="text-xs mt-1">Reason: "{team.detailsRejectionReason}"</p>
             <p className="text-xs mt-1">Edit your team details, then submit for approval again.</p>
           </div>
@@ -896,50 +974,18 @@ const StudentTeam = () => {
               <Lock className="w-4 h-4 flex-shrink-0" />
               Guide preferences can't be submitted right now. Contact admin.
             </div>
-          ) : availableGuides.length === 0 ? (
-            <div className="alert-info text-xs">
-              <Info className="w-4 h-4 flex-shrink-0" />
-              No guides available yet for your year/semester — check back once admin adds them.
-            </div>
           ) : (
-            // Inline picker — pick right here, no Edit Team detour.
+            // Inline picker — for a team created without preferences.
             <div className="space-y-3">
               <p className="text-xs text-slate-500">
                 Tap up to 3 guides in order of preference. <strong>Once saved they can't be changed</strong> — admin does the final allotment.
               </p>
-              <div className="space-y-1.5 max-h-72 overflow-y-auto">
-                {availableGuides.map((g) => {
-                  const rank = picked.indexOf(g._id);
-                  const isSelected = rank !== -1;
-                  return (
-                    <button
-                      key={g._id}
-                      type="button"
-                      onClick={() => togglePick(g._id)}
-                      disabled={!isSelected && picked.length >= 3}
-                      className={`w-full flex items-center justify-between gap-3 border rounded-lg p-2.5 text-left transition-colors ${
-                        isSelected ? 'border-brand-500 bg-brand-50' : 'border-slate-200 hover:bg-slate-50'
-                      } disabled:opacity-40 disabled:cursor-not-allowed`}
-                    >
-                      <div className="min-w-0">
-                        <div className="font-semibold text-sm truncate">{g.name}</div>
-                        <div className="text-xs text-slate-500 truncate">{g.department || g.designation || g.email}</div>
-                        <div className="text-xs mt-0.5">
-                          <span className={g.isFull ? 'badge-danger' : 'badge-secondary'}>
-                            {g.currentTeams}{g.maxTeams != null ? ` / ${g.maxTeams}` : ''} team{g.currentTeams === 1 ? '' : 's'}
-                          </span>
-                        </div>
-                      </div>
-                      {isSelected && (
-                        <span className="badge-primary w-6 h-6 rounded-full flex items-center justify-center p-0 flex-shrink-0 font-bold">{rank + 1}</span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              <button onClick={savePicks} disabled={savingPicks || picked.length === 0} className="btn-primary btn-sm w-full">
-                {savingPicks ? <Spinner size="sm" className="text-white" /> : `Save Preferences (${picked.length}/3)`}
-              </button>
+              <GuidePreferencePicker guides={availableGuides} picked={picked} onToggle={(id) => setPicked((p) => togglePick(p, id))} />
+              {availableGuides.length > 0 && (
+                <button onClick={savePicks} disabled={savingPicks || picked.length === 0} className="btn-primary btn-sm w-full">
+                  {savingPicks ? <Spinner size="sm" className="text-white" /> : `Save Preferences (${picked.length}/3)`}
+                </button>
+              )}
             </div>
           )}
         </Card>

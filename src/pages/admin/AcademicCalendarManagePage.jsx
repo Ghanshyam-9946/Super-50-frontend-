@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarDays, Plus, Pencil, Trash2, Eye, EyeOff, Loader2, ArrowLeft,
-  Save, X, Table2, FileText, Upload, ExternalLink, Download, ChevronDown, ChevronUp,
+  Save, X, Table2, FileText, FileSpreadsheet, Upload, Download, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/imageUrl';
-import AcademicCalendarGrid from '../../components/AcademicCalendarGrid';
+import { calendarFile } from '../../utils/academicCalendarFile';
+import AcademicCalendarViewer from '../../components/AcademicCalendarViewer';
 
 const emptyForm = () => ({
   session: '',
@@ -92,14 +93,16 @@ function ListView({ onCreate, onEdit }) {
   // A plain <a download> is silently ignored cross-origin — fetch the blob
   // and save it via a same-origin object URL instead (see
   // TimetableManagePage.jsx, which has the identical fix).
-  const downloadPdf = async (cal) => {
+  const downloadFile = async (cal) => {
+    const file = calendarFile(cal);
+    if (!file) return;
     try {
-      const res = await fetch(getImageUrl(cal.pdfUrl));
+      const res = await fetch(getImageUrl(file.url));
       const blob = await res.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = cal.pdfFileName || 'Academic-Calendar.pdf';
+      link.download = file.name;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -117,7 +120,7 @@ function ListView({ onCreate, onEdit }) {
             <CalendarDays className="text-[var(--primary)]" size={30} /> Academic Calendar Manager
           </h1>
           <p className="text-[var(--text-secondary)] mt-2 font-medium">
-            Upload the academic calendar as a PDF — everyone sees it instantly once published.
+            Upload the academic calendar as an Excel file or PDF — everyone sees it exactly as uploaded once published.
           </p>
         </div>
         <button onClick={onCreate} className="btn-premium flex items-center gap-2 text-xs self-start md:self-auto">
@@ -159,49 +162,25 @@ function ListView({ onCreate, onEdit }) {
                 </span>
               </div>
 
-              {cal.events?.length > 0 && (
-                <button
-                  onClick={() => setPreviewId((p) => (p === cal._id ? null : cal._id))}
-                  className="flex items-center gap-1.5 text-xs font-bold text-emerald-500 min-w-0"
-                >
-                  <CalendarDays size={14} className="shrink-0" /> <span className="truncate flex-1 text-left">{cal.events.length} entries</span>
-                  {previewId === cal._id ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
-                </button>
-              )}
-
-              {cal.pdfUrl && (
-                <div className="flex items-center gap-2">
-                  <a
-                    href={getImageUrl(cal.pdfUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline min-w-0"
+              {(() => {
+                const file = calendarFile(cal);
+                if (!file) {
+                  return <p className="text-xs font-bold text-amber-600">No file on record — edit and re-upload the calendar.</p>;
+                }
+                const Icon = file.type === 'pdf' ? FileText : FileSpreadsheet;
+                return (
+                  <button
+                    onClick={() => setPreviewId((p) => (p === cal._id ? null : cal._id))}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] min-w-0"
+                    title={previewId === cal._id ? 'Hide preview' : 'Preview'}
                   >
-                    <FileText size={14} className="shrink-0" /> <span className="truncate">{cal.pdfFileName || 'View PDF'}</span> <ExternalLink size={12} className="shrink-0" />
-                  </a>
-                  {!cal.events?.length && (
-                    <button
-                      onClick={() => setPreviewId((p) => (p === cal._id ? null : cal._id))}
-                      className="ml-auto shrink-0 flex items-center gap-1 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                      title="Preview inline"
-                    >
-                      {previewId === cal._id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </button>
-                  )}
-                </div>
-              )}
+                    <Icon size={14} className="shrink-0" /> <span className="truncate flex-1 text-left">{file.name}</span>
+                    {previewId === cal._id ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
+                  </button>
+                );
+              })()}
 
-              {previewId === cal._id && (
-                cal.events?.length > 0 ? (
-                  <div className="rounded-xl border border-[var(--border-light)] p-3 max-h-[60vh] overflow-y-auto">
-                    <AcademicCalendarGrid calendar={cal} canSetReminders />
-                  </div>
-                ) : cal.pdfUrl ? (
-                  <div className="rounded-xl overflow-hidden border border-[var(--border-light)]">
-                    <iframe src={getImageUrl(cal.pdfUrl)} title={cal.pdfFileName || 'Academic calendar preview'} className="w-full border-0" style={{ height: '50vh' }} />
-                  </div>
-                ) : null
-              )}
+              {previewId === cal._id && <AcademicCalendarViewer calendar={cal} height="70vh" />}
 
               <div className="flex items-center gap-2 mt-2 pt-3 border-t border-[var(--border-light)]">
                 <button
@@ -210,11 +189,11 @@ function ListView({ onCreate, onEdit }) {
                 >
                   <Pencil size={13} /> Edit
                 </button>
-                {cal.pdfUrl && (
+                {calendarFile(cal) && (
                   <button
-                    onClick={() => downloadPdf(cal)}
+                    onClick={() => downloadFile(cal)}
                     className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border-light)] text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all"
-                    title="Download PDF"
+                    title="Download original file"
                   >
                     <Download size={13} />
                   </button>
@@ -247,16 +226,13 @@ function FormView({ initial, onDone }) {
   const [form, setForm] = useState(() => (initial ? { ...emptyForm(), ...initial } : emptyForm()));
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
-  // Excel is the primary path — it parses into a real day-by-day calendar
-  // (see CalendarView.jsx). PDF stays as a secondary/legacy option so
-  // nothing already published breaks.
-  const [uploadMode, setUploadMode] = useState('excel');
+  const currentFile = calendarFile(initial);
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
 
   const save = async () => {
     if (!form.session.trim()) return toast.error('Session is required (e.g. JAN-JUNE, 2026)');
-    if (!initial && !file) return toast.error(`Please upload the academic calendar ${uploadMode === 'excel' ? 'Excel file' : 'PDF'}`);
+    if (!initial && !file) return toast.error('Please upload the academic calendar (Excel or PDF)');
 
     setSaving(true);
     try {
@@ -264,21 +240,12 @@ function FormView({ initial, onDone }) {
       fd.append('session', form.session.trim());
       fd.append('campus', form.campus.trim());
       fd.append('isPublished', form.isPublished);
+      // Stored exactly as uploaded; no file = keep the current one.
+      if (file) fd.append('file', file);
 
-      let data;
-      if (uploadMode === 'excel' && file) {
-        fd.append('excel', file);
-        ({ data } = await api.post('/academic-calendars/upload-excel', fd));
-      } else if (uploadMode === 'pdf' || !initial) {
-        if (file) fd.append('pdf', file);
-        ({ data } = initial
-          ? await api.put(`/academic-calendars/${initial._id}`, fd)
-          : await api.post('/academic-calendars', fd));
-      } else {
-        // Editing, Excel mode, no new file — metadata-only update, keep
-        // the existing parsed events untouched.
-        ({ data } = await api.put(`/academic-calendars/${initial._id}`, fd));
-      }
+      const { data } = initial
+        ? await api.put(`/academic-calendars/${initial._id}`, fd)
+        : await api.post('/academic-calendars', fd);
 
       if (data.success) {
         toast.success(data.message || 'Saved');
@@ -327,66 +294,31 @@ function FormView({ initial, onDone }) {
           </label>
         </div>
 
-        <div className="md:col-span-2 flex gap-2">
-          <button
-            type="button"
-            onClick={() => { setUploadMode('excel'); setFile(null); }}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${uploadMode === 'excel' ? 'bg-[var(--primary)] text-white' : 'border border-[var(--border-light)] text-[var(--text-primary)]'}`}
-          >
-            Excel (parsed calendar view)
-          </button>
-          <button
-            type="button"
-            onClick={() => { setUploadMode('pdf'); setFile(null); }}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${uploadMode === 'pdf' ? 'bg-[var(--primary)] text-white' : 'border border-[var(--border-light)] text-[var(--text-primary)]'}`}
-          >
-            PDF (legacy)
-          </button>
+        <div className="md:col-span-2">
+          <label className={labelCls}>
+            Academic Calendar File {initial ? <span className="opacity-60 normal-case font-medium">(leave empty to keep the current file)</span> : null}
+          </label>
+          <p className="text-xs text-[var(--text-secondary)] mb-2">
+            Upload the college's calendar Excel workbook (all sheets, colours and merged cells are shown exactly as in the file) or a PDF. Nothing is converted.
+          </p>
+          <label className="flex items-center gap-3 border border-dashed border-[var(--border-light)] rounded-xl px-4 py-3 cursor-pointer hover:border-[var(--primary)] transition-colors">
+            <Upload size={16} className="text-[var(--primary)]" />
+            <span className="text-sm text-[var(--text-secondary)] truncate">
+              {file ? file.name : currentFile ? `Replace "${currentFile.name}"` : 'Choose an Excel (.xlsx/.xls) or PDF file'}
+            </span>
+            <input type="file" className="hidden" accept=".xlsx,.xls,.pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            {file && (
+              <button onClick={(e) => { e.preventDefault(); setFile(null); }} className="ml-auto text-[var(--text-secondary)] hover:text-red-500 shrink-0">
+                <X size={16} />
+              </button>
+            )}
+          </label>
         </div>
 
-        {uploadMode === 'excel' ? (
-          <div className="md:col-span-2">
-            <label className={labelCls}>
-              Academic Calendar Excel {initial ? <span className="opacity-60 normal-case font-medium">(leave empty to keep the current calendar)</span> : null}
-            </label>
-            <p className="text-xs text-[var(--text-secondary)] mb-2">
-              Upload the college's per-batch teaching calendar workbook — parsed automatically into a day-by-day calendar view. The first sheet in the file is used.
-            </p>
-            <label className="flex items-center gap-3 border border-dashed border-[var(--border-light)] rounded-xl px-4 py-3 cursor-pointer hover:border-[var(--primary)] transition-colors">
-              <Upload size={16} className="text-[var(--primary)]" />
-              <span className="text-sm text-[var(--text-secondary)] truncate">
-                {file ? file.name : 'Choose an Excel file (.xlsx/.xls) to upload'}
-              </span>
-              <input type="file" className="hidden" accept=".xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              {file && (
-                <button onClick={(e) => { e.preventDefault(); setFile(null); }} className="ml-auto text-[var(--text-secondary)] hover:text-red-500 shrink-0">
-                  <X size={16} />
-                </button>
-              )}
-            </label>
-          </div>
-        ) : (
-          <div className="md:col-span-2">
-            <label className={labelCls}>
-              Academic Calendar PDF {initial ? <span className="opacity-60 normal-case font-medium">(leave empty to keep the current file)</span> : null}
-            </label>
-            <label className="flex items-center gap-3 border border-dashed border-[var(--border-light)] rounded-xl px-4 py-3 cursor-pointer hover:border-[var(--primary)] transition-colors">
-              <Upload size={16} className="text-[var(--primary)]" />
-              <span className="text-sm text-[var(--text-secondary)] truncate">
-                {file ? file.name : initial?.pdfFileName ? `Replace "${initial.pdfFileName}"` : 'Choose a PDF file to upload'}
-              </span>
-              <input type="file" className="hidden" accept=".pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-              {file && (
-                <button onClick={(e) => { e.preventDefault(); setFile(null); }} className="ml-auto text-[var(--text-secondary)] hover:text-red-500 shrink-0">
-                  <X size={16} />
-                </button>
-              )}
-            </label>
-            {initial?.pdfUrl && !file && (
-              <a href={getImageUrl(initial.pdfUrl)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline mt-2">
-                <FileText size={13} /> View current PDF <ExternalLink size={11} />
-              </a>
-            )}
+        {initial && !file && currentFile && (
+          <div className="md:col-span-2 space-y-2">
+            <span className={labelCls}>Current file</span>
+            <AcademicCalendarViewer calendar={initial} height="50vh" />
           </div>
         )}
       </div>
