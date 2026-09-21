@@ -433,7 +433,7 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
       <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
         {guides.map((g) => {
           const eligible = g.academicYear?._id === team.academicYear?._id
-            && g.assignedSemester === team.semester;
+            && [].concat(g.assignedSemester ?? []).map(Number).includes(team.semester);
           return (
             <label key={g._id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
               <input
@@ -441,7 +441,7 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
                 checked={selectedGuideIds.includes(g._id)}
                 onChange={() => toggleGuide(g._id)}
               />
-              <span>{g.name} · {g.email} (Sem {g.assignedSemester}){!eligible && ' — different sem/year'}</span>
+              <span>{g.name} · {g.email} (Sem {[].concat(g.assignedSemester ?? []).join(', ')}){!eligible && ' — different sem/year'}</span>
             </label>
           );
         })}

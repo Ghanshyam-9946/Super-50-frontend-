@@ -211,7 +211,7 @@ const Sidebar = ({ open, onClose }) => {
             Account
           </div>
           <NavLink
-            to="/notifications"
+            to="/pms/notifications"
             onClick={onClose}
             className={({ isActive }) =>
               cn(

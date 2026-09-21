@@ -33,6 +33,14 @@ const cellText = (cell) => (cell ? cell.w ?? (cell.v == null ? '' : String(cell.
 // Sheets often carry formatting across hundreds of blank rows/columns, so
 // the rendered area is trimmed to the cells that actually hold something
 // (plus any merge that starts inside that area).
+// Sheets Excel actually shows as tabs — hidden (1) and very-hidden (2)
+// sheets are skipped. Falls back to all sheets if the file marks none visible.
+function visibleSheetIndexes(wb) {
+  const meta = wb.Workbook?.Sheets || [];
+  const visible = wb.SheetNames.map((_, i) => i).filter((i) => !meta[i]?.Hidden);
+  return visible.length ? visible : wb.SheetNames.map((_, i) => i);
+}
+
 function buildSheetTable(ws) {
   if (!ws || !ws['!ref']) return null;
   let maxR = -1;
@@ -105,8 +113,11 @@ function SpreadsheetViewer({ url, height }) {
         if (cancelled) return;
         const wb = XLSX.read(buf, { type: 'array', cellStyles: true });
         setWorkbook(wb);
-        // Open on the sheet Excel itself would open on, if the file says.
-        setSheetIndex(wb.Workbook?.Views?.[0]?.activeTab ?? 0);
+        // Open on the sheet Excel itself would open on, if the file says —
+        // unless that one is hidden, then the first visible sheet.
+        const visible = visibleSheetIndexes(wb);
+        const active = wb.Workbook?.Views?.[0]?.activeTab ?? 0;
+        setSheetIndex(visible.includes(active) ? active : visible[0]);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message || 'Could not read the Excel file');
@@ -137,12 +148,15 @@ function SpreadsheetViewer({ url, height }) {
   }
 
   const totalWidth = table?.widths.reduce((a, b) => a + b, 0) || 0;
+  const visibleTabs = visibleSheetIndexes(workbook);
 
   return (
     <div className="space-y-2">
-      {workbook.SheetNames.length > 1 && (
+      {visibleTabs.length > 1 && (
         <div className="flex flex-wrap gap-1.5">
-          {workbook.SheetNames.map((name, i) => (
+          {visibleTabs.map((i) => {
+            const name = workbook.SheetNames[i];
+            return (
             <button
               key={name}
               onClick={() => setSheetIndex(i)}
@@ -154,7 +168,8 @@ function SpreadsheetViewer({ url, height }) {
             >
               {name.trim() || `Sheet ${i + 1}`}
             </button>
-          ))}
+            );
+          })}
         </div>
       )}
 

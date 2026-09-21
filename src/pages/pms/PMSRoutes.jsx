@@ -39,6 +39,7 @@ import GuideGroups from './guide/Groups';
 import GuideReview from './guide/Review';
 import GuideAttendance from './guide/Attendance';
 import GuideReports from './guide/Reports';
+import PMSNotifications from './Notifications';
 import GuideRubrics from './guide/Rubrics';
 import GuideStatus from './guide/Status';
 import GuideStatusDetail from './guide/StatusDetail';
@@ -50,7 +51,7 @@ import GuideStatusDetail from './guide/StatusDetail';
 // admin access here too.
 const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const { user, token } = useSelector((state) => state.auth);
-  if (!token || !user) return <Navigate to="/" replace />;
+  if (!token || !user) return <Navigate to="/login" replace />;
   const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
   const hasRole = allowed.some(role => userRoles.includes(role));
   const hasResponsibility = allowResponsibility && (user.responsibilities || []).includes(allowResponsibility);
@@ -130,6 +131,9 @@ export default function PMSRoutes() {
         <Route path="guide/status" element={<RoleGuard allowed={['guide']}><GuideStatus /></RoleGuard>} />
         <Route path="guide/status/:teamId" element={<RoleGuard allowed={['guide']}><GuideStatusDetail /></RoleGuard>} />
         <Route path="guide/reports" element={<RoleGuard allowed={['guide']}><GuideReports /></RoleGuard>} />
+
+        {/* Every signed-in PMS user — admin, guide, student */}
+        <Route path="notifications" element={<PMSNotifications />} />
 
       </Route>
     </Routes>

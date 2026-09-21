@@ -6,7 +6,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing, ClipboardEdit
+  StickyNote, BellRing, ClipboardEdit, MessageSquareShare
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -206,6 +206,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
       { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
       { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
+      { to: '/admin/parent-alerts', icon: MessageSquareShare, label: 'Parent WhatsApp Alerts' },
       { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
     ] },
     { category: 'PMS', links: [
@@ -348,9 +349,12 @@ const Sidebar = ({ theme, toggleTheme }) => {
       .filter((group) => group.links.length > 0);
   })();
 
+  // Navigate first so the protected Layout unmounts in the same render —
+  // otherwise its own "no user → /" redirect wins and logout lands on the
+  // landing page instead of Login.
   const handleLogout = () => {
+    navigate('/login', { replace: true });
     dispatch(logout());
-    navigate('/login');
   };
 
   const SidebarContent = () => (

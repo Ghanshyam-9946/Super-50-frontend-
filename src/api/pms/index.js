@@ -50,6 +50,7 @@ export const adminAPI = {
   listGuides: () => api.get('/pms/admin/guides'),
   listFacultyCandidates: () => api.get('/pms/admin/guides/candidates'),
   assignGuideRole: (data) => api.post('/pms/admin/guides', data),
+  updateGuideSemesters: (id, semesters) => api.put(`/pms/admin/guides/${id}/semesters`, { semesters }),
   removeGuideRole: (id) => api.delete(`/pms/admin/guides/${id}`),
 
   // Students — read-only view (create/edit/bulk-upload/delete happen in the

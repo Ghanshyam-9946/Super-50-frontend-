@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { NotificationProvider } from '../../context/pms/NotificationContext';
 import { fetchMe } from '../../features/auth/authSlice';
@@ -42,12 +42,13 @@ const PAGE_TITLES = {
   '/pms/guide/status': 'Project Status',
   '/pms/guide/attendance': 'Attendance',
   '/pms/guide/reports': 'Reports',
+  '/pms/notifications': 'Notifications',
 };
 
 const PMSLayoutInner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { token } = useSelector((s) => s.auth);
+  const { token, user } = useSelector((s) => s.auth);
   const dispatch = useDispatch();
 
   // Same refresh the main Layout does — keeps user.pmsProject current when
@@ -55,6 +56,10 @@ const PMSLayoutInner = () => {
   useEffect(() => {
     if (token) dispatch(fetchMe());
   }, [dispatch, token]);
+
+  // Signed out (or never signed in): leave before Sidebar/Topbar render —
+  // they read user.name etc. and would crash the whole app on a null user.
+  if (!token || !user) return <Navigate to="/login" replace />;
 
   const pageTitle = PAGE_TITLES[location.pathname] || 'PMS Portal';
 

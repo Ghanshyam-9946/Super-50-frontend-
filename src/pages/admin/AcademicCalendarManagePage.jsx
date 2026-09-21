@@ -6,8 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { getImageUrl } from '../../utils/imageUrl';
-import { calendarFile } from '../../utils/academicCalendarFile';
+import { calendarFile, downloadCalendarFile } from '../../utils/academicCalendarFile';
 import AcademicCalendarViewer from '../../components/AcademicCalendarViewer';
 
 const emptyForm = () => ({
@@ -90,25 +89,11 @@ function ListView({ onCreate, onEdit }) {
     }
   };
 
-  // A plain <a download> is silently ignored cross-origin — fetch the blob
-  // and save it via a same-origin object URL instead (see
-  // TimetableManagePage.jsx, which has the identical fix).
   const downloadFile = async (cal) => {
-    const file = calendarFile(cal);
-    if (!file) return;
     try {
-      const res = await fetch(getImageUrl(file.url));
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = file.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch {
-      toast.error('Failed to download academic calendar');
+      await downloadCalendarFile(cal);
+    } catch (err) {
+      toast.error(err.message || 'Failed to download academic calendar');
     }
   };
 

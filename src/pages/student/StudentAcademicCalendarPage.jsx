@@ -4,8 +4,7 @@ import { motion } from 'framer-motion';
 import { CalendarDays, Download, Info, Layers, FileText, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-import { getImageUrl } from '../../utils/imageUrl';
-import { calendarFile } from '../../utils/academicCalendarFile';
+import { calendarFile, downloadCalendarFile } from '../../utils/academicCalendarFile';
 import AcademicCalendarViewer from '../../components/AcademicCalendarViewer';
 
 // The published academic calendar, shown exactly as the admin uploaded it
@@ -64,24 +63,11 @@ export default function StudentAcademicCalendarPage() {
 
   const file = calendarFile(calendar);
 
-  // A plain `<a download>` is silently ignored by browsers when the href is
-  // cross-origin — fetch the blob ourselves and save it via a same-origin
-  // object URL instead (same fix as StudentTimetablePage.jsx).
   const downloadFile = async () => {
-    if (!file) return;
     try {
-      const res = await fetch(getImageUrl(file.url));
-      const blob = await res.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = file.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch {
-      toast.error("Failed to download academic calendar");
+      await downloadCalendarFile(calendar);
+    } catch (err) {
+      toast.error(err.message || 'Failed to download academic calendar');
     }
   };
 
