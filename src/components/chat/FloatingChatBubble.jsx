@@ -95,6 +95,13 @@ export default function FloatingChatBubble() {
   };
 
   const toggleOpen = () => {
+    // Closing the panel means you're no longer looking at that thread —
+    // clear it, otherwise that conversation stays "active" forever and its
+    // new messages never chime or count as unread.
+    if (open && activeConversationId) {
+      closeConversation(activeConversationId);
+      dispatch(setActiveConversation(null));
+    }
     setOpen((o) => !o);
   };
 

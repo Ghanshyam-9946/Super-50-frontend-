@@ -58,6 +58,26 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   return children;
 };
 
+// Students only get PMS while their semester has an active Minor/Major
+// project (user.pmsProject, set by /auth/login + /auth/me). `undefined`
+// means a session from before that field existed — PMSLayout's fetchMe is
+// already refreshing it, so wait briefly instead of bouncing them.
+// The backend enforces the same rule (requireActivePmsProject).
+const StudentProjectGuard = ({ children }) => {
+  const { user } = useSelector((state) => state.auth);
+  if (user?.pmsProject === undefined) {
+    return <div className="py-20 text-center text-sm text-slate-400">Loading…</div>;
+  }
+  if (!user.pmsProject) return <Navigate to="/leaderboard" replace />;
+  return children;
+};
+
+const StudentRoute = ({ children }) => (
+  <RoleGuard allowed={['student']}>
+    <StudentProjectGuard>{children}</StudentProjectGuard>
+  </RoleGuard>
+);
+
 export default function PMSRoutes() {
   return (
     <Routes>
@@ -89,16 +109,16 @@ export default function PMSRoutes() {
         <Route path="admin/settings" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Settings /></RoleGuard>} />
 
         {/* Student — /pms/student/dashboard alias for sidebar nav link */}
-        <Route path="student" element={<RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>} />
-        <Route path="student/dashboard" element={<RoleGuard allowed={['student']}><StudentDashboard /></RoleGuard>} />
-        <Route path="student/team" element={<RoleGuard allowed={['student']}><StudentTeam /></RoleGuard>} />
-        <Route path="student/progress" element={<RoleGuard allowed={['student']}><StudentProgress /></RoleGuard>} />
-        <Route path="student/presentations" element={<RoleGuard allowed={['student']}><StudentPresentations /></RoleGuard>} />
-        <Route path="student/marks" element={<RoleGuard allowed={['student']}><StudentMarks /></RoleGuard>} />
-        <Route path="student/report" element={<RoleGuard allowed={['student']}><ProjectReport /></RoleGuard>} />
-        <Route path="student/code-editor" element={<RoleGuard allowed={['student']}><CodeEditor /></RoleGuard>} />
-        <Route path="student/resources" element={<RoleGuard allowed={['student']}><StudentResources /></RoleGuard>} />
-        <Route path="student/guidelines" element={<RoleGuard allowed={['student']}><StudentGuidelines /></RoleGuard>} />
+        <Route path="student" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+        <Route path="student/dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+        <Route path="student/team" element={<StudentRoute><StudentTeam /></StudentRoute>} />
+        <Route path="student/progress" element={<StudentRoute><StudentProgress /></StudentRoute>} />
+        <Route path="student/presentations" element={<StudentRoute><StudentPresentations /></StudentRoute>} />
+        <Route path="student/marks" element={<StudentRoute><StudentMarks /></StudentRoute>} />
+        <Route path="student/report" element={<StudentRoute><ProjectReport /></StudentRoute>} />
+        <Route path="student/code-editor" element={<StudentRoute><CodeEditor /></StudentRoute>} />
+        <Route path="student/resources" element={<StudentRoute><StudentResources /></StudentRoute>} />
+        <Route path="student/guidelines" element={<StudentRoute><StudentGuidelines /></StudentRoute>} />
 
         {/* Guide — /pms/guide/dashboard alias for sidebar nav link */}
         <Route path="guide" element={<RoleGuard allowed={['guide']}><GuideDashboard /></RoleGuard>} />

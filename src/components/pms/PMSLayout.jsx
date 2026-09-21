@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { NotificationProvider } from '../../context/pms/NotificationContext';
+import { fetchMe } from '../../features/auth/authSlice';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import './pms.css';
@@ -45,6 +47,14 @@ const PAGE_TITLES = {
 const PMSLayoutInner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { token } = useSelector((s) => s.auth);
+  const dispatch = useDispatch();
+
+  // Same refresh the main Layout does — keeps user.pmsProject current when
+  // someone lands on /pms directly (it decides whether a student may be here).
+  useEffect(() => {
+    if (token) dispatch(fetchMe());
+  }, [dispatch, token]);
 
   const pageTitle = PAGE_TITLES[location.pathname] || 'PMS Portal';
 

@@ -56,6 +56,18 @@ export default function ChatPage() {
     dispatch(fetchConversations());
   }, [dispatch]);
 
+  // Leaving /chat means you're no longer looking at the open thread — clear
+  // it on unmount, otherwise it stays "active" and its later messages never
+  // chime or count as unread (the ref gives the cleanup the latest id).
+  const activeIdRef = useRef(activeConversationId);
+  useEffect(() => {
+    activeIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+  useEffect(() => () => {
+    if (activeIdRef.current) closeConversation(activeIdRef.current);
+    dispatch(setActiveConversation(null));
+  }, [dispatch, closeConversation]);
+
   const activeConversation = conversations.find((c) => c._id === activeConversationId);
   const messages = useMemo(() => messagesByConversation[activeConversationId] || [], [messagesByConversation, activeConversationId]);
   const typingUserIds = (typingByConversation[activeConversationId] || []).filter((id) => id !== user._id);
