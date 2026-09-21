@@ -64,7 +64,7 @@ const PMSLayoutInner = () => {
   const pageTitle = PAGE_TITLES[location.pathname] || 'PMS Portal';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 relative z-10">
+    <div className="pms-root min-h-screen bg-slate-50 text-slate-900 relative z-10">
       {/* PMS Sidebar — fixed positioned, w-64 on desktop */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -77,8 +77,10 @@ const PMSLayoutInner = () => {
         />
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-7">
-          <Outlet />
+        <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 lg:p-8">
+          <div key={location.pathname} className="pms-page">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

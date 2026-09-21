@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ClipboardList, Loader2, Download, Users, Calendar, LayoutGrid } from "lucide-react";
+import { ClipboardList, Loader2, Download, Users, Calendar, LayoutGrid, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { downloadFile } from "../../utils/downloadFile";
@@ -23,6 +23,13 @@ const MODES = [
   { id: "date", label: "Date-wise", icon: Calendar },
 ];
 
+// Weeks run Saturday → Friday; the Friday ("YYYY-MM-DD") names the week.
+const weekFriday = (dateStr) => {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + ((5 - d.getUTCDay() + 7) % 7));
+  return d.toISOString().slice(0, 10);
+};
+
 export default function WeeklyWorkReportAdminPage() {
   const [mode, setMode] = useState("overall");
   const [facultyList, setFacultyList] = useState([]);
@@ -31,6 +38,7 @@ export default function WeeklyWorkReportAdminPage() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [mailing, setMailing] = useState(false);
 
   useEffect(() => {
     api
@@ -73,6 +81,22 @@ export default function WeeklyWorkReportAdminPage() {
       toast.error("Failed to download PDF");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const sendMails = async () => {
+    const friday = weekFriday(weekOf);
+    if (!window.confirm(`Send the Weekly Work Report status mails for the week ending ${friday} to every faculty member and HOD?`)) return;
+    setMailing(true);
+    try {
+      const { data } = await api.post("/weekly-work-report/admin/send-mails", { friday });
+      const s = data.data;
+      toast.success(`${s.sent} mail(s) sent · ${s.submitted} submitted, ${s.notSubmitted} not submitted${s.failed ? ` · ${s.failed} failed` : ""}`);
+      if (s.errors?.length) s.errors.slice(0, 3).forEach((e) => toast.error(e, { duration: 8000 }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send mails");
+    } finally {
+      setMailing(false);
     }
   };
 
@@ -121,12 +145,24 @@ export default function WeeklyWorkReportAdminPage() {
           </select>
         )}
         {mode === "date" && (
-          <input
-            type="date"
-            value={weekOf}
-            onChange={(e) => setWeekOf(e.target.value)}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={weekOf}
+              onChange={(e) => setWeekOf(e.target.value)}
+              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+            />
+            {weekOf && (
+              <button onClick={sendMails} disabled={mailing} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
+                {mailing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />} Send status mails (week ending {weekFriday(weekOf)})
+              </button>
+            )}
+          </div>
+        )}
+        {mode === "date" && (
+          <p className="text-[11px] text-[var(--text-secondary)]">
+            Status mails go out automatically every Friday at 4:10 PM. Use the button only if that run was missed — it mails every faculty and HOD again.
+          </p>
         )}
       </div>
 
