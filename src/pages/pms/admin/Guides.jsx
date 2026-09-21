@@ -1,11 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { UserPlus, Users, Trash2, UserCheck, IdCard } from 'lucide-react';
+import { UserPlus, Users, Trash2, UserCheck, IdCard, Pencil, Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, EmptyState, confirmAction } from '../../../components/pms/Common';
 import { getInitial } from '../../../utils/pms/helpers';
+
+const SEMESTERS = [5, 6, 7, 8];
+// Older records hold a single number; newer ones a list.
+const semList = (g) => [].concat(g.assignedSemester ?? []).map(Number).sort((a, b) => a - b);
+const toggleIn = (list, v) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+
+const SemesterPicker = ({ value, onChange }) => (
+  <div className="flex flex-wrap gap-1.5">
+    {SEMESTERS.map((s) => (
+      <label
+        key={s}
+        className={`px-2.5 py-1 rounded-lg border text-xs font-semibold cursor-pointer select-none ${value.includes(s) ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+      >
+        <input type="checkbox" className="hidden" checked={value.includes(s)} onChange={() => onChange(toggleIn(value, s))} />
+        Sem {s}
+      </label>
+    ))}
+  </div>
+);
 
 const Guides = () => {
   const [guides, setGuides] = useState([]);
@@ -13,9 +32,11 @@ const Guides = () => {
   const [faculty, setFaculty] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
-    userIds: [], academicYear: '', assignedSemester: '',
+    userIds: [], academicYear: '', assignedSemesters: [],
   });
   const [submitting, setSubmitting] = useState(false);
+  const [editing, setEditing] = useState(null); // { id, semesters }
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,23 +68,36 @@ const Guides = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.userIds.length === 0) return toast.error('Select at least one faculty member');
+    if (form.assignedSemesters.length === 0) return toast.error('Select at least one semester');
     setSubmitting(true);
     try {
       const results = await Promise.allSettled(
         form.userIds.map((userId) =>
-          adminAPI.assignGuideRole({ userId, academicYear: form.academicYear, assignedSemester: form.assignedSemester })
+          adminAPI.assignGuideRole({ userId, academicYear: form.academicYear, assignedSemesters: form.assignedSemesters })
         )
       );
       const failed = results.filter((r) => r.status === 'rejected');
       if (failed.length === 0) {
         toast.success(`${form.userIds.length} faculty assigned as Project Guide`);
       } else {
-        toast.error(`${form.userIds.length - failed.length} assigned, ${failed.length} failed`);
+        toast.error(`${form.userIds.length - failed.length} assigned, ${failed.length} failed — ${handleError(failed[0].reason)}`);
       }
-      setForm((f) => ({ ...f, userIds: [], assignedSemester: '' }));
+      setForm((f) => ({ ...f, userIds: [], assignedSemesters: [] }));
       fetchData();
     } catch (err) { toast.error(handleError(err)); }
     finally { setSubmitting(false); }
+  };
+
+  const saveSemesters = async () => {
+    if (editing.semesters.length === 0) return toast.error('Keep at least one semester — use the delete button to remove guide access');
+    setSavingEdit(true);
+    try {
+      const { data } = await adminAPI.updateGuideSemesters(editing.id, editing.semesters);
+      setGuides((list) => list.map((g) => (g._id === editing.id ? data.guide : g)));
+      setEditing(null);
+      toast.success('Semesters updated');
+    } catch (err) { toast.error(handleError(err)); }
+    finally { setSavingEdit(false); }
   };
 
   const handleDelete = async (id) => {
@@ -79,7 +113,7 @@ const Guides = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Project Guides</h1>
-        <p className="text-sm text-slate-500 mt-1">Project type auto-mapped from assigned semester.</p>
+        <p className="text-sm text-slate-500 mt-1">A guide can guide in more than one semester. Project type is auto-mapped from each semester.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -102,21 +136,16 @@ const Guides = () => {
                 </div>
                 <p className="form-help">No new account is created — this only grants existing faculty accounts access to PMS as a guide.</p>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="form-label">Academic Year</label>
-                  <select className="form-select" value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} required>
-                    <option value="">Select</option>
-                    {years.map((y) => <option key={y._id} value={y._id}>{y.yearName}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Semester</label>
-                  <select className="form-select" value={form.assignedSemester} onChange={(e) => setForm({ ...form, assignedSemester: e.target.value })} required>
-                    <option value="">Select</option>
-                    <option value="5">5th</option><option value="6">6th</option><option value="7">7th</option><option value="8">8th</option>
-                  </select>
-                </div>
+              <div>
+                <label className="form-label">Academic Year</label>
+                <select className="form-select" value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} required>
+                  <option value="">Select</option>
+                  {years.map((y) => <option key={y._id} value={y._id}>{y.yearName}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="form-label">Semester(s) — select one or more</label>
+                <SemesterPicker value={form.assignedSemesters} onChange={(v) => setForm((f) => ({ ...f, assignedSemesters: v }))} />
               </div>
               <button type="submit" disabled={submitting} className="btn-primary w-full">
                 {submitting ? <Spinner size="sm" className="text-white" /> : `Assign as Guide${form.userIds.length > 1 ? ` (${form.userIds.length})` : ''}`}
@@ -148,8 +177,31 @@ const Guides = () => {
                           </td>
                           <td className="text-slate-500 text-sm">{g.email}</td>
                           <td className="text-sm">{g.mobile || '—'}</td>
-                          <td><span className="badge-info">{g.assignedSemester}th</span></td>
-                          <td><span className="badge-primary">{g.assignedProject?.projectName || '—'}</span></td>
+                          <td>
+                            {editing?.id === g._id ? (
+                              <div className="space-y-1.5">
+                                <SemesterPicker value={editing.semesters} onChange={(v) => setEditing((e) => ({ ...e, semesters: v }))} />
+                                <div className="flex gap-1">
+                                  <button onClick={saveSemesters} disabled={savingEdit} title="Save" className="btn-primary btn-sm">
+                                    {savingEdit ? <Spinner size="sm" className="text-white" /> : <Check className="w-3 h-3" />}
+                                  </button>
+                                  <button onClick={() => setEditing(null)} title="Cancel" className="btn-secondary btn-sm"><X className="w-3 h-3" /></button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap items-center gap-1">
+                                {semList(g).map((s) => <span key={s} className="badge-info">Sem {s}</span>)}
+                                <button onClick={() => setEditing({ id: g._id, semesters: semList(g) })} title="Change semesters" className="text-slate-400 hover:text-brand-600 p-0.5">
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <div className="flex flex-wrap gap-1">
+                              {[].concat(g.assignedProject ?? []).map((p) => <span key={p._id || p} className="badge-primary">{p.projectName || '—'}</span>)}
+                            </div>
+                          </td>
                           <td className="text-sm">{g.academicYear?.yearName}</td>
                           <td className="text-right">
                             <div className="flex justify-end gap-1">

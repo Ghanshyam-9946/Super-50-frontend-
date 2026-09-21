@@ -64,6 +64,7 @@ import StudentAcademicCalendarPage from './pages/student/StudentAcademicCalendar
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
 import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
+import ParentAlertsPage from './pages/admin/ParentAlertsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
 import StudentAssignmentsPage from './pages/student/StudentAssignmentsPage';
@@ -107,7 +108,7 @@ import PMSRoutes from './pages/pms/PMSRoutes';
 // "Academic Coordinator" is usually a plain teacher/guide, not a distinct role.
 const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const { user, token } = useSelector((state) => state.auth);
-  if (!token || !user) return <Navigate to="/" replace />;
+  if (!token || !user) return <Navigate to="/login" replace />;
 
   const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
   const hasRole = allowed.some(role => userRoles.includes(role));
@@ -129,7 +130,7 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
 
 const Super50Guard = ({ children }) => {
   const { user, token } = useSelector((state) => state.auth);
-  if (!token || !user) return <Navigate to="/" replace />;
+  if (!token || !user) return <Navigate to="/login" replace />;
 
   const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
   const isPrivileged = userRoles.some(r => ['admin', 'teacher', 'super50_admin'].includes(r));
@@ -271,6 +272,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/activity-logs" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><ActivityLogsPage /></RoleGuard>
+        } />
+        <Route path="/admin/parent-alerts" element={
+          <RoleGuard allowed={['admin']}><ParentAlertsPage /></RoleGuard>
         } />
         <Route path="/admin/backup-settings" element={
           <RoleGuard allowed={['admin']}><BackupSettingsPage /></RoleGuard>

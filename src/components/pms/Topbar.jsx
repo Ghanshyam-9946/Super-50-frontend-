@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Bell, ChevronDown, LogOut, User as UserIcon, BellOff } from 'lucide-react';
 import { useAuth } from '../../context/pms/AuthContext';
 import { useNotifications } from '../../context/pms/NotificationContext';
-import { getInitial, formatDateTime, cn } from '../../utils/pms/helpers';
+import { getInitial, formatDateTime, cn, notificationHref } from '../../utils/pms/helpers';
 import * as Icons from 'lucide-react';
 
 const NotifIcon = ({ name, className }) => {
@@ -26,7 +26,7 @@ const NotifIcon = ({ name, className }) => {
 
 const Topbar = ({ onToggleSidebar, pageTitle }) => {
   const { user, logout } = useAuth();
-  const { recent, unread, fetchRecent, markAllRead } = useNotifications();
+  const { recent, unread, fetchRecent, markRead, markAllRead } = useNotifications();
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
@@ -42,10 +42,14 @@ const Topbar = ({ onToggleSidebar, pageTitle }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  // Navigate first, then clear auth: both updates land in the same render,
+  // so nothing inside the PMS layout ever renders with a null user.
+  const handleLogout = () => {
+    navigate('/login', { replace: true });
+    logout();
   };
+
+  if (!user) return null;
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-4 lg:px-7 flex items-center justify-between sticky top-0 z-30 shadow-soft">
@@ -100,8 +104,8 @@ const Topbar = ({ onToggleSidebar, pageTitle }) => {
                   recent.map((n) => (
                     <Link
                       key={n._id}
-                      to={n.link || '/notifications'}
-                      onClick={() => setNotifOpen(false)}
+                      to={notificationHref(n)}
+                      onClick={() => { setNotifOpen(false); markRead(n); }}
                       className={cn(
                         'flex gap-3 px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-brand-50/40 transition-colors',
                         !n.isRead && 'bg-brand-50 border-l-4 border-l-brand-600'
@@ -129,7 +133,7 @@ const Topbar = ({ onToggleSidebar, pageTitle }) => {
 
               <div className="px-4 py-2.5 border-t border-slate-100 text-center">
                 <Link
-                  to="/notifications"
+                  to="/pms/notifications"
                   onClick={() => setNotifOpen(false)}
                   className="text-sm font-medium text-brand-600 hover:underline"
                 >
@@ -171,7 +175,7 @@ const Topbar = ({ onToggleSidebar, pageTitle }) => {
                 <div className="text-xs text-slate-500 capitalize">{user.role} account</div>
               </div>
               <Link
-                to="/notifications"
+                to="/pms/notifications"
                 onClick={() => setUserOpen(false)}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-brand-50 hover:text-brand-700"
               >

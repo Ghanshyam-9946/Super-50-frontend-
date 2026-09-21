@@ -19,7 +19,7 @@ export default function Layout({ theme, toggleTheme }) {
     }
   }, [dispatch, token]);
 
-  if (!token || !user) return <Navigate to="/" replace />;
+  if (!token || !user) return <Navigate to="/login" replace />;
 
   // Force password change on first login for students
   if (!user.passwordChanged && user.role === 'student') {

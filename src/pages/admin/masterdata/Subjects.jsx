@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { BookOpen, Plus, Trash2, Loader2, Edit3, X, RefreshCw } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, Edit3, X, RefreshCw, FlaskConical } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../../services/api";
 
@@ -10,7 +10,9 @@ const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: f
 const emptyForm = () => ({
   subjectName: "", subjectCode: "", semester: "", noOfLectures: 0, noOfTheory: 0, noOfPractical: 0, activities: [],
   co1: "", co2: "", co3: "", co4: "", co5: "",
+  labCo1: "", labCo2: "", labCo3: "", labCo4: "", labCo5: "",
 });
+const LAB_CO_KEYS = ["labCo1", "labCo2", "labCo3", "labCo4", "labCo5"];
 // <input type="date"> needs "YYYY-MM-DD" — activity.deadline comes back
 // from the API as a full ISO string (or is null if never set).
 const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
@@ -82,6 +84,8 @@ export default function Subjects() {
       activities: subject.activities.map((a) => ({ ...a })),
       co1: subject.co1 || "", co2: subject.co2 || "", co3: subject.co3 || "",
       co4: subject.co4 || "", co5: subject.co5 || "",
+      labCo1: subject.labCo1 || "", labCo2: subject.labCo2 || "", labCo3: subject.labCo3 || "",
+      labCo4: subject.labCo4 || "", labCo5: subject.labCo5 || "",
     });
   };
 
@@ -95,6 +99,9 @@ export default function Subjects() {
     setSaving(true);
     try {
       const payload = { ...form, semester: Number(form.semester) };
+      // Lab COs only exist on a subject with a lab — the server rejects
+      // them otherwise.
+      if (!(Number(form.noOfPractical) > 0)) LAB_CO_KEYS.forEach((k) => delete payload[k]);
       const { data } = editingId
         ? await api.put(`/master-data/subjects/${editingId}`, payload)
         : await api.post("/master-data/subjects", payload);
@@ -200,7 +207,9 @@ export default function Subjects() {
         />
 
         <div className="space-y-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Course Outcomes (NBA)</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+            {Number(form.noOfPractical) > 0 ? "Theory Course Outcomes (NBA)" : "Course Outcomes (NBA)"}
+          </span>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {[1, 2, 3, 4, 5].map((n) => (
               <label key={n} className="flex flex-col gap-1">
@@ -215,6 +224,27 @@ export default function Subjects() {
             ))}
           </div>
         </div>
+
+        {Number(form.noOfPractical) > 0 && (
+          <div className="space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-1.5">
+              <FlaskConical size={12} /> Lab Course Outcomes (NBA)
+            </span>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <label key={n} className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">Lab CO{n}</span>
+                  <input
+                    value={form[`labCo${n}`]}
+                    onChange={(e) => setForm((f) => ({ ...f, [`labCo${n}`]: e.target.value }))}
+                    placeholder={`Lab Course Outcome ${n}`}
+                    className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
