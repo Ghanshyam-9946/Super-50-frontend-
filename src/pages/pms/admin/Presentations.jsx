@@ -9,8 +9,28 @@ import { downloadFile } from '../../../utils/downloadFile';
 
 const blankForm = {
   academicYear: '', semester: '', presentationTitle: '',
-  presentationNo: '1', presentationDates: [''], totalMarks: '100', criteria: '',
+  presentationNo: '1', presentationDates: [''], totalMarks: '25', criteria: '',
+  kind: 'presentation', guides: [], teams: [],
 };
+
+// Default marks per round: three presentations of 25 and documentation of 25.
+const DEFAULT_MARKS = { presentation: '25', documentation: '25' };
+
+// Multi-select list of guides or groups for the panel.
+const PickList = ({ items, selected, onToggle, empty, render }) => (
+  <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+    {items.length === 0 ? (
+      <p className="text-xs text-slate-400 px-3 py-2">{empty}</p>
+    ) : (
+      items.map((it) => (
+        <label key={it._id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+          <input type="checkbox" checked={selected.includes(it._id)} onChange={() => onToggle(it._id)} />
+          <span className="min-w-0">{render(it)}</span>
+        </label>
+      ))
+    )}
+  </div>
+);
 
 const Presentations = () => {
   const [presentations, setPresentations] = useState([]);
@@ -25,6 +45,8 @@ const Presentations = () => {
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [savingTeamId, setSavingTeamId] = useState(null);
   const [downloadingEvalsId, setDownloadingEvalsId] = useState(null);
+  const [allGuides, setAllGuides] = useState([]);
+  const [allTeams, setAllTeams] = useState([]);
 
   const selectedYear = years.find((y) => y._id === form.academicYear);
   const dateMin = selectedYear?.startDate ? selectedYear.startDate.slice(0, 10) : undefined;
@@ -33,12 +55,16 @@ const Presentations = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [pRes, yRes] = await Promise.all([
+      const [pRes, yRes, gRes, tRes] = await Promise.all([
         adminAPI.listPresentations(),
         adminAPI.listYears(),
+        adminAPI.listGuides(),
+        adminAPI.listTeams(),
       ]);
       setPresentations(pRes.data.presentations);
       setYears(yRes.data.years);
+      setAllGuides(gRes.data.guides || []);
+      setAllTeams(tRes.data.teams || []);
       const active = yRes.data.years.find((y) => y.isActive);
       if (active && !form.academicYear) {
         setForm((f) => ({ ...f, academicYear: active._id }));
@@ -55,6 +81,9 @@ const Presentations = () => {
   const startEdit = (p) => {
     setEditingId(p._id);
     setForm({
+      kind: p.kind || 'presentation',
+      guides: (p.guides || []).map((g) => g._id || g),
+      teams: (p.teams || []).map((t) => t._id || t),
       academicYear: p.academicYear?._id || '',
       semester: String(p.semester),
       presentationTitle: p.presentationTitle,
@@ -105,7 +134,7 @@ const Presentations = () => {
       } else {
         await adminAPI.createPresentation(payload);
         toast.success('Presentation scheduled');
-        setForm({ ...form, presentationTitle: '', presentationDates: [''], criteria: '' });
+        setForm({ ...form, presentationTitle: '', presentationDates: [''], criteria: '', guides: [], teams: [] });
       }
       fetchData();
     } catch (err) {
@@ -201,9 +230,20 @@ const Presentations = () => {
                 <div>
                   <label className="form-label">No.</label>
                   <select className="form-select" value={form.presentationNo} onChange={(e) => setForm({ ...form, presentationNo: e.target.value })} required>
-                    <option>1</option><option>2</option><option>3</option>
+                    <option>1</option><option>2</option><option>3</option><option>4</option>
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="form-label">Round Type</label>
+                <select
+                  className="form-select"
+                  value={form.kind}
+                  onChange={(e) => setForm({ ...form, kind: e.target.value, totalMarks: DEFAULT_MARKS[e.target.value] })}
+                >
+                  <option value="presentation">Presentation (25 marks)</option>
+                  <option value="documentation">Documentation (25 marks)</option>
+                </select>
               </div>
               <div>
                 <label className="form-label">Candidate Date(s)</label>
@@ -240,8 +280,30 @@ const Presentations = () => {
                 )}
               </div>
               <div>
-                <label className="form-label">Total Marks</label>
-                <input type="number" className="form-input" value={form.totalMarks} onChange={(e) => setForm({ ...form, totalMarks: e.target.value })} required />
+                <label className="form-label">Total Marks (per student)</label>
+                <input type="number" min="1" className="form-input" value={form.totalMarks} onChange={(e) => setForm({ ...form, totalMarks: e.target.value })} required />
+              </div>
+              <div>
+                <label className="form-label">Panel — guides who will mark this ({form.guides.length})</label>
+                <PickList
+                  items={allGuides}
+                  selected={form.guides}
+                  onToggle={(id) => setForm((f) => ({ ...f, guides: f.guides.includes(id) ? f.guides.filter((x) => x !== id) : [...f.guides, id] }))}
+                  empty="No guides tagged yet."
+                  render={(g) => <>{g.name} <span className="text-xs text-slate-500">· Sem {[].concat(g.assignedSemester ?? []).join(', ') || '—'}</span></>}
+                />
+                <p className="form-help">Only these guides can give marks for this round. Leave empty to allow every guide of that semester.</p>
+              </div>
+              <div>
+                <label className="form-label">Groups in this round ({form.teams.length})</label>
+                <PickList
+                  items={form.semester ? allTeams.filter((t) => String(t.semester) === String(form.semester)) : allTeams}
+                  selected={form.teams}
+                  onToggle={(id) => setForm((f) => ({ ...f, teams: f.teams.includes(id) ? f.teams.filter((x) => x !== id) : [...f.teams, id] }))}
+                  empty="No teams for this semester yet."
+                  render={(t) => <>{t.groupNo} <span className="text-xs text-slate-500">· {t.groupName}</span></>}
+                />
+                <p className="form-help">Leave empty to include every group of that semester.</p>
               </div>
               <div>
                 <label className="form-label">Criteria</label>

@@ -4,7 +4,7 @@ import {
   Layers, BarChart3, CheckSquare, Settings, GraduationCap,
   CloudUpload, ClipboardCheck, Bell, FileText, BookOpen, Award,
   Code2, TrendingUp, FolderArchive, Activity, CalendarCheck, FileEdit,
-  SlidersHorizontal, ClipboardList, CalendarPlus,
+  SlidersHorizontal, ClipboardList, CalendarPlus, CalendarClock,
 } from 'lucide-react';
 import { useAuth } from '../../context/pms/AuthContext';
 import { useNotifications } from '../../context/pms/NotificationContext';
@@ -18,6 +18,7 @@ const adminNav = [
   { to: '/pms/admin/academic-year', label: 'Academic Year', icon: Calendar },
   { to: '/pms/admin/projects', label: 'Projects', icon: FolderOpen },
   { to: '/pms/admin/presentations', label: 'Presentations', icon: Presentation },
+  { to: '/pms/admin/meetings', label: 'Guide Meetings', icon: CalendarClock },
 
   { section: 'People & Teams' },
   { to: '/pms/admin/guides', label: 'Project Guides', icon: UserCheck },
@@ -66,6 +67,9 @@ const guideNav = [
 
   { section: 'Supervision' },
   { to: '/pms/guide/groups', label: 'My Groups', icon: Layers },
+  { to: '/pms/guide/title-approvals', label: 'Title Approvals', icon: ClipboardCheck },
+  { to: '/pms/guide/meetings', label: 'Guide Meetings', icon: CalendarClock },
+  { to: '/pms/guide/panel-presentations', label: 'Presentation Panel', icon: Presentation },
   { to: '/pms/guide/status', label: 'Project Status', icon: Activity },
   { to: '/pms/guide/attendance', label: 'Attendance', icon: CheckSquare },
 
