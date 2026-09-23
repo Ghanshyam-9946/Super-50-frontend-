@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../context/pms/AuthContext';
 import { useNotifications } from '../../context/pms/NotificationContext';
 import { cn, getInitial } from '../../utils/pms/helpers';
+import { getFileUrl } from '../../utils/imageUrl';
 
 const adminNav = [
   { section: 'Main' },
@@ -141,7 +142,7 @@ const Sidebar = ({ open, onClose }) => {
   };
 
   const nav = getNav();
-  const logoUrl = branding.appLogo ? `/uploads/branding/${branding.appLogo}` : '';
+  const logoUrl = getFileUrl(branding.appLogo, 'branding');
 
   return (
     <>

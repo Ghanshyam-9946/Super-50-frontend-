@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardEdit, FileText, Info, Clock, AlertTriangle } from 'lucide-react';
+import { ClipboardEdit, FileText, Info, Clock, AlertTriangle , BookMarked } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -17,6 +17,7 @@ const deadlineState = (deadline) => {
 
 export default function StudentAssignmentsPage() {
   const [assignments, setAssignments] = useState([]);
+  const [questionBanks, setQuestionBanks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +25,10 @@ export default function StudentAssignmentsPage() {
       setLoading(true);
       try {
         const { data } = await api.get('/master-data/assignments/mine');
-        if (data.success) setAssignments(data.data);
+        if (data.success) {
+          setAssignments(data.data);
+          setQuestionBanks(data.questionBanks || []);
+        }
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to load assignments');
       } finally {
@@ -45,6 +49,35 @@ export default function StudentAssignmentsPage() {
           </p>
         </div>
       </header>
+
+      {!loading && questionBanks.length > 0 && (
+        <div className="glass-card p-5 rounded-2xl space-y-3">
+          <div className="flex items-center gap-2">
+            <BookMarked className="text-[var(--primary)]" size={18} />
+            <h2 className="font-display font-black text-[var(--text-primary)]">Question Banks</h2>
+            <span className="text-xs text-[var(--text-secondary)]">from your subject faculty</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {questionBanks.map((q) => (
+              <a
+                key={q._id}
+                href={getImageUrl(q.url)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] px-3 py-2.5 hover:border-[var(--primary)] transition-colors"
+              >
+                <FileText className="text-[var(--primary)] shrink-0" size={18} />
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-[var(--text-primary)] truncate">{q.title}</div>
+                  <div className="text-[11px] text-[var(--text-secondary)] truncate">
+                    {q.subjectName}{q.subjectCode ? ` (${q.subjectCode})` : ''}{q.faculty ? ` · ${q.faculty.name}` : ''}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="glass-card p-16 flex flex-col items-center justify-center gap-4 rounded-3xl">

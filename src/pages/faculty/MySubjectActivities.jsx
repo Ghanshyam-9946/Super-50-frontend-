@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Plus, Trash2, Loader2, Edit3, X, Paperclip, FileText, FlaskConical } from "lucide-react";
+import { BookOpen, Plus, Trash2, Loader2, Edit3, X, Paperclip, FileText, FlaskConical, BookMarked, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { getImageUrl } from "../../utils/imageUrl";
@@ -7,6 +7,7 @@ import { getImageUrl } from "../../utils/imageUrl";
 const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null, pdfUrl: null, pdfFileName: null });
 const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
 const MAX_PDF_BYTES = 5 * 1024 * 1024;
+const MAX_QB_BYTES = 15 * 1024 * 1024;
 const emptyLabCo = () => ({ labCo1: "", labCo2: "", labCo3: "", labCo4: "", labCo5: "" });
 
 // Lets a Subject Faculty (anyone with a FacultySectionMap row for a
@@ -24,6 +25,7 @@ export default function MySubjectActivities() {
   const [activities, setActivities] = useState([]);
   const [co, setCo] = useState({ co1: "", co2: "", co3: "", co4: "", co5: "" });
   const [labCo, setLabCo] = useState(emptyLabCo);
+  const [qbBusy, setQbBusy] = useState(null); // subjectId being uploaded/deleted
   const [surveyQuestions, setSurveyQuestions] = useState(["", "", "", "", ""]);
   const [saving, setSaving] = useState(false);
   const [uploadingIdx, setUploadingIdx] = useState(null);
@@ -68,6 +70,44 @@ export default function MySubjectActivities() {
 
   const editingSubject = subjects.find((s) => s._id === editingId);
   const isLabSupportOnly = editingSubject?.myRole === "labSupport";
+
+  // Question bank PDFs: uploaded per subject, visible to that subject's students
+  const uploadQuestionBank = async (subject, file) => {
+    if (!file) return;
+    if (file.type !== "application/pdf") return toast.error("Only PDF files are allowed");
+    if (file.size > MAX_QB_BYTES) return toast.error("PDF must be 15MB or smaller");
+    setQbBusy(subject._id);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("title", file.name.replace(/\.pdf$/i, "").slice(0, 60));
+      const { data } = await api.post(`/master-data/subjects/${subject._id}/question-bank`, fd);
+      if (data.success) {
+        replaceSubject(data.data);
+        toast.success("Question bank uploaded — students can see it now");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Upload failed");
+    } finally {
+      setQbBusy(null);
+    }
+  };
+
+  const deleteQuestionBank = async (subject, qb) => {
+    if (!window.confirm(`Delete "${qb.title}"? Students will no longer see it.`)) return;
+    setQbBusy(subject._id);
+    try {
+      const { data } = await api.delete(`/master-data/subjects/${subject._id}/question-bank/${qb._id}`);
+      if (data.success) {
+        replaceSubject(data.data);
+        toast.success("Question bank deleted");
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not delete");
+    } finally {
+      setQbBusy(null);
+    }
+  };
 
   // Server responses don't carry myRole (it's per-viewer) — keep ours.
   const replaceSubject = (updated) =>
@@ -188,6 +228,53 @@ export default function MySubjectActivities() {
                   <button onClick={() => startEdit(s)} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
                     <Edit3 size={12} /> {s.myRole === "labSupport" ? "Manage Lab COs" : "Manage Assessment"}
                   </button>
+                )}
+              </div>
+
+              {/* Question bank — students of this subject can download these */}
+              <div className="mt-3 border-t border-[var(--border-light)] pt-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-1.5">
+                    <BookMarked size={12} /> Question Bank ({(s.questionBanks || []).length})
+                  </span>
+                  <label className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1 cursor-pointer hover:border-[var(--primary)]">
+                    {qbBusy === s._id ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />} Upload PDF
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      className="hidden"
+                      disabled={qbBusy === s._id}
+                      onChange={(e) => {
+                        uploadQuestionBank(s, e.target.files?.[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                {(s.questionBanks || []).length === 0 ? (
+                  <p className="text-[11px] text-[var(--text-secondary)]">
+                    No question bank uploaded yet — students see these on their Assignments page.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {s.questionBanks.map((qb) => (
+                      <div key={qb._id} className="flex items-center gap-2 text-xs bg-[var(--bg-input)] rounded-lg px-3 py-2">
+                        <FileText size={13} className="text-[var(--primary)] shrink-0" />
+                        <a href={getImageUrl(qb.url)} target="_blank" rel="noreferrer" className="font-semibold text-[var(--text-primary)] hover:underline truncate">
+                          {qb.title}
+                        </a>
+                        <span className="text-[var(--text-secondary)] truncate hidden sm:inline">{qb.fileName}</span>
+                        <button
+                          onClick={() => deleteQuestionBank(s, qb)}
+                          disabled={qbBusy === s._id}
+                          title="Delete"
+                          className="ml-auto text-[var(--text-secondary)] hover:text-red-500 disabled:opacity-40"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
