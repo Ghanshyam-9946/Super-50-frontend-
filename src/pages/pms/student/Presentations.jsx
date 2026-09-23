@@ -5,6 +5,7 @@ import { studentAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, EmptyState, StatusBadge } from '../../../components/pms/Common';
 import { formatDate, isPastDate, cn } from '../../../utils/pms/helpers';
+import { getFileUrl } from '../../../utils/imageUrl';
 
 const SubmitForm = ({ presentation, submission, onSubmitted }) => {
   const [pptFile, setPptFile] = useState(null);
@@ -178,14 +179,14 @@ const StudentPresentations = () => {
                 {sub && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 text-sm">
                     {sub.pptFile && (
-                      <a href={`/uploads/presentations/${sub.pptFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                      <a href={getFileUrl(sub.pptFile, 'presentations')} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
                         <FileText className="w-4 h-4 text-brand-600 flex-shrink-0" />
                         <span className="truncate flex-1">PPT File</span>
                         <span className="text-xs text-brand-600">Open ↗</span>
                       </a>
                     )}
                     {sub.reportFile && (
-                      <a href={`/uploads/presentations/${sub.reportFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                      <a href={getFileUrl(sub.reportFile, 'presentations')} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
                         <FileText className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                         <span className="truncate flex-1">Final Report</span>
                         <span className="text-xs text-brand-600">Open ↗</span>

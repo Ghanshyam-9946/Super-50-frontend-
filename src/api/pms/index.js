@@ -65,6 +65,13 @@ export const adminAPI = {
   assignGuide: (teamId, guideIds) => api.put(`/pms/admin/teams/${teamId}/assign-guide`, { guideIds }),
   reviewTeamDetails: (teamId, data) => api.post(`/pms/admin/teams/${teamId}/review-details`, data), // 🆕
 
+  // Guide meetings — Meeting 1/2/3 windows, marks ceiling and progress
+  listMeetings: (params) => api.get('/pms/admin/meetings', { params }),
+  saveMeeting: (data) => api.post('/pms/admin/meetings', data),
+  updateMeeting: (id, data) => api.put(`/pms/admin/meetings/${id}`, data),
+  deleteMeeting: (id, force) => api.delete(`/pms/admin/meetings/${id}${force ? '?force=true' : ''}`),
+  getMeetingStatus: (id) => api.get(`/pms/admin/meetings/${id}/status`),
+
   // Attendance
   attendanceOverview: (params) => api.get('/pms/admin/attendance', { params }),
 
@@ -135,6 +142,7 @@ export const studentAPI = {
   submitDetailsForApproval: () => api.post('/pms/student/team/submit-for-approval'), // 🆕
   searchStudents: (q) => api.get('/pms/student/team/search-students', { params: { q } }),  // 🆕
   getAvailableGuides: () => api.get('/pms/student/available-guides'),
+  getMyMeetings: () => api.get('/pms/student/meetings'),
   proposeLeader: (proposedLeaderId) => api.post('/pms/student/team/propose-leader', { proposedLeaderId }),
   voteLeader: (vote) => api.post('/pms/student/team/vote-leader', { vote }),
   getPresentations: () => api.get('/pms/student/presentations'),
@@ -185,6 +193,15 @@ export const guideAPI = {
   saveRubrics: (data) => api.post('/pms/guide/rubrics', data),
   rubricPdfUrl: (teamId) => `/pms/guide/rubrics/${teamId}/pdf`,
   bulkRubricsPdfUrl: () => `/pms/guide/rubrics-all/pdf`,
+  // Project title / details approval — the guide decides
+  getTitleApprovals: () => api.get('/pms/guide/title-approvals'),
+  reviewTeamDetails: (teamId, data) => api.put(`/pms/guide/teams/${teamId}/review-details`, data),
+  // Guide meetings
+  getMyMeetings: () => api.get('/pms/guide/meetings'),
+  saveMeetingEvaluations: (meetingId, data) => api.post(`/pms/guide/meetings/${meetingId}/evaluate`, data),
+  // Presentation panel
+  getPanelPresentations: () => api.get('/pms/guide/panel-presentations'),
+  savePresentationMarks: (presentationId, data) => api.post(`/pms/guide/presentations/${presentationId}/evaluate`, data),
   // 🆕 Status
   getAllGroupsStatus: () => api.get('/pms/guide/status'),
   getGroupStatus: (teamId) => api.get(`/pms/guide/status/${teamId}`),

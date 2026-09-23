@@ -9,6 +9,7 @@ import { guideAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, StatCard, EmptyState, StatusBadge } from '../../../components/pms/Common';
 import { formatDate, semesterToProject } from '../../../utils/pms/helpers';
+import { getFileUrl } from '../../../utils/imageUrl';
 
 const ReviewForm = ({ submission, presentation, onReviewed }) => {
   const [marks, setMarks] = useState(submission.marksObtained || '');
@@ -279,14 +280,14 @@ const GuideReview = () => {
                     {/* Files */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {submission.pptFile && (
-                        <a href={`/uploads/presentations/${submission.pptFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                        <a href={getFileUrl(submission.pptFile, 'presentations')} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
                           <FileText className="w-4 h-4 text-brand-600 flex-shrink-0" />
                           <span className="truncate flex-1">PPT File</span>
                           <span className="text-xs text-brand-600">Open ↗</span>
                         </a>
                       )}
                       {submission.reportFile && (
-                        <a href={`/uploads/presentations/${submission.reportFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                        <a href={getFileUrl(submission.reportFile, 'presentations')} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
                           <FileText className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                           <span className="truncate flex-1">Final Report</span>
                           <span className="text-xs text-brand-600">Open ↗</span>

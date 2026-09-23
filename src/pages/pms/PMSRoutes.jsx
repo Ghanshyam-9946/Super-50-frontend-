@@ -39,6 +39,10 @@ import GuideGroups from './guide/Groups';
 import GuideReview from './guide/Review';
 import GuideAttendance from './guide/Attendance';
 import GuideReports from './guide/Reports';
+import AdminMeetings from './admin/Meetings';
+import GuideMeetings from './guide/Meetings';
+import GuideTitleApprovals from './guide/TitleApprovals';
+import GuidePanelPresentations from './guide/PanelPresentations';
 import PMSNotifications from './Notifications';
 import GuideRubrics from './guide/Rubrics';
 import GuideStatus from './guide/Status';
@@ -94,6 +98,7 @@ export default function PMSRoutes() {
         <Route path="admin/academic-year" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AcademicYears /></RoleGuard>} />
         <Route path="admin/projects" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Projects /></RoleGuard>} />
         <Route path="admin/presentations" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Presentations /></RoleGuard>} />
+        <Route path="admin/meetings" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AdminMeetings /></RoleGuard>} />
         <Route path="admin/team-config" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><TeamConfig /></RoleGuard>} />
         <Route path="admin/allocation-sheet" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AllocationSheet /></RoleGuard>} />
         <Route path="admin/guides" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Guides /></RoleGuard>} />
@@ -131,6 +136,9 @@ export default function PMSRoutes() {
         <Route path="guide/status" element={<RoleGuard allowed={['guide']}><GuideStatus /></RoleGuard>} />
         <Route path="guide/status/:teamId" element={<RoleGuard allowed={['guide']}><GuideStatusDetail /></RoleGuard>} />
         <Route path="guide/reports" element={<RoleGuard allowed={['guide']}><GuideReports /></RoleGuard>} />
+        <Route path="guide/title-approvals" element={<RoleGuard allowed={['guide']}><GuideTitleApprovals /></RoleGuard>} />
+        <Route path="guide/meetings" element={<RoleGuard allowed={['guide']}><GuideMeetings /></RoleGuard>} />
+        <Route path="guide/panel-presentations" element={<RoleGuard allowed={['guide']}><GuidePanelPresentations /></RoleGuard>} />
 
         {/* Every signed-in PMS user — admin, guide, student */}
         <Route path="notifications" element={<PMSNotifications />} />

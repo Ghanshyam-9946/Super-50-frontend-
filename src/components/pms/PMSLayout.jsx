@@ -14,6 +14,7 @@ const PAGE_TITLES = {
   '/pms/admin/academic-year': 'Academic Year',
   '/pms/admin/projects': 'Projects',
   '/pms/admin/presentations': 'Presentations',
+  '/pms/admin/meetings': 'Guide Meetings',
   '/pms/admin/guides': 'Project Guides',
   '/pms/admin/students': 'Students',
   '/pms/admin/teams': 'Teams & Assign Guide',
@@ -42,6 +43,9 @@ const PAGE_TITLES = {
   '/pms/guide/status': 'Project Status',
   '/pms/guide/attendance': 'Attendance',
   '/pms/guide/reports': 'Reports',
+  '/pms/guide/title-approvals': 'Project Title Approvals',
+  '/pms/guide/meetings': 'Guide Meetings',
+  '/pms/guide/panel-presentations': 'Presentation Panel',
   '/pms/notifications': 'Notifications',
 };
 

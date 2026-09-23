@@ -106,12 +106,10 @@ const TeamConfig = () => {
                 </div>
                 <div>
                   <label className="form-label">Maximum Team Size</label>
-                  <input
-                    type="number" min="1" className="form-input"
-                    value={config.maxTeamSize}
-                    onChange={(e) => setConfig({ ...config, maxTeamSize: Number(e.target.value) })}
-                    required
-                  />
+                  <div className="alert-info text-xs">
+                    Set by the team type the students choose: <strong>SIH — 6 members</strong> (exactly 6 to submit),{' '}
+                    <strong>Non SIH — max 4</strong>. Leader included.
+                  </div>
                 </div>
                 <div>
                   <label className="form-label">Min Teams per Guide (target, optional)</label>

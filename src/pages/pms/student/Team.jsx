@@ -17,6 +17,27 @@ const FE_OPTS = ['HTML-CSS-JAVASCRIPT', 'BOOTSTRAP', 'REACT & ANGULAR', 'FLUTTER
 const BE_OPTS = ['PYTHON', 'PHP', 'JAVA', 'FLASK FRAMEWORK', 'DJANGO FRAMEWORK', 'FIREBASE', 'ASP.NET', 'OTHER'];
 const DB_OPTS = ['MYSQL', 'ORACLE', 'MONGODB', 'OTHER'];
 
+// Member limits per team type, leader included — mirrors the backend's
+// utils/pmsTeamType.js. SIH teams need exactly 6 to submit for approval.
+const TEAM_TYPES = {
+  SIH: { max: 6, required: 6, hint: 'Smart India Hackathon — exactly 6 members (including you)' },
+  'Non SIH': { max: 4, required: null, hint: 'Regular project — up to 4 members (including you)' },
+};
+const maxMembersFor = (type) => TEAM_TYPES[type]?.max ?? 4;
+
+const TeamTypeSelect = ({ value, onChange, required }) => (
+  <div>
+    <label className="form-label">Team Type {required && '*'}</label>
+    <select className="form-select" value={value || ''} onChange={(e) => onChange(e.target.value)} required={required}>
+      {!value && <option value="">Select team type…</option>}
+      {Object.keys(TEAM_TYPES).map((t) => (
+        <option key={t} value={t}>{t} — {t === 'SIH' ? '6 members' : 'max 4 members'}</option>
+      ))}
+    </select>
+    {value && <p className="form-help">{TEAM_TYPES[value].hint}</p>}
+  </div>
+);
+
 // =============== STUDENT PICKER ===============
 // Searches admin-uploaded students (same sem, not in any team, not self)
 const StudentPicker = ({ onPick, excludeIds = [] }) => {
@@ -206,6 +227,7 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
         frontendTech: team.frontendTech || [],
         backendTech: team.backendTech || [],
         database: team.database || [],
+        teamType: team.teamType || 'Non SIH',
         members: (team.members || []).map((m) => ({
           student: m.student,
           enrollmentNo: m.student?.enrollmentNo || '',
@@ -217,27 +239,37 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
   }, [team]);
 
   const toggleArr = (key, value) => setForm((p) => ({ ...p, [key]: toggleIn(p[key], value) }));
+  const maxMembers = maxMembersFor(form.teamType);
+  // SIH only: how many more members before the team can be submitted
+  const stillNeeded = (TEAM_TYPES[form.teamType]?.required || 0) - (form.members?.length || 0);
+
+  const changeTeamType = (type) => {
+    const count = form.members?.length || 0;
+    if (count > maxMembersFor(type)) {
+      toast.error(`${type} teams can have at most ${maxMembersFor(type)} members — remove ${count - maxMembersFor(type)} first`);
+      return;
+    }
+    setForm((p) => ({ ...p, teamType: type }));
+  };
 
   const addMember = (student) => {
-    setForm((p) => {
-      if (p.members.length >= 5) {
-        toast.error('Max 5 members allowed');
-        return p;
-      }
-      if (p.members.find((m) => m.enrollmentNo === student.enrollmentNo)) {
-        toast.error('Already added');
-        return p;
-      }
-      return {
-        ...p,
-        members: [...p.members, {
-          student,
-          enrollmentNo: student.enrollmentNo || student.enrollmentNumber,
-          name: student.name,
-          role: 'Member',
-        }],
-      };
-    });
+    if (form.members.length >= maxMembers) {
+      toast.error(`${form.teamType} teams can have at most ${maxMembers} members`);
+      return;
+    }
+    if (form.members.find((m) => m.enrollmentNo === student.enrollmentNo)) {
+      toast.error('Already added');
+      return;
+    }
+    setForm((p) => ({
+      ...p,
+      members: [...p.members, {
+        student,
+        enrollmentNo: student.enrollmentNo || student.enrollmentNumber,
+        name: student.name,
+        role: 'Member',
+      }],
+    }));
   };
 
   const removeMember = (idx) => {
@@ -275,6 +307,11 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
       toast.error('Pick at least 1 guide preference before submitting');
       return;
     }
+    const required = TEAM_TYPES[form.teamType]?.required;
+    if (submit && required && form.members.length !== required) {
+      toast.error(`${form.teamType} teams need exactly ${required} members to submit — you have ${form.members.length}`);
+      return;
+    }
     if (submit && !hasSavedPrefs && !confirmAction('Submit for admin approval? Your guide preferences cannot be changed after this.')) return;
     setBusy(submit ? 'submit' : 'save');
     try {
@@ -288,6 +325,7 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
         frontendTech: form.frontendTech,
         backendTech: form.backendTech,
         database: form.database,
+        teamType: form.teamType,
         members: form.members.map((m) => ({
           enrollmentNo: m.enrollmentNo,
           role: m.role,
@@ -329,7 +367,8 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
             <label className="form-label">Section</label>
             <input className="form-input" value={form.section || ''} onChange={(e) => setForm({ ...form, section: e.target.value })} placeholder="e.g. A" />
           </div>
-          <div className="md:col-span-2">
+          <TeamTypeSelect value={form.teamType} onChange={changeTeamType} required />
+          <div>
             <label className="form-label">Project Title *</label>
             <input className="form-input" value={form.projectTitle || ''} onChange={(e) => setForm({ ...form, projectTitle: e.target.value })} required />
           </div>
@@ -377,7 +416,10 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
         {/* Members */}
         <div className="border-t border-slate-100 pt-4">
           <h6 className="font-semibold text-sm mb-3 flex items-center justify-between">
-            <span>Team Members ({form.members?.length || 0}/5)</span>
+            <span>
+              Team Members ({form.members?.length || 0}/{maxMembers})
+              {stillNeeded > 0 && <span className="ml-2 badge-warning">{stillNeeded} more needed to submit</span>}
+            </span>
             <span className="text-xs text-slate-500 font-normal">One student = one team only</span>
           </h6>
 
@@ -420,7 +462,7 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
           </div>
 
           {/* Add member picker */}
-          {(form.members?.length || 0) < 5 && (
+          {(form.members?.length || 0) < maxMembers && (
             <div>
               <label className="form-label">Add member (search from admin-uploaded students)</label>
               <StudentPicker onPick={addMember} excludeIds={excludeIds} />
@@ -428,14 +470,21 @@ const TeamDetailsForm = ({ team, currentUser, guides, guidesLocked, onSaved }) =
           )}
         </div>
 
+        {(team.guides || []).length === 0 && (
+          <div className="alert-info text-xs">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            Your guide approves these details, so you can submit once admin allots your guide. Keep saving drafts until then.
+          </div>
+        )}
+
         <div className="border-t border-slate-100 pt-4 flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => save(false)} disabled={!!busy} className="btn-secondary">
             {busy === 'save' ? <Spinner size="sm" /> : <><Save className="w-4 h-4" /> Save Draft</>}
           </button>
-          <button type="submit" disabled={!!busy} className="btn-success">
+          <button type="submit" disabled={!!busy || (team.guides || []).length === 0} className="btn-success">
             {busy === 'submit' ? <Spinner size="sm" className="text-white" /> : <><CheckCircle2 className="w-4 h-4" /> {rejectedResubmit ? 'Save & Resubmit for Approval' : 'Submit for Approval'}</>}
           </button>
-          <span className="text-xs text-slate-500">Submit saves everything above and sends it to admin. You can't edit while it's pending.</span>
+          <span className="text-xs text-slate-500">Submit saves everything above and sends it to your guide. You can't edit while it's pending.</span>
         </div>
       </form>
     </Card>
@@ -600,9 +649,20 @@ const CreateTeamForm = ({ user, onCreated }) => {
     frontendTech: [],
     backendTech: [],
     database: [],
+    teamType: '',
     members: [], // {student, enrollmentNo, name, role}
   });
   const toggleTech = (key, value) => setForm((p) => ({ ...p, [key]: toggleIn(p[key], value) }));
+  // You (the leader) + these members; the limit depends on the team type.
+  const maxOthers = form.teamType ? maxMembersFor(form.teamType) - 1 : 0;
+
+  const changeTeamType = (type) => {
+    if (form.members.length > maxMembersFor(type) - 1) {
+      toast.error(`${type} teams can have at most ${maxMembersFor(type)} members including you — remove ${form.members.length - (maxMembersFor(type) - 1)} first`);
+      return;
+    }
+    setForm((p) => ({ ...p, teamType: type }));
+  };
   const [submitting, setSubmitting] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
   const [guides, setGuides] = useState([]);
@@ -615,8 +675,8 @@ const CreateTeamForm = ({ user, onCreated }) => {
   }, []);
 
   const addMember = (student) => {
-    if (form.members.length >= 4) {
-      toast.error('You + 4 members = max 5. Cannot add more.');
+    if (form.members.length >= maxOthers) {
+      toast.error(`${form.teamType} teams can have at most ${maxOthers + 1} members including you`);
       return;
     }
     if (form.members.find((m) => m.enrollmentNo === student.enrollmentNo)) {
@@ -661,6 +721,10 @@ const CreateTeamForm = ({ user, onCreated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.teamType) {
+      toast.error('Choose the team type — SIH or Non SIH');
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await studentAPI.createTeam({
@@ -689,11 +753,12 @@ const CreateTeamForm = ({ user, onCreated }) => {
     <Card title="Create Your Team" icon={Plus}>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TeamTypeSelect value={form.teamType} onChange={changeTeamType} required />
           <div>
             <label className="form-label">Group Name *</label>
             <input className="form-input" placeholder="e.g. Tech Titans" value={form.groupName} onChange={(e) => setForm({ ...form, groupName: e.target.value })} required />
           </div>
-          <div>
+          <div className="md:col-span-2">
             <label className="form-label">Project Title *</label>
             <input className="form-input" placeholder="e.g. Smart Attendance with Face Recognition" value={form.projectTitle} onChange={(e) => setForm({ ...form, projectTitle: e.target.value })} required />
           </div>
@@ -746,8 +811,14 @@ const CreateTeamForm = ({ user, onCreated }) => {
 
         {/* Members - Picker driven */}
         <div>
-          <h6 className="font-semibold text-sm mb-1">Add Members ({form.members.length}/4 optional)</h6>
-          <p className="text-xs text-slate-500 mb-3">Search students from your semester. Only students uploaded by admin who aren't already in another team will appear.</p>
+          <h6 className="font-semibold text-sm mb-1">
+            Add Members {form.teamType && `(${form.members.length}/${maxOthers}${form.teamType === 'SIH' ? '' : ' optional'})`}
+          </h6>
+          <p className="text-xs text-slate-500 mb-3">
+            {form.teamType === 'SIH'
+              ? 'SIH teams need 6 members including you. You can add them now or later — all 6 are needed before submitting for approval.'
+              : "Search students from your semester. Only students uploaded by admin who aren't already in another team will appear."}
+          </p>
 
           {form.members.length > 0 && (
             <div className="space-y-2 mb-3">
@@ -778,7 +849,9 @@ const CreateTeamForm = ({ user, onCreated }) => {
             </div>
           )}
 
-          {form.members.length < 4 && (
+          {!form.teamType ? (
+            <div className="alert-info text-xs"><Info className="w-4 h-4 flex-shrink-0" /> Choose the team type first — it decides how many members you can add.</div>
+          ) : form.members.length < maxOthers && (
             <StudentPicker onPick={addMember} excludeIds={excludeIds} />
           )}
         </div>
@@ -830,7 +903,7 @@ const StudentTeam = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Create Your Team</h1>
-          <p className="text-sm text-slate-500 mt-1">Form a team with up to 5 members. You'll be the leader. Each student can only join one team.</p>
+          <p className="text-sm text-slate-500 mt-1">Choose SIH (6 members) or Non SIH (up to 4 members). You'll be the leader. Each student can only join one team.</p>
         </div>
         <CreateTeamForm user={user} onCreated={refresh} />
       </div>
@@ -842,7 +915,7 @@ const StudentTeam = () => {
   const canEditDetails = !team.isLocked && approvalStatus !== 'pending' && approvalStatus !== 'approved';
   const APPROVAL_BADGE = {
     draft: <span className="badge-secondary">Draft</span>,
-    pending: <span className="badge-warning"><Clock className="w-3 h-3" /> Pending Admin Approval</span>,
+    pending: <span className="badge-warning"><Clock className="w-3 h-3" /> Pending Guide Approval</span>,
     approved: <span className="badge-success"><CheckCircle2 className="w-3 h-3" /> Approved — Final</span>,
     rejected: <span className="badge-danger"><XCircle className="w-3 h-3" /> Rejected — Revise &amp; Resubmit</span>,
   };
@@ -891,12 +964,13 @@ const StudentTeam = () => {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
           My Team
+          <span className={team.teamType === 'SIH' ? 'badge-primary' : 'badge-info'}>{team.teamType || 'Non SIH'}</span>
           {team.isLocked && <span className="badge-secondary"><Lock className="w-3 h-3" /> Locked by Admin</span>}
           {APPROVAL_BADGE[approvalStatus]}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
           {canEditDetails
-            ? 'Fill in your project details below, then click Submit for Approval — it saves and sends them to admin in one go.'
+            ? 'Fill in your project details below, then click Submit for Approval — it saves and sends them to your guide in one go.'
             : 'All your team details.'}
         </p>
       </div>
@@ -915,8 +989,8 @@ const StudentTeam = () => {
         <div className="alert-warning">
           <Clock className="w-5 h-5 flex-shrink-0" />
           <div>
-            <strong>Your project details are pending admin approval.</strong>
-            <p className="text-xs mt-1">You can't edit them until admin approves or rejects the submission.</p>
+            <strong>Your project details are with your guide for approval.</strong>
+            <p className="text-xs mt-1">You can't edit them until your guide approves or rejects the submission.</p>
           </div>
         </div>
       )}
@@ -935,7 +1009,7 @@ const StudentTeam = () => {
         <div className="alert-danger">
           <XCircle className="w-5 h-5 flex-shrink-0" />
           <div>
-            <strong>Your project details were rejected by admin.</strong>
+            <strong>Your project details were rejected by your guide.</strong>
             <p className="text-xs mt-1">Reason: "{team.detailsRejectionReason}"</p>
             <p className="text-xs mt-1">Fix the details below, then click Save &amp; Resubmit for Approval.</p>
           </div>

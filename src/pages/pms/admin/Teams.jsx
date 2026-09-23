@@ -17,6 +17,9 @@ const DB_OPTS = ['MYSQL', 'ORACLE', 'MONGODB', 'OTHER'];
 const ROLES = ['Leader', 'Frontend', 'Backend', 'Database', 'Tester', 'Documentation', 'Member'];
 
 // ============= EDIT TEAM MODAL =============
+// Member limit per team type, leader included (backend: utils/pmsTeamType.js)
+const TEAM_TYPE_MAX = { SIH: 6, 'Non SIH': 4 };
+
 const EditTeamModal = ({ open, onClose, team, onSaved }) => {
   const [form, setForm] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +49,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         frontendTech: team.frontendTech || [],
         backendTech: team.backendTech || [],
         database: team.database || [],
+        teamType: team.teamType || 'Non SIH',
         members: initMembers,
       });
       setPickerQuery('');
@@ -87,8 +91,8 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         toast.error('Member already added');
         return p;
       }
-      if (p.members.length >= 5) {
-        toast.error('Max 5 members');
+      if (p.members.length >= (TEAM_TYPE_MAX[p.teamType] || 4)) {
+        toast.error(`${p.teamType} teams can have at most ${TEAM_TYPE_MAX[p.teamType] || 4} members`);
         return p;
       }
       return {
@@ -184,6 +188,16 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
             <label className="form-label">Section</label>
             <input className="form-input" value={form.section || ''} onChange={(e) => setForm({ ...form, section: e.target.value })} placeholder="e.g. A" />
           </div>
+          <div>
+            <label className="form-label">Team Type</label>
+            <select className="form-select" value={form.teamType || 'Non SIH'} onChange={(e) => setForm({ ...form, teamType: e.target.value })}>
+              <option value="SIH">SIH — 6 members</option>
+              <option value="Non SIH">Non SIH — max 4 members</option>
+            </select>
+            {(form.members?.length || 0) > (TEAM_TYPE_MAX[form.teamType] || 4) && (
+              <p className="form-help text-rose-600">Too many members for {form.teamType} — remove {(form.members?.length || 0) - (TEAM_TYPE_MAX[form.teamType] || 4)} before saving.</p>
+            )}
+          </div>
           <div className="sm:col-span-2">
             <label className="form-label">Project Title</label>
             <input className="form-input" value={form.projectTitle || ''} onChange={(e) => setForm({ ...form, projectTitle: e.target.value })} required />
@@ -272,7 +286,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
         {/* Members */}
         <div className="border-t border-slate-100 pt-4">
           <h6 className="font-semibold text-sm mb-3 text-slate-700 flex items-center justify-between">
-            <span>Team Members ({form.members?.length || 0}/5)</span>
+            <span>Team Members ({form.members?.length || 0}/{TEAM_TYPE_MAX[form.teamType] || 4})</span>
             <span className="text-xs text-slate-500 font-normal">From admin-uploaded students only</span>
           </h6>
 
@@ -311,7 +325,7 @@ const EditTeamModal = ({ open, onClose, team, onSaved }) => {
           </div>
 
           {/* Picker */}
-          {(form.members?.length || 0) < 5 && (
+          {(form.members?.length || 0) < (TEAM_TYPE_MAX[form.teamType] || 4) && (
             <div className="relative">
               <label className="form-label">Add member (search admin-uploaded students)</label>
               <div className="flex gap-2">
@@ -670,7 +684,12 @@ const Teams = () => {
                             <div className="mt-0.5"><span className="badge-danger text-[10px]">Rejected — Resubmit Pending</span></div>
                           )}
                         </td>
-                        <td><span className="badge-info">{t.semester}th</span></td>
+                        <td>
+                          <div className="flex flex-col items-start gap-1">
+                            <span className="badge-info">{t.semester}th</span>
+                            <span className={t.teamType === 'SIH' ? 'badge-primary' : 'badge-secondary'}>{t.teamType || 'Non SIH'}</span>
+                          </div>
+                        </td>
                         <td><span className="badge-primary">{t.project?.projectName}</span></td>
                         <td><span className="badge-secondary">{t.members?.length || 0}</span></td>
                         <td>
