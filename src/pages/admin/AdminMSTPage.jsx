@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { Upload, FileSpreadsheet, CheckCircle, Loader2, Info, FileText, Trash2, RefreshCw, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import BatchSelect from '../../components/BatchSelect';
 
 const AdminMSTPage = () => {
   const { user } = useSelector((state) => state.auth);
@@ -103,14 +104,6 @@ const AdminMSTPage = () => {
 
   const uniqueSubjects = getUniqueSubjects();
 
-  const getUniqueBatches = () => {
-    const batches = new Set();
-    studentResults.forEach(r => {
-      if (r.studentId?.batch) batches.add(r.studentId.batch);
-    });
-    return Array.from(batches).sort();
-  };
-
   const getUniqueSemesters = () => {
     const sems = new Set();
     studentResults.forEach(r => {
@@ -119,7 +112,6 @@ const AdminMSTPage = () => {
     return Array.from(sems).sort((a,b) => a - b);
   };
 
-  const dynamicBatches = getUniqueBatches();
   const dynamicSemesters = getUniqueSemesters();
 
   const filteredResults = studentResults.filter(res => {
@@ -299,16 +291,12 @@ const AdminMSTPage = () => {
               <h3 className="text-lg font-bold text-[var(--text-primary)]">Student Scores List</h3>
               
               <div className="flex flex-col sm:flex-row gap-3">
-                <select
+                <BatchSelect
                   value={filterBatch}
                   onChange={(e) => setFilterBatch(e.target.value)}
+                  placeholder="All Batches"
                   className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-primary)]"
-                >
-                  <option className="bg-[var(--bg-app)] text-[var(--text-primary)]" value="">All Batches</option>
-                  {dynamicBatches.map(b => (
-                    <option className="bg-[var(--bg-app)] text-[var(--text-primary)]" key={b} value={b}>{b}</option>
-                  ))}
-                </select>
+                />
 
                 <select
                   value={filterSem}

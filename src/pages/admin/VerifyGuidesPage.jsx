@@ -10,6 +10,7 @@ const PRESET_RESPONSIBILITIES = [
   'T&P Head',
   'Super 50 Mentor',
   'Academic Coordinator',
+  'Project Coordinator', // full PMS admin access (see routes/pms/adminRoutes.js)
   'Placement Coordinator',
   'Exam Coordinator',
   'Club Coordinator'

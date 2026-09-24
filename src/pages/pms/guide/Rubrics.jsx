@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ChevronLeft, Award, Save, FileText, Users, Crown, Calculator,
-  AlertTriangle, Info,
+  AlertTriangle, Info, CalendarClock, Wand2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState } from '../../../components/pms/Common';
 
 // Columns: P1=5, P2=5, P3=5, P4=15, P5=20 → Total 50
@@ -25,8 +26,13 @@ const GuideRubrics = () => {
   const [team, setTeam] = useState(null);
   const [data, setData] = useState({}); // { studentId: { marks: {...}, comment: '' } }
   const [attendanceMap, setAttendanceMap] = useState({}); // 🆕
+  // Marks derived from the three guide meetings: each student's meeting
+  // total spread across the criteria below in proportion to their maximums.
+  const [fromMeetings, setFromMeetings] = useState({});
+  const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -34,6 +40,8 @@ const GuideRubrics = () => {
       const res = await guideAPI.getRubrics(teamId);
       setTeam(res.data.team);
       setAttendanceMap(res.data.attendanceMap || {});
+      setFromMeetings(res.data.fromMeetings || {});
+      setMeetings(res.data.meetings || []);
 
       // Build student-id-keyed map from existing evaluations
       const map = {};
@@ -62,6 +70,15 @@ const GuideRubrics = () => {
           };
         }
       });
+      // Start empty cells off with what the meetings work out to; the
+      // guide can still type over any of them before saving.
+      const derived = res.data.fromMeetings || {};
+      Object.keys(map).forEach((sid) => {
+        const suggested = derived[sid]?.suggested;
+        if (!suggested) return;
+        const untouched = Object.values(map[sid].marks).every((v) => v === '' || v === null);
+        if (untouched) map[sid] = { ...map[sid], marks: { ...suggested } };
+      });
       setData(map);
     } catch (err) {
       toast.error(handleError(err));
@@ -88,6 +105,21 @@ const GuideRubrics = () => {
       ...p,
       [studentId]: { ...p[studentId], comment },
     }));
+  };
+
+  // Re-apply the meeting-based distribution to every student, replacing
+  // whatever is in the cells now.
+  const fillFromMeetings = () => {
+    const filled = Object.entries(fromMeetings).filter(([, v]) => v.suggested);
+    if (filled.length === 0) return toast.error('No meeting marks recorded yet');
+    setData((p) => {
+      const next = { ...p };
+      filled.forEach(([sid, v]) => {
+        if (next[sid]) next[sid] = { ...next[sid], marks: { ...v.suggested } };
+      });
+      return next;
+    });
+    toast.success(`Filled from meeting marks for ${filled.length} student(s)`);
   };
 
   const handleSave = async () => {
@@ -126,14 +158,22 @@ const GuideRubrics = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <a
-            href={guideAPI.rubricPdfUrl(teamId)}
-            target="_blank"
-            rel="noreferrer"
+          <button
             className="btn-outline"
+            disabled={downloadingPdf}
+            onClick={async () => {
+              setDownloadingPdf(true);
+              try {
+                await downloadFile(guideAPI.rubricPdfUrl(teamId), `rubric_${team.groupNo}.pdf`);
+              } catch (err) {
+                toast.error(handleError(err));
+              } finally {
+                setDownloadingPdf(false);
+              }
+            }}
           >
-            <FileText className="w-4 h-4" /> Download PDF
-          </a>
+            {downloadingPdf ? <Spinner size="sm" /> : <><FileText className="w-4 h-4" /> Download PDF</>}
+          </button>
         </div>
       </div>
 
@@ -149,17 +189,74 @@ const GuideRubrics = () => {
             <div className="font-semibold mt-1">{team.semester}th — {team.project?.projectName}</div>
           </div>
           <div>
-            <div className="text-xs text-slate-500 uppercase tracking-wider">Guide</div>
-            <div className="font-semibold mt-1">{team.guide?.name}</div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider">Guide{(team.guides || []).length > 1 ? 's' : ''}</div>
+            <div className="font-semibold mt-1">{(team.guides || []).map((g) => g.name).join(', ')}</div>
           </div>
         </div>
       </Card>
+
+      {/* Meeting marks → rubric distribution */}
+      {meetings.length > 0 && (
+        <Card
+          title="From Guide Meetings"
+          icon={CalendarClock}
+          action={<button onClick={fillFromMeetings} className="btn-outline btn-sm"><Wand2 className="w-3 h-3" /> Fill rubric from meetings</button>}
+          noPadding
+        >
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  {meetings.map((m) => (
+                    <th key={m._id} className="text-center">
+                      {m.title || `Meeting ${m.meetingNo}`}
+                      <div className="text-[10px] font-normal text-slate-400">({m.maxMarks})</div>
+                    </th>
+                  ))}
+                  <th className="text-center">Meeting Total</th>
+                  <th className="text-center">→ Rubric</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m) => {
+                  const sid = m.student._id;
+                  const info = fromMeetings[sid];
+                  return (
+                    <tr key={sid}>
+                      <td className="font-medium">{m.student.name}</td>
+                      {meetings.map((mt) => {
+                        const row = info?.perMeeting?.find((x) => String(x.meeting) === String(mt._id));
+                        return (
+                          <td key={mt._id} className="text-center">
+                            {row?.marks ?? null} {row?.marks == null && <span className="text-slate-400">—</span>}
+                          </td>
+                        );
+                      })}
+                      <td className="text-center font-bold">
+                        {info?.obtained != null ? `${info.obtained} / ${info.outOf}` : <span className="text-slate-400">—</span>}
+                      </td>
+                      <td className="text-center text-xs text-slate-500">
+                        {info?.suggested
+                          ? COLS.map((c) => info.suggested[c.key]).join(' · ')
+                          : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Info bar */}
       <div className="alert-info text-sm">
         <Info className="w-4 h-4 flex-shrink-0" />
         <div>
-          Enter marks per student per rubric criterion. Maximum: P1–P3 = 5 each, P4 = 15, P5 = 20. Total per student = 50.
+          {meetings.length > 0
+            ? 'Marks are filled in from the guide meetings — each student\'s meeting total is spread across the criteria below in proportion to their maximums. Change any cell before saving if you want to.'
+            : 'Enter marks per student per rubric criterion. Maximum: P1–P3 = 5 each, P4 = 15, P5 = 20. Total per student = 50.'}
         </div>
       </div>
 

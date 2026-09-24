@@ -48,6 +48,27 @@ export default function StudentTimetablePage() {
 
   const pdfUrl = timetable ? getImageUrl(timetable.pdfUrl) : '';
 
+  // A plain `<a download>` is silently ignored by browsers when the href is
+  // cross-origin (the backend's own static-file origin, not this page's) —
+  // fetching the blob ourselves and saving it via a same-origin object URL
+  // makes the actual download work.
+  const downloadPdf = async () => {
+    try {
+      const res = await fetch(pdfUrl);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = timetable.pdfFileName || "Timetable.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Failed to download timetable");
+    }
+  };
+
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-4 p-8 rounded-3xl">
@@ -60,13 +81,12 @@ export default function StudentTimetablePage() {
           </p>
         </div>
         {timetable && (
-          <a
-            href={pdfUrl}
-            download={timetable.pdfFileName || 'Timetable.pdf'}
+          <button
+            onClick={downloadPdf}
             className="btn-premium flex items-center gap-2 text-xs self-start md:self-auto"
           >
             <Download size={16} /> Download PDF
-          </a>
+          </button>
         )}
       </header>
 

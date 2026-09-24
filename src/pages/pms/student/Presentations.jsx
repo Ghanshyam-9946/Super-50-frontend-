@@ -5,6 +5,7 @@ import { studentAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, EmptyState, StatusBadge } from '../../../components/pms/Common';
 import { formatDate, isPastDate, cn } from '../../../utils/pms/helpers';
+import { getFileUrl } from '../../../utils/imageUrl';
 
 const SubmitForm = ({ presentation, submission, onSubmitted }) => {
   const [pptFile, setPptFile] = useState(null);
@@ -130,7 +131,7 @@ const StudentPresentations = () => {
         <div className="space-y-4">
           {presentations.map((p) => {
             const sub = submissions[p._id];
-            const isOpen = isPastDate(p.presentationDate);
+            const isOpen = p.assignedDate ? isPastDate(p.assignedDate) : false;
             const isLocked = sub?.isLocked;
 
             return (
@@ -142,7 +143,7 @@ const StudentPresentations = () => {
                       {isLocked && <span className="badge-success"><Lock className="w-3 h-3" /> Locked</span>}
                     </h3>
                     <div className="text-sm text-slate-500 flex items-center gap-3 flex-wrap">
-                      <span><Calendar className="w-3 h-3 inline mr-1" /> {formatDate(p.presentationDate)}</span>
+                      <span><Calendar className="w-3 h-3 inline mr-1" /> {p.assignedDate ? formatDate(p.assignedDate) : 'Date not yet assigned'}</span>
                       <span>•</span>
                       <span>Marks: <strong>{p.totalMarks}</strong></span>
                       <span>•</span>
@@ -152,13 +153,24 @@ const StudentPresentations = () => {
                   {sub && <StatusBadge status={sub.status} />}
                 </div>
 
+                {/* No date assigned yet */}
+                {!p.assignedDate && (
+                  <div className="alert-warning text-sm">
+                    <Lock className="w-4 h-4 flex-shrink-0" />
+                    <div>
+                      <strong>Your group's presentation date hasn't been assigned yet.</strong>
+                      <div className="text-xs mt-0.5">Check back once admin assigns a date to your group.</div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Locked window */}
-                {!isOpen && (
+                {p.assignedDate && !isOpen && (
                   <div className="alert-warning text-sm">
                     <Lock className="w-4 h-4 flex-shrink-0" />
                     <div>
                       <strong>Submission window not open yet.</strong>
-                      <div className="text-xs mt-0.5">Opens on {formatDate(p.presentationDate)}</div>
+                      <div className="text-xs mt-0.5">Opens on {formatDate(p.assignedDate)}</div>
                     </div>
                   </div>
                 )}
@@ -167,14 +179,14 @@ const StudentPresentations = () => {
                 {sub && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 text-sm">
                     {sub.pptFile && (
-                      <a href={`/uploads/presentations/${sub.pptFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                      <a href={getFileUrl(sub.pptFile, 'presentations')} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
                         <FileText className="w-4 h-4 text-brand-600 flex-shrink-0" />
                         <span className="truncate flex-1">PPT File</span>
                         <span className="text-xs text-brand-600">Open ↗</span>
                       </a>
                     )}
                     {sub.reportFile && (
-                      <a href={`/uploads/presentations/${sub.reportFile}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
+                      <a href={getFileUrl(sub.reportFile, 'presentations')} target="_blank" rel="noreferrer" className="flex items-center gap-2 p-2.5 bg-slate-50 hover:bg-slate-100 rounded-lg">
                         <FileText className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                         <span className="truncate flex-1">Final Report</span>
                         <span className="text-xs text-brand-600">Open ↗</span>

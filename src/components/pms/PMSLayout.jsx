@@ -1,6 +1,8 @@
-import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { NotificationProvider } from '../../context/pms/NotificationContext';
+import { fetchMe } from '../../features/auth/authSlice';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import './pms.css';
@@ -12,10 +14,10 @@ const PAGE_TITLES = {
   '/pms/admin/academic-year': 'Academic Year',
   '/pms/admin/projects': 'Projects',
   '/pms/admin/presentations': 'Presentations',
+  '/pms/admin/meetings': 'Guide Meetings',
   '/pms/admin/guides': 'Project Guides',
   '/pms/admin/students': 'Students',
   '/pms/admin/teams': 'Teams & Assign Guide',
-  '/pms/admin/promote': 'Promote Students',
   '/pms/admin/attendance': 'Daily Attendance',
   '/pms/admin/semester-attendance': 'Semester Attendance',
   '/pms/admin/reports': 'Reports',
@@ -41,16 +43,32 @@ const PAGE_TITLES = {
   '/pms/guide/status': 'Project Status',
   '/pms/guide/attendance': 'Attendance',
   '/pms/guide/reports': 'Reports',
+  '/pms/guide/title-approvals': 'Project Title Approvals',
+  '/pms/guide/meetings': 'Guide Meetings',
+  '/pms/guide/panel-presentations': 'Presentation Panel',
+  '/pms/notifications': 'Notifications',
 };
 
 const PMSLayoutInner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { token, user } = useSelector((s) => s.auth);
+  const dispatch = useDispatch();
+
+  // Same refresh the main Layout does — keeps user.pmsProject current when
+  // someone lands on /pms directly (it decides whether a student may be here).
+  useEffect(() => {
+    if (token) dispatch(fetchMe());
+  }, [dispatch, token]);
+
+  // Signed out (or never signed in): leave before Sidebar/Topbar render —
+  // they read user.name etc. and would crash the whole app on a null user.
+  if (!token || !user) return <Navigate to="/login" replace />;
 
   const pageTitle = PAGE_TITLES[location.pathname] || 'PMS Portal';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 relative z-10">
+    <div className="pms-root min-h-screen bg-slate-50 text-slate-900 relative z-10">
       {/* PMS Sidebar — fixed positioned, w-64 on desktop */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -63,8 +81,10 @@ const PMSLayoutInner = () => {
         />
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-7">
-          <Outlet />
+        <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 lg:p-8">
+          <div key={location.pathname} className="pms-page">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

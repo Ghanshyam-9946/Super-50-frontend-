@@ -53,6 +53,13 @@ const StudentAMCATPage = () => {
   const activeResult = results[selectedResultIndex];
   const scores = activeResult?.scores || {};
   const scoreEntries = Object.entries(scores);
+  // Each topic is out of 100, but topic count varies per semester's
+  // uploaded sheet — so the aggregate "Total" entry's correct denominator
+  // is (topic count) * 100, not a flat 100.
+  const topicCount = scoreEntries.filter(([k]) => {
+    const key = k.toLowerCase();
+    return !key.includes('id') && !key.includes('enrollment') && !key.includes('roll') && !key.includes('total');
+  }).length;
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
@@ -141,6 +148,7 @@ const StudentAMCATPage = () => {
                     const numericScore = Number(score);
                     const isTotal = subject.toLowerCase().includes('total');
                     const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
+                    const denominator = isTotal ? topicCount * 100 : 100;
                     const isPercentage = !isTotal && !isIdKey && !isNaN(numericScore) && numericScore <= 100 && numericScore >= 0;
                     
                     return (
@@ -168,8 +176,8 @@ const StudentAMCATPage = () => {
                             <span className="font-black text-lg text-[var(--text-primary)]">
                               {score}
                             </span>
-                            {!isTotal && !isIdKey && !isNaN(numericScore) && numericScore <= 100 && (
-                              <span className="text-[10px] text-[var(--text-secondary)] font-bold ml-1">/ 100</span>
+                            {!isIdKey && !isNaN(numericScore) && denominator > 0 && (isTotal || numericScore <= 100) && (
+                              <span className="text-[10px] text-[var(--text-secondary)] font-bold ml-1">/ {denominator}</span>
                             )}
                           </div>
                         </div>

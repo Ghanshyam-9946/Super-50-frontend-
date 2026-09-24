@@ -1,4 +1,5 @@
 import { Instagram, Linkedin, Twitter, MapPin, Phone, Mail } from "lucide-react";
+import sistecLogo from "../assets/SISTec_Logo.png";
 
 export function Footer() {
   return (
@@ -13,7 +14,7 @@ export function Footer() {
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="bg-white p-2 rounded-xl h-14 w-14 flex items-center justify-center shadow-lg shadow-black/20">
-                <img src="/upload/SISTec_Logo.png" alt="SISTec Logo" className="h-10 w-10 object-contain" />
+                <img src={sistecLogo} alt="SISTec Logo" className="h-10 w-10 object-contain" />
               </div>
               <div>
                 <h3 className="text-2xl font-[900] tracking-tight text-white font-display leading-none">
@@ -88,7 +89,7 @@ export function Footer() {
                   <Mail className="h-5 w-5" />
                 </div>
                 <a href="mailto:seogn@sistec.ac.in" className="text-sm text-slate-400 hover:text-white transition-colors duration-200 font-medium">
-                  scope@sistec.ac.in
+                  mile@sistec.ac.in
                 </a>
               </li>
             </ul>
