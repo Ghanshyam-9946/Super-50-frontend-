@@ -59,6 +59,8 @@ import AdminRGPVPage from './pages/admin/AdminRGPVPage';
 import StudentRGPVPage from './pages/student/StudentRGPVPage';
 import TimetableManagePage from './pages/admin/TimetableManagePage';
 import StudentTimetablePage from './pages/student/StudentTimetablePage';
+import FacultyTimetablePage from './pages/faculty/FacultyTimetablePage';
+import NotificationsPage from './pages/NotificationsPage';
 import AcademicCalendarManagePage from './pages/admin/AcademicCalendarManagePage';
 import StudentAcademicCalendarPage from './pages/student/StudentAcademicCalendarPage';
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
@@ -231,6 +233,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/student/academic-calendar" element={
           <RoleGuard allowed={['student']}><StudentAcademicCalendarPage /></RoleGuard>
+        } />
+        <Route path="/faculty/timetable" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><FacultyTimetablePage /></RoleGuard>
         } />
         <Route path="/faculty/academic-calendar" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><StudentAcademicCalendarPage /></RoleGuard>
@@ -455,6 +460,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/faculty/calendar-reminders" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><CalendarRemindersPage /></RoleGuard>
+        } />
+        <Route path="/notifications" element={
+          <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><NotificationsPage /></RoleGuard>
         } />
         <Route path="/sticky-notes" element={
           <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><StickyNotesPage /></RoleGuard>

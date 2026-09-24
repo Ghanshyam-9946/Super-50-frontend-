@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProfileEditModal from './ProfileEditModal';
 import { getImageUrl } from '../utils/imageUrl';
+import NotificationBell from './NotificationBell';
 
 const Sidebar = ({ theme, toggleTheme }) => {
   const { user } = useSelector((state) => state.auth);
@@ -91,6 +92,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
       { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
       { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+      { to: '/faculty/timetable', icon: CalendarClock, label: 'Time Table' },
       { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     ] },
     { category: 'My Work', links: [
@@ -135,6 +137,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
       { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
       { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
+      { to: '/faculty/timetable', icon: CalendarClock, label: 'Time Table' },
       { to: '/faculty/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
     ] },
     { category: 'My Work', links: [
@@ -385,6 +388,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
+      </div>
+
+      {/* Notifications — same inbox for every role */}
+      <div className={collapsed ? 'px-3 pt-2' : 'px-6 pt-2'}>
+        <NotificationBell collapsed={collapsed} />
       </div>
 
       {/* Menu search */}
