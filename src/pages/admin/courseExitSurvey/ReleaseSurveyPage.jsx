@@ -15,6 +15,7 @@ export default function ReleaseSurveyPage() {
   const [sections, setSections] = useState([]);
   const [subjectOptions, setSubjectOptions] = useState([]);
   const [subjectIds, setSubjectIds] = useState([]);
+  const [kind, setKind] = useState('theory'); // theory and lab are surveyed separately
   const [releasing, setReleasing] = useState(false);
   const [releases, setReleases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +76,7 @@ export default function ReleaseSurveyPage() {
         semester: Number(semester),
         sections,
         subjectIds,
+        kind,
       });
       if (data.success) {
         toast.success(data.message || "Course Exit Survey released");
@@ -134,6 +136,17 @@ export default function ReleaseSurveyPage() {
             <BatchSelect value={batch} onChange={(e) => setBatch(e.target.value)} />
           </label>
           <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+            Survey For
+            <select
+              value={kind}
+              onChange={(e) => { setKind(e.target.value); setSubjectIds([]); }}
+              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="theory">Theory</option>
+              <option value="lab">Lab</option>
+            </select>
+          </label>
+          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
             Semester
             <select
               value={semester}
@@ -180,7 +193,7 @@ export default function ReleaseSurveyPage() {
               </p>
             ) : (
               subjectOptions.map((s) => {
-                const questionCount = (s.surveyQuestions || []).filter((q) => q && q.trim()).length;
+                const questionCount = ((kind === 'lab' ? s.labSurveyQuestions : s.surveyQuestions) || []).filter((q) => q && q.trim()).length;
                 return (
                   <label key={s._id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm cursor-pointer hover:bg-[var(--bg-hover)]">
                     <input type="checkbox" checked={subjectIds.includes(s._id)} onChange={() => toggleSubject(s._id)} />
@@ -231,7 +244,9 @@ export default function ReleaseSurveyPage() {
             <tbody>
               {releases.map((r) => (
                 <tr key={r._id} className="border-b border-[var(--border-light)]">
-                  <td className="px-4 py-3 font-bold text-[var(--text-primary)]">{r.title}</td>
+                  <td className="px-4 py-3 font-bold text-[var(--text-primary)]">{r.title}{(r.kind || 'theory') === 'lab'
+                      ? <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500">LAB</span>
+                      : <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">THEORY</span>}</td>
                   <td className="px-4 py-3 text-[var(--text-secondary)]">
                     {r.batch} · Sem {r.semester} · {r.sections.join(", ")}
                   </td>

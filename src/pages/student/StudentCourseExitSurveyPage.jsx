@@ -142,7 +142,12 @@ export default function StudentCourseExitSurveyPage() {
         pending.map((entry) => (
           <div key={entry.release._id} className="glass-card p-5 rounded-2xl space-y-4">
             <div>
-              <h2 className="font-display font-bold text-base text-[var(--text-primary)]">{entry.release.title}</h2>
+              <h2 className="font-display font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+                {entry.release.title}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(entry.release.kind || 'theory') === 'lab' ? 'bg-amber-500/15 text-amber-500' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
+                  {(entry.release.kind || 'theory') === 'lab' ? 'LAB' : 'THEORY'}
+                </span>
+              </h2>
               <p className="text-xs text-[var(--text-secondary)]">
                 {entry.release.batch} · Semester {entry.release.semester}
               </p>

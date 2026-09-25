@@ -82,7 +82,12 @@ export default function SurveyDashboardPage() {
           <ArrowLeft size={26} />
         </Link>
         <div>
-          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">{data.release.title}</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)] flex items-center gap-3">
+            {data.release.title}
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${(data.release.kind || 'theory') === 'lab' ? 'bg-amber-500/15 text-amber-500' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
+              {(data.release.kind || 'theory') === 'lab' ? 'LAB' : 'THEORY'}
+            </span>
+          </h1>
           <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">
             {data.release.batch} · Sem {data.release.semester} · {data.release.sections.join(", ")} · {data.totalResponses} response(s)
           </p>
