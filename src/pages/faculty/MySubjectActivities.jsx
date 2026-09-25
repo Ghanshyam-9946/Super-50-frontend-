@@ -27,6 +27,7 @@ export default function MySubjectActivities() {
   const [labCo, setLabCo] = useState(emptyLabCo);
   const [qbBusy, setQbBusy] = useState(null); // subjectId being uploaded/deleted
   const [surveyQuestions, setSurveyQuestions] = useState(["", "", "", "", ""]);
+  const [labSurveyQuestions, setLabSurveyQuestions] = useState(["", "", "", "", ""]);
   const [saving, setSaving] = useState(false);
   const [uploadingIdx, setUploadingIdx] = useState(null);
 
@@ -54,6 +55,7 @@ export default function MySubjectActivities() {
       co4: subject.co4 || "", co5: subject.co5 || "",
     });
     setSurveyQuestions([...(subject.surveyQuestions || []), "", "", "", "", ""].slice(0, 5));
+    setLabSurveyQuestions([...(subject.labSurveyQuestions || []), "", "", "", "", ""].slice(0, 5));
     setLabCo({
       labCo1: subject.labCo1 || "", labCo2: subject.labCo2 || "", labCo3: subject.labCo3 || "",
       labCo4: subject.labCo4 || "", labCo5: subject.labCo5 || "",
@@ -70,6 +72,7 @@ export default function MySubjectActivities() {
 
   const editingSubject = subjects.find((s) => s._id === editingId);
   const isLabSupportOnly = editingSubject?.myRole === "labSupport";
+  const subjectHasLab = editingSubject?.noOfPractical > 0;
 
   // Question bank PDFs: uploaded per subject, visible to that subject's students
   const uploadQuestionBank = async (subject, file) => {
@@ -134,7 +137,8 @@ export default function MySubjectActivities() {
       }
       const hasLab = editingSubject?.noOfPractical > 0;
       const { data } = await api.patch(`/master-data/subjects/${editingId}/activities`, {
-        activities, ...co, surveyQuestions, ...(hasLab ? labCo : {}),
+        activities, ...co, surveyQuestions,
+        ...(hasLab ? { ...labCo, labSurveyQuestions } : {}),
       });
       if (data.success) {
         toast.success("Assessment saved");
@@ -341,6 +345,31 @@ export default function MySubjectActivities() {
                       ))}
                     </div>
                   </div>
+
+                  {/* The lab is surveyed separately from the theory course */}
+                  {subjectHasLab && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-1.5">
+                        <FlaskConical size={12} /> Lab — Course Exit Survey Questions
+                      </span>
+                      <p className="text-[11px] text-[var(--text-secondary)]">
+                        Asked in the Lab survey, separately from the theory questions above.
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-2">
+                        {labSurveyQuestions.map((q, idx) => (
+                          <label key={idx} className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">Lab Question {idx + 1}</span>
+                            <input
+                              value={q}
+                              onChange={(e) => setLabSurveyQuestions((prev) => prev.map((x, i) => (i === idx ? e.target.value : x)))}
+                              placeholder={`e.g. "The lab experiments helped me understand the concepts"`}
+                              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Activities</span>
                     <button onClick={addActivity} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
