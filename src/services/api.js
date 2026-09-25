@@ -18,6 +18,16 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('super50_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
+  const userStr = localStorage.getItem('super50_user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      if (user?.campus) {
+        config.headers['x-campus-id'] = user.campus;
+      }
+    } catch (e) {}
+  }
+
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }

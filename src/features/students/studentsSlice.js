@@ -3,7 +3,19 @@ import api from '../../services/api';
 
 export const fetchLeaderboard = createAsyncThunk('students/fetchLeaderboard', async (params = {}, { rejectWithValue }) => {
   try {
-    const { data } = await api.get('/students/leaderboard', { params });
+    const userStr = localStorage.getItem('super50_user');
+    let userCampus;
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        userCampus = u?.campus;
+      } catch (e) {}
+    }
+    const finalParams = { ...params };
+    if (!finalParams.campus && userCampus) {
+      finalParams.campus = userCampus;
+    }
+    const { data } = await api.get('/students/leaderboard', { params: finalParams });
     return data.data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Failed to fetch leaderboard');
