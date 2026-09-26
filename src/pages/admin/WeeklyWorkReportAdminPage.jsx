@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ClipboardList, Loader2, Download, Users, Calendar, LayoutGrid, Mail } from "lucide-react";
+import { ClipboardList, Loader2, Download, Users, Calendar, LayoutGrid, Mail, Clock, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { downloadFile } from "../../utils/downloadFile";
@@ -39,6 +39,29 @@ export default function WeeklyWorkReportAdminPage() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [mailing, setMailing] = useState(false);
+  // The deadline every faculty member is held to, and when reports
+  // auto-submit. Admin-configurable.
+  const [schedule, setSchedule] = useState(null);
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
+  useEffect(() => {
+    api.get("/weekly-work-report/admin/schedule")
+      .then(({ data }) => setSchedule(data.data))
+      .catch(() => {});
+  }, []);
+
+  const saveSchedule = async () => {
+    setSavingSchedule(true);
+    try {
+      const { data } = await api.put("/weekly-work-report/admin/schedule", { day: schedule.day, time: schedule.time });
+      setSchedule(data.data);
+      toast.success(data.message);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not save");
+    } finally {
+      setSavingSchedule(false);
+    }
+  };
 
   useEffect(() => {
     api
@@ -117,6 +140,44 @@ export default function WeeklyWorkReportAdminPage() {
         </button>
       </header>
 
+      {schedule && (
+        <div className="glass-card p-5 rounded-2xl space-y-3">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-[var(--primary)]" />
+            <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">Submission Deadline</h3>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Faculty add their work through the week and submit on this day. At this exact time every report that has
+            entries is <strong>submitted automatically</strong>, and the status mails go to each faculty member and the HOD.
+          </p>
+          <div className="flex flex-wrap gap-3 items-end">
+            <label className="flex flex-col text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] gap-1.5">
+              Day
+              <select
+                value={schedule.day}
+                onChange={(e) => setSchedule((s) => ({ ...s, day: Number(e.target.value) }))}
+                className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
+              >
+                {(schedule.days || []).map((d, i) => <option key={d} value={i}>{d}</option>)}
+              </select>
+            </label>
+            <label className="flex flex-col text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] gap-1.5">
+              Time (IST)
+              <input
+                type="time"
+                value={schedule.time}
+                onChange={(e) => setSchedule((s) => ({ ...s, time: e.target.value }))}
+                className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)]"
+              />
+            </label>
+            <button onClick={saveSchedule} disabled={savingSchedule} className="btn-premium text-xs px-4 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
+              {savingSchedule ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
+            </button>
+            <span className="text-xs text-[var(--text-secondary)] pb-2">Currently: <strong className="text-[var(--text-primary)]">{schedule.label}</strong></span>
+          </div>
+        </div>
+      )}
+
       <div className="glass-card p-5 rounded-2xl space-y-3">
         <div className="flex gap-2 flex-wrap">
           {MODES.map((m) => (
@@ -161,7 +222,7 @@ export default function WeeklyWorkReportAdminPage() {
         )}
         {mode === "date" && (
           <p className="text-[11px] text-[var(--text-secondary)]">
-            Status mails go out automatically every Friday at 4:10 PM. Use the button only if that run was missed — it mails every faculty and HOD again.
+            Status mails go out automatically at the deadline above. Use the button only if that run was missed — it mails every faculty and HOD again.
           </p>
         )}
       </div>
