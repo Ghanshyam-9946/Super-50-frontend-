@@ -164,7 +164,8 @@ export default function WeeklyWorkReportPage() {
         <div>
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">Weekly Work Report</h1>
           <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">
-            Add your work every day — it's saved as you go. Submit it on Friday before 4:10 PM; after that a status mail goes to you and your HOD.
+            Add your work every day — it's saved as you go. Submit it on {week?.submissionDay || 'Friday'} before {week?.submissionTime || '4:10 PM'};
+            anything you've filled in is submitted automatically at that time, and a status mail goes to you and your HOD.
           </p>
         </div>
       </header>
@@ -179,22 +180,23 @@ export default function WeeklyWorkReportPage() {
           {week.submitted ? (
             <div className="glass-card p-4 rounded-2xl flex items-center gap-2 text-sm text-[var(--text-secondary)] border border-green-500/20 bg-green-500/5">
               <CheckCircle2 size={16} className="text-green-500 shrink-0" />
-              This week's report was submitted on {new Date(week.submittedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}. New entries start on Saturday.
+              This week's report was submitted on {new Date(week.submittedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+              {week.autoSubmitted ? " (submitted automatically at the deadline)" : ""}. The next week has already started.
             </div>
           ) : week.closed ? (
             <div className="glass-card p-4 rounded-2xl flex items-center gap-2 text-sm text-[var(--text-secondary)] border border-red-500/20 bg-red-500/5">
               <Lock size={16} className="text-red-500 shrink-0" />
-              This week closed at 4:10 PM on Friday without being submitted — you and your HOD have been mailed. New entries start on Saturday.
+              This week closed at {week.submissionTime} on {week.submissionDay} with no entries — you and your HOD have been mailed. The next week has already started.
             </div>
           ) : week.isFriday ? (
             <div className="glass-card p-4 rounded-2xl flex items-center gap-2 text-sm text-[var(--text-secondary)] border border-amber-500/20 bg-amber-500/5">
               <Clock size={16} className="text-amber-500 shrink-0" />
-              Today is Friday — submit this week's report before <strong className="text-[var(--text-primary)]">4:10 PM</strong>.
+              Today is {week.submissionDay} — submit before <strong className="text-[var(--text-primary)]">{week.submissionTime}</strong>. Anything you've added is submitted automatically at that time.
             </div>
           ) : (
             <div className="glass-card p-4 rounded-2xl flex items-center gap-2 text-sm text-[var(--text-secondary)] border border-[var(--border-light)]">
               <Info size={16} className="text-[var(--primary)] shrink-0" />
-              Keep adding your daily work. Submit opens on {fridayLabel} (until 4:10 PM).
+              Keep adding your daily work. Submit opens on {fridayLabel} (until {week.submissionTime}), and whatever you've added is submitted automatically then.
             </div>
           )}
 
