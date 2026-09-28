@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 const PodAIMarksUploadPage = () => {
   const [file, setFile] = useState(null);
+  const [semester, setSemester] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   
@@ -47,9 +48,11 @@ const PodAIMarksUploadPage = () => {
 
   const handleUpload = async () => {
     if (!file) return toast.error('Please select an Excel file');
+    if (!semester) return toast.error('Please select a semester');
     
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('semester', semester);
     
     setLoading(true);
     try {
@@ -156,6 +159,25 @@ const PodAIMarksUploadPage = () => {
               >
                 <Download size={14} /> Template
               </a>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] block mb-2">
+                Select Semester *
+              </label>
+              <select
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all cursor-pointer"
+                required
+              >
+                <option value="">-- Choose Semester --</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                  <option key={sem} value={sem}>
+                    Semester {sem}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div 

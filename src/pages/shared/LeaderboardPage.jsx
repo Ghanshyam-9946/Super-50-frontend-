@@ -17,13 +17,26 @@ export default function LeaderboardPage({ limit }) {
   const [dept, setDept] = useState('');
   const [batch, setBatch] = useState('');
 
+  const userStr = typeof window !== 'undefined' ? localStorage.getItem('super50_user') : null;
+  let localStorageCampus = null;
+  if (userStr) {
+    try {
+      const u = JSON.parse(userStr);
+      localStorageCampus = u?.campus;
+    } catch (e) {}
+  }
+
+  const rawCampus = user?.campus || localStorageCampus || 'ratibad';
+  const normC = String(rawCampus || '').toLowerCase().trim();
+  const activeCampus = (normC === 'rb' || normC === 'ratibad') ? 'ratibad' : 'gandhinagar';
+
   useEffect(() => {
-    dispatch(fetchLeaderboard({ department: dept || undefined }));
-  }, [dispatch, dept]);
+    dispatch(fetchLeaderboard({ department: dept || undefined, campus: activeCampus }));
+  }, [dispatch, dept, activeCampus]);
 
   const filtered = leaderboard.filter(
     (s) => {
-      const matchSearch = search ? (s.name.toLowerCase().includes(search.toLowerCase()) || s.enrollmentNumber.toLowerCase().includes(search.toLowerCase())) : true;
+      const matchSearch = search ? (s.name?.toLowerCase().includes(search.toLowerCase()) || s.enrollmentNumber?.toLowerCase().includes(search.toLowerCase())) : true;
       const matchBatch = batch ? s.batch === batch : true;
       return matchSearch && matchBatch;
     }
@@ -34,6 +47,8 @@ export default function LeaderboardPage({ limit }) {
   const departments = [...new Set(leaderboard.map((s) => s.department))].filter(Boolean);
   const batches = [...new Set(leaderboard.map((s) => s.batch))].filter(Boolean);
 
+  const campusDisplayName = activeCampus === 'ratibad' ? 'Ratibad Campus (RB)' : 'Gandhinagar Campus (GN)';
+
   return (
     <div id="leaderboard" className="p-4 md:p-8 max-w-6xl mx-auto space-y-12">
       {/* Header Section */}
@@ -43,7 +58,7 @@ export default function LeaderboardPage({ limit }) {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-500 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
           </span>
-          Live Updates
+          Live Updates • {campusDisplayName}
         </motion.div>
         
         <motion.h1 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-4xl md:text-5xl lg:text-6xl font-black font-display tracking-tight text-[#151b2b] mb-4">
@@ -51,11 +66,11 @@ export default function LeaderboardPage({ limit }) {
         </motion.h1>
         
         <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-slate-500 font-medium text-lg max-w-2xl">
-          Top performing Super 50 students ranked by performance score.
+          Top performing students ranked by performance score for <strong className="text-slate-800">{campusDisplayName}</strong>.
         </motion.p>
       </div>
 
-      {/* Main Filters (Hidden if limit is provided to match clean UI of landing page) */}
+      {/* Main Filters */}
       <div className={`flex flex-wrap gap-4 mb-6 ${limit ? 'hidden' : ''}`}>
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -87,9 +102,14 @@ export default function LeaderboardPage({ limit }) {
         transition={{ delay: 0.3 }}
       >
         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white">
-          <span className="font-display font-black text-xl text-slate-900">
-            Top {displayLimit} Students
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="font-display font-black text-xl text-slate-900">
+              Top {displayLimit} Students
+            </span>
+            <span className="text-xs font-bold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg uppercase tracking-wider">
+              {activeCampus === 'ratibad' ? 'RB' : 'GN'}
+            </span>
+          </div>
           <select
             className="bg-white border border-slate-200 rounded-xl py-2 px-4 text-sm font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm min-w-[140px]"
             value={batch}
@@ -123,7 +143,7 @@ export default function LeaderboardPage({ limit }) {
                   const displayRank = i + 1;
                   
                   return (
-                    <motion.tr key={student._id}
+                    <motion.tr key={student._id || i}
                       className="hover:bg-slate-50 transition-colors bg-white"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -159,25 +179,25 @@ export default function LeaderboardPage({ limit }) {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-bold text-slate-500">{student.department}</td>
-                      <td className="px-6 py-4 font-bold text-slate-500">{student.batch}</td>
+                      <td className="px-6 py-4 font-bold text-slate-500">{student.department || 'N/A'}</td>
+                      <td className="px-6 py-4 font-bold text-slate-500">{student.batch || 'N/A'}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex-1 h-2 bg-slate-100 rounded-full w-24 overflow-hidden">
                             <div 
                               className="h-full rounded-full" 
                               style={{ 
-                                width: `${student.attendancePercentage}%`, 
-                                background: student.attendancePercentage >= 75 ? '#10b981' : student.attendancePercentage >= 50 ? '#f59e0b' : '#ef4444' 
+                                width: `${student.attendancePercentage || 0}%`, 
+                                background: (student.attendancePercentage || 0) >= 75 ? '#10b981' : (student.attendancePercentage || 0) >= 50 ? '#f59e0b' : '#ef4444' 
                               }} 
                             />
                           </div>
-                          <span className="text-[11px] font-black text-slate-600 w-8">{Math.round(student.attendancePercentage)}%</span>
+                          <span className="text-[11px] font-black text-slate-600 w-8">{Math.round(student.attendancePercentage || 0)}%</span>
                         </div>
                       </td>
                       <td className="px-8 py-4 text-right">
                         <span className="text-xl font-display font-black text-[#10b981]">
-                          {Math.round(student.performanceScore)}
+                          {Math.round(student.performanceScore || 0)}
                         </span>
                       </td>
                     </motion.tr>
@@ -187,7 +207,7 @@ export default function LeaderboardPage({ limit }) {
             </table>
             {displayed.length === 0 && !loading && (
               <div className="p-8 text-center text-slate-500 font-medium">
-                No students found for this batch.
+                No students found for {campusDisplayName}.
               </div>
             )}
           </div>

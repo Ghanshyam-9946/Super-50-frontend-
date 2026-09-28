@@ -184,7 +184,15 @@ export default function AdminDashboard() {
                       />
                       <div>
                         <div className="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">{student.name}</div>
-                        <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">{student.enrollmentNumber || 'N/A'} • {student.department}</div>
+                        <div className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest flex items-center gap-2">
+                          <span>{student.enrollmentNumber || 'N/A'} • {student.department}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-black ${
+                            (student.attendancePercentage || 0) >= 75 ? 'bg-emerald-500/10 text-emerald-600' :
+                            (student.attendancePercentage || 0) >= 50 ? 'bg-amber-500/10 text-amber-600' : 'bg-red-500/10 text-red-500'
+                          }`}>
+                            {Math.round(student.attendancePercentage || 0)}% Att.
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <ChevronRight size={16} className="text-slate-300 group-hover:text-[var(--primary)] transition-all group-hover:translate-x-1" />
@@ -621,6 +629,12 @@ export default function AdminDashboard() {
                               {student.isSuper50 && <Star size={10} className="text-amber-500 fill-amber-500 shrink-0" />}
                             </div>
                             <div className="text-[9px] font-black text-[var(--text-secondary)] uppercase tracking-[0.1em] mt-0.5 opacity-80">{student.enrollmentNumber}</div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <div className="w-12 h-1.5 bg-[var(--bg-input)] rounded-full overflow-hidden border border-[var(--border-light)]">
+                                <div className="h-full rounded-full transition-all duration-300" style={{ width: `${Math.min(100, Math.max(0, student.attendancePercentage || 0))}%`, background: (student.attendancePercentage || 0) >= 75 ? '#10b981' : (student.attendancePercentage || 0) >= 50 ? '#f59e0b' : '#ef4444' }} />
+                              </div>
+                              <span className="text-[10px] font-black text-[var(--text-primary)]">{Math.round(student.attendancePercentage || 0)}%</span>
+                            </div>
                           </div>
                         </div>
                         <div className="w-8 h-8 rounded-full bg-[var(--bg-input)] flex items-center justify-center border border-[var(--border-light)] group-hover:bg-[var(--primary)] group-hover:border-[var(--primary)] group-hover:text-white transition-all duration-300">
@@ -670,6 +684,14 @@ export default function AdminDashboard() {
                     </div>
                     <div className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-1 opacity-80">
                       {student.enrollmentNumber} • {student.department}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                        (student.attendancePercentage || 0) >= 75 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                        (student.attendancePercentage || 0) >= 50 ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'
+                      }`}>
+                        Live Attendance: {Math.round(student.attendancePercentage || 0)}%
+                      </span>
                     </div>
                   </div>
                 </div>
