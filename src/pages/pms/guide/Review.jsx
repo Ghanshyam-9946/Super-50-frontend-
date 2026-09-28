@@ -194,7 +194,7 @@ const GuideReview = () => {
   const getForm = async () => {
     setDownloadingForm(true);
     try {
-      await downloadFile(guideAPI.initiationFormUrl(teamId), `initiation_form_${team?.groupNo || teamId}.pdf`);
+      await downloadFile(guideAPI.initiationFormUrl(teamId), `initiation_form_${String(team?.groupNo || teamId).replace(/[\/\s]/g, '_')}.pdf`);
     } catch (err) {
       toast.error(handleError(err));
     } finally {

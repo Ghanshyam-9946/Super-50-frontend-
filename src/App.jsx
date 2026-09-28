@@ -105,6 +105,9 @@ import LeaderboardPage from './pages/shared/LeaderboardPage';
 // PMS
 import PMSRoutes from './pages/pms/PMSRoutes';
 
+// Admin reports
+import FacultyReportsPage from './pages/admin/FacultyReportsPage';
+
 // TG (mentor) tools
 import TgStudentsPage from './pages/faculty/TgStudentsPage';
 
@@ -374,6 +377,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/course-exit-survey/:releaseId" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><SurveyDashboardPage /></RoleGuard>
+        } />
+        <Route path="/admin/faculty-reports" element={
+          <RoleGuard allowed={['admin']}><FacultyReportsPage /></RoleGuard>
         } />
         <Route path="/admin/weekly-work-report" element={
           <RoleGuard allowed={['admin']}><WeeklyWorkReportAdminPage /></RoleGuard>
