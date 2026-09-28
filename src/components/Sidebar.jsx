@@ -231,6 +231,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/general-forms', icon: ListChecks, label: 'General Forms' },
     ] },
     { category: 'Reports & Dashboards', links: [
+      { to: '/admin/faculty-reports', icon: Gauge, label: 'Faculty Reports' },
       { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
       { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
       { to: '/admin/all-student-podai', icon: FileText, label: 'All Student Pod AI Sheet' },
