@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import {
   Users, ChevronLeft, FolderOpen, FileText, Github, Hash,
   CheckCircle2, XCircle, Calendar, Inbox, ClipboardCheck, Crown, Lock, AlertTriangle, ClipboardEdit, Clock,
+  Download, Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
@@ -10,6 +11,15 @@ import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, StatCard, EmptyState, StatusBadge } from '../../../components/pms/Common';
 import { formatDate, semesterToProject } from '../../../utils/pms/helpers';
 import { getFileUrl } from '../../../utils/imageUrl';
+import { downloadFile } from '../../../utils/downloadFile';
+
+// The four tech-stack lists from the initiation form.
+const TECH_KEYS = [
+  ['projectDomain', 'Domain'],
+  ['frontendTech', 'Frontend'],
+  ['backendTech', 'Backend'],
+  ['database', 'Database'],
+];
 
 const ReviewForm = ({ submission, presentation, onReviewed }) => {
   const [marks, setMarks] = useState(submission.marksObtained || '');
@@ -165,6 +175,7 @@ const EvaluationForm = ({ team, presentation, evaluation, onSaved }) => {
 const GuideReview = () => {
   const { teamId } = useParams();
   const [team, setTeam] = useState(null);
+  const [downloadingForm, setDownloadingForm] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -179,6 +190,17 @@ const GuideReview = () => {
   };
 
   useEffect(() => { fetchData(); /* eslint-disable-next-line */ }, [teamId]);
+
+  const getForm = async () => {
+    setDownloadingForm(true);
+    try {
+      await downloadFile(guideAPI.initiationFormUrl(teamId), `initiation_form_${team?.groupNo || teamId}.pdf`);
+    } catch (err) {
+      toast.error(handleError(err));
+    } finally {
+      setDownloadingForm(false);
+    }
+  };
 
   if (loading) return <div className="py-20 flex justify-center"><Spinner size="lg" /></div>;
   if (!team) return <Card><EmptyState icon={AlertTriangle} title="Team not found" message="Or not assigned to you." /></Card>;
@@ -196,7 +218,30 @@ const GuideReview = () => {
           </h1>
           <p className="text-sm text-slate-500 mt-1">{team.projectTitle}</p>
         </div>
+        <button onClick={getForm} disabled={downloadingForm} className="btn-outline btn-sm disabled:opacity-40">
+          {downloadingForm ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} Initiation Form
+        </button>
       </div>
+
+      {/* What the team actually proposed — description and stack, not just the title */}
+      {(team.projectDescription || TECH_KEYS.some(([k]) => (team[k] || []).length > 0)) && (
+        <Card title="Project Details" icon={FileText}>
+          {team.projectDescription && (
+            <>
+              <div className="text-xs uppercase tracking-wider text-slate-500">Description</div>
+              <p className="text-sm text-slate-700 whitespace-pre-line mt-1">{team.projectDescription}</p>
+            </>
+          )}
+          <div className="mt-3 space-y-1.5">
+            {TECH_KEYS.filter(([key]) => (team[key] || []).length > 0).map(([key, label]) => (
+              <div key={key} className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-slate-500 w-20">{label}</span>
+                {team[key].map((v) => <span key={v} className="badge-info text-[10px]">{v}</span>)}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Team summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

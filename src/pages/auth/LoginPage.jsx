@@ -29,6 +29,8 @@ export default function LoginPage() {
           path = '/leaderboard';
         } else if (user.role === 'guide') {
           path = '/pms/guide';
+        } else if (user.role === 'security') {
+          path = '/security/gate-pass';
         }
         navigate(path);
       }
@@ -173,15 +175,15 @@ export default function LoginPage() {
               {/* Email */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
-                  Email Address
+                  Email or Username
                 </label>
                 <div style={{ position: 'relative' }}>
                   <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
-                    type="email"
+                    type="text"
                     className="w-full bg-[var(--bg-app)] border border-[var(--border-light)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition-colors"
                     style={{ paddingLeft: 40 }}
-                    placeholder="you@example.com"
+                    placeholder="you@example.com or your username"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     required

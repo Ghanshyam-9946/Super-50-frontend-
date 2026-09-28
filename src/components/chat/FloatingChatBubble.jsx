@@ -45,7 +45,9 @@ export default function FloatingChatBubble() {
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
 
-  const isStudent = (user?.roles?.length ? user.roles : [user?.role]).includes("student");
+  // Students and security guards have no internal chat.
+  const isStudent = (user?.roles?.length ? user.roles : [user?.role])
+    .some((r) => r === "student" || r === "security");
   const unreadTotal = useMemo(
     () => conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0),
     [conversations]

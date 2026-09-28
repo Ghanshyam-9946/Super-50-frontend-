@@ -30,7 +30,9 @@ export function ChatSocketProvider({ children }) {
   const activeConversationId = useSelector((s) => s.chat.activeConversationId);
   const socketRef = useRef(null);
 
-  const isStudent = (user?.roles?.length ? user.roles : [user?.role]).includes("student");
+  // Students and security guards have no internal chat.
+  const isStudent = (user?.roles?.length ? user.roles : [user?.role])
+    .some((r) => r === "student" || r === "security");
 
   // Read inside the socket handler below instead of closing over the
   // useSelector value directly — the handler is registered once per

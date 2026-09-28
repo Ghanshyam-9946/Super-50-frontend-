@@ -105,6 +105,15 @@ import LeaderboardPage from './pages/shared/LeaderboardPage';
 // PMS
 import PMSRoutes from './pages/pms/PMSRoutes';
 
+// TG (mentor) tools
+import TgStudentsPage from './pages/faculty/TgStudentsPage';
+
+// Gate Pass
+import StudentGatePassPage from './pages/gatepass/StudentGatePassPage';
+import TgGatePassPage from './pages/gatepass/TgGatePassPage';
+import AdminGatePassPage from './pages/gatepass/AdminGatePassPage';
+import SecurityGatePassPage from './pages/gatepass/SecurityGatePassPage';
+
 // Role guard component. `allowResponsibility` additionally lets through any
 // user (regardless of role) who holds that responsibility tag — e.g. an
 // "Academic Coordinator" is usually a plain teacher/guide, not a distinct role.
@@ -124,7 +133,8 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
             userRoles.includes('teacher') ? '/teacher/dashboard' :
               userRoles.includes('guide') ? '/pms/guide' :
                 userRoles.includes('tp_admin') ? '/tp/enroll-students' :
-                  userRoles.includes('pms_admin') ? '/pms/admin' : '/login';
+                  userRoles.includes('pms_admin') ? '/pms/admin' :
+                    userRoles.includes('security') ? '/security/gate-pass' : '/login';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -421,6 +431,11 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><FacultyTasksPage /></RoleGuard>
         } />
 
+        {/* The TG's own tutor group — currently password resets */}
+        <Route path="/faculty/tg-students" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><TgStudentsPage /></RoleGuard>
+        } />
+
         {/* No Dues — mentor (TG) view, shared across staff roles */}
         <Route path="/faculty/no-dues" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><NoDuesPage /></RoleGuard>
@@ -462,10 +477,25 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><CalendarRemindersPage /></RoleGuard>
         } />
         <Route path="/notifications" element={
-          <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><NotificationsPage /></RoleGuard>
+          <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin', 'security']}><NotificationsPage /></RoleGuard>
         } />
         <Route path="/sticky-notes" element={
           <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><StickyNotesPage /></RoleGuard>
+        } />
+
+        {/* Gate Pass — one module, four views: the student who asks, the
+            TG who clears it, the admin who approves, the guard who scans. */}
+        <Route path="/student/gate-pass" element={
+          <RoleGuard allowed={['student']}><StudentGatePassPage /></RoleGuard>
+        } />
+        <Route path="/faculty/gate-pass" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><TgGatePassPage /></RoleGuard>
+        } />
+        <Route path="/admin/gate-pass" element={
+          <RoleGuard allowed={['admin']}><AdminGatePassPage /></RoleGuard>
+        } />
+        <Route path="/security/gate-pass" element={
+          <RoleGuard allowed={['security']}><SecurityGatePassPage /></RoleGuard>
         } />
 
         {/* Internal Chat — faculty/admin only, never students */}

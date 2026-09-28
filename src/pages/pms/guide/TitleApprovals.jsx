@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ClipboardCheck, CheckCircle2, XCircle, Clock, FolderOpen } from 'lucide-react';
+import { ClipboardCheck, CheckCircle2, XCircle, Clock, FolderOpen, UserMinus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
@@ -28,11 +28,18 @@ const ReviewModal = ({ team, onClose, onDone }) => {
   const [busy, setBusy] = useState('');
 
   const decide = async (action) => {
-    if (action === 'reject' && !reason.trim()) return toast.error('Write why you are rejecting it');
+    if (action !== 'approve' && !reason.trim()) return toast.error('Write why you are rejecting it');
+    if (action === 'release' && !window.confirm(
+      `Reject and stop guiding ${team.groupNo}?\n\nYour seat frees up for another group straight away, and this team picks a different guide.`
+    )) return;
     setBusy(action);
     try {
       await guideAPI.reviewTeamDetails(team._id, { action, reason: reason.trim() });
-      toast.success(action === 'approve' ? 'Project title approved' : 'Sent back to the team');
+      toast.success({
+        approve: 'Project title approved',
+        reject: 'Sent back to the team',
+        release: 'Rejected — you are no longer this team\'s guide',
+      }[action]);
       onDone();
       onClose();
     } catch (err) {
@@ -51,8 +58,11 @@ const ReviewModal = ({ team, onClose, onDone }) => {
       footer={
         <>
           <button onClick={onClose} className="btn-secondary">Cancel</button>
-          <button onClick={() => decide('reject')} disabled={!!busy} className="btn-danger">
-            {busy === 'reject' ? <Spinner size="sm" className="text-white" /> : <><XCircle className="w-4 h-4" /> Reject</>}
+          <button onClick={() => decide('reject')} disabled={!!busy} className="btn-outline" title="The team corrects the details and resubmits to you">
+            {busy === 'reject' ? <Spinner size="sm" /> : <><XCircle className="w-4 h-4" /> Send back for correction</>}
+          </button>
+          <button onClick={() => decide('release')} disabled={!!busy} className="btn-danger" title="You stop guiding this team — your seat frees up for another group">
+            {busy === 'release' ? <Spinner size="sm" className="text-white" /> : <><UserMinus className="w-4 h-4" /> Reject &amp; release</>}
           </button>
           <button onClick={() => decide('approve')} disabled={!!busy} className="btn-success">
             {busy === 'approve' ? <Spinner size="sm" className="text-white" /> : <><CheckCircle2 className="w-4 h-4" /> Approve</>}
@@ -92,7 +102,7 @@ const ReviewModal = ({ team, onClose, onDone }) => {
           </div>
         </div>
         <div>
-          <label className="form-label">Reason (needed only to reject)</label>
+          <label className="form-label">Reason (needed for both reject buttons)</label>
           <textarea className="form-input" rows="2" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Title is too broad — narrow it to one module" />
         </div>
       </div>
@@ -158,7 +168,8 @@ const GuideTitleApprovals = () => {
       <div>
         <h1 className="text-2xl font-bold">Project Title Approvals</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Your teams send their project details here. Approve them, or reject with a reason so they can revise and resubmit.
+          Your teams send their project details here. Approve them, send them back for correction, or reject and release the team —
+          releasing frees your seat for another group and sends these students back to the guide picker.
         </p>
       </div>
 

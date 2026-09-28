@@ -5,6 +5,11 @@ import api from "../../services/api";
 
 const PRIORITIES = [1, 2, 3, 4, 5];
 
+const fmtDeadline = (d) =>
+  new Date(d).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  });
+
 // A round's picks are valid once at least 2 priorities are filled, in order
 // from Priority 1 with no gap in between (Priority 2 filled but Priority 1
 // empty isn't a valid ranking) — mirrors the backend's own check.
@@ -123,14 +128,15 @@ export default function ChoiceFillingPage() {
         <div>
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">Subject Choice Filling</h1>
           <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">
-            Rank at least 2 subjects you'd like to teach — Priority 1 is your top pick. The coordinator finalizes the actual allocation.
+            Rank at least 2 subjects you'd like to teach — Priority 1 is your top pick. Submit before the deadline shown on each round; after that it closes by itself.
+            The coordinator finalizes the actual allocation.
           </p>
         </div>
       </header>
 
       {rounds.length === 0 ? (
         <div className="glass-card p-16 text-center rounded-3xl text-[var(--text-secondary)]">
-          No choice filling rounds are open right now.
+          No choice filling rounds are open right now. A round also disappears from here once its deadline passes.
         </div>
       ) : (
         <>
@@ -138,8 +144,13 @@ export default function ChoiceFillingPage() {
             const slots = picks[round._id] || PRIORITIES.map(() => "");
             return (
               <div key={round._id} className="glass-card p-5 rounded-2xl space-y-3">
-                <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">
+                <h3 className="font-display font-bold text-sm text-[var(--text-primary)] flex flex-wrap items-center gap-2">
                   {round.batch} — Semester {round.semester}
+                  {round.deadline && (
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/30">
+                      Closes {fmtDeadline(round.deadline)}
+                    </span>
+                  )}
                 </h3>
                 {subjects.length === 0 ? (
                   <p className="text-xs text-[var(--text-secondary)]">No subjects defined for this semester yet.</p>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardEdit, FileText, Info, Clock, AlertTriangle , BookMarked } from 'lucide-react';
+import { ClipboardEdit, FileText, Info, Clock, AlertTriangle , BookMarked, BookOpen } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -18,6 +18,7 @@ const deadlineState = (deadline) => {
 export default function StudentAssignmentsPage() {
   const [assignments, setAssignments] = useState([]);
   const [questionBanks, setQuestionBanks] = useState([]);
+  const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function StudentAssignmentsPage() {
         if (data.success) {
           setAssignments(data.data);
           setQuestionBanks(data.questionBanks || []);
+          setNotes(data.notes || []);
         }
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to load assignments');
@@ -49,6 +51,41 @@ export default function StudentAssignmentsPage() {
           </p>
         </div>
       </header>
+
+      {/* Notes uploaded by the subject faculty, in unit order */}
+      {!loading && notes.length > 0 && (
+        <div className="glass-card p-5 rounded-2xl space-y-3">
+          <div className="flex items-center gap-2">
+            <BookOpen className="text-[var(--primary)]" size={18} />
+            <h2 className="font-display font-black text-[var(--text-primary)]">Notes</h2>
+            <span className="text-xs text-[var(--text-secondary)]">study material from your subject faculty</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {notes.map((n) => (
+              <a
+                key={n._id}
+                href={getImageUrl(n.url)}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 rounded-xl border border-[var(--border-light)] px-3 py-2.5 hover:border-[var(--primary)] transition-colors"
+              >
+                <FileText className="text-[var(--primary)] shrink-0" size={18} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-bold text-[var(--text-primary)] truncate">{n.title}</div>
+                  <div className="text-[11px] text-[var(--text-secondary)] truncate">
+                    {n.subjectName}{n.subjectCode ? ` (${n.subjectCode})` : ''}{n.faculty ? ` · ${n.faculty.name}` : ''}
+                  </div>
+                </div>
+                {n.unit > 0 && (
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/20 shrink-0">
+                    Unit {n.unit}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!loading && questionBanks.length > 0 && (
         <div className="glass-card p-5 rounded-2xl space-y-3">

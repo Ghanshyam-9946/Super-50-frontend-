@@ -6,7 +6,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing, ClipboardEdit, MessageSquareShare
+  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -51,6 +51,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/student/assignments', icon: ClipboardEdit, label: 'Assignments' },
       { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
       { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
+      { to: '/student/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
     ] },
     { category: 'Results & Marks', links: [
       { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
@@ -101,6 +102,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/weekly-work-report', icon: ClipboardList, label: 'Weekly Work Report' },
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
+      { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
     ] },
     ...(isProjectGuide || isProjectCoordinator ? [{ category: 'PMS', links: [
       ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
@@ -145,6 +148,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/weekly-work-report', icon: ClipboardList, label: 'Weekly Work Report' },
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
+      { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
     ] },
     ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
@@ -190,6 +195,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { category: 'Compliance', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
+      { to: '/admin/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
+      { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
     ] },
     { category: 'Feedback & Surveys', links: [
       { to: '/admin/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
@@ -267,6 +275,14 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
   ];
 
+  // A guard's whole app is the gate: scan, queue, history.
+  const securityGroups = [
+    { category: 'Gate', links: [
+      { to: '/security/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
+      { to: '/notifications', icon: BellRing, label: 'Notifications' },
+    ] },
+  ];
+
   const pmsAdminGroups = [
     { category: 'Overview', links: [
       { to: '/chat', icon: MessageCircle, label: 'Chat' },
@@ -299,6 +315,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       else if (role === 'pms_admin') roleGroups = pmsAdminGroups;
       else if (role === 'teacher') roleGroups = teacherGroups;
       else if (role === 'guide') roleGroups = guideGroups;
+      else if (role === 'security') roleGroups = securityGroups;
 
       roleGroups.forEach((group) => {
         group.links.forEach((link) => {
