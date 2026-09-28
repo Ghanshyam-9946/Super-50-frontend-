@@ -8,11 +8,29 @@ import SectionSelect from "../../../components/SectionSelect";
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
 const PRIORITIES = [1, 2, 3, 4, 5];
 
+const fmtDeadline = (d) =>
+  new Date(d).toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+  });
+
+// A datetime-local input wants the local wall clock, not an ISO string.
+const toLocalInput = (d) => {
+  if (!d) return "";
+  const dt = new Date(d);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+};
+
 export default function ChoiceMatrix() {
   const [filters, setFilters] = useState({ batch: "", semester: "" });
   const [batchOptions, setBatchOptions] = useState([]);
   const [releaseBatches, setReleaseBatches] = useState([]);
   const [releaseSemesters, setReleaseSemesters] = useState([]);
+  // Optional last date/time faculty can fill. Once it passes, the round
+  // disappears from every faculty account by itself.
+  const [releaseDeadline, setReleaseDeadline] = useState("");
+  const [roundDeadline, setRoundDeadline] = useState("");
+  const [savingDeadline, setSavingDeadline] = useState(false);
   const [releasing, setReleasing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [matrix, setMatrix] = useState(null); // {round, subjects, preferences}
@@ -51,6 +69,7 @@ export default function ChoiceMatrix() {
       const { data } = await api.post("/master-data/choice-filling/release", {
         batches: releaseBatches,
         semesters: releaseSemesters,
+        deadline: releaseDeadline ? new Date(releaseDeadline) : null,
       });
       if (data.success) {
         toast.success(data.message || "Choice filling released to faculty");
@@ -69,11 +88,33 @@ export default function ChoiceMatrix() {
       const { data } = await api.get("/master-data/choice-filling/matrix", {
         params: { batch: filters.batch, semester: filters.semester },
       });
-      if (data.success) setMatrix(data.data);
+      if (data.success) {
+        setMatrix(data.data);
+        // Keep the inline deadline editor showing what this round actually has.
+        setRoundDeadline(toLocalInput(data.data.round?.deadline));
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to load matrix");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Set, extend or clear the deadline of a round that is already out.
+  // Extending a passed deadline brings the round back for everyone with
+  // whatever faculty had already filled in still intact.
+  const saveDeadline = async (value) => {
+    setSavingDeadline(true);
+    try {
+      const { data } = await api.patch(`/master-data/choice-filling/rounds/${matrix.round._id}`, {
+        deadline: value ? new Date(value) : null,
+      });
+      toast.success(value ? "Deadline saved" : "Deadline removed");
+      setMatrix((m) => ({ ...m, round: { ...m.round, deadline: data.data.deadline } }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not save the deadline");
+    } finally {
+      setSavingDeadline(false);
     }
   };
 
@@ -128,6 +169,10 @@ export default function ChoiceMatrix() {
   };
 
   const removeAssignment = (idx) => setAssignments((prev) => prev.filter((_, i) => i !== idx));
+
+  // Past its deadline the round is closed for faculty no matter what
+  // `isOpen` says — the backend stops serving it at that moment.
+  const roundClosed = !!matrix?.round?.deadline && new Date(matrix.round.deadline) <= new Date();
 
   const finalize = async () => {
     if (assignments.length === 0) return toast.error("Add at least one assignment");
@@ -213,6 +258,18 @@ export default function ChoiceMatrix() {
             </div>
           </div>
         </div>
+        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1 max-w-xs">
+          Deadline (optional)
+          <input
+            type="datetime-local"
+            value={releaseDeadline}
+            onChange={(e) => setReleaseDeadline(e.target.value)}
+            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)]"
+          />
+          <span className="text-[10px] font-medium normal-case tracking-normal text-[var(--text-secondary)]">
+            At this moment the choice filling page clears itself from every faculty account. Leave it empty to keep the round open until you close it.
+          </span>
+        </label>
         <button onClick={release} disabled={releasing} className="btn-premium text-sm px-4 py-2 disabled:opacity-40">
           {releasing ? <Loader2 size={14} className="animate-spin" /> : "Release Choice Filling"}
         </button>
@@ -255,9 +312,34 @@ export default function ChoiceMatrix() {
             </div>
           ) : (
             <div className="glass-card rounded-2xl overflow-hidden overflow-x-auto">
-              <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)] flex items-center justify-between">
+              <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold text-[var(--text-secondary)] flex flex-wrap items-center gap-3 justify-between">
                 <span>
-                  Round {matrix.round.isOpen ? "open" : "closed"} · {matrix.subjects.length} subject(s)
+                  Round {roundClosed ? "closed" : matrix.round.isOpen ? "open" : "closed"} · {matrix.subjects.length} subject(s)
+                  {matrix.round.deadline && (
+                    <span className={roundClosed ? "text-red-500 ml-1" : "ml-1"}>
+                      · {roundClosed ? "deadline passed" : "closes"} {fmtDeadline(matrix.round.deadline)}
+                    </span>
+                  )}
+                </span>
+                <span className="flex items-center gap-2 font-normal">
+                  <input
+                    type="datetime-local"
+                    value={roundDeadline}
+                    onChange={(e) => setRoundDeadline(e.target.value)}
+                    className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2 py-1 text-xs text-[var(--text-primary)]"
+                  />
+                  <button
+                    onClick={() => saveDeadline(roundDeadline)}
+                    disabled={savingDeadline || !roundDeadline}
+                    className="font-bold text-[var(--primary)] disabled:opacity-40"
+                  >
+                    {savingDeadline ? <Loader2 size={13} className="animate-spin" /> : matrix.round.deadline ? "Change deadline" : "Set deadline"}
+                  </button>
+                  {matrix.round.deadline && (
+                    <button onClick={() => { setRoundDeadline(""); saveDeadline(""); }} disabled={savingDeadline} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                      Remove
+                    </button>
+                  )}
                 </span>
                 <button
                   onClick={deleteRound}

@@ -708,6 +708,13 @@ const Teams = () => {
                               {t.guidePreferences?.length > 0 && (
                                 <div className="text-[11px] text-slate-500">{t.guidePreferences.length} preference(s) submitted</div>
                               )}
+                              {/* A guide who rejected the title and stepped away — this
+                                  team is waiting on a fresh allotment. */}
+                              {t.releasedGuides?.length > 0 && (
+                                <div className="text-[11px] text-red-600">
+                                  {t.releasedGuides[t.releasedGuides.length - 1].guide?.name || 'A guide'} left this team
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>

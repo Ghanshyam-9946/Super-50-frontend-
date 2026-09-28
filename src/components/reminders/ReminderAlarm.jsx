@@ -1,43 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { BellRing, X, Clock } from "lucide-react";
+import { BellRing, X, Clock, Volume2, VolumeX } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { speak } from "../../utils/speak";
+import { playAlarm, isAlarmMuted, setAlarmMuted } from "../../utils/alarmSound";
 
 const POLL_MS = 30000;
-const BEEP_INTERVAL_MS = 1500;
-
-// Plays a short two-tone beep via the Web Audio API — no audio asset to
-// host, works everywhere the browser supports AudioContext (all modern
-// browsers). Kept as a standalone function (not a hook) since it's a pure
-// fire-and-forget side effect triggered on an interval, not tied to a
-// component's render lifecycle.
-const playBeep = () => {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const playTone = (freq, startTime, duration) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + duration);
-    };
-    const now = ctx.currentTime;
-    playTone(880, now, 0.15);
-    playTone(1046, now + 0.18, 0.15);
-  } catch {
-    // AudioContext can be blocked (no user gesture yet) or unsupported —
-    // the visual modal + spoken title still get the reminder across.
-  }
-};
+const BEEP_INTERVAL_MS = 4000;
 
 // Global, always-mounted alarm — same pattern as FloatingChatBubble
 // (Layout.jsx renders it once app-wide, it self-gates by role and no-ops
@@ -49,6 +19,7 @@ export default function ReminderAlarm() {
   const [snoozedIds, setSnoozedIds] = useState(new Set());
   const beepTimerRef = useRef(null);
   const announcedIdsRef = useRef(new Set());
+  const [muted, setMuted] = useState(isAlarmMuted());
 
   const FACULTY_ROLES = ["teacher", "admin", "super50_admin", "tp_admin", "guide", "pms_admin"];
   const userRoles = user?.roles?.length ? user.roles : [user?.role];
@@ -83,16 +54,22 @@ export default function ReminderAlarm() {
     });
   }, [dueReminders]);
 
-  // Beep on a repeating interval while any reminder is due.
+  // Ring on a repeating interval while any reminder is due, until it is
+  // dismissed or snoozed. Muting stops the sound, not the modal.
   useEffect(() => {
-    if (dueReminders.length === 0) {
-      clearInterval(beepTimerRef.current);
-      return;
-    }
-    playBeep();
-    beepTimerRef.current = setInterval(playBeep, BEEP_INTERVAL_MS);
+    clearInterval(beepTimerRef.current);
+    if (dueReminders.length === 0 || muted) return undefined;
+    playAlarm();
+    beepTimerRef.current = setInterval(playAlarm, BEEP_INTERVAL_MS);
     return () => clearInterval(beepTimerRef.current);
-  }, [dueReminders.length]);
+  }, [dueReminders.length, muted]);
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setAlarmMuted(next);
+    if (!next) playAlarm({ force: true }); // unmuting proves it works
+  };
 
   const dismiss = async (id) => {
     setDueReminders((prev) => prev.filter((r) => r._id !== id));
@@ -124,6 +101,13 @@ export default function ReminderAlarm() {
         <div className="flex items-center gap-2 text-[var(--primary)]">
           <BellRing size={22} className="animate-pulse" />
           <span className="font-display font-black text-lg">Reminder{dueReminders.length > 1 ? "s" : ""}</span>
+          <button
+            onClick={toggleMute}
+            title={muted ? "Sound is off — turn it on" : "Turn the sound off"}
+            className="ml-auto text-[var(--text-secondary)] hover:text-[var(--primary)]"
+          >
+            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
         </div>
         <div className="space-y-3 max-h-[50vh] overflow-y-auto">
           {dueReminders.map((r) => (

@@ -269,8 +269,9 @@ export default function Subjects() {
               >
                 <option value="tick">Tick (No Dues)</option>
                 <option value="marks">Marks (Sessional)</option>
+                <option value="both">Both (No Dues + Sessional)</option>
               </select>
-              {a.type === "marks" && (
+              {(a.type === "marks" || a.type === "both") && (
                 <>
                   <input
                     type="number"

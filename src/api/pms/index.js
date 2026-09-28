@@ -192,6 +192,7 @@ export const guideAPI = {
   getRubrics: (teamId) => api.get(`/pms/guide/rubrics/${teamId}`),
   saveRubrics: (data) => api.post('/pms/guide/rubrics', data),
   rubricPdfUrl: (teamId) => `/pms/guide/rubrics/${teamId}/pdf`,
+  initiationFormUrl: (teamId) => `/pms/guide/teams/${teamId}/initiation-form.pdf`,
   bulkRubricsPdfUrl: () => `/pms/guide/rubrics-all/pdf`,
   // Project title / details approval — the guide decides
   getTitleApprovals: () => api.get('/pms/guide/title-approvals'),

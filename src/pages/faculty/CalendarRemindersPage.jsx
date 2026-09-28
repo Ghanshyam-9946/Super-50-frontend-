@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { BellRing, Plus, Trash2, Loader2 } from "lucide-react";
+import { BellRing, Plus, Trash2, Loader2, Volume2, VolumeX } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { playAlarm, isAlarmMuted, setAlarmMuted } from "../../utils/alarmSound";
 
 const emptyForm = () => ({ date: "", time: "", title: "", note: "" });
 
@@ -10,6 +11,21 @@ export default function CalendarRemindersPage() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [muted, setMuted] = useState(isAlarmMuted());
+
+  // Browsers only allow sound after a user gesture, so this button doubles
+  // as the gesture that wakes the audio up for the rest of the session.
+  const testSound = () => {
+    playAlarm({ force: true });
+    toast.success(muted ? "That is the alarm — sound is currently OFF for reminders" : "That is how your reminder will sound");
+  };
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    setAlarmMuted(next);
+    if (!next) playAlarm({ force: true });
+  };
 
   const load = async () => {
     setLoading(true);
@@ -66,15 +82,26 @@ export default function CalendarRemindersPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">
-      <header className="glass-card flex items-center gap-4 p-8 rounded-3xl">
+      <header className="glass-card flex flex-wrap items-center gap-4 p-8 rounded-3xl">
         <div className="p-3 bg-[var(--primary)]/10 text-[var(--primary)] rounded-2xl border border-[var(--primary)]/20">
           <BellRing size={26} />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">My Reminders</h1>
           <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">
-            Set a reminder for any date — an alarm rings (with sound) at that time while you have the site open.
+            Set a reminder for any date — an alarm rings at that time while you have the site open, and keeps ringing until you dismiss or snooze it.
           </p>
+        </div>
+        <div className="flex flex-col gap-2 shrink-0">
+          <button onClick={testSound} className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5">
+            <Volume2 size={14} /> Test sound
+          </button>
+          <button
+            onClick={toggleMute}
+            className="text-xs font-bold px-4 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 text-[var(--text-secondary)] hover:border-[var(--primary)]"
+          >
+            {muted ? <><VolumeX size={14} /> Sound off</> : <><Volume2 size={14} /> Sound on</>}
+          </button>
         </div>
       </header>
 

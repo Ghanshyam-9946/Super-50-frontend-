@@ -601,7 +601,7 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
   const uid = user?._id;
   const first = sheets[0];
   const subjectActivities = first?.subjectRef?.activities || [];
-  const marksActivities = subjectActivities.filter((a) => a.type === "marks");
+  const marksActivities = subjectActivities.filter((a) => a.type === "marks" || a.type === "both");
   const categoryOptions = marksActivities.length ? marksActivities.map((a) => a.label) : CA_CATEGORIES;
   const defaultMaxFor = (category) => {
     const activity = marksActivities.find((a) => a.label === category);
@@ -914,7 +914,7 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
   // predate the Subject Catalog (see Subject.js / masterDataController.js's
   // backfillSubjectCatalog). Same fallback the backend validates against.
   const subjectActivities = sheet.subjectRef?.activities || [];
-  const marksActivities = subjectActivities.filter((a) => a.type === "marks");
+  const marksActivities = subjectActivities.filter((a) => a.type === "marks" || a.type === "both");
   const categoryOptions = marksActivities.length ? marksActivities.map((a) => a.label) : CA_CATEGORIES;
   const categoryLabel = (cat) => CATEGORY_LABELS[cat] || cat;
   const hasLab = (sheet.subjectRef?.noOfPractical || 0) > 0;

@@ -912,6 +912,10 @@ const StudentTeam = () => {
 
   // ============ HAS TEAM ============
   const approvalStatus = team.detailsApprovalStatus || 'draft';
+  // A guide who rejected the title and released the team (see the guide's
+  // "Reject & release") leaves the team with no guide and no preferences.
+  const lastRelease = (team.releasedGuides || [])[(team.releasedGuides || []).length - 1] || null;
+  const guideLeft = !!lastRelease && (team.guides || []).length === 0;
   const canEditDetails = !team.isLocked && approvalStatus !== 'pending' && approvalStatus !== 'approved';
   const APPROVAL_BADGE = {
     draft: <span className="badge-secondary">Draft</span>,
@@ -949,6 +953,11 @@ const StudentTeam = () => {
               </div>
             ))}
           </div>
+        </div>
+      ) : guideLeft ? (
+        <div className="alert-danger text-xs">
+          <XCircle className="w-4 h-4 flex-shrink-0" />
+          {lastRelease.guide?.name || 'Your guide'} left this team. Pick new guide preferences above.
         </div>
       ) : (
         <div className="alert-warning text-xs">
@@ -1005,13 +1014,29 @@ const StudentTeam = () => {
         </div>
       )}
 
-      {!team.isLocked && approvalStatus === 'rejected' && (
+      {!team.isLocked && approvalStatus === 'rejected' && !guideLeft && (
         <div className="alert-danger">
           <XCircle className="w-5 h-5 flex-shrink-0" />
           <div>
             <strong>Your project details were rejected by your guide.</strong>
             <p className="text-xs mt-1">Reason: "{team.detailsRejectionReason}"</p>
             <p className="text-xs mt-1">Fix the details below, then click Save &amp; Resubmit for Approval.</p>
+          </div>
+        </div>
+      )}
+
+      {/* The guide rejected the title and stepped away — the team has to
+          choose again before anything else can happen. */}
+      {!team.isLocked && guideLeft && (
+        <div className="alert-danger">
+          <XCircle className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <strong>{lastRelease.guide?.name || 'Your guide'} is no longer your guide.</strong>
+            <p className="text-xs mt-1">Reason: "{lastRelease.reason || team.detailsRejectionReason}"</p>
+            <p className="text-xs mt-1">
+              Pick your guide preferences again below — that guide is no longer on the list, and only guides with room left are shown.
+              Admin will allot your new guide, and then you can resubmit the project details.
+            </p>
           </div>
         </div>
       )}
