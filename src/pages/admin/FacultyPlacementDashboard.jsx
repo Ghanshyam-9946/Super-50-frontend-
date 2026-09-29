@@ -370,13 +370,13 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
     }
 
     setUploading(true);
-    const toastId = toast.loading('Uploading round results & sending emails...');
+    const toastId = toast.loading('Uploading round results...');
     try {
       const response = await api.post('/placement/results/dynamic-upload', formData);
       const { updated, notFound } = response.data.data || {};
       toast.success(
-        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}. Emails sent!`,
-        { id: toastId, duration: 5000 }
+        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}.`,
+        { id: toastId, duration: 4000 }
       );
       onRefresh();
       onClose();
@@ -398,7 +398,7 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
           <Upload size={24} />
         </div>
         <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload Round Results</h2>
-        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Excel columns should match the round names. Emails will be sent automatically.</p>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Excel columns should match the round names.</p>
 
         <form onSubmit={handleUpload} className="space-y-5">
           <div>
@@ -446,7 +446,7 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
           </div>
 
           <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2" disabled={uploading || !file || !driveId}>
-            {uploading ? 'Uploading...' : 'Upload Results & Notify Students'}
+            {uploading ? 'Uploading...' : 'Upload Results'}
           </button>
         </form>
       </motion.div>

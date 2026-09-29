@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight, Printer, KeyRound, ShieldCheck, Check, Copy, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
@@ -489,6 +489,116 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
   );
 }
 
+function AdminSetPasswordModal({ student, onClose, onSuccess }) {
+  const [password, setPassword] = useState('');
+  const [forceChange, setForceChange] = useState(true);
+  const [emailStudent, setEmailStudent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null); // { password, emailed }
+  const [copied, setCopied] = useState(false);
+
+  const submit = async () => {
+    if (password && password.trim().length < 6) return toast.error('Password must be at least 6 characters');
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/admin/students/${student._id}/password`, {
+        password: password.trim(),
+        forceChange,
+        emailStudent,
+      });
+      setResult({ password: data.password, emailed: data.emailed });
+      if (onSuccess) onSuccess(data.data);
+      toast.success(data.message || 'Password updated successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not change the password');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(result.password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Copy failed — note it down manually');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="glass-card w-full max-w-md rounded-3xl p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display font-black text-lg text-[var(--text-primary)]">Set Student Password</h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              {student.name} · {student.enrollmentNumber || student.enrollmentNo || student.email}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X size={18} /></button>
+        </div>
+
+        {result ? (
+          <>
+            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+                <ShieldCheck size={16} /> Password changed successfully
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm font-mono text-[var(--text-primary)] break-all font-bold">
+                  {result.password}
+                </code>
+                <button onClick={copy} title="Copy" className="p-2 rounded-lg border border-[var(--border-light)] text-[var(--text-secondary)] hover:text-[var(--primary)] bg-[var(--bg-input)]">
+                  {copied ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                </button>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {result.emailed ? 'Also emailed to the student. ' : ''}Share this password with the student now — it won't be shown again.
+              </p>
+            </div>
+            <button onClick={onClose} className="btn-premium text-sm px-5 py-2.5 w-full">Done</button>
+          </>
+        ) : (
+          <>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+              New password
+              <input
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Leave empty to auto-generate one"
+                className="mt-1.5 w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2.5 text-sm font-bold text-[var(--text-primary)] outline-none focus:border-[var(--primary)] shadow-sm"
+              />
+            </label>
+
+            <label className="flex items-start gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+              <input type="checkbox" checked={forceChange} onChange={(e) => setForceChange(e.target.checked)} className="mt-0.5" />
+              <span>Ask the student to choose their own password right after they log in <strong className="text-[var(--text-primary)]">(recommended)</strong></span>
+            </label>
+            <label className="flex items-start gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+              <input type="checkbox" checked={emailStudent} onChange={(e) => setEmailStudent(e.target.checked)} className="mt-0.5" disabled={!student.email} />
+              <span>Email it to {student.email || 'the student'}{!student.email && ' — no email on file'}</span>
+            </label>
+
+            <div className="flex items-start gap-2 text-[11px] text-[var(--text-secondary)] bg-[var(--bg-input)] rounded-xl p-3">
+              <AlertCircle size={14} className="shrink-0 mt-0.5 text-[var(--primary)]" />
+              This password change is recorded in the system audit logs.
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button onClick={onClose} className="text-sm font-bold px-4 py-2.5 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-input)]">Cancel</button>
+              <button onClick={submit} disabled={busy} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />} Change Password
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const formatBatch = (batchStr) => {
   if (!batchStr) return '';
   if (batchStr.toString().includes('-')) return batchStr;
@@ -512,6 +622,7 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [printingStudentId, setPrintingStudentId] = useState(null);
+  const [passwordTargetStudent, setPasswordTargetStudent] = useState(null);
 
   const handleDirectPrint = async (studentId, studentName) => {
     setPrintingStudentId(studentId);
@@ -808,6 +919,15 @@ export default function StudentsPage({ isSuper50 = false }) {
                             >
                               <Eye size={15} /> View Data
                             </button>
+                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+                              <button
+                                onClick={() => setPasswordTargetStudent(student)}
+                                className="btn-premium text-xs py-2 px-3 flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                title="Change Student Password"
+                              >
+                                <KeyRound size={13} /> Set Password
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDirectPrint(student._id, student.name)}
                               disabled={printingStudentId === student._id}
@@ -1048,6 +1168,19 @@ export default function StudentsPage({ isSuper50 = false }) {
           onClose={() => setShowAttendanceModal(false)}
           classId={editingClassId}
           onSuccess={fetchClasses}
+        />
+      )}
+      {passwordTargetStudent && (
+        <AdminSetPasswordModal
+          student={passwordTargetStudent}
+          onClose={() => setPasswordTargetStudent(null)}
+          onSuccess={() => dispatch(fetchAllStudents({
+            department: dept || undefined,
+            batch: batch || undefined,
+            search: search || undefined,
+            sort: `${sortDir === 'desc' ? '-' : ''}${sortField}`,
+            isSuper50: isSuper50 ? 'true' : undefined
+          }))}
         />
       )}
     </div>

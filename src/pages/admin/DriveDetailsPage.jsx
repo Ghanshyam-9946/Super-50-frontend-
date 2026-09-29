@@ -175,13 +175,13 @@ const DriveDetailsPage = () => {
     }
 
     setUploading(true);
-    const toastId = toast.loading('Uploading round results & sending emails...');
+    const toastId = toast.loading('Uploading round results...');
     try {
       const response = await api.post('/placement/results/dynamic-upload', formData);
       const { updated, notFound } = response.data.data || {};
       toast.success(
-        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}. Emails sent!`,
-        { id: toastId, duration: 5000 }
+        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}.`,
+        { id: toastId, duration: 4000 }
       );
       setFile(null);
       setShowUploadModal(false);
@@ -534,7 +534,7 @@ const DriveDetailsPage = () => {
               <Upload size={24} />
             </div>
             <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload Result for {selectedRoundName}</h2>
-            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Select Excel to update candidate statuses for rounds and automatically notify them.</p>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Select Excel to update candidate statuses for rounds.</p>
 
             <form onSubmit={handleUploadResults} className="space-y-5">
               {selectedRoundName && (
