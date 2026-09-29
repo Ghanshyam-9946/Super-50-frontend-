@@ -383,19 +383,68 @@ export default function SecurityGatePassPage() {
             </form>
 
             {result && (
-              <div className={`rounded-2xl p-4 border ${result.ok ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'} transition-all`}>
-                <div className="flex items-start gap-3">
-                  {result.ok ? <CheckCircle2 className="text-emerald-600 shrink-0" size={20} /> : <XCircle className="text-red-600 shrink-0" size={20} />}
-                  <div className="min-w-0">
-                    <div className={`font-black text-sm ${result.ok ? 'text-emerald-700' : 'text-red-700'}`}>{result.message}</div>
+              <div className={`rounded-2xl p-5 border-2 ${result.ok ? 'bg-emerald-500/10 border-emerald-500 shadow-md shadow-emerald-500/10' : 'bg-red-500/10 border-red-500 shadow-md shadow-red-500/10'} transition-all`}>
+                {result.ok ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3 pb-3 border-b border-emerald-500/20">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                          <CheckCircle2 size={24} />
+                        </div>
+                        <div>
+                          <div className="font-display font-black text-lg text-emerald-700 leading-tight">
+                            PASS APPROVED ✅
+                          </div>
+                          <div className="text-[11px] font-black uppercase tracking-wider text-emerald-600">
+                            Cleared to Exit Campus
+                          </div>
+                        </div>
+                      </div>
+                      <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500 text-white shadow-sm">
+                        APPROVED
+                      </span>
+                    </div>
+
                     {result.pass && (
-                      <div className="text-xs text-[var(--text-secondary)] mt-1 font-medium">
-                        <strong className="text-[var(--text-primary)]">{studentLine(result.pass.student)}</strong> · {semLine(result.pass.student)}<br />
-                        Reason: {result.pass.reason} · exit {fmt(result.pass.exitTime)}
+                      <div className="space-y-2 text-xs">
+                        <div className="bg-white/60 dark:bg-black/20 rounded-xl p-3.5 space-y-1.5 border border-emerald-500/20">
+                          <div className="text-base font-black text-[var(--text-primary)]">
+                            {result.pass.student?.name}
+                          </div>
+                          <div className="text-[12px] font-bold text-[var(--text-secondary)]">
+                            Roll No: <span className="text-[var(--text-primary)] font-black">{result.pass.student?.enrollmentNumber || result.pass.student?.enrollmentNo || '—'}</span>
+                            {result.pass.student?.department && ` • ${result.pass.student.department}`}
+                            {result.pass.student?.semester && ` • Sem ${result.pass.student.semester}`}
+                          </div>
+                          <div className="text-[12px] text-[var(--text-secondary)]">
+                            Reason: <strong className="text-[var(--text-primary)]">{result.pass.reason}</strong>
+                          </div>
+                          <div className="text-[12px] text-[var(--text-secondary)]">
+                            Exit Time: <strong className="text-[var(--text-primary)]">{fmt(result.pass.exitTime)}</strong>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-emerald-700 font-bold px-1 pt-1">
+                          <span>Verified: TG & Admin Approved</span>
+                          <span>Scanned: {fmt(result.pass.usedAt || new Date())}</span>
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                      <XCircle size={24} />
+                    </div>
+                    <div>
+                      <div className="font-display font-black text-base text-red-700">
+                        EXIT DENIED / INVALID PASS ❌
+                      </div>
+                      <p className="text-xs font-bold text-red-600 mt-1">
+                        {result.message}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
