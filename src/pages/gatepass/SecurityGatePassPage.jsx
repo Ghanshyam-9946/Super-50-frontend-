@@ -17,11 +17,13 @@ import {
   User,
   Clock,
   Calendar,
+  Trophy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { useSelector } from 'react-redux';
 import { PassRow, StatusBadge, fmt, studentLine, semLine } from './gatePassShared';
+import GatePassLeaderboard from './GatePassLeaderboard';
 
 const READER_ID = 'gate-pass-qr-reader-modal';
 
@@ -323,7 +325,7 @@ export default function SecurityGatePassPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {[['scan', 'Gate Terminal'], ['history', 'Exit History']].map(([key, label]) => (
+          {[['scan', 'Gate Terminal'], ['leaderboard', 'Leaderboard'], ['history', 'Exit History']].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -339,7 +341,9 @@ export default function SecurityGatePassPage() {
         </div>
       </header>
 
-      {tab === 'history' ? (
+      {tab === 'leaderboard' ? (
+        <GatePassLeaderboard />
+      ) : tab === 'history' ? (
         <div className="glass-card p-6 rounded-3xl space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">

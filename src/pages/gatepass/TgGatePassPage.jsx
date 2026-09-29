@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { DoorOpen, Loader2, Inbox, History, RefreshCw } from 'lucide-react';
+import { DoorOpen, Loader2, Inbox, History, RefreshCw, Trophy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { PassRow, ReviewDialog, fmt, studentLine, semLine } from './gatePassShared';
+import GatePassLeaderboard from './GatePassLeaderboard';
 
 // The TG's queue: gate pass requests from the students in their tutor group.
 // Approving sends the request on to the admin; rejecting closes it.
 export default function TgGatePassPage() {
+  const [tab, setTab] = useState('queue');
   const [pending, setPending] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,12 +53,34 @@ export default function TgGatePassPage() {
             </p>
           </div>
         </div>
-        <button onClick={() => load(true)} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5">
-          <RefreshCw size={13} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {[['queue', 'My Tutor Group'], ['leaderboard', 'Leaderboard']].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`px-4 py-2.5 rounded-xl text-sm font-bold border transition-colors ${
+                tab === key
+                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                  : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              {label}
+              {key === 'queue' && pending.length > 0 && (
+                <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${tab === key ? 'bg-white/20' : 'bg-[var(--primary)]/10 text-[var(--primary)]'}`}>
+                  {pending.length}
+                </span>
+              )}
+            </button>
+          ))}
+          <button onClick={() => load(true)} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5">
+            <RefreshCw size={13} /> Refresh
+          </button>
+        </div>
       </header>
 
-      {loading ? (
+      {tab === 'leaderboard' ? (
+        <GatePassLeaderboard />
+      ) : loading ? (
         <div className="glass-card p-10 rounded-3xl flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
       ) : (
         <>
