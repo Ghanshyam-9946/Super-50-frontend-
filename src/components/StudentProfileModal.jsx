@@ -1,10 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera, Pencil, Trash2, Check } from 'lucide-react';
+import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera, Pencil, Trash2, Check, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUser } from '../features/auth/authSlice';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import {
+  OverallPerformanceDashboard,
+  ActivitiesGraph,
+  CertificatesGraph,
+  PlacementsGraph,
+  MSTMarksGraph,
+  AMCATMarksGraph,
+  RGPVMarksGraph,
+  RemarksGraph,
+  AttendanceGraph
+} from './StudentAnalyticsGraphs';
 
 export default function StudentProfileModal({ isOpen, onClose, studentId }) {
   const dispatch = useDispatch();
@@ -317,6 +328,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
           {(activeTab !== 'menu' || user?.role === 'student') && (
             <div className="flex px-6 bg-slate-50 border-b border-slate-200 gap-6 overflow-x-auto scrollbar-none">
               {[
+                { id: 'analytics', icon: TrendingUp, label: 'Analytics & Graphs' },
                 { id: 'profile', icon: User, label: 'Overview' },
                 { id: 'activities', icon: Activity, label: 'Activities' },
                 { id: 'certificates', icon: Award, label: 'Certificates' },
@@ -366,6 +378,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {activeTab === 'menu' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 py-4">
                     {[
+                      { id: 'analytics', icon: TrendingUp, label: 'Analytics & Overall Graph', desc: '360° visual charts, performance radar & 8-parameter breakdown', color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20', featured: true },
                       { id: 'profile', icon: User, label: 'Overview', desc: 'Basic info, contact details and CGPA', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
                       { id: 'mst', icon: ClipboardList, label: 'MST Marks', desc: 'Subject-wise mid semester exam scores', color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
                       { id: 'amcat', icon: Award, label: 'AMCAT Marks', desc: 'Sectional scores from AMCAT exams', color: 'text-fuchsia-500 bg-fuchsia-500/10 border-fuchsia-500/20' },
@@ -382,13 +395,20 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                         <div
                           key={item.id}
                           onClick={() => setActiveTab(item.id)}
-                          className="glass-card p-6 border border-slate-200 hover:border-indigo-500/50 transition-all cursor-pointer group flex flex-col justify-between hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white rounded-3xl"
+                          className={`glass-card p-6 border ${item.featured ? 'border-indigo-400 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/40 ring-2 ring-indigo-500/20' : 'border-slate-200 bg-white'} hover:border-indigo-500/50 transition-all cursor-pointer group flex flex-col justify-between hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-3xl`}
                         >
                           <div>
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${item.color} shrink-0`}>
-                              <Icon size={20} />
+                            <div className="flex items-center justify-between">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${item.color} shrink-0`}>
+                                <Icon size={20} />
+                              </div>
+                              {item.featured && (
+                                <span className="bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                  <Sparkles size={10} /> 360° View
+                                </span>
+                              )}
                             </div>
-                            <h4 className="font-display font-black text-slate-900 text-base mt-5 group-hover:text-indigo-600 transition-colors">
+                            <h4 className="font-display font-black text-slate-900 text-base mt-4 group-hover:text-indigo-600 transition-colors">
                               {item.label}
                             </h4>
                             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
@@ -402,6 +422,11 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                       );
                     })}
                   </div>
+                )}
+
+                {/* Analytics & Overall Performance Tab */}
+                {activeTab === 'analytics' && (
+                  <OverallPerformanceDashboard data={data} history={history} attendanceLogs={attendanceLogs} />
                 )}
 
                 {/* Profile Overview Tab */}
@@ -579,7 +604,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                             <div className="flex justify-between"><span className="text-slate-500">Batch:</span><span className="font-bold text-slate-900">{data.student.batch}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">CGPA:</span><span className="font-bold text-slate-900">{data.student.cgpa || 'N/A'}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Residence:</span><span className="font-bold text-indigo-600">{data.student.residenceType || 'Day Scholar'}</span></div>
-                            <div className="flex justify-between"><span className="text-slate-500">Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">POD AI Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600">{Math.round(data.student.attendancePercentage || 0)}%</span></div>
                           </div>
                         </div>
@@ -605,6 +630,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Activities Tab */}
                 {activeTab === 'activities' && (
                   <div className="space-y-4">
+                    {/* Particular Graph for Activities */}
+                    <ActivitiesGraph activities={data.activities} />
+
                     {data.activities.length === 0 ? (
                       <div className="text-center py-10 text-slate-500">No activities uploaded.</div>
                     ) : (
@@ -632,35 +660,64 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
 
                 {/* Certificates Tab */}
                 {activeTab === 'certificates' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {data.certificates.length === 0 ? (
-                      <div className="text-center py-10 text-slate-500 col-span-2">No certificates uploaded.</div>
-                    ) : (
-                      data.certificates.map(cert => (
-                        <div key={cert._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                          <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0">
-                            <Award size={24} />
+                  <div className="space-y-4">
+                    {/* Particular Graph for Certificates */}
+                    <CertificatesGraph certificates={data.certificates} />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {data.certificates.length === 0 ? (
+                        <div className="text-center py-10 text-slate-500 col-span-2">No certificates uploaded.</div>
+                      ) : (
+                        data.certificates.map(cert => (
+                          <div key={cert._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4">
+                            <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                              <Award size={24} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-slate-900 truncate">{cert.title}</h4>
+                              <p className="text-xs text-slate-500 truncate">{cert.issuedBy}</p>
+                              
+                              {(cert.participationType || cert.eventLevel || cert.eventDuration || cert.eventDate) && (
+                                <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                                  {cert.participationType && (
+                                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                      {cert.participationType === 'Winner' ? '🏆 Winner' : cert.participationType}
+                                    </span>
+                                  )}
+                                  {cert.eventLevel && (
+                                    <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                      {cert.eventLevel}
+                                    </span>
+                                  )}
+                                  {cert.eventDuration && (
+                                    <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">
+                                      {cert.eventDuration}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              <a href={cert.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-500 hover:underline mt-1.5 block">View File</a>
+                            </div>
+                            <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border shrink-0 ${cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                  'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                              }`}>
+                              {cert.verified}
+                            </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-slate-900 truncate">{cert.title}</h4>
-                            <p className="text-xs text-slate-500 truncate">{cert.issuedBy}</p>
-                            <a href={cert.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-500 hover:underline mt-1 block">View File</a>
-                          </div>
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border ${cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                              cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                                'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                            }`}>
-                            {cert.verified}
-                          </span>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {/* Placements Tab */}
                 {activeTab === 'placements' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for Placements */}
+                    <PlacementsGraph history={history} />
+
                     {history.length === 0 ? (
                       <div className="text-center py-10 text-slate-500">No placement history found.</div>
                     ) : (
@@ -734,6 +791,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Remarks Tab */}
                 {activeTab === 'remarks' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for Remarks */}
+                    <RemarksGraph remarks={data.student?.remarks} />
+
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                       <h4 className="font-bold text-slate-900 mb-4">Add Remark</h4>
                       <form onSubmit={async (e) => {
@@ -792,6 +852,13 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Super 50 Attendance Tab */}
                 {activeTab === 'attendance' && (
                   <div className="space-y-4">
+                    {/* Particular Graph for Attendance */}
+                    <AttendanceGraph
+                      attendancePercentage={data?.student?.attendancePercentage}
+                      semesterAttendance={data?.semesterAttendance}
+                      attendanceLogs={attendanceLogs}
+                    />
+
                     <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                       <div>
                         <h4 className="font-bold text-slate-900">Cohort Class Attendance</h4>
@@ -941,6 +1008,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* MST Results Tab */}
                 {activeTab === 'mst' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for MST Marks */}
+                    <MSTMarksGraph mstResults={data.mstResults} />
+
                     <div className="border-b pb-4">
                       <h4 className="font-display font-black text-slate-950 text-lg">Mid-Semester Test Scores</h4>
                       <p className="text-xs text-slate-500 mt-0.5">Subject-wise marks obtained in MST evaluations.</p>
@@ -1026,6 +1096,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* AMCAT Results Tab */}
                 {activeTab === 'amcat' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for AMCAT Marks */}
+                    <AMCATMarksGraph amcatResults={data.amcatResults} />
+
                     <div className="border-b pb-4">
                       <h4 className="font-display font-black text-slate-950 text-lg">AMCAT Assessment Scores</h4>
                       <p className="text-xs text-slate-500 mt-0.5">Sectional scores from AMCAT exams.</p>
@@ -1075,6 +1148,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* RGPV Results Tab */}
                 {activeTab === 'rgpv' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for RGPV Marks */}
+                    <RGPVMarksGraph rgpvResults={data.rgpvResults} />
+
                     <div className="border-b pb-4">
                       <h4 className="font-display font-black text-slate-950 text-lg">RGPV University Results</h4>
                       <p className="text-xs text-slate-500 mt-0.5">Semester-wise SGPA, CGPA, and subject grade records.</p>

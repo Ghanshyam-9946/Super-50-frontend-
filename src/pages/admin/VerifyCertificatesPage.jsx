@@ -246,6 +246,34 @@ export default function VerifyCertificatesPage() {
                         <div className="font-display font-black text-xl text-[var(--text-primary)] mb-1">{cert.title}</div>
                         {cert.description && <div className="text-[13px] font-medium text-[var(--text-secondary)] mb-2">{cert.description}</div>}
                         {cert.issuedBy && <div className="text-[11px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Issued by: <strong className="text-[var(--text-primary)]">{cert.issuedBy}</strong></div>}
+                        
+                        {/* Event Details Badges */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                          {cert.participationType && (
+                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                              cert.participationType.toLowerCase().includes('winner') ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                              cert.participationType.toLowerCase().includes('runner') ? 'bg-slate-500/10 text-slate-600 border-slate-500/20' :
+                              'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
+                            }`}>
+                              {cert.participationType === 'Winner' ? '🏆 Winner' : cert.participationType}
+                            </span>
+                          )}
+                          {cert.eventLevel && (
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                              {cert.eventLevel} Level
+                            </span>
+                          )}
+                          {cert.eventDuration && (
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                              Duration: {cert.eventDuration}
+                            </span>
+                          )}
+                          {cert.eventDate && (
+                            <span className="text-[10px] font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
+                              Event Date: {new Date(cert.eventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span className={`px-3 py-1.5 rounded-md text-[10px] uppercase font-black tracking-widest shadow-sm flex items-center gap-1.5 w-max border ${
                         cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
