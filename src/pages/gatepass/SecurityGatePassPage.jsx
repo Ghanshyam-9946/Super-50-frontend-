@@ -37,6 +37,9 @@ export default function SecurityGatePassPage() {
   const [recent, setRecent] = useState([]);
   const [history, setHistory] = useState([]);
   const [tab, setTab] = useState('scan');
+  // The guard reads faculty exits as their own list, not mixed in with the
+  // students'.
+  const [histKind, setHistKind] = useState('all');
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -61,7 +64,7 @@ export default function SecurityGatePassPage() {
 
   const loadHistory = async () => {
     try {
-      const { data } = await api.get('/gate-pass/guard/history');
+      const { data } = await api.get(`/gate-pass/guard/history${histKind === 'all' ? '' : `?kind=${histKind}`}`);
       setHistory(data.data || []);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not load history');
@@ -76,7 +79,8 @@ export default function SecurityGatePassPage() {
 
   useEffect(() => {
     if (tab === 'history') loadHistory();
-  }, [tab]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, histKind]);
 
   const submitToken = async (token) => {
     if (busyRef.current || !token) return;
@@ -264,6 +268,24 @@ export default function SecurityGatePassPage() {
           ))}
         </div>
       </header>
+
+      {tab === 'history' && (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {[['all', 'Everyone'], ['student', 'Students'], ['faculty', 'Faculty']].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setHistKind(key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                histKind === key
+                  ? 'bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]'
+                  : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === 'history' ? (
         <div className="glass-card p-6 rounded-3xl space-y-3">

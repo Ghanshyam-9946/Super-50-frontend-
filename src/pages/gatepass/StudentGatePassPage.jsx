@@ -27,13 +27,16 @@ const Countdown = ({ until }) => {
   return <span className="font-mono font-bold text-[var(--text-primary)]">{m}m {String(s).padStart(2, '0')}s</span>;
 };
 
-export default function StudentGatePassPage() {
+// `asFaculty` switches this page over to a faculty member applying for
+// their own pass. The flow is the same, minus the TG step — their HOD (the
+// admin) is the only approver.
+export default function StudentGatePassPage({ asFaculty = false }) {
   const [passes, setPasses] = useState([]);
   const [active, setActive] = useState(null);
   const [qr, setQr] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [form, setForm] = useState({ reason: '', exitTime: defaultExit() });
+  const [form, setForm] = useState({ reason: '', exitTime: defaultExit(), informHod: false });
 
   const load = async () => {
     try {
@@ -64,9 +67,13 @@ export default function StudentGatePassPage() {
     if (!form.reason.trim()) return toast.error('Please write the reason');
     setSending(true);
     try {
-      const { data } = await api.post('/gate-pass', { reason: form.reason.trim(), exitTime: new Date(form.exitTime) });
+      const { data } = await api.post('/gate-pass', {
+        reason: form.reason.trim(),
+        exitTime: new Date(form.exitTime),
+        ...(asFaculty ? { informHod: form.informHod } : {}),
+      });
       toast.success(data.message);
-      setForm({ reason: '', exitTime: defaultExit() });
+      setForm({ reason: '', exitTime: defaultExit(), informHod: false });
       load();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not send the request');
@@ -82,9 +89,13 @@ export default function StudentGatePassPage() {
           <DoorOpen className="text-[var(--primary)]" size={26} />
         </div>
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-black tracking-tight text-[var(--text-primary)]">Gate Pass</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-black tracking-tight text-[var(--text-primary)]">
+            {asFaculty ? 'My Gate Pass' : 'Gate Pass'}
+          </h1>
           <p className="text-[var(--text-secondary)] mt-1 font-medium text-sm">
-            Ask your TG for permission to leave the campus. Once your TG and the admin approve, you get a QR code to show at the gate.
+            {asFaculty
+              ? 'Ask your HOD for permission to leave the campus. Once they approve, you get a QR code to show at the gate.'
+              : 'Ask your TG for permission to leave the campus. Once your TG and the admin approve, you get a QR code to show at the gate.'}
           </p>
         </div>
       </header>
@@ -118,7 +129,9 @@ export default function StudentGatePassPage() {
                   <Clock size={15} />
                   {openPass.status === 'pending_tg'
                     ? 'Your TG has the request. You will get a QR code once your TG and then the admin approve it.'
-                    : 'Your TG approved it. Waiting for the admin — the QR code appears here as soon as they do.'}
+                    : asFaculty
+                      ? 'Your HOD has the request. The QR code appears here as soon as they approve it.'
+                      : 'Your TG approved it. Waiting for the admin — the QR code appears here as soon as they do.'}
                 </div>
               )}
 
@@ -151,8 +164,18 @@ export default function StudentGatePassPage() {
                   className="mt-1.5 w-full md:w-72 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
                 />
               </label>
+              {asFaculty && (
+                <label className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.informHod}
+                    onChange={(e) => setForm({ ...form, informHod: e.target.checked })}
+                  />
+                  I have informed my HOD
+                </label>
+              )}
               <p className="text-xs text-[var(--text-secondary)]">
-                The QR code stays valid until 30 minutes after this time.
+                The QR code stays valid for a short grace period after this time.
               </p>
               <button type="submit" disabled={sending} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-2 disabled:opacity-40">
                 {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Send

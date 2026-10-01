@@ -138,6 +138,11 @@ export default function CourseFilePanel({ subjectId }) {
                     <div className="text-sm font-bold text-[var(--text-primary)]">
                       {item.title}
                       {item.required === false && <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">optional</span>}
+                      {item.adminOwned && (
+                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                          provided by admin
+                        </span>
+                      )}
                     </div>
                     {item.description && <div className="text-[11px] text-[var(--text-secondary)]">{item.description}</div>}
                     {item.file && (
@@ -148,17 +153,25 @@ export default function CourseFilePanel({ subjectId }) {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--primary)]">
-                      {busy === item._id ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
-                      {item.file ? "Replace" : "Upload PDF"}
-                      <input type="file" accept="application/pdf" className="hidden" disabled={!!busy}
-                        onChange={(e) => { upload(kind, item._id, e.target.files?.[0]); e.target.value = ""; }} />
-                    </label>
-                    {item.file && (
-                      <button onClick={() => remove(kind, item._id, item.title)} disabled={!!busy}
-                        className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 disabled:opacity-40" title="Remove">
-                        <Trash2 size={14} />
-                      </button>
+                    {item.adminOwned ? (
+                      <span className="text-[11px] text-[var(--text-secondary)] text-right max-w-[160px]">
+                        Same copy for every subject — already in your merged file
+                      </span>
+                    ) : (
+                      <>
+                        <label className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--primary)]">
+                          {busy === item._id ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                          {item.file ? "Replace" : "Upload PDF"}
+                          <input type="file" accept="application/pdf" className="hidden" disabled={!!busy}
+                            onChange={(e) => { upload(kind, item._id, e.target.files?.[0]); e.target.value = ""; }} />
+                        </label>
+                        {item.file && (
+                          <button onClick={() => remove(kind, item._id, item.title)} disabled={!!busy}
+                            className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 disabled:opacity-40" title="Remove">
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

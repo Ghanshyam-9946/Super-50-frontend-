@@ -74,6 +74,9 @@ export default function FacultyTasksPage() {
 
   const [tab, setTab] = useState('assigned'); // assigned | add | allocated
   const [stats, setStats] = useState(null);
+  // Tasks this faculty handed to somebody else — counted separately from
+  // their own queue, since they never appear in the list below.
+  const [allocatedStats, setAllocatedStats] = useState(null);
   const [faculty, setFaculty] = useState([]);
   const [assigned, setAssigned] = useState([]);
   const [allocated, setAllocated] = useState([]);
@@ -82,7 +85,10 @@ export default function FacultyTasksPage() {
   const loadStats = useCallback(async () => {
     try {
       const { data } = await api.get('/tasks/stats');
-      if (data.success) setStats(data.data);
+      if (data.success) {
+        setStats(data.data);
+        setAllocatedStats(data.allocated || null);
+      }
     } catch {
       /* silent — cards fall back to 0 */
     }
@@ -148,7 +154,8 @@ export default function FacultyTasksPage() {
             📋 Faculty Task Manager
           </h1>
           <p className="text-[var(--text-secondary)] mt-2 font-medium">
-            Allocate, track and forward tasks across faculty — {stats?.total || 0} in your queue.
+            Allocate, track and forward tasks across faculty — {stats?.total || 0} in your queue
+            {allocatedStats?.total ? `, ${allocatedStats.total} allocated to others` : ''}.
           </p>
         </div>
         <button onClick={() => setTab('add')} className="btn-premium flex items-center gap-2 text-xs self-start md:self-auto">

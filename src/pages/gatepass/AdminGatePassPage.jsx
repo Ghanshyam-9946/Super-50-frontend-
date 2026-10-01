@@ -27,6 +27,8 @@ export default function AdminGatePassPage() {
   const [guards, setGuards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reviewing, setReviewing] = useState(null);
+  // Students and faculty both apply here, so the lists are kept apart.
+  const [kind, setKind] = useState('all');
   const [filters, setFilters] = useState({ status: 'all', from: '', to: '', q: '' });
   const [guard, setGuard] = useState(emptyGuard);
   const [savingGuard, setSavingGuard] = useState(false);
@@ -39,9 +41,15 @@ export default function AdminGatePassPage() {
   const loadHistory = async () => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => { if (v && v !== 'all') params.set(k, v); });
+    if (kind !== 'all') params.set('kind', kind);
     const { data } = await api.get(`/gate-pass/admin/history?${params.toString()}`);
     setHistory(data.data || []);
   };
+
+  // The pending list is short and already loaded, so it narrows here
+  // rather than with another request.
+  const shownPending = pending.filter((p) =>
+    kind === 'all' || (kind === 'faculty' ? p.kind === 'faculty' : p.kind !== 'faculty'));
 
   const loadGuards = async () => {
     const { data } = await api.get('/gate-pass/admin/security');
@@ -169,27 +177,63 @@ export default function AdminGatePassPage() {
         ))}
       </div>
 
+      {(tab === 'pending' || tab === 'history') && (
+        <div className="flex flex-wrap gap-1.5">
+          {[['all', 'Everyone'], ['student', 'Students'], ['faculty', 'Faculty']].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setKind(key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                kind === key
+                  ? 'bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]'
+                  : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)]'
+              }`}
+            >
+              {label}
+              {key !== 'all' && (
+                <span className="ml-1.5 opacity-70">
+                  {pending.filter((p) => (key === 'faculty' ? p.kind === 'faculty' : p.kind !== 'faculty')).length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="glass-card p-10 rounded-3xl flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
       ) : tab === 'pending' ? (
         <div className="glass-card p-6 rounded-3xl space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display font-black text-lg text-[var(--text-primary)]">TG-approved, waiting for you ({pending.length})</h2>
+            <h2 className="font-display font-black text-lg text-[var(--text-primary)]">
+              Waiting for you ({shownPending.length})
+            </h2>
             <button onClick={loadPending} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"><RefreshCw size={13} /> Refresh</button>
           </div>
-          {pending.length === 0 ? (
+          {shownPending.length === 0 ? (
             <p className="text-sm text-[var(--text-secondary)]">Nothing waiting for approval.</p>
           ) : (
             <div className="space-y-2">
-              {pending.map((p) => (
+              {shownPending.map((p) => (
                 <div key={p._id} className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)]">
                   <div className="min-w-0">
-                    <div className="font-bold text-sm text-[var(--text-primary)]">{studentLine(p.student)}</div>
-                    <div className="text-xs text-[var(--text-secondary)]">{semLine(p.student)}</div>
+                    <div className="font-bold text-sm text-[var(--text-primary)] flex flex-wrap items-center gap-2">
+                      {studentLine(p.student)}
+                      {p.kind === 'faculty' && (
+                        <span className="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--primary)]/15 text-[var(--primary)]">
+                          faculty
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-[var(--text-secondary)]">
+                      {p.kind === 'faculty' ? (p.student?.designation || p.student?.email || '') : semLine(p.student)}
+                    </div>
                     <div className="text-sm text-[var(--text-primary)] mt-1">{p.reason}</div>
                     <div className="text-xs text-[var(--text-secondary)] mt-0.5">
-                      Exit at {fmt(p.exitTime)} · TG {p.tgDecision?.by?.name || '—'} approved {fmt(p.tgDecision?.at)}
-                      {p.tgDecision?.remark ? ` — "${p.tgDecision.remark}"` : ''}
+                      Exit at {fmt(p.exitTime)}
+                      {p.kind === 'faculty'
+                        ? ` · ${p.informHod ? 'HOD informed' : 'HOD not informed'}`
+                        : ` · TG ${p.tgDecision?.by?.name || '—'} approved ${fmt(p.tgDecision?.at)}${p.tgDecision?.remark ? ` — "${p.tgDecision.remark}"` : ''}`}
                     </div>
                   </div>
                   <button onClick={() => setReviewing(p)} className="btn-premium text-xs px-4 py-2">Review</button>

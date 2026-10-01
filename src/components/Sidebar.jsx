@@ -108,6 +108,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/my-gate-pass', icon: DoorOpen, label: 'My Gate Pass' },
       { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
       { to: '/admin/trainings', icon: GraduationCap, label: 'Trainings' },
@@ -157,6 +158,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/my-gate-pass', icon: DoorOpen, label: 'My Gate Pass' },
       { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
       { to: '/admin/trainings', icon: GraduationCap, label: 'Trainings' },
@@ -209,6 +211,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
       { to: '/admin/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/my-gate-pass', icon: DoorOpen, label: 'My Gate Pass' },
       { to: '/admin/leave', icon: FileText, label: 'Leave Applications' },
       { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
@@ -263,6 +266,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { category: 'System', links: [
       { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
       { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
+      { to: '/admin/leaderboard-awards', icon: Trophy, label: 'Top 10 Certificates' },
       { to: '/admin/ai-knowledge', icon: Sparkles, label: 'AI Knowledge' },
     ] },
   ];
