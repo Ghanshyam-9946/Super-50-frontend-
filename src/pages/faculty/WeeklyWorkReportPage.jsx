@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ClipboardList, Plus, Trash2, Loader2, Send, CheckCircle2, Info, Pencil, X, Lock, Clock } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import RichTextEditor from "../../components/RichTextEditor";
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
@@ -34,7 +35,10 @@ const hoursBetween = (from, to) => {
   return mins > 0 ? String(Math.round((mins / 60) * 4) / 4) : "";
 };
 
-const emptyEntry = (today) => ({ taskName: "", date: today || "", timeFrom: "", timeTo: "", totalHours: "", status: "pending", note: "" });
+const emptyEntry = (today) => ({
+  taskName: "", date: today || "", timeFrom: "", timeTo: "", totalHours: "",
+  status: "pending", note: "", description: "", expectedCompletionDate: "",
+});
 
 const inputCls = "bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs text-[var(--text-primary)] disabled:opacity-50";
 const labelCls = "flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1";
@@ -82,6 +86,9 @@ export default function WeeklyWorkReportPage() {
 
   const saveEntry = async (e) => {
     e.preventDefault();
+    if (form.status !== "complete" && !form.expectedCompletionDate) {
+      return toast.error("Work that is not complete needs an expected completion date");
+    }
     if (!form.taskName.trim() || !form.date || !form.timeFrom || !form.timeTo || form.totalHours === "") {
       return toast.error("Fill in the work, date, from/to time and hours");
     }
@@ -111,6 +118,8 @@ export default function WeeklyWorkReportPage() {
       totalHours: String(t.totalHours),
       status: t.status,
       note: t.note || "",
+      description: t.description || "",
+      expectedCompletionDate: t.expectedCompletionDate ? String(t.expectedCompletionDate).slice(0, 10) : "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -238,11 +247,38 @@ export default function WeeklyWorkReportPage() {
                     {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </label>
-                <label className={`${labelCls} lg:col-span-4`}>
+                {/* Anything still in progress has to say when it will be done */}
+                {form.status !== "complete" && (
+                  <label className={labelCls}>
+                    Expected completion
+                    <input
+                      type="date"
+                      value={form.expectedCompletionDate}
+                      onChange={(e) => setField({ expectedCompletionDate: e.target.value })}
+                      className={inputCls}
+                    />
+                  </label>
+                )}
+                <label className={`${labelCls} ${form.status !== "complete" ? "lg:col-span-3" : "lg:col-span-4"}`}>
                   Note (optional)
                   <input value={form.note} onChange={(e) => setField({ note: e.target.value })} className={inputCls} />
                 </label>
               </div>
+
+              <label className={labelCls}>
+                Description
+                <span className="font-medium normal-case tracking-normal text-[var(--text-secondary)] ml-1">
+                  — describe the work properly; you can format it
+                </span>
+                <div className="mt-1.5">
+                  <RichTextEditor
+                    value={form.description}
+                    onChange={(html) => setField({ description: html })}
+                    placeholder="What exactly did you do? Use bullets, bold, headings…"
+                    rows={4}
+                  />
+                </div>
+              </label>
               <button type="submit" disabled={saving} className="btn-premium text-sm px-4 py-2 flex items-center gap-1.5 disabled:opacity-40">
                 {saving ? <Loader2 size={14} className="animate-spin" /> : editingId ? <CheckCircle2 size={14} /> : <Plus size={14} />}
                 {editingId ? "Update Entry" : "Add Entry"}
@@ -281,7 +317,18 @@ export default function WeeklyWorkReportPage() {
                         <span className="font-bold text-[var(--text-primary)]">{t.taskName}</span>
                         <span className="text-[var(--text-secondary)]">{t.timeFrom}–{t.timeTo} · {t.totalHours}h</span>
                         <span className={`badge ${STATUS_BADGE[t.status] || ""}`}>{statusLabel(t.status)}</span>
+                        {t.status !== "complete" && t.expectedCompletionDate && (
+                          <span className="text-amber-600 font-bold">
+                            by {new Date(t.expectedCompletionDate).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short" })}
+                          </span>
+                        )}
                         {t.note && <span className="text-[var(--text-secondary)] italic">{t.note}</span>}
+                        {t.description && (
+                          <div
+                            className="rte-body basis-full text-xs text-[var(--text-secondary)] mt-1"
+                            dangerouslySetInnerHTML={{ __html: t.description }}
+                          />
+                        )}
                         {canEdit && (
                           <span className="ml-auto flex gap-1">
                             <button onClick={() => editEntry(t)} title="Edit" className="p-1 rounded text-[var(--text-secondary)] hover:text-[var(--primary)]"><Pencil size={13} /></button>

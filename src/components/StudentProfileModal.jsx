@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { updateUser } from '../features/auth/authSlice';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { isStudentAccount } from '../utils/roles';
 import {
   OverallPerformanceDashboard,
   ActivitiesGraph,
@@ -17,10 +18,13 @@ import {
   AttendanceGraph
 } from './StudentAnalyticsGraphs';
 
-export default function StudentProfileModal({ isOpen, onClose, studentId }) {
+export default function StudentProfileModal({ isOpen, onClose, studentId, initialTab = 'menu', startInEditMode = false }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const [activeTab, setActiveTab] = useState('menu');
+  // Students (and alumni, who keep the student role) see their own read-only
+  // view; staff get the editing and remark tools.
+  const viewerIsStudent = isStudentAccount(user);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -171,10 +175,20 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
 
   useEffect(() => {
     if (isOpen && studentId) {
-      setActiveTab(user?.role === 'student' ? 'profile' : 'menu');
+      // A caller can send us straight to a tab (the TG page opens this on
+      // "Edit profile" and on "Remark"); otherwise the usual menu.
+      setActiveTab(viewerIsStudent ? 'profile' : initialTab);
       fetchStudentData();
     }
-  }, [isOpen, studentId, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, studentId, user, initialTab]);
+
+  // Opening in edit mode has to wait for the student to load, since the
+  // form is filled in from it.
+  useEffect(() => {
+    if (isOpen && startInEditMode && data?.student && !isEditing) startEditing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, startInEditMode, data?.student?._id]);
 
   const fetchAttendanceLogs = async () => {
     setLoadingAttendance(true);
@@ -265,7 +279,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
           {/* Header */}
           <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
             <div className="flex items-center gap-4">
-              {user?.role !== 'student' && (
+              {!viewerIsStudent && (
                 <button 
                   onClick={() => {
                     if (activeTab === 'menu') {
@@ -325,7 +339,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
           </div>
 
           {/* Tabs */}
-          {(activeTab !== 'menu' || user?.role === 'student') && (
+          {(activeTab !== 'menu' || viewerIsStudent) && (
             <div className="flex px-6 bg-slate-50 border-b border-slate-200 gap-6 overflow-x-auto scrollbar-none">
               {[
                 { id: 'analytics', icon: TrendingUp, label: 'Analytics & Graphs' },
@@ -337,7 +351,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 { id: 'amcat', icon: Award, label: 'AMCAT Marks' },
                 { id: 'rgpv', icon: Award, label: 'RGPV Marks' },
                 ...(data?.super50Registration ? [{ id: 'super50_reg', icon: User, label: 'Super 50 Application' }] : []),
-                ...(user?.role !== 'student' ? [{ id: 'remarks', icon: ClipboardList, label: 'Remarks' }] : []),
+                ...(!viewerIsStudent ? [{ id: 'remarks', icon: ClipboardList, label: 'Remarks' }] : []),
                 { id: 'attendance', icon: ClipboardList, label: 'Attendance' }
               ].map(tab => (
                 <button
@@ -365,7 +379,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
               <div className="text-center text-slate-500 py-10">Profile not found.</div>
             ) : (
               <div className="space-y-6">
-                {activeTab !== 'menu' && user?.role !== 'student' && (
+                {activeTab !== 'menu' && !viewerIsStudent && (
                   <button
                     onClick={() => setActiveTab('menu')}
                     className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm"
@@ -432,7 +446,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Profile Overview Tab */}
                 {activeTab === 'profile' && (
                   <div className="space-y-6">
-                    {(user?.role !== 'student') && (
+                    {(!viewerIsStudent) && (
                       <div className="flex justify-end">
                         {isEditing ? (
                           <div className="flex gap-2">
@@ -799,10 +813,12 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                       <form onSubmit={async (e) => {
                         e.preventDefault();
                         const text = e.target.remark.value;
+                        const purpose = e.target.purpose.value;
+                        const actionTaken = e.target.actionTaken.value;
                         if (!text.trim()) return;
 
                         try {
-                          const res = await api.post(`/admin/students/${studentId}/remarks`, { text });
+                          const res = await api.post(`/admin/students/${studentId}/remarks`, { text, purpose, actionTaken });
                           setData(prev => ({
                             ...prev,
                             student: {
@@ -816,6 +832,24 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                           toast.error('Failed to add remark');
                         }
                       }}>
+                        <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                          <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            Purpose
+                            <input
+                              name="purpose"
+                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                              placeholder="e.g. Low attendance counselling"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            Action taken
+                            <input
+                              name="actionTaken"
+                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                              placeholder="e.g. Parent called, warning given"
+                            />
+                          </label>
+                        </div>
                         <textarea
                           name="remark"
                           className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none mb-3"
@@ -837,7 +871,13 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                       ) : (
                         data.student.remarks.slice().reverse().map(remark => (
                           <div key={remark._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                            <p className="text-sm font-medium text-slate-800 mb-3 whitespace-pre-wrap">{remark.text}</p>
+                            <p className="text-sm font-medium text-slate-800 mb-2 whitespace-pre-wrap">{remark.text}</p>
+                            {(remark.purpose || remark.actionTaken) && (
+                              <div className="space-y-1 mb-3 text-xs">
+                                {remark.purpose && <div><span className="text-slate-500">Purpose:</span> <strong className="text-slate-800">{remark.purpose}</strong></div>}
+                                {remark.actionTaken && <div><span className="text-slate-500">Action taken:</span> <strong className="text-slate-800">{remark.actionTaken}</strong></div>}
+                              </div>
+                            )}
                             <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 border-t border-slate-100 pt-3">
                               <span>By: {remark.addedBy?.name || 'Unknown'}</span>
                               <span>{new Date(remark.addedAt).toLocaleString('en-IN')}</span>
@@ -966,7 +1006,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                                   <div>
                                     <h5 className="font-bold text-slate-900 flex items-center gap-2">
                                       Semester {semAtt.semester}
-                                      {user?.role !== 'student' && (
+                                      {!viewerIsStudent && (
                                         <div className="flex gap-1 ml-2">
                                           <button onClick={() => startEditingSemAtt(semAtt)} className="text-slate-300 hover:text-indigo-500 transition-colors" title="Edit"><Pencil size={12} /></button>
                                           <button onClick={() => deleteSemAtt(semAtt._id)} className="text-slate-300 hover:text-rose-500 transition-colors" title="Delete"><Trash2 size={12} /></button>

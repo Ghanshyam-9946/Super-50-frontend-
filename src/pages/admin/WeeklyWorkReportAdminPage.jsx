@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ClipboardList, Loader2, Download, Users, Calendar, LayoutGrid, Mail, Clock, Save } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { ClipboardList, Loader2, Download, Users, Calendar, LayoutGrid, Mail, Clock, Save, Check, X } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { downloadFile } from "../../utils/downloadFile";
@@ -30,11 +30,115 @@ const weekFriday = (dateStr) => {
   return d.toISOString().slice(0, 10);
 };
 
+// One faculty's week as a grid: every task they reported down the left,
+// the seven days of the week across the top. A green tick means that task
+// was worked on that day (hover shows the hours), a red cross means it
+// wasn't. The counts on the edges are what an admin actually reads.
+const dayKey = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+
+const WeekMatrix = ({ report }) => {
+  // The week ends on the day `weekOf` holds and runs back seven days.
+  const days = useMemo(() => {
+    const end = new Date(report.weekOf);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(end);
+      d.setDate(end.getDate() - (6 - i));
+      return d;
+    });
+  }, [report.weekOf]);
+
+  const { rows, perDay } = useMemo(() => {
+    const byTask = new Map();
+    (report.tasks || []).forEach((t) => {
+      if (!byTask.has(t.taskName)) byTask.set(t.taskName, new Map());
+      const day = dayKey(t.date);
+      const cell = byTask.get(t.taskName).get(day) || { hours: 0, entries: [] };
+      cell.hours += Number(t.totalHours) || 0;
+      cell.entries.push(t);
+      byTask.get(t.taskName).set(day, cell);
+    });
+    return {
+      rows: [...byTask.entries()],
+      perDay: days.map((d) => (report.tasks || []).filter((t) => dayKey(t.date) === dayKey(d)).length),
+    };
+  }, [report.tasks, days]);
+
+  if (rows.length === 0) {
+    return <div className="px-5 py-6 text-xs text-[var(--text-secondary)]">No entries in this week.</div>;
+  }
+
+  const totalHours = Math.round((report.tasks || []).reduce((n, t) => n + (Number(t.totalHours) || 0), 0) * 100) / 100;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs min-w-[760px]">
+        <thead>
+          <tr className="border-b border-[var(--border-light)] text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">
+            <th className="px-4 py-2 text-left sticky left-0 bg-[var(--bg-card)]">Task</th>
+            {days.map((d) => (
+              <th key={d.toISOString()} className="px-2 py-2 text-center whitespace-nowrap">
+                {d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "short" })}
+                <div className="font-medium normal-case tracking-normal opacity-70">
+                  {d.toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short" })}
+                </div>
+              </th>
+            ))}
+            <th className="px-3 py-2 text-center">Days</th>
+            <th className="px-3 py-2 text-center">Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([taskName, byDay]) => {
+            const doneDays = days.filter((d) => byDay.get(dayKey(d))).length;
+            const hours = [...byDay.values()].reduce((n, c) => n + c.hours, 0);
+            return (
+              <tr key={taskName} className="border-b border-[var(--border-light)] last:border-0">
+                <td className="px-4 py-2 font-bold text-[var(--text-primary)] sticky left-0 bg-[var(--bg-card)]">{taskName}</td>
+                {days.map((d) => {
+                  const cell = byDay.get(dayKey(d));
+                  return (
+                    <td key={d.toISOString()} className="px-2 py-2 text-center">
+                      {cell ? (
+                        <span
+                          title={`${cell.hours} h · ${cell.entries.map((e) => `${e.timeFrom}-${e.timeTo}`).join(", ")}`}
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600"
+                        >
+                          <Check size={13} />
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-red-500/10 text-red-500">
+                          <X size={13} />
+                        </span>
+                      )}
+                    </td>
+                  );
+                })}
+                <td className="px-3 py-2 text-center font-bold text-[var(--text-primary)]">{doneDays}/7</td>
+                <td className="px-3 py-2 text-center text-[var(--text-secondary)]">{Math.round(hours * 100) / 100}</td>
+              </tr>
+            );
+          })}
+          <tr className="bg-[var(--bg-input)] text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">
+            <td className="px-4 py-2 font-black sticky left-0 bg-[var(--bg-input)]">Entries that day</td>
+            {perDay.map((n, i) => (
+              <td key={i} className={`px-2 py-2 text-center font-black ${n ? "text-emerald-600" : "text-red-500"}`}>{n}</td>
+            ))}
+            <td className="px-3 py-2 text-center font-black text-[var(--text-primary)]">{report.tasks.length}</td>
+            <td className="px-3 py-2 text-center font-black text-[var(--text-primary)]">{totalHours}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 export default function WeeklyWorkReportAdminPage() {
   const [mode, setMode] = useState("overall");
   const [facultyList, setFacultyList] = useState([]);
   const [facultyId, setFacultyId] = useState("");
   const [weekOf, setWeekOf] = useState("");
+  // The grid is what an admin reads at a glance; the list has every detail.
+  const [view, setView] = useState("grid");
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -53,7 +157,7 @@ export default function WeeklyWorkReportAdminPage() {
   const saveSchedule = async () => {
     setSavingSchedule(true);
     try {
-      const { data } = await api.put("/weekly-work-report/admin/schedule", { day: schedule.day, time: schedule.time });
+      const { data } = await api.put("/weekly-work-report/admin/schedule", { day: schedule.day, time: schedule.time, emails: !!schedule.emails });
       setSchedule(data.data);
       toast.success(data.message);
     } catch (err) {
@@ -148,7 +252,8 @@ export default function WeeklyWorkReportAdminPage() {
           </div>
           <p className="text-xs text-[var(--text-secondary)]">
             Faculty add their work through the week and submit on this day. At this exact time every report that has
-            entries is <strong>submitted automatically</strong>, and the status mails go to each faculty member and the HOD.
+            entries is <strong>submitted automatically</strong>. The status mail goes to that faculty member alone (Submitted /
+            Not Submitted / Missing) and is a separate switch below — auto-submit works either way.
           </p>
           <div className="flex flex-wrap gap-3 items-end">
             <label className="flex flex-col text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] gap-1.5">
@@ -175,6 +280,27 @@ export default function WeeklyWorkReportAdminPage() {
             </button>
             <span className="text-xs text-[var(--text-secondary)] pb-2">Currently: <strong className="text-[var(--text-primary)]">{schedule.label}</strong></span>
           </div>
+
+          {/* Status mails are off unless this is turned on. */}
+          <label className="flex items-start gap-2.5 text-xs text-[var(--text-secondary)] cursor-pointer border-t border-[var(--border-light)] pt-3">
+            <input
+              type="checkbox"
+              checked={!!schedule.emails}
+              onChange={(e) => setSchedule((s) => ({ ...s, emails: e.target.checked }))}
+              className="mt-0.5"
+            />
+            <span>
+              <strong className="text-[var(--text-primary)]">Send status emails at the deadline</strong>
+              <span className={`ml-2 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                schedule.emails
+                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                  : "bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)]"
+              }`}>{schedule.emails ? "On" : "Off"}</span>
+              <br />
+              Off means nobody gets a mail — reports still submit automatically and everything stays visible on this page.
+              Remember to press Save after changing this.
+            </span>
+          </label>
         </div>
       )}
 
@@ -214,7 +340,12 @@ export default function WeeklyWorkReportAdminPage() {
               className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
             />
             {weekOf && (
-              <button onClick={sendMails} disabled={mailing} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
+              <button
+                onClick={sendMails}
+                disabled={mailing || !schedule?.emails}
+                title={schedule?.emails ? "" : "Status emails are switched off"}
+                className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40"
+              >
                 {mailing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />} Send status mails (week ending {weekFriday(weekOf)})
               </button>
             )}
@@ -222,9 +353,27 @@ export default function WeeklyWorkReportAdminPage() {
         )}
         {mode === "date" && (
           <p className="text-[11px] text-[var(--text-secondary)]">
-            Status mails go out automatically at the deadline above. Use the button only if that run was missed — it mails every faculty and HOD again.
+            {schedule?.emails
+              ? "Status mails go out automatically at the deadline above. Use the button only if that run was missed — it mails every faculty and HOD again."
+              : "Status emails are switched off, so nothing is mailed at the deadline. Turn the switch on above if you want them back."}
           </p>
         )}
+      </div>
+
+      <div className="flex gap-2">
+        {[["grid", "Grid view"], ["list", "Detailed list"]].map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold border ${
+              view === key
+                ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -246,6 +395,7 @@ export default function WeeklyWorkReportAdminPage() {
                   Week of {new Date(r.weekOf).toLocaleDateString()}
                 </span>
               </div>
+              {view === "grid" ? <WeekMatrix report={r} /> : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs min-w-[700px]">
                   <thead>
@@ -276,6 +426,7 @@ export default function WeeklyWorkReportAdminPage() {
                   </tbody>
                 </table>
               </div>
+              )}
             </div>
           ))}
         </div>

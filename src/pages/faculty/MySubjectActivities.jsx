@@ -7,6 +7,7 @@ import {
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { getImageUrl } from "../../utils/imageUrl";
+import CourseFilePanel from "../../components/CourseFilePanel";
 
 const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null, pdfUrl: null, pdfFileName: null });
 const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
@@ -22,6 +23,7 @@ const TABS = [
   { key: "outcomes", label: "Outcomes", icon: Target, labOnly: true },
   { key: "survey", label: "Survey", icon: MessageSquareText },
   { key: "materials", label: "Materials", icon: FolderOpen, labOnly: true },
+  { key: "coursefile", label: "Course File", icon: FolderOpen, labOnly: true },
 ];
 
 const draftOf = (subject) => ({
@@ -176,7 +178,7 @@ export default function MySubjectActivities() {
         ...(subjectHasLab ? { ...draft.labCo, labSurveyQuestions: draft.labSurveyQuestions } : {}),
       });
       if (data.success) {
-        toast.success("Assessment saved");
+        toast.success(data.message || "Assessment saved");
         // Keep editing with the saved activities' real _ids (a freshly added
         // one has none until now) so a PDF can be attached straight away.
         const next = { ...draft, activities: data.data.activities.map((a) => ({ ...a })) };
@@ -219,6 +221,23 @@ export default function MySubjectActivities() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to upload PDF");
+    } finally {
+      setUploadingIdx(null);
+    }
+  };
+
+  const removeAttachment = async (idx, activity) => {
+    if (!window.confirm(`Remove "${activity.pdfFileName || 'this file'}" from ${activity.label || 'this activity'}?`)) return;
+    setUploadingIdx(idx);
+    try {
+      const { data } = await api.delete(`/master-data/subjects/${selectedId}/activities/${activity._id}/attachment`);
+      if (data.success) {
+        updateActivity(idx, { pdfUrl: null, pdfFileName: null });
+        replaceSubject(data.data);
+        toast.success(data.message);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not remove the file");
     } finally {
       setUploadingIdx(null);
     }
@@ -458,6 +477,10 @@ export default function MySubjectActivities() {
                         and only the students you teach see this list.
                       </p>
                       <p>
+                        A tick or both activity is added to the No Dues forms of these students the moment you save —
+                        even forms that were already released.
+                      </p>
+                      <p>
                         Seen by:{" "}
                         {(selected.mySections || []).length === 0 ? (
                           <span className="text-amber-600">no section mapped to you yet — ask the coordinator to finalize the allocation</span>
@@ -534,12 +557,27 @@ export default function MySubjectActivities() {
                               {!a._id ? (
                                 <span className="text-[11px] text-[var(--text-secondary)] italic pb-2">Save first to attach a PDF</span>
                               ) : a.pdfUrl ? (
-                                <a
-                                  href={getImageUrl(a.pdfUrl)} target="_blank" rel="noreferrer" title={a.pdfFileName}
-                                  className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--primary)] border border-[var(--primary)]/30 bg-[var(--primary)]/5 rounded-xl px-3 py-2"
-                                >
-                                  <FileText size={12} /> {a.pdfFileName?.length > 20 ? `${a.pdfFileName.slice(0, 20)}…` : a.pdfFileName}
-                                </a>
+                                <div className="flex items-center gap-1.5">
+                                  <a
+                                    href={getImageUrl(a.pdfUrl)} target="_blank" rel="noreferrer" title={a.pdfFileName}
+                                    className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--primary)] border border-[var(--primary)]/30 bg-[var(--primary)]/5 rounded-xl px-3 py-2"
+                                  >
+                                    <FileText size={12} /> {a.pdfFileName?.length > 18 ? `${a.pdfFileName.slice(0, 18)}…` : a.pdfFileName}
+                                  </a>
+                                  {/* the other half of attaching: swap it or take it off */}
+                                  <label className="text-[11px] font-bold px-2.5 py-2 rounded-xl border border-[var(--border-light)] cursor-pointer text-[var(--text-secondary)] hover:border-[var(--primary)]">
+                                    {uploadingIdx === idx ? <Loader2 size={12} className="animate-spin" /> : "Replace"}
+                                    <input type="file" accept="application/pdf" className="hidden" disabled={uploadingIdx === idx}
+                                      onChange={(e) => { uploadAttachment(idx, a._id, e.target.files[0]); e.target.value = ""; }} />
+                                  </label>
+                                  <button
+                                    onClick={() => removeAttachment(idx, a)}
+                                    title="Remove this file"
+                                    className="p-2 rounded-xl text-red-500 hover:bg-red-500/10"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               ) : (
                                 <label className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl border border-dashed border-[var(--border-light)] cursor-pointer text-[var(--text-secondary)] hover:border-[var(--primary)]">
                                   {uploadingIdx === idx ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />} Attach PDF (5MB)
@@ -655,6 +693,16 @@ export default function MySubjectActivities() {
                   </div>
                 )}
 
+                {/* ---------- course file ---------- */}
+                {tab === "coursefile" && (
+                  <div className="space-y-3">
+                    <SectionTitle icon={FolderOpen} hint="The headings the admin released — upload one PDF each, then download the whole course file merged.">
+                      Course File
+                    </SectionTitle>
+                    <CourseFilePanel subjectId={selected._id} />
+                  </div>
+                )}
+
                 {/* ---------- materials ---------- */}
                 {tab === "materials" && (
                   <div className="grid md:grid-cols-2 gap-5">
@@ -726,7 +774,7 @@ export default function MySubjectActivities() {
               </div>
 
               {/* save bar — only for the tabs that actually hold editable fields */}
-              {tab !== "materials" && tab !== "overview" && (
+              {tab !== "materials" && tab !== "overview" && tab !== "coursefile" && (
                 <div className="glass-card rounded-2xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 sticky bottom-4">
                   <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1.5">
                     {dirty ? <><AlertCircle size={14} className="text-amber-500" /> You have unsaved changes</> : <><CheckCircle2 size={14} className="text-emerald-500" /> Everything is saved</>}

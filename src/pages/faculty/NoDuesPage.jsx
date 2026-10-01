@@ -1081,15 +1081,56 @@ function StudentAssignPanel({ batch, semester, mentorId, subjectName, faculty, o
 /* ─────────────────────────────  MANAGE FORMS  ───────────────────────────── */
 
 // One row per RELEASE (a single or bulk create), not per student — every
+// A No Dues form belongs to the running session if it was released in the
+// last six months — older ones are last year's and only clutter the page,
+// so they live behind the "Older" filter instead of being mixed in.
+const CURRENT_WINDOW_MS = 182 * 24 * 60 * 60 * 1000;
+const isCurrentForm = (form) => Date.now() - new Date(form.createdAt || form.updatedAt || 0).getTime() <= CURRENT_WINDOW_MS;
+
+// The Current / Older / All switch shared by the form lists.
+const SessionFilter = ({ value, onChange, counts }) => (
+  <div className="flex flex-wrap gap-2">
+    {[
+      ["current", "Current session", counts.current],
+      ["older", "Older", counts.older],
+      ["all", "All", counts.current + counts.older],
+    ].map(([key, label, n]) => (
+      <button
+        key={key}
+        onClick={() => onChange(key)}
+        className={`px-3.5 py-2 rounded-xl text-xs font-bold border flex items-center gap-1.5 transition-colors ${
+          value === key
+            ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+            : "bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]"
+        }`}
+      >
+        {label}
+        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${value === key ? "bg-white/20" : "bg-[var(--bg-input)]"}`}>{n}</span>
+      </button>
+    ))}
+  </div>
+);
+
+const applySession = (forms, session) => {
+  if (session === "all") return forms;
+  return forms.filter((f) => (session === "current" ? isCurrentForm(f) : !isCurrentForm(f)));
+};
+
 // student created together shares a releaseId. Edit batch/semester/subjects
 // once for the whole group, and add/remove/reassign which students are in it.
 function ManageFormsTab({ forms, onRefresh }) {
   const [search, setSearch] = useState("");
   const [openReleaseId, setOpenReleaseId] = useState(null);
+  const [session, setSession] = useState("current");
+
+  const counts = useMemo(() => ({
+    current: forms.filter(isCurrentForm).length,
+    older: forms.filter((f) => !isCurrentForm(f)).length,
+  }), [forms]);
 
   const groups = useMemo(() => {
     const map = {};
-    forms.forEach((f) => {
+    applySession(forms, session).forEach((f) => {
       const key = f.releaseId || f._id; // legacy forms with no releaseId are their own singleton group
       if (!map[key]) map[key] = { releaseId: key, members: [] };
       map[key].members.push(f);
@@ -1108,7 +1149,7 @@ function ManageFormsTab({ forms, onRefresh }) {
         };
       })
       .sort((a, b) => b.members.length - a.members.length);
-  }, [forms]);
+  }, [forms, session]);
 
   const filtered = groups.filter((g) => {
     if (!search.trim()) return true;
@@ -1130,15 +1171,26 @@ function ManageFormsTab({ forms, onRefresh }) {
 
   return (
     <div className="space-y-4">
-      <div className="glass-card p-4 rounded-2xl flex items-center gap-2">
-        <Search size={15} className="text-[var(--text-secondary)] shrink-0" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by subject, student name, or enrollment…"
-          className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)]"
-        />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SessionFilter value={session} onChange={setSession} counts={counts} />
+        <div className="glass-card px-4 py-2.5 rounded-2xl flex items-center gap-2 flex-1 min-w-[240px]">
+          <Search size={15} className="text-[var(--text-secondary)] shrink-0" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by subject, student name, or enrollment…"
+            className="flex-1 bg-transparent outline-none text-sm text-[var(--text-primary)]"
+          />
+        </div>
       </div>
+
+      {groups.length === 0 && (
+        <div className="glass-card p-10 text-center rounded-3xl text-[var(--text-secondary)] text-sm">
+          {session === "current"
+            ? "Nothing released this session — check Older, or release a new set."
+            : "Nothing here."}
+        </div>
+      )}
 
       <div className="glass-card rounded-3xl overflow-hidden">
         <div className="overflow-x-auto custom-scrollbar">
@@ -1547,6 +1599,13 @@ function FormsList({
 }) {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("name"); // name | roll
+  // This session's forms are what anyone actually works on; last year's
+  // sit behind the switch.
+  const [session, setSession] = useState("current");
+  const sessionCounts = useMemo(() => ({
+    current: forms.filter(isCurrentForm).length,
+    older: forms.filter((f) => !isCurrentForm(f)).length,
+  }), [forms]);
   const uid = user?._id;
 
   // Bulk-forward mode (coordinator only, "Forms I Released" tab) — pick
@@ -1615,7 +1674,7 @@ function FormsList({
       if (!map.has(key)) map.set(key, []);
       map.get(key).push(form);
     };
-    sorted.forEach((form) => {
+    applySession(sorted, session).forEach((form) => {
       const mySubjects = (form.subjects || []).filter((s) => s.faculty?._id === uid).map((s) => s.subjectName);
       const isTG = form.student?.mentor?._id === uid;
       if (mySubjects.length === 0) {
@@ -1629,7 +1688,7 @@ function FormsList({
       if (b === "Your TG Students") return 1;
       return a.localeCompare(b);
     });
-  }, [sorted, uid]);
+  }, [sorted, uid, session]);
 
   const showGroups = groups.length > 1;
 
@@ -1770,6 +1829,7 @@ function FormsList({
 
   return (
     <div className="space-y-4">
+      <SessionFilter value={session} onChange={setSession} counts={sessionCounts} />
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />

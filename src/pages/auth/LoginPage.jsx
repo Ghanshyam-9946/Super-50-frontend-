@@ -31,6 +31,8 @@ export default function LoginPage() {
           path = '/pms/guide';
         } else if (user.role === 'security') {
           path = '/security/gate-pass';
+        } else if (user.role === 'alumni') {
+          path = '/alumni';
         }
         navigate(path);
       }

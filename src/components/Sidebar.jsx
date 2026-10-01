@@ -6,7 +6,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen
+  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -52,6 +52,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
       { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
       { to: '/student/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
+      { to: '/student/trainings', icon: GraduationCap, label: 'My Trainings' },
+      { to: '/student/leave', icon: FileText, label: 'Leave Application' },
+      { to: '/meetings', icon: Video, label: 'Meetings' },
+      { to: '/alumni', icon: GraduationCap, label: 'Alumni Network' },
     ] },
     { category: 'Results & Marks', links: [
       { to: '/student/amcat', icon: FileText, label: 'AMCAT Result' },
@@ -85,6 +89,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { category: 'Overview', links: [
       { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
       { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/meetings', icon: Video, label: 'Meetings' },
       { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
     ] },
     { category: 'Teaching', links: [
@@ -103,7 +108,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
+      { to: '/admin/trainings', icon: GraduationCap, label: 'Trainings' },
     ] },
     ...(isProjectGuide || isProjectCoordinator ? [{ category: 'PMS', links: [
       ...(isProjectGuide ? [{ to: '/pms/guide', icon: FolderOpen, label: 'Project Groups (PMS)' }] : []),
@@ -120,6 +127,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
       { to: '/admin/course-exit-survey', icon: ClipboardCheck, label: 'Course Exit Survey' },
+      { to: '/admin/course-file-index', icon: FolderOpen, label: 'Course File Index' },
     ] }] : []),
     ...(isSuper50Mentor ? [{ category: 'Super 50', links: [
       { to: '/teacher/super50-students', icon: Star, label: 'Super50 Students' },
@@ -149,7 +157,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
+      { to: '/admin/trainings', icon: GraduationCap, label: 'Trainings' },
     ] },
     ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
@@ -157,6 +167,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
       { to: '/admin/course-exit-survey', icon: ClipboardCheck, label: 'Course Exit Survey' },
+      { to: '/admin/course-file-index', icon: FolderOpen, label: 'Course File Index' },
     ] }] : []),
     { category: 'General', links: [
       { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
@@ -179,6 +190,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const adminGroups = [
     { category: 'Overview', links: [
       { to: '/chat', icon: MessageCircle, label: 'Chat' },
+      { to: '/meetings', icon: Video, label: 'Meetings' },
       { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
       { to: '/faculty/tasks', icon: ListChecks, label: 'Task Manager' },
       { to: '/sticky-notes', icon: StickyNote, label: 'Sticky Notes' },
@@ -197,11 +209,19 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
       { to: '/admin/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/admin/leave', icon: FileText, label: 'Leave Applications' },
+      { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
     ] },
     { category: 'Feedback & Surveys', links: [
       { to: '/admin/feedback', icon: MessageSquareText, label: 'Faculty Feedback' },
       { to: '/admin/course-exit-survey', icon: ClipboardCheck, label: 'Course Exit Survey' },
+    ] },
+    { category: 'Course File', links: [
+      { to: '/admin/course-file-index', icon: FolderOpen, label: 'Course File Index' },
+    ] },
+    { category: 'Alumni', links: [
+      { to: '/alumni', icon: GraduationCap, label: 'Alumni Network' },
     ] },
     { category: 'My Work', links: [
       { to: '/faculty/my-profile', icon: IdCard, label: 'My Profile' },
@@ -232,6 +252,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     { category: 'Reports & Dashboards', links: [
       { to: '/admin/faculty-reports', icon: Gauge, label: 'Faculty Reports' },
+      { to: '/admin/trainings', icon: GraduationCap, label: 'Trainings' },
       { to: '/admin/guides', icon: ShieldCheck, label: 'Verify Faculty & Admins' },
       { to: '/admin/podai-marks', icon: FileText, label: 'Pod AI Master Sheet' },
       { to: '/admin/all-student-podai', icon: FileText, label: 'All Student Pod AI Sheet' },
@@ -242,6 +263,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { category: 'System', links: [
       { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
       { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
+      { to: '/admin/ai-knowledge', icon: Sparkles, label: 'AI Knowledge' },
     ] },
   ];
 
@@ -276,6 +298,15 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
   ];
 
+  // An alumnus gets the network, their calls and their notifications.
+  const alumniGroups = [
+    { category: 'Alumni', links: [
+      { to: '/alumni', icon: GraduationCap, label: 'Alumni Network' },
+      { to: '/meetings', icon: Video, label: 'Meetings & Calls' },
+      { to: '/notifications', icon: BellRing, label: 'Notifications' },
+    ] },
+  ];
+
   // A guard's whole app is the gate: scan, queue, history.
   const securityGroups = [
     { category: 'Gate', links: [
@@ -299,6 +330,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // section instead of repeating, same dedupe-by-`to` behavior as before.
   const getNavGroups = () => {
     const roles = user?.roles && user.roles.length > 0 ? user.roles : [user?.role];
+    // An alumnus keeps everything they had as a student, with the alumni
+    // network on top of it.
+    if (roles.includes('alumni') && roles.includes('student')) {
+      return [...alumniGroups, ...studentGroups];
+    }
     if (roles.includes('student')) {
       return studentGroups;
     }
@@ -317,6 +353,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       else if (role === 'teacher') roleGroups = teacherGroups;
       else if (role === 'guide') roleGroups = guideGroups;
       else if (role === 'security') roleGroups = securityGroups;
+      else if (role === 'alumni') roleGroups = alumniGroups;
 
       roleGroups.forEach((group) => {
         group.links.forEach((link) => {
