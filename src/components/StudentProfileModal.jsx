@@ -1,15 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera } from 'lucide-react';
+import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera, Pencil, Trash2, Check, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUser } from '../features/auth/authSlice';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { isStudentAccount } from '../utils/roles';
+import {
+  OverallPerformanceDashboard,
+  ActivitiesGraph,
+  CertificatesGraph,
+  PlacementsGraph,
+  MSTMarksGraph,
+  AMCATMarksGraph,
+  RGPVMarksGraph,
+  RemarksGraph,
+  AttendanceGraph
+} from './StudentAnalyticsGraphs';
 
-export default function StudentProfileModal({ isOpen, onClose, studentId }) {
+export default function StudentProfileModal({ isOpen, onClose, studentId, initialTab = 'menu', startInEditMode = false }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const [activeTab, setActiveTab] = useState('menu');
+  // Students (and alumni, who keep the student role) see their own read-only
+  // view; staff get the editing and remark tools.
+  const viewerIsStudent = isStudentAccount(user);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +88,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
   };
 
   const [editingRGPVId, setEditingRGPVId] = useState(null);
+  const [editingSemAttId, setEditingSemAttId] = useState(null);
+  const [semAttEditForm, setSemAttEditForm] = useState({ attendancePercentage: 0 });
   const [rgpvEditForm, setRgpvEditForm] = useState({
     sgpa: '',
     cgpa: '',
@@ -105,7 +122,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
     try {
       const res = await api.put(`/rgpv/results/${rgpvId}`, rgpvEditForm);
       if (res.data.success) {
-        toast.success('RGPV results updated successfully!', { id: saveToast });
+        toast.success('RGPV Result updated successfully!', { id: saveToast });
         setData(prev => ({
           ...prev,
           rgpvResults: prev.rgpvResults.map(r => r._id === rgpvId ? { ...r, ...res.data.data } : r)
@@ -113,16 +130,65 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
         setEditingRGPVId(null);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update RGPV results', { id: saveToast });
+      toast.error(err.response?.data?.message || 'Failed to update result', { id: saveToast });
+    }
+  };
+
+  const startEditingSemAtt = (semAtt) => {
+    setSemAttEditForm({ attendancePercentage: semAtt.attendancePercentage || 0 });
+    setEditingSemAttId(semAtt._id);
+  };
+
+  const saveSemAtt = async (semAttId) => {
+    const saveToast = toast.loading('Saving attendance...');
+    try {
+      const res = await api.put(`/pms/admin/semester-attendance/${semAttId}`, semAttEditForm);
+      if (res.data.success) {
+        toast.success('Attendance updated successfully!', { id: saveToast });
+        setData(prev => ({
+          ...prev,
+          semesterAttendance: prev.semesterAttendance.map(r => r._id === semAttId ? { ...r, ...res.data.data } : r)
+        }));
+        setEditingSemAttId(null);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update attendance', { id: saveToast });
+    }
+  };
+
+  const deleteSemAtt = async (semAttId) => {
+    if (!window.confirm("Are you sure you want to delete this semester attendance record?")) return;
+    const saveToast = toast.loading('Deleting attendance...');
+    try {
+      const res = await api.delete(`/pms/admin/semester-attendance/${semAttId}`);
+      if (res.data.success) {
+        toast.success('Attendance deleted!', { id: saveToast });
+        setData(prev => ({
+          ...prev,
+          semesterAttendance: prev.semesterAttendance.filter(r => r._id !== semAttId)
+        }));
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to delete attendance', { id: saveToast });
     }
   };
 
   useEffect(() => {
     if (isOpen && studentId) {
-      setActiveTab(user?.role === 'student' ? 'profile' : 'menu');
+      // A caller can send us straight to a tab (the TG page opens this on
+      // "Edit profile" and on "Remark"); otherwise the usual menu.
+      setActiveTab(viewerIsStudent ? 'profile' : initialTab);
       fetchStudentData();
     }
-  }, [isOpen, studentId, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, studentId, user, initialTab]);
+
+  // Opening in edit mode has to wait for the student to load, since the
+  // form is filled in from it.
+  useEffect(() => {
+    if (isOpen && startInEditMode && data?.student && !isEditing) startEditing();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, startInEditMode, data?.student?._id]);
 
   const fetchAttendanceLogs = async () => {
     setLoadingAttendance(true);
@@ -201,19 +267,19 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/60 backdrop-blur-sm no-print"
         />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          className="relative w-full max-w-5xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] no-print"
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
             <div className="flex items-center gap-4">
-              {user?.role !== 'student' && (
+              {!viewerIsStudent && (
                 <button 
                   onClick={() => {
                     if (activeTab === 'menu') {
@@ -266,16 +332,17 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
             >
               <X size={20} />
             </button>
           </div>
 
           {/* Tabs */}
-          {(activeTab !== 'menu' || user?.role === 'student') && (
+          {(activeTab !== 'menu' || viewerIsStudent) && (
             <div className="flex px-6 bg-slate-50 border-b border-slate-200 gap-6 overflow-x-auto scrollbar-none">
               {[
+                { id: 'analytics', icon: TrendingUp, label: 'Analytics & Graphs' },
                 { id: 'profile', icon: User, label: 'Overview' },
                 { id: 'activities', icon: Activity, label: 'Activities' },
                 { id: 'certificates', icon: Award, label: 'Certificates' },
@@ -284,7 +351,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 { id: 'amcat', icon: Award, label: 'AMCAT Marks' },
                 { id: 'rgpv', icon: Award, label: 'RGPV Marks' },
                 ...(data?.super50Registration ? [{ id: 'super50_reg', icon: User, label: 'Super 50 Application' }] : []),
-                ...(user?.role !== 'student' ? [{ id: 'remarks', icon: ClipboardList, label: 'Remarks' }] : []),
+                ...(!viewerIsStudent ? [{ id: 'remarks', icon: ClipboardList, label: 'Remarks' }] : []),
                 { id: 'attendance', icon: ClipboardList, label: 'Attendance' }
               ].map(tab => (
                 <button
@@ -312,7 +379,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
               <div className="text-center text-slate-500 py-10">Profile not found.</div>
             ) : (
               <div className="space-y-6">
-                {activeTab !== 'menu' && user?.role !== 'student' && (
+                {activeTab !== 'menu' && !viewerIsStudent && (
                   <button
                     onClick={() => setActiveTab('menu')}
                     className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm"
@@ -325,6 +392,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {activeTab === 'menu' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 py-4">
                     {[
+                      { id: 'analytics', icon: TrendingUp, label: 'Analytics & Overall Graph', desc: '360° visual charts, performance radar & 8-parameter breakdown', color: 'text-indigo-600 bg-indigo-500/10 border-indigo-500/20', featured: true },
                       { id: 'profile', icon: User, label: 'Overview', desc: 'Basic info, contact details and CGPA', color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
                       { id: 'mst', icon: ClipboardList, label: 'MST Marks', desc: 'Subject-wise mid semester exam scores', color: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20' },
                       { id: 'amcat', icon: Award, label: 'AMCAT Marks', desc: 'Sectional scores from AMCAT exams', color: 'text-fuchsia-500 bg-fuchsia-500/10 border-fuchsia-500/20' },
@@ -341,13 +409,20 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                         <div
                           key={item.id}
                           onClick={() => setActiveTab(item.id)}
-                          className="glass-card p-6 border border-slate-200 hover:border-indigo-500/50 transition-all cursor-pointer group flex flex-col justify-between hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white rounded-3xl"
+                          className={`glass-card p-6 border ${item.featured ? 'border-indigo-400 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/40 ring-2 ring-indigo-500/20' : 'border-slate-200 bg-white'} hover:border-indigo-500/50 transition-all cursor-pointer group flex flex-col justify-between hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] rounded-3xl`}
                         >
                           <div>
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${item.color} shrink-0`}>
-                              <Icon size={20} />
+                            <div className="flex items-center justify-between">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${item.color} shrink-0`}>
+                                <Icon size={20} />
+                              </div>
+                              {item.featured && (
+                                <span className="bg-indigo-600 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                  <Sparkles size={10} /> 360° View
+                                </span>
+                              )}
                             </div>
-                            <h4 className="font-display font-black text-slate-900 text-base mt-5 group-hover:text-indigo-600 transition-colors">
+                            <h4 className="font-display font-black text-slate-900 text-base mt-4 group-hover:text-indigo-600 transition-colors">
                               {item.label}
                             </h4>
                             <p className="text-xs text-slate-500 mt-2 leading-relaxed">
@@ -363,10 +438,15 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                   </div>
                 )}
 
+                {/* Analytics & Overall Performance Tab */}
+                {activeTab === 'analytics' && (
+                  <OverallPerformanceDashboard data={data} history={history} attendanceLogs={attendanceLogs} />
+                )}
+
                 {/* Profile Overview Tab */}
                 {activeTab === 'profile' && (
                   <div className="space-y-6">
-                    {(user?.role !== 'student') && (
+                    {(!viewerIsStudent) && (
                       <div className="flex justify-end">
                         {isEditing ? (
                           <div className="flex gap-2">
@@ -538,7 +618,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                             <div className="flex justify-between"><span className="text-slate-500">Batch:</span><span className="font-bold text-slate-900">{data.student.batch}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">CGPA:</span><span className="font-bold text-slate-900">{data.student.cgpa || 'N/A'}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Residence:</span><span className="font-bold text-indigo-600">{data.student.residenceType || 'Day Scholar'}</span></div>
-                            <div className="flex justify-between"><span className="text-slate-500">Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">POD AI Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600">{Math.round(data.student.attendancePercentage || 0)}%</span></div>
                           </div>
                         </div>
@@ -564,6 +644,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Activities Tab */}
                 {activeTab === 'activities' && (
                   <div className="space-y-4">
+                    {/* Particular Graph for Activities */}
+                    <ActivitiesGraph activities={data.activities} />
+
                     {data.activities.length === 0 ? (
                       <div className="text-center py-10 text-slate-500">No activities uploaded.</div>
                     ) : (
@@ -591,35 +674,64 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
 
                 {/* Certificates Tab */}
                 {activeTab === 'certificates' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {data.certificates.length === 0 ? (
-                      <div className="text-center py-10 text-slate-500 col-span-2">No certificates uploaded.</div>
-                    ) : (
-                      data.certificates.map(cert => (
-                        <div key={cert._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                          <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0">
-                            <Award size={24} />
+                  <div className="space-y-4">
+                    {/* Particular Graph for Certificates */}
+                    <CertificatesGraph certificates={data.certificates} />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {data.certificates.length === 0 ? (
+                        <div className="text-center py-10 text-slate-500 col-span-2">No certificates uploaded.</div>
+                      ) : (
+                        data.certificates.map(cert => (
+                          <div key={cert._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4">
+                            <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                              <Award size={24} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-slate-900 truncate">{cert.title}</h4>
+                              <p className="text-xs text-slate-500 truncate">{cert.issuedBy}</p>
+                              
+                              {(cert.participationType || cert.eventLevel || cert.eventDuration || cert.eventDate) && (
+                                <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                                  {cert.participationType && (
+                                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                      {cert.participationType === 'Winner' ? '🏆 Winner' : cert.participationType}
+                                    </span>
+                                  )}
+                                  {cert.eventLevel && (
+                                    <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                      {cert.eventLevel}
+                                    </span>
+                                  )}
+                                  {cert.eventDuration && (
+                                    <span className="text-[9px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">
+                                      {cert.eventDuration}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              <a href={cert.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-500 hover:underline mt-1.5 block">View File</a>
+                            </div>
+                            <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border shrink-0 ${cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
+                                  'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                              }`}>
+                              {cert.verified}
+                            </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-slate-900 truncate">{cert.title}</h4>
-                            <p className="text-xs text-slate-500 truncate">{cert.issuedBy}</p>
-                            <a href={cert.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-indigo-500 hover:underline mt-1 block">View File</a>
-                          </div>
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase border ${cert.verified === 'approved' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                              cert.verified === 'rejected' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
-                                'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                            }`}>
-                            {cert.verified}
-                          </span>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {/* Placements Tab */}
                 {activeTab === 'placements' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for Placements */}
+                    <PlacementsGraph history={history} />
+
                     {history.length === 0 ? (
                       <div className="text-center py-10 text-slate-500">No placement history found.</div>
                     ) : (
@@ -693,15 +805,20 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Remarks Tab */}
                 {activeTab === 'remarks' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for Remarks */}
+                    <RemarksGraph remarks={data.student?.remarks} />
+
                     <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                       <h4 className="font-bold text-slate-900 mb-4">Add Remark</h4>
                       <form onSubmit={async (e) => {
                         e.preventDefault();
                         const text = e.target.remark.value;
+                        const purpose = e.target.purpose.value;
+                        const actionTaken = e.target.actionTaken.value;
                         if (!text.trim()) return;
 
                         try {
-                          const res = await api.post(`/admin/students/${studentId}/remarks`, { text });
+                          const res = await api.post(`/admin/students/${studentId}/remarks`, { text, purpose, actionTaken });
                           setData(prev => ({
                             ...prev,
                             student: {
@@ -715,6 +832,24 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                           toast.error('Failed to add remark');
                         }
                       }}>
+                        <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                          <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            Purpose
+                            <input
+                              name="purpose"
+                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                              placeholder="e.g. Low attendance counselling"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            Action taken
+                            <input
+                              name="actionTaken"
+                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                              placeholder="e.g. Parent called, warning given"
+                            />
+                          </label>
+                        </div>
                         <textarea
                           name="remark"
                           className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none mb-3"
@@ -736,7 +871,13 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                       ) : (
                         data.student.remarks.slice().reverse().map(remark => (
                           <div key={remark._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                            <p className="text-sm font-medium text-slate-800 mb-3 whitespace-pre-wrap">{remark.text}</p>
+                            <p className="text-sm font-medium text-slate-800 mb-2 whitespace-pre-wrap">{remark.text}</p>
+                            {(remark.purpose || remark.actionTaken) && (
+                              <div className="space-y-1 mb-3 text-xs">
+                                {remark.purpose && <div><span className="text-slate-500">Purpose:</span> <strong className="text-slate-800">{remark.purpose}</strong></div>}
+                                {remark.actionTaken && <div><span className="text-slate-500">Action taken:</span> <strong className="text-slate-800">{remark.actionTaken}</strong></div>}
+                              </div>
+                            )}
                             <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 border-t border-slate-100 pt-3">
                               <span>By: {remark.addedBy?.name || 'Unknown'}</span>
                               <span>{new Date(remark.addedAt).toLocaleString('en-IN')}</span>
@@ -751,6 +892,13 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* Super 50 Attendance Tab */}
                 {activeTab === 'attendance' && (
                   <div className="space-y-4">
+                    {/* Particular Graph for Attendance */}
+                    <AttendanceGraph
+                      attendancePercentage={data?.student?.attendancePercentage}
+                      semesterAttendance={data?.semesterAttendance}
+                      attendanceLogs={attendanceLogs}
+                    />
+
                     <div className="flex justify-between items-center mb-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                       <div>
                         <h4 className="font-bold text-slate-900">Cohort Class Attendance</h4>
@@ -823,30 +971,73 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {data.semesterAttendance.map((semAtt) => (
                           <div key={semAtt._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h5 className="font-bold text-slate-900">Semester {semAtt.semester}</h5>
-                                {semAtt.sessionName && <p className="text-xs text-slate-500 mt-0.5">{semAtt.sessionName}</p>}
-                                {semAtt.projectName && <p className="text-xs font-semibold text-indigo-600 mt-1">Project: {semAtt.projectName}</p>}
+                            {editingSemAttId === semAtt._id ? (
+                              <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                  <h4 className="font-bold text-slate-900">Editing Semester {semAtt.semester}</h4>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
+                                      onClick={() => setEditingSemAttId(null)}
+                                    >
+                                      <X size={16} />
+                                    </button>
+                                    <button 
+                                      className="p-1.5 hover:bg-emerald-50 text-emerald-500 rounded-md transition-colors"
+                                      onClick={() => saveSemAtt(semAtt._id)}
+                                    >
+                                      <Check size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Attendance Percentage (%)</label>
+                                  <input 
+                                    type="number" 
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-xs font-bold text-slate-800"
+                                    value={semAttEditForm.attendancePercentage}
+                                    onChange={(e) => setSemAttEditForm({ attendancePercentage: e.target.value })}
+                                  />
+                                </div>
                               </div>
-                              <span className={`px-2.5 py-1 rounded-md text-xs font-black font-mono ${
-                                semAtt.attendancePercentage >= 75
-                                  ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                                  : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
-                              }`}>
-                                {semAtt.attendancePercentage}%
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs font-bold pt-2 border-t border-slate-100">
-                              <div className="bg-slate-50 p-2 rounded-xl text-center">
-                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Total Days</span>
-                                <span className="text-slate-900">{semAtt.totalDays}</span>
-                              </div>
-                              <div className="bg-slate-50 p-2 rounded-xl text-center">
-                                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Present Days</span>
-                                <span className="text-slate-900">{semAtt.totalPresent}</span>
-                              </div>
-                            </div>
+                            ) : (
+                              <>
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h5 className="font-bold text-slate-900 flex items-center gap-2">
+                                      Semester {semAtt.semester}
+                                      {!viewerIsStudent && (
+                                        <div className="flex gap-1 ml-2">
+                                          <button onClick={() => startEditingSemAtt(semAtt)} className="text-slate-300 hover:text-indigo-500 transition-colors" title="Edit"><Pencil size={12} /></button>
+                                          <button onClick={() => deleteSemAtt(semAtt._id)} className="text-slate-300 hover:text-rose-500 transition-colors" title="Delete"><Trash2 size={12} /></button>
+                                        </div>
+                                      )}
+                                    </h5>
+                                    {semAtt.sessionName && <p className="text-xs text-slate-500 mt-0.5">{semAtt.sessionName}</p>}
+                                    {semAtt.projectName && <p className="text-xs font-semibold text-indigo-600 mt-1">Project: {semAtt.projectName}</p>}
+                                  </div>
+                                  <span className={`px-2.5 py-1 rounded-md text-xs font-black font-mono ${
+                                    semAtt.attendancePercentage >= 75
+                                      ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                                      : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                                  }`}>
+                                    {semAtt.attendancePercentage}%
+                                  </span>
+                                </div>
+                                {semAtt.totalDays > 0 && (
+                                  <div className="grid grid-cols-2 gap-2 text-xs font-bold pt-2 border-t border-slate-100">
+                                    <div className="bg-slate-50 p-2 rounded-xl text-center">
+                                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Total Days</span>
+                                      <span className="text-slate-900">{semAtt.totalDays}</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-2 rounded-xl text-center">
+                                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Present Days</span>
+                                      <span className="text-slate-900">{semAtt.totalPresent}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -857,6 +1048,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* MST Results Tab */}
                 {activeTab === 'mst' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for MST Marks */}
+                    <MSTMarksGraph mstResults={data.mstResults} />
+
                     <div className="border-b pb-4">
                       <h4 className="font-display font-black text-slate-950 text-lg">Mid-Semester Test Scores</h4>
                       <p className="text-xs text-slate-500 mt-0.5">Subject-wise marks obtained in MST evaluations.</p>
@@ -873,27 +1067,65 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                             </div>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {Object.entries(mst.scores || {}).map(([subject, score], sIdx) => {
+                            {(() => {
                               const testNameLower = (mst.testName || '').toLowerCase();
-                              const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
-                              let maxMarks = 100;
-                              if (!isCrt) {
-                                if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
-                                  maxMarks = 28;
-                                } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
-                                  maxMarks = 42;
+                              let calculatedTotal = 0;
+                              let totalMaxMarks = 0;
+                              const scoreEntries = [];
+                              
+                              Object.entries(mst.scores || {}).forEach(([subject, score]) => {
+                                const lowerSub = subject.toLowerCase();
+                                if (lowerSub.includes('total') || lowerSub.includes('id') || lowerSub.includes('enrollment') || lowerSub.includes('roll')) {
+                                  return;
                                 }
+                                
+                                const numericScore = Number(score);
+                                if (!isNaN(numericScore)) {
+                                  calculatedTotal += numericScore;
+                                  
+                                  const isCrt = lowerSub.includes('crt') || lowerSub.includes('aptitude');
+                                  let maxMarks = 100;
+                                  if (!isCrt) {
+                                    if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                                      maxMarks = 28;
+                                    } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                                      maxMarks = 42;
+                                    }
+                                  }
+                                  totalMaxMarks += maxMarks;
+                                }
+                                scoreEntries.push([subject, score]);
+                              });
+
+                              if (scoreEntries.length > 0) {
+                                scoreEntries.push(['Grand Total', calculatedTotal, totalMaxMarks]);
                               }
-                              const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
-                              return (
-                                <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                  <span className="text-xs font-bold text-slate-700 capitalize truncate mr-2">{subject}</span>
-                                  <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">
-                                    {score} {!isIdKey && `/ ${maxMarks}`}
-                                  </span>
-                                </div>
-                              );
-                            })}
+
+                              return scoreEntries.map(([subject, score, customMax], sIdx) => {
+                                const isTotal = subject.toLowerCase().includes('total');
+                                let maxMarks = customMax;
+                                if (!isTotal) {
+                                  const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
+                                  maxMarks = 100;
+                                  if (!isCrt) {
+                                    if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                                      maxMarks = 28;
+                                    } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                                      maxMarks = 42;
+                                    }
+                                  }
+                                }
+
+                                return (
+                                  <div key={sIdx} className={`flex justify-between items-center p-3 rounded-xl border ${isTotal ? 'bg-indigo-50 border-indigo-100 col-span-full sm:col-span-2 md:col-span-3' : 'bg-slate-50 border-slate-100'}`}>
+                                    <span className={`text-xs capitalize truncate mr-2 ${isTotal ? 'font-black text-indigo-600 text-sm' : 'font-bold text-slate-700'}`}>{subject}</span>
+                                    <span className={`text-xs shrink-0 bg-white px-2 py-1 rounded border border-slate-100 ${isTotal ? 'font-black text-emerald-600 text-sm' : 'font-black text-slate-950'}`}>
+                                      {score} {maxMarks > 0 && `/ ${maxMarks}`}
+                                    </span>
+                                  </div>
+                                );
+                              });
+                            })()}
                           </div>
                         </div>
                       ))
@@ -904,6 +1136,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* AMCAT Results Tab */}
                 {activeTab === 'amcat' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for AMCAT Marks */}
+                    <AMCATMarksGraph amcatResults={data.amcatResults} />
+
                     <div className="border-b pb-4">
                       <h4 className="font-display font-black text-slate-950 text-lg">AMCAT Assessment Scores</h4>
                       <p className="text-xs text-slate-500 mt-0.5">Sectional scores from AMCAT exams.</p>
@@ -911,7 +1146,16 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                     {(!data.amcatResults || data.amcatResults.length === 0) ? (
                       <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-500">No AMCAT results uploaded yet.</div>
                     ) : (
-                      data.amcatResults.map((amcat, aIdx) => (
+                      data.amcatResults.map((amcat, aIdx) => {
+                        // Each topic is out of 100, but topic count varies per
+                        // semester's uploaded sheet — so the aggregate "Total"
+                        // column's correct denominator is (topic count) * 100,
+                        // not a flat 100 (which produced nonsense like "540/100").
+                        const scoreKeys = Object.keys(amcat.scores || {});
+                        const isIdKey = (k) => k.toLowerCase().includes('id') || k.toLowerCase().includes('enrollment') || k.toLowerCase().includes('roll');
+                        const isTotalKey = (k) => k.toLowerCase().includes('total');
+                        const topicCount = scoreKeys.filter((k) => !isIdKey(k) && !isTotalKey(k)).length;
+                        return (
                         <div key={aIdx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                           <div className="flex justify-between items-center border-b pb-3">
                             <div>
@@ -921,19 +1165,22 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {Object.entries(amcat.scores || {}).map(([subject, score], sIdx) => {
-                              const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
+                              const idKey = isIdKey(subject);
+                              const totalKey = isTotalKey(subject);
+                              const denominator = totalKey ? topicCount * 100 : 100;
                               return (
                                 <div key={sIdx} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                                   <span className="text-xs font-bold text-slate-700 capitalize truncate mr-2">{subject}</span>
                                   <span className="text-xs font-black text-slate-950 shrink-0 bg-white px-2 py-1 rounded border border-slate-100">
-                                    {score} {!isIdKey && '/ 100'}
+                                    {score} {!idKey && denominator > 0 && `/ ${denominator}`}
                                   </span>
                                 </div>
                               );
                             })}
                           </div>
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -941,6 +1188,9 @@ export default function StudentProfileModal({ isOpen, onClose, studentId }) {
                 {/* RGPV Results Tab */}
                 {activeTab === 'rgpv' && (
                   <div className="space-y-6">
+                    {/* Particular Graph for RGPV Marks */}
+                    <RGPVMarksGraph rgpvResults={data.rgpvResults} />
+
                     <div className="border-b pb-4">
                       <h4 className="font-display font-black text-slate-950 text-lg">RGPV University Results</h4>
                       <p className="text-xs text-slate-500 mt-0.5">Semester-wise SGPA, CGPA, and subject grade records.</p>

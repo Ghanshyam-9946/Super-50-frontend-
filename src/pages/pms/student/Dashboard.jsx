@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CreditCard, FolderOpen, Users, CloudUpload, ArrowRight, ClipboardCheck, GraduationCap, Code2, TrendingUp, FolderArchive } from 'lucide-react';
+import { CreditCard, FolderOpen, Users, CloudUpload, ArrowRight, ClipboardCheck, GraduationCap, Code2, TrendingUp, FolderArchive, CalendarClock } from 'lucide-react';
 import { studentAPI } from '../../../api/pms';
 import { Card, Spinner, StatCard, EmptyState } from '../../../components/pms/Common';
 import { useAuth } from '../../../context/pms/AuthContext';
-import { semesterToProject } from '../../../utils/pms/helpers';
+import { semesterToProject, formatDate, cn } from '../../../utils/pms/helpers';
+
+// How a meeting window reads on the student's dashboard
+const WINDOW = {
+  upcoming: { label: 'Upcoming', cls: 'badge-secondary' },
+  open: { label: 'Open now — go meet your guide', cls: 'badge-success' },
+  over: { label: 'Window closed', cls: 'badge-warning' },
+};
 
 const StudentDashboard = () => {
   const { user } = useAuth();
   const [team, setTeam] = useState(null);
+  const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     studentAPI.dashboard()
-      .then((res) => setTeam(res.data.team))
+      .then((res) => {
+        setTeam(res.data.team);
+        setMeetings(res.data.meetings || []);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -42,6 +53,43 @@ const StudentDashboard = () => {
           meta="Auto-mapped to your semester"
         />
       </div>
+
+      {meetings.length > 0 && (
+        <Card title="Guide Meetings" icon={CalendarClock} noPadding>
+          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            {meetings.map((m) => (
+              <div
+                key={m._id}
+                className={cn(
+                  'rounded-xl border p-4',
+                  m.window === 'open' ? 'border-emerald-300 bg-emerald-50/50' : 'border-slate-200'
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-semibold text-sm">{m.label}</div>
+                  <span className="badge-primary">/{m.maxMarks}</span>
+                </div>
+                <div className="text-xs text-slate-600 mt-1">
+                  {formatDate(m.startDate)} – {formatDate(m.endDate)}
+                </div>
+                <div className="mt-2"><span className={WINDOW[m.window].cls}>{WINDOW[m.window].label}</span></div>
+                {m.instructions && <p className="text-xs text-slate-500 mt-2">{m.instructions}</p>}
+                <div className="mt-3 pt-3 border-t border-slate-100 text-sm">
+                  {m.marks !== null && m.marks !== undefined ? (
+                    <>
+                      <span className="font-bold text-emerald-600">{m.marks}/{m.maxMarks}</span>
+                      {m.evaluatedBy && <span className="text-xs text-slate-500"> · by {m.evaluatedBy}</span>}
+                      {m.remark && <p className="text-xs text-slate-600 mt-1 italic">"{m.remark}"</p>}
+                    </>
+                  ) : (
+                    <span className="text-xs text-slate-400">Marks not recorded yet</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card title="My Project Team" icon={Users}>

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight, Printer, KeyRound, ShieldCheck, Check, Copy, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
+import { printStudentDossier } from '../../utils/printDossier';
 
 function AddStudentModal({ onClose }) {
   const dispatch = useDispatch();
@@ -488,6 +489,124 @@ function Super50ClassAttendanceModal({ onClose, classId, onSuccess }) {
   );
 }
 
+function AdminSetPasswordModal({ student, onClose, onSuccess }) {
+  const [password, setPassword] = useState('');
+  const [forceChange, setForceChange] = useState(true);
+  const [emailStudent, setEmailStudent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState(null); // { password, emailed }
+  const [copied, setCopied] = useState(false);
+
+  const submit = async () => {
+    if (password && password.trim().length < 6) return toast.error('Password must be at least 6 characters');
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/admin/students/${student._id}/password`, {
+        password: password.trim(),
+        forceChange,
+        emailStudent,
+      });
+      setResult({ password: data.password, emailed: data.emailed });
+      if (onSuccess) onSuccess(data.data);
+      toast.success(data.message || 'Password updated successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not change the password');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(result.password);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Copy failed — note it down manually');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="glass-card w-full max-w-md rounded-3xl p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display font-black text-lg text-[var(--text-primary)]">Set Student Password</h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              {student.name} · {student.enrollmentNumber || student.enrollmentNo || student.email}
+            </p>
+          </div>
+          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X size={18} /></button>
+        </div>
+
+        {result ? (
+          <>
+            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+                <ShieldCheck size={16} /> Password changed successfully
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm font-mono text-[var(--text-primary)] break-all font-bold">
+                  {result.password}
+                </code>
+                <button onClick={copy} title="Copy" className="p-2 rounded-lg border border-[var(--border-light)] text-[var(--text-secondary)] hover:text-[var(--primary)] bg-[var(--bg-input)]">
+                  {copied ? <Check size={15} className="text-emerald-600" /> : <Copy size={15} />}
+                </button>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {result.emailed ? 'Also emailed to the student. ' : ''}Share this password with the student now — it won't be shown again.
+              </p>
+            </div>
+            <button onClick={onClose} className="btn-premium text-sm px-5 py-2.5 w-full">Done</button>
+          </>
+        ) : (
+          <>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+              New password
+              <input
+                type="text"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Leave empty to auto-generate one"
+                className="mt-1.5 w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2.5 text-sm font-bold text-[var(--text-primary)] outline-none focus:border-[var(--primary)] shadow-sm"
+              />
+            </label>
+
+            <label className="flex items-start gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+              <input type="checkbox" checked={forceChange} onChange={(e) => setForceChange(e.target.checked)} className="mt-0.5" />
+              <span>Ask the student to choose their own password right after they log in <strong className="text-[var(--text-primary)]">(recommended)</strong></span>
+            </label>
+            <label className="flex items-start gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
+              <input type="checkbox" checked={emailStudent} onChange={(e) => setEmailStudent(e.target.checked)} className="mt-0.5" disabled={!student.email} />
+              <span>Email it to {student.email || 'the student'}{!student.email && ' — no email on file'}</span>
+            </label>
+
+            <div className="flex items-start gap-2 text-[11px] text-[var(--text-secondary)] bg-[var(--bg-input)] rounded-xl p-3">
+              <AlertCircle size={14} className="shrink-0 mt-0.5 text-[var(--primary)]" />
+              This password change is recorded in the system audit logs.
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button onClick={onClose} className="text-sm font-bold px-4 py-2.5 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-input)]">Cancel</button>
+              <button onClick={submit} disabled={busy} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />} Change Password
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const formatBatch = (batchStr) => {
+  if (!batchStr) return '';
+  if (batchStr.toString().includes('-')) return batchStr;
+  const start = parseInt(batchStr, 10);
+  if (isNaN(start)) return batchStr;
+  return `${start}-${String(start + 4).slice(-2)}`;
+};
+
 export default function StudentsPage({ isSuper50 = false }) {
   const dispatch = useDispatch();
   const { allStudents, filters, loading, total } = useSelector((s) => s.students);
@@ -502,6 +621,30 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [printingStudentId, setPrintingStudentId] = useState(null);
+  const [passwordTargetStudent, setPasswordTargetStudent] = useState(null);
+
+  const handleDirectPrint = async (studentId, studentName) => {
+    setPrintingStudentId(studentId);
+    const toastId = toast.loading(`Preparing dossier for ${studentName || 'student'}...`);
+    try {
+      const res = await api.get(`/students/${studentId}`);
+      if (res.data?.data) {
+        toast.success('Dossier generated! Opening print...', { id: toastId });
+        printStudentDossier(
+          res.data.data,
+          user?.role === 'admin' ? 'Administrative Verified Official Record' : 'TG Mentorship Verified Official Record'
+        );
+      } else {
+        toast.error('Student academic record not found', { id: toastId });
+      }
+    } catch (err) {
+      console.error('Print dossier fetch error:', err);
+      toast.error('Failed to load student dossier for printing', { id: toastId });
+    } finally {
+      setPrintingStudentId(null);
+    }
+  };
 
   // Pagination State (20 items per page)
   const [currentPage, setCurrentPage] = useState(1);
@@ -646,7 +789,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                 value={batch} onChange={(e) => setBatch(e.target.value)} id="students-batch-filter"
               >
                 <option value="">All Batches</option>
-                {filters.batches?.map(b => <option key={b} value={b}>{b}</option>)}
+                {filters.batches?.map(b => <option key={b} value={b}>{formatBatch(b)}</option>)}
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                 <ChevronDown size={14} />
@@ -714,7 +857,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold">{student.department}</td>
-                        <td className="px-6 py-4 font-bold">{student.batch}</td>
+                        <td className="px-6 py-4 font-bold">{formatBatch(student.batch)}</td>
                         <td className="px-6 py-4 font-bold">
                           <div className="flex flex-col gap-1 items-start">
                             {student.mentor ? (
@@ -772,9 +915,31 @@ export default function StudentsPage({ isSuper50 = false }) {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => setSelectedStudentId(student._id)}
-                              className="btn-outline-premium text-xs py-1.5 px-3 flex items-center gap-1.5 shadow-sm"
+                              className="btn-outline-premium text-xs py-2 px-3.5 flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
                             >
-                              <Eye size={14} /> View Data
+                              <Eye size={15} /> View Data
+                            </button>
+                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+                              <button
+                                onClick={() => setPasswordTargetStudent(student)}
+                                className="btn-premium text-xs py-2 px-3 flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                title="Change Student Password"
+                              >
+                                <KeyRound size={13} /> Set Password
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDirectPrint(student._id, student.name)}
+                              disabled={printingStudentId === student._id}
+                              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-purple-500/25 transition-all cursor-pointer disabled:opacity-50"
+                              title="Direct 1-Click Print Official Academic Dossier"
+                            >
+                              {printingStudentId === student._id ? (
+                                <Loader2 size={15} className="animate-spin" />
+                              ) : (
+                                <Printer size={15} />
+                              )}
+                              <span>Print Dossier</span>
                             </button>
                             {(user?.role === 'admin' || user?.role === 'super50_admin') && (
                               <button
@@ -816,19 +981,7 @@ export default function StudentsPage({ isSuper50 = false }) {
                                 <RefreshCw size={16} />
                               </button>
                             )}
-                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
-                              <button
-                                onClick={() => {
-                                  if (window.confirm('Are you sure you want to delete this student?')) {
-                                    dispatch(deleteStudent(student._id)).then(r => !r.error ? toast.success('Student deleted') : toast.error('Failed to delete student'));
-                                  }
-                                }}
-                                className="p-1.5 text-rose-500 hover:text-rose-700 bg-rose-500/10 rounded-lg border border-rose-500/20 transition-all shadow-sm flex items-center justify-center"
-                                title="Delete Student"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            )}
+
                           </div>
                         </td>
                       </motion.tr>
@@ -1015,6 +1168,19 @@ export default function StudentsPage({ isSuper50 = false }) {
           onClose={() => setShowAttendanceModal(false)}
           classId={editingClassId}
           onSuccess={fetchClasses}
+        />
+      )}
+      {passwordTargetStudent && (
+        <AdminSetPasswordModal
+          student={passwordTargetStudent}
+          onClose={() => setPasswordTargetStudent(null)}
+          onSuccess={() => dispatch(fetchAllStudents({
+            department: dept || undefined,
+            batch: batch || undefined,
+            search: search || undefined,
+            sort: `${sortDir === 'desc' ? '-' : ''}${sortField}`,
+            isSuper50: isSuper50 ? 'true' : undefined
+          }))}
         />
       )}
     </div>

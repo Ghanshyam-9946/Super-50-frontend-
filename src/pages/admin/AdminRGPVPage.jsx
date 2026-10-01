@@ -3,20 +3,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Trash2, Search, Loader2, Award, ChevronDown, Check, X, FileText, ClipboardList } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
-
-const BATCHES = ['2020-24', '2021-25', '2022-26', '2023-27', '2024-28'];
+import BatchSelect from '../../components/BatchSelect';
 
 export default function AdminRGPVPage() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  
+
   // Filters and upload state
   const [selectedSem, setSelectedSem] = useState('5'); // Default to 5th semester as in request
-  const [selectedBatch, setSelectedBatch] = useState('2023-27'); // Default to 2023-27 batch
+  const [selectedBatch, setSelectedBatch] = useState('all'); // Batch list is now dynamic (GET /master-data/batches), so "all" is the only safe default
   const [uploadSem, setUploadSem] = useState('5');
-  const [uploadBatch, setUploadBatch] = useState('2023-27');
+  const [uploadBatch, setUploadBatch] = useState('');
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState('');
 
@@ -44,6 +43,10 @@ export default function AdminRGPVPage() {
     e.preventDefault();
     if (!file) {
       toast.error('Please select an Excel file');
+      return;
+    }
+    if (!uploadBatch) {
+      toast.error('Please select a batch');
       return;
     }
 
@@ -141,15 +144,11 @@ export default function AdminRGPVPage() {
 
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Batch</label>
-                  <select
+                  <BatchSelect
                     value={uploadBatch}
                     onChange={(e) => setUploadBatch(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-                  >
-                    {BATCHES.map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
 
@@ -213,16 +212,12 @@ export default function AdminRGPVPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-widest shrink-0">Batch:</span>
-                  <select
+                  <BatchSelect
                     value={selectedBatch}
                     onChange={(e) => setSelectedBatch(e.target.value)}
+                    allOption="All Batches"
                     className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-                  >
-                    <option value="all">All Batches</option>
-                    {BATCHES.map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
                 {selectedSem !== 'all' && results.length > 0 && (
                   <button

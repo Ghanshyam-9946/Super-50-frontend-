@@ -46,7 +46,7 @@ const Reports = () => {
         status: r.status,
         marks: r.marksObtained ?? '',
         locked: r.isLocked ? 'Yes' : 'No',
-        guide: r.team?.guide?.name || '',
+        guide: (r.team?.guides || []).map((g) => g.name).join(', ') || '',
       }));
       downloadCSV(rows, ['Group', 'Group Name', 'Sem', 'Presentation', 'Status', 'Marks', 'Locked', 'Guide'], 'presentation_status.csv');
     }
@@ -140,7 +140,7 @@ const Reports = () => {
                       <td>
                         {r.isLocked ? <span className="badge-secondary"><Lock className="w-3 h-3" /> Locked</span> : '—'}
                       </td>
-                      <td className="text-sm">{r.team?.guide?.name || '—'}</td>
+                      <td className="text-sm">{(r.team?.guides || []).map((g) => g.name).join(', ') || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
