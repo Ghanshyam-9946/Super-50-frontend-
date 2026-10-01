@@ -7,7 +7,7 @@ export const STATUS_META = {
   pending_tg: { label: 'Waiting for TG', cls: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
   pending_admin: { label: 'Waiting for Admin', cls: 'bg-blue-500/10 text-blue-600 border-blue-500/30' },
   approved: { label: 'Approved — QR active', cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
-  used: { label: 'Exited', cls: 'bg-slate-500/10 text-slate-600 border-slate-500/30' },
+  used: { label: 'Approved & Exited', cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' },
   rejected: { label: 'Rejected', cls: 'bg-red-500/10 text-red-600 border-red-500/30' },
   expired: { label: 'Expired', cls: 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)]' },
 };

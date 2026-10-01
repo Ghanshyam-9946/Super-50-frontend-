@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
-  DoorOpen, Loader2, Inbox, History, Download, Shield, UserPlus, Trash2, Search, RefreshCw, Power,
+  DoorOpen, Loader2, Inbox, History, Download, Shield, UserPlus, Trash2, Search, RefreshCw, Power, Trophy,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/imageUrl';
 import { PassRow, ReviewDialog, fmt, studentLine, semLine } from './gatePassShared';
+import GatePassLeaderboard from './GatePassLeaderboard';
 
 const TABS = [
   { key: 'pending', label: 'Approvals', icon: Inbox },
+  { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { key: 'history', label: 'History & Report', icon: History },
   { key: 'security', label: 'Security Accounts', icon: Shield },
 ];
@@ -171,6 +173,8 @@ export default function AdminGatePassPage() {
 
       {loading ? (
         <div className="glass-card p-10 rounded-3xl flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
+      ) : tab === 'leaderboard' ? (
+        <GatePassLeaderboard />
       ) : tab === 'pending' ? (
         <div className="glass-card p-6 rounded-3xl space-y-3">
           <div className="flex items-center justify-between gap-3">
