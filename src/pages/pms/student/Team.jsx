@@ -10,6 +10,7 @@ import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, StatCard, Modal, confirmAction } from '../../../components/pms/Common';
 import { useAuth } from '../../../context/pms/AuthContext';
 import { semesterToProject, formatDateTime } from '../../../utils/pms/helpers';
+import GuideProfile from './GuideProfile';
 
 const ROLES = ['Member', 'Co-Leader', 'Frontend', 'Backend', 'Database', 'Tester', 'Documentation'];
 const DOMAIN_OPTS = ['WEB DEVELOPMENT', 'MOBILE APP DEVELOPMENT', 'ML', 'DATA SCIENCE / DATA ANALYTICS', 'IOT', 'OTHER'];
@@ -870,6 +871,8 @@ const StudentTeam = () => {
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [availableGuides, setAvailableGuides] = useState([]);
+  // Which guide's profile (with the project match score) is open.
+  const [guideProfileId, setGuideProfileId] = useState(null);
   const [guidesLocked, setGuidesLocked] = useState(false);
 
   const fetchTeam = async () => {
@@ -931,10 +934,15 @@ const StudentTeam = () => {
         // Final allotment — set only by admin, students cannot change it.
         <div className="space-y-3 text-sm">
           {team.guides.map((g) => (
-            <div key={g._id}>
-              <div className="font-semibold text-base">{g.name}</div>
-              <div className="text-slate-500">{g.email}</div>
-              {g.mobile && <div className="text-slate-500">📱 {g.mobile}</div>}
+            <div key={g._id} className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-semibold text-base">{g.name}</div>
+                <div className="text-slate-500">{g.email}</div>
+                {g.mobile && <div className="text-slate-500">📱 {g.mobile}</div>}
+              </div>
+              <button onClick={() => setGuideProfileId(g._id)} className="btn-outline btn-sm whitespace-nowrap">
+                View profile
+              </button>
             </div>
           ))}
         </div>
@@ -1053,6 +1061,8 @@ const StudentTeam = () => {
         <StatCard label="Project Type" value={team.project?.projectName || semesterToProject(team.semester)} icon={FolderOpen} color="warning" />
         <StatCard label="Members" value={team.members?.length || 0} icon={UserCheck} color="success" />
       </div>
+
+      {guideProfileId && <GuideProfile guideId={guideProfileId} onClose={() => setGuideProfileId(null)} />}
 
       {canEditDetails ? (
         <>

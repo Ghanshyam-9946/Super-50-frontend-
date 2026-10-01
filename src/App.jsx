@@ -107,6 +107,23 @@ import PMSRoutes from './pages/pms/PMSRoutes';
 
 // Admin reports
 import FacultyReportsPage from './pages/admin/FacultyReportsPage';
+import CourseFileIndexPage from './pages/admin/CourseFileIndexPage';
+
+// Alumni network
+import AlumniPage from './pages/alumni/AlumniPage';
+
+// Meetings (video rooms) — the room itself is full-screen, outside the
+// app shell, so it gets its own route below the protected layout.
+import MeetingsPage from './pages/meetings/MeetingsPage';
+import MeetingRoom from './pages/meetings/MeetingRoom';
+
+// Leave applications
+import StudentLeavePage from './pages/leave/StudentLeavePage';
+import ReviewLeavePage from './pages/leave/ReviewLeavePage';
+
+// Training module
+import TrainingsPage from './pages/admin/TrainingsPage';
+import StudentTrainingsPage from './pages/student/StudentTrainingsPage';
 
 // TG (mentor) tools
 import TgStudentsPage from './pages/faculty/TgStudentsPage';
@@ -137,7 +154,8 @@ const RoleGuard = ({ children, allowed, allowResponsibility }) => {
               userRoles.includes('guide') ? '/pms/guide' :
                 userRoles.includes('tp_admin') ? '/tp/enroll-students' :
                   userRoles.includes('pms_admin') ? '/pms/admin' :
-                    userRoles.includes('security') ? '/security/gate-pass' : '/login';
+                    userRoles.includes('security') ? '/security/gate-pass' :
+                      userRoles.includes('alumni') ? '/alumni' : '/login';
     return <Navigate to={fallback} replace />;
   }
   return children;
@@ -378,6 +396,37 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/course-exit-survey/:releaseId" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><SurveyDashboardPage /></RoleGuard>
         } />
+        {/* Alumni network — alumni and admin post, students read and can call */}
+        <Route path="/alumni" element={
+          <RoleGuard allowed={['student', 'alumni', 'teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><AlumniPage /></RoleGuard>
+        } />
+
+        <Route path="/meetings" element={
+          <RoleGuard allowed={['student', 'alumni', 'teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><MeetingsPage /></RoleGuard>
+        } />
+
+        {/* Leave application — student applies, TG clears it, admin decides */}
+        <Route path="/student/leave" element={
+          <RoleGuard allowed={['student']}><StudentLeavePage /></RoleGuard>
+        } />
+        <Route path="/faculty/leave" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ReviewLeavePage scope="tg" /></RoleGuard>
+        } />
+        <Route path="/admin/leave" element={
+          <RoleGuard allowed={['admin']}><ReviewLeavePage scope="admin" /></RoleGuard>
+        } />
+
+        {/* Training — staff see it, an admin or Training Coordinator can change it */}
+        <Route path="/admin/trainings" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><TrainingsPage /></RoleGuard>
+        } />
+        <Route path="/student/trainings" element={
+          <RoleGuard allowed={['student']}><StudentTrainingsPage /></RoleGuard>
+        } />
+
+        <Route path="/admin/course-file-index" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']} allowResponsibility="Academic Coordinator"><CourseFileIndexPage /></RoleGuard>
+        } />
         <Route path="/admin/faculty-reports" element={
           <RoleGuard allowed={['admin']}><FacultyReportsPage /></RoleGuard>
         } />
@@ -483,7 +532,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><CalendarRemindersPage /></RoleGuard>
         } />
         <Route path="/notifications" element={
-          <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin', 'security']}><NotificationsPage /></RoleGuard>
+          <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin', 'security', 'alumni']}><NotificationsPage /></RoleGuard>
         } />
         <Route path="/sticky-notes" element={
           <RoleGuard allowed={['student', 'teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><StickyNotesPage /></RoleGuard>
@@ -509,6 +558,9 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ChatPage /></RoleGuard>
         } />
       </Route>
+
+      {/* A meeting room takes the whole screen — no sidebar, no page chrome */}
+      <Route path="/meetings/:roomCode" element={<MeetingRoom />} />
 
       {/* PMS Routes - outside main Layout so PMS gets its own Sidebar + Topbar */}
       <Route path="/pms/*" element={<PMSRoutes />} />

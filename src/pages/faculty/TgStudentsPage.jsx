@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Users, Loader2, Search, KeyRound, Copy, Check, X, ShieldCheck, RefreshCw, AlertCircle,
+  Pencil, ClipboardList,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { getImageUrl } from "../../utils/imageUrl";
+import StudentProfileModal from "../../components/StudentProfileModal";
 
 // The TG's own tutor group. The one action here is setting a student's
 // password — a student who can't log in usually asks their TG first, and
@@ -14,6 +16,8 @@ export default function TgStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [target, setTarget] = useState(null); // student whose password is being set
+  // The full student profile modal, opened straight on the tab we want.
+  const [profile, setProfile] = useState(null); // { id, tab, edit }
 
   const load = async () => {
     setLoading(true);
@@ -107,9 +111,25 @@ export default function TgStudentsPage() {
                     Must set own password
                   </span>
                 )}
-                <button onClick={() => setTarget(s)} className="btn-premium text-xs px-3.5 py-2 flex items-center gap-1.5">
-                  <KeyRound size={13} /> Set password
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setProfile({ id: s._id, tab: "profile", edit: true })}
+                    className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"
+                    title="Edit this student's profile"
+                  >
+                    <Pencil size={13} /> Edit profile
+                  </button>
+                  <button
+                    onClick={() => setProfile({ id: s._id, tab: "remarks", edit: false })}
+                    className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"
+                    title="Add or read remarks"
+                  >
+                    <ClipboardList size={13} /> Remark
+                  </button>
+                  <button onClick={() => setTarget(s)} className="btn-premium text-xs px-3.5 py-2 flex items-center gap-1.5">
+                    <KeyRound size={13} /> Set password
+                  </button>
+                </div>
               </div>
             ))}
             {filtered.length === 0 && <p className="text-sm text-[var(--text-secondary)]">No student matches that search.</p>}
@@ -118,6 +138,16 @@ export default function TgStudentsPage() {
       )}
 
       {target && <PasswordDialog student={target} onClose={() => setTarget(null)} onChanged={onChanged} />}
+
+      {profile && (
+        <StudentProfileModal
+          isOpen
+          studentId={profile.id}
+          initialTab={profile.tab}
+          startInEditMode={profile.edit}
+          onClose={() => { setProfile(null); load(); }}
+        />
+      )}
     </div>
   );
 }
