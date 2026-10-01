@@ -138,8 +138,8 @@ export default function LeaderboardPage({ limit }) {
                   <th className="px-6 py-4">Student</th>
                   <th className="px-6 py-4">Department</th>
                   <th className="px-6 py-4">Batch</th>
-                  <th className="px-6 py-4">Attendance</th>
-                  <th className="px-8 py-4 text-right">Score</th>
+                  <th className="px-6 py-4">POD AI Score</th>
+                  <th className="px-8 py-4 text-right">Attendance</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -187,8 +187,13 @@ export default function LeaderboardPage({ limit }) {
                       <td className="px-6 py-4 font-bold text-slate-500">{student.department || 'N/A'}</td>
                       <td className="px-6 py-4 font-bold text-slate-500">{student.batch || 'N/A'}</td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 h-2 bg-slate-100 rounded-full w-24 overflow-hidden">
+                        <span className="text-lg font-display font-black text-[#10b981]">
+                          {Math.round(student.performanceScore || 0)}
+                        </span>
+                      </td>
+                      <td className="px-8 py-4 text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
                             <div 
                               className="h-full rounded-full" 
                               style={{ 
@@ -197,13 +202,8 @@ export default function LeaderboardPage({ limit }) {
                               }} 
                             />
                           </div>
-                          <span className="text-[11px] font-black text-slate-600 w-8">{Math.round(student.attendancePercentage || 0)}%</span>
+                          <span className="text-[11px] font-black text-slate-600 w-8 text-right">{Math.round(student.attendancePercentage || 0)}%</span>
                         </div>
-                      </td>
-                      <td className="px-8 py-4 text-right">
-                        <span className="text-xl font-display font-black text-[#10b981]">
-                          {Math.round(student.performanceScore || 0)}
-                        </span>
                       </td>
                     </motion.tr>
                   );

@@ -241,6 +241,7 @@ function CreateDriveModal({ onClose, onRefresh }) {
                 <option value="internship">Internship</option>
                 <option value="internship+ppo">Internship + PPO</option>
                 <option value="placement drive">Placement Drive</option>
+                <option value="hackathon">Hackathon</option>
               </select>
             </div>
           </div>
@@ -646,6 +647,7 @@ const FacultyPlacementDashboard = () => {
   // Dynamic real-time stats calculation
   const activeDrivesCount = React.useMemo(() => {
     return filteredDrives.filter(d => {
+      if (d.isCompleted || d.isActive === false) return false;
       if (!d.deadline) return true;
       const deadlineDate = new Date(d.deadline);
       const today = new Date();
@@ -941,11 +943,18 @@ const FacultyPlacementDashboard = () => {
                 
                 <div className="flex items-center gap-8 mt-4 md:mt-0">
                   <div className="hidden lg:flex flex-col items-end pr-8 border-r border-[var(--border-light)]">
-                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Eligibility</p>
-                    <div className="flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded border border-emerald-200 shadow-sm">
-                      <CheckCircle size={12} />
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Active</span>
-                    </div>
+                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Status</p>
+                    {drive.isCompleted || drive.isActive === false ? (
+                      <div className="flex items-center gap-1.5 mt-1.5 bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded border border-blue-200 shadow-sm">
+                        <CheckCircle size={12} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Completed</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-0.5 rounded border border-emerald-200 shadow-sm">
+                        <CheckCircle size={12} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Active</span>
+                      </div>
+                    )}
                   </div>
                   <div className="hidden md:flex flex-col items-end">
                     <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Deadline</p>

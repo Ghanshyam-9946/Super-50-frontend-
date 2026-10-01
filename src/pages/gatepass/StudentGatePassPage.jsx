@@ -6,7 +6,7 @@ import { PassRow, StatusBadge, fmt } from './gatePassShared';
 
 // Round to the next 5 minutes so the default is a sensible "leaving soon".
 const defaultExit = () => {
-  const d = new Date(Date.now() + 30 * 60000);
+  const d = new Date(Date.now() + 20 * 60000);
   d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -175,7 +175,11 @@ export default function StudentGatePassPage({ asFaculty = false }) {
                 </label>
               )}
               <p className="text-xs text-[var(--text-secondary)]">
+<<<<<<< HEAD
                 The QR code stays valid for a short grace period after this time.
+=======
+                The QR code stays valid until 20 minutes after this time.
+>>>>>>> 5ccd34bc7a9d302fe362b2fac58c9debbaaeb61c
               </p>
               <button type="submit" disabled={sending} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-2 disabled:opacity-40">
                 {sending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Send

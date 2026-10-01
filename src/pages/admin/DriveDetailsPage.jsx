@@ -274,6 +274,15 @@ const DriveDetailsPage = () => {
                 {drive.campusType && (
                   <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 capitalize">{drive.campusType}</span>
                 )}
+                {drive.isCompleted || drive.isActive === false || (applications.length > 0 && (applications.some(a => a.status === 'selected' || a.finalResult === 'selected') || applications.every(a => a.status === 'rejected' || a.status === 'not-eligible' || a.finalResult === 'eliminated'))) ? (
+                  <span className="text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200 font-bold uppercase text-[11px] flex items-center gap-1">
+                    <CheckCircle size={12} /> Completed
+                  </span>
+                ) : (
+                  <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200 font-bold uppercase text-[11px] flex items-center gap-1">
+                    <CheckCircle size={12} /> Active
+                  </span>
+                )}
                 {drive.package && (
                   <>
                     <span>•</span>
@@ -325,8 +334,8 @@ const DriveDetailsPage = () => {
               <Plus size={14} /> Add Round
             </button>
             <a
-              href="/upload/round%20result.xlsx"
-              download="round_result.xlsx"
+              href="/upload/Eligible%20Students.xlsx"
+              download="Eligible_Students.xlsx"
               className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
             >
               <FileSpreadsheet size={14} /> Download Template
@@ -541,7 +550,7 @@ const DriveDetailsPage = () => {
                 <div className="bg-[var(--bg-input)]/30 border border-[var(--border-light)] rounded-xl p-3.5">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Excel File Format</p>
                   <p className="text-[11px] text-[var(--text-secondary)] mb-2 font-medium">
-                    Required Columns: <strong>Enrollment Number</strong>, <strong>Name</strong>, <strong>Department</strong>, <strong>Batch</strong>.
+                    Required Columns: <strong>Roll No</strong> (or Enrollment Number), <strong>Full Name</strong>, <strong>Branch</strong>, <strong>Campus</strong>.
                   </p>
                   <p className="text-[11px] text-slate-400">
                     Students present in the Excel sheet will be marked as <strong>Cleared</strong> for <strong>{selectedRoundName}</strong>; others will be marked as <strong>Eliminated</strong>.
