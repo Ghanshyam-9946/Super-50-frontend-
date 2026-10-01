@@ -36,6 +36,119 @@ const weekFriday = (dateStr) => {
 // wasn't. The counts on the edges are what an admin actually reads.
 const dayKey = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
+// Every faculty down the side, the seven days across the top. No task text
+// on purpose: this view answers "who filled their week, and how much", and
+// the detailed list below is where the work itself is read.
+const AllFacultyWeek = ({ weekOf }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    api.get("/weekly-work-report/admin/week-matrix", { params: weekOf ? { weekOf } : {} })
+      .then(({ data: res }) => { if (!cancelled) setData(res); })
+      .catch(() => { if (!cancelled) setData(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [weekOf]);
+
+  const downloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.get("/weekly-work-report/admin/week-matrix/pdf", {
+        params: weekOf ? { weekOf } : {},
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Weekly-Matrix-${data?.week?.endDay || "week"}.pdf`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch {
+      toast.error("Could not build the PDF");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="glass-card p-16 flex justify-center rounded-3xl">
+        <Loader2 className="animate-spin text-[var(--primary)]" size={28} />
+      </div>
+    );
+  }
+  if (!data?.rows?.length) {
+    return <div className="glass-card p-16 text-center rounded-3xl text-[var(--text-secondary)]">No faculty found.</div>;
+  }
+
+  return (
+    <div className="glass-card rounded-3xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-[var(--border-light)] flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="font-display font-black text-base text-[var(--text-primary)]">{data.week.label}</div>
+          <div className="text-[11px] text-[var(--text-secondary)]">
+            {data.totals.submitted} of {data.totals.faculty} submitted · {data.totals.hours} hours logged
+          </div>
+        </div>
+        <button onClick={downloadPdf} disabled={downloading}
+          className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
+          {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs min-w-[760px]">
+          <thead>
+            <tr className="bg-[var(--primary)]/5 text-[var(--text-secondary)]">
+              <th className="text-left px-4 py-2.5 font-black uppercase tracking-wider sticky left-0 bg-[var(--bg-card)]">Faculty</th>
+              {data.days.map((d) => (
+                <th key={d.date} className="px-2 py-2.5 font-black uppercase tracking-wider text-center whitespace-nowrap">
+                  {d.dayName.slice(0, 3)}
+                  <div className="font-bold normal-case opacity-70">{d.date.slice(8)}/{d.date.slice(5, 7)}</div>
+                </th>
+              ))}
+              <th className="px-2 py-2.5 font-black uppercase tracking-wider text-center">Days</th>
+              <th className="px-2 py-2.5 font-black uppercase tracking-wider text-center">Hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.rows.map((row) => (
+              <tr key={row.faculty._id} className="border-t border-[var(--border-light)]">
+                <td className="px-4 py-2 sticky left-0 bg-[var(--bg-card)]">
+                  <div className="font-bold text-[var(--text-primary)] whitespace-nowrap">{row.faculty.name}</div>
+                  <div className="text-[10px] text-[var(--text-secondary)]">
+                    {row.submitted
+                      ? <span className="text-emerald-600 font-bold">submitted</span>
+                      : <span className="text-amber-600 font-bold">not submitted</span>}
+                  </div>
+                </td>
+                {row.perDay.map((d, i) => (
+                  <td key={i} className="px-2 py-2 text-center">
+                    {d.filled ? (
+                      <span className="inline-flex flex-col items-center">
+                        <Check size={15} className="text-emerald-500" />
+                        <span className="text-[10px] text-[var(--text-secondary)]">{d.hours}h</span>
+                      </span>
+                    ) : (
+                      <X size={15} className="text-red-400 inline" />
+                    )}
+                  </td>
+                ))}
+                <td className="px-2 py-2 text-center font-bold text-[var(--text-primary)]">{row.daysFilled}/7</td>
+                <td className="px-2 py-2 text-center font-bold text-[var(--text-primary)]">{row.totalHours}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 const WeekMatrix = ({ report }) => {
   // The week ends on the day `weekOf` holds and runs back seven days.
   const days = useMemo(() => {
@@ -361,7 +474,7 @@ export default function WeeklyWorkReportAdminPage() {
       </div>
 
       <div className="flex gap-2">
-        {[["grid", "Grid view"], ["list", "Detailed list"]].map(([key, label]) => (
+        {[["all", "All faculty · one week"], ["grid", "Grid view"], ["list", "Detailed list"]].map(([key, label]) => (
           <button
             key={key}
             onClick={() => setView(key)}
@@ -376,7 +489,9 @@ export default function WeeklyWorkReportAdminPage() {
         ))}
       </div>
 
-      {loading ? (
+      {view === "all" ? (
+        <AllFacultyWeek weekOf={weekOf || ""} />
+      ) : loading ? (
         <div className="glass-card p-16 flex justify-center rounded-3xl">
           <Loader2 className="animate-spin text-[var(--primary)]" size={28} />
         </div>

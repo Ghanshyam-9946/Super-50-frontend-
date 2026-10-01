@@ -153,12 +153,35 @@ const GuidePreferencePicker = ({ guides, picked, onToggle }) => {
           >
             <div className="min-w-0">
               <div className="font-semibold text-sm truncate">{g.name}</div>
-              <div className="text-xs text-slate-500 truncate">{g.department || g.designation || g.email}</div>
-              <div className="text-xs mt-0.5">
+              <div className="text-xs text-slate-500 truncate">{g.headline || g.department || g.designation || g.email}</div>
+              <div className="text-xs mt-0.5 flex flex-wrap items-center gap-1.5">
                 <span className={g.isFull ? 'badge-danger' : 'badge-secondary'}>
                   {g.currentTeams}{g.maxTeams != null ? ` / ${g.maxTeams}` : ''} team{g.currentTeams === 1 ? '' : 's'}
                 </span>
+                {/* How much of our project's technology this guide already
+                    works with. Null when there is nothing to compare yet. */}
+                {g.matchScore != null && (
+                  <span
+                    className={`px-1.5 py-0.5 rounded font-bold ${
+                      g.matchScore >= 60 ? 'bg-emerald-100 text-emerald-700'
+                        : g.matchScore >= 30 ? 'bg-amber-100 text-amber-700'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                    title={
+                      g.matchedTech?.length
+                        ? `Matches: ${g.matchedTech.map((m) => m.tech).join(', ')}`
+                        : 'No overlap with your listed technologies'
+                    }
+                  >
+                    {g.matchScore}% match
+                  </span>
+                )}
               </div>
+              {g.matchScore != null && g.matchedTech?.length > 0 && (
+                <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                  {g.matchedTech.slice(0, 3).map((m) => m.tech).join(' · ')}
+                </div>
+              )}
             </div>
             {isSelected && (
               <span className="badge-primary w-6 h-6 rounded-full flex items-center justify-center p-0 flex-shrink-0 font-bold">{rank + 1}</span>

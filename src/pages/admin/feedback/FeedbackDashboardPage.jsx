@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Loader2, BarChart3 } from "lucide-react";
+import { ArrowLeft, Loader2, BarChart3, Download, FileText } from "lucide-react";
 import toast from "react-hot-toast";
 import { Bar } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from "chart.js";
@@ -13,6 +13,25 @@ export default function FeedbackDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [selectedKey, setSelectedKey] = useState("");
+  const [downloading, setDownloading] = useState("");
+
+  // CSV to work with, PDF to file — both are the same numbers shown here.
+  const download = async (format) => {
+    setDownloading(format);
+    try {
+      const res = await api.get(`/feedback/${formId}/report`, { params: { format }, responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(data?.form?.title || "Faculty-Feedback").replace(/[^A-Za-z0-9]+/g, "-")}.${format}`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch {
+      toast.error("Could not build the report");
+    } finally {
+      setDownloading("");
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -83,11 +102,21 @@ export default function FeedbackDashboardPage() {
         <Link to="/admin/feedback" className="p-3 bg-[var(--primary)]/10 text-[var(--primary)] rounded-2xl border border-[var(--primary)]/20">
           <ArrowLeft size={26} />
         </Link>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">{data.form.title}</h1>
           <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">
             {data.form.batch} · Sem {data.form.semester} · {data.form.sections.join(", ")} · {data.totalResponses} response(s)
           </p>
+        </div>
+        <div className="flex flex-col gap-2 shrink-0">
+          <button onClick={() => download("csv")} disabled={!!downloading}
+            className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
+            {downloading === "csv" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} CSV
+          </button>
+          <button onClick={() => download("pdf")} disabled={!!downloading}
+            className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
+            {downloading === "pdf" ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />} PDF
+          </button>
         </div>
       </header>
 

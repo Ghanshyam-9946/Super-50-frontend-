@@ -62,6 +62,9 @@ export const adminAPI = {
   updateTeam: (id, data) => api.put(`/pms/admin/teams/${id}`, data),
   deleteTeam: (id) => api.delete(`/pms/admin/teams/${id}`),
   toggleTeamLock: (id) => api.put(`/pms/admin/teams/${id}/lock`),   // 🆕
+  // Each candidate guide's profile + how well their skills fit this
+  // team's project — the same score the students see.
+  getGuideMatches: (teamId) => api.get(`/pms/admin/teams/${teamId}/guide-matches`),
   assignGuide: (teamId, guideIds) => api.put(`/pms/admin/teams/${teamId}/assign-guide`, { guideIds }),
   reviewTeamDetails: (teamId, data) => api.post(`/pms/admin/teams/${teamId}/review-details`, data), // 🆕
 

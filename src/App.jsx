@@ -66,6 +66,7 @@ import StudentAcademicCalendarPage from './pages/student/StudentAcademicCalendar
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
 import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import AiKnowledgePage from './pages/admin/AiKnowledgePage';
+import LeaderboardAwardsPage from './pages/admin/LeaderboardAwardsPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import ParentAlertsPage from './pages/admin/ParentAlertsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
@@ -319,6 +320,9 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/ai-knowledge" element={
           <RoleGuard allowed={['admin']}><AiKnowledgePage /></RoleGuard>
         } />
+        <Route path="/admin/leaderboard-awards" element={
+          <RoleGuard allowed={['admin']}><LeaderboardAwardsPage /></RoleGuard>
+        } />
         <Route path="/admin/students" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage /></RoleGuard>
         } />
@@ -549,6 +553,11 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/faculty/gate-pass" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><TgGatePassPage /></RoleGuard>
+        } />
+        {/* A faculty member applying for their own pass — same page as the
+            student's, minus the TG step. */}
+        <Route path="/faculty/my-gate-pass" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><StudentGatePassPage asFaculty /></RoleGuard>
         } />
         <Route path="/admin/gate-pass" element={
           <RoleGuard allowed={['admin']}><AdminGatePassPage /></RoleGuard>

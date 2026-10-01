@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchLeaderboard } from '../../features/students/studentsSlice';
 import { Search, Filter } from 'lucide-react';
+import { MyLeaderboardCertificates } from '../admin/LeaderboardAwardsPage';
 
 const getInitials = (name) => {
   if (!name) return 'U';
@@ -51,6 +52,10 @@ export default function LeaderboardPage({ limit }) {
 
   return (
     <div id="leaderboard" className="p-4 md:p-8 max-w-6xl mx-auto space-y-12">
+      {/* Months this student finished in the top ten, each with its
+          certificate. Renders nothing when they have none. */}
+      {user?.role === 'student' && <MyLeaderboardCertificates />}
+
       {/* Header Section */}
       <div className="flex flex-col items-center text-center mt-8">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-[10px] font-black tracking-widest text-blue-600 border border-blue-100 uppercase">

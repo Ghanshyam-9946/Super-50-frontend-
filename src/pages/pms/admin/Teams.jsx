@@ -396,10 +396,28 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
   // A team can have multiple guides — all get equal, full access.
   const [selectedGuideIds, setSelectedGuideIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  // Candidates with their profile and project-fit score. Falls back to the
+  // plain `guides` list if this cannot be loaded, so assignment never
+  // becomes impossible just because the scoring failed.
+  const [matches, setMatches] = useState(null);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     if (team) setSelectedGuideIds((team.guides || []).map((g) => g._id));
   }, [team]);
+
+  useEffect(() => {
+    if (!open || !team?._id) return;
+    let cancelled = false;
+    setLoadingMatches(true);
+    setMatches(null);
+    adminAPI.getGuideMatches(team._id)
+      .then(({ data }) => { if (!cancelled) setMatches(data); })
+      .catch(() => { if (!cancelled) setMatches(null); })
+      .finally(() => { if (!cancelled) setLoadingMatches(false); });
+    return () => { cancelled = true; };
+  }, [open, team?._id]);
 
   const toggleGuide = (id) =>
     setSelectedGuideIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -443,23 +461,102 @@ const AssignGuideModal = ({ open, onClose, team, guides, onSaved }) => {
         </div>
       </div>
 
-      <label className="form-label">Select Guide(s)</label>
-      <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
-        {guides.map((g) => {
-          const eligible = g.academicYear?._id === team.academicYear?._id
-            && [].concat(g.assignedSemester ?? []).map(Number).includes(team.semester);
-          return (
-            <label key={g._id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
-              <input
-                type="checkbox"
-                checked={selectedGuideIds.includes(g._id)}
-                onChange={() => toggleGuide(g._id)}
-              />
-              <span>{g.name} · {g.email} (Sem {[].concat(g.assignedSemester ?? []).join(', ')}){!eligible && ' — different sem/year'}</span>
-            </label>
-          );
-        })}
-      </div>
+      {matches?.team?.technologies?.length > 0 && (
+        <div className="text-xs text-slate-500 mb-2">
+          <strong className="text-slate-600">Project needs:</strong>{' '}
+          {matches.team.technologies.join(' · ')}
+        </div>
+      )}
+
+      <label className="form-label">
+        Select Guide(s)
+        {loadingMatches && <span className="ml-2 text-xs font-normal text-slate-400">loading match scores…</span>}
+      </label>
+
+      {matches?.candidates?.length ? (
+        // Best fit first. The score is how much of this project's technology
+        // the guide already works with — a hint, not a verdict.
+        <div className="max-h-80 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+          {matches.candidates.map((g) => (
+            <div key={g._id} className="px-3 py-2.5 text-sm hover:bg-slate-50">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={selectedGuideIds.includes(g._id)}
+                  onChange={() => toggleGuide(g._id)}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <strong>{g.name}</strong>
+                    {g.matchScore != null && (
+                      <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                        g.matchScore >= 60 ? 'bg-emerald-100 text-emerald-700'
+                          : g.matchScore >= 30 ? 'bg-amber-100 text-amber-700'
+                          : 'bg-slate-100 text-slate-600'
+                      }`}>{g.matchScore}% match</span>
+                    )}
+                    {g.preferenceRank && (
+                      <span className="px-1.5 py-0.5 rounded text-[11px] font-bold bg-brand-100 text-brand-700">
+                        student's choice #{g.preferenceRank}
+                      </span>
+                    )}
+                    {g.isFull && <span className="badge-danger text-[11px]">full</span>}
+                    {g.wasReleased && <span className="badge-danger text-[11px]">released this team</span>}
+                  </span>
+                  <span className="block text-xs text-slate-500 truncate">
+                    {g.headline || g.designation || g.email}
+                    {' · '}{g.currentTeams}{g.maxTeams != null ? `/${g.maxTeams}` : ''} team(s)
+                  </span>
+                  {g.matchedTech?.length > 0 && (
+                    <span className="block text-[11px] text-emerald-700 truncate">
+                      fits: {g.matchedTech.map((m) => m.tech).join(', ')}
+                    </span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); setExpanded(expanded === g._id ? null : g._id); }}
+                  className="text-xs text-brand-600 font-semibold whitespace-nowrap"
+                >
+                  {expanded === g._id ? 'Hide' : 'Profile'}
+                </button>
+              </label>
+
+              {expanded === g._id && (
+                <div className="mt-2 ml-6 text-xs text-slate-600 space-y-1 border-l-2 border-slate-200 pl-3">
+                  {g.bio && <p>{g.bio}</p>}
+                  {g.skills?.length > 0 && <p><strong>Skills:</strong> {g.skills.join(', ')}</p>}
+                  {g.qualifications?.length > 0 && (
+                    <p><strong>Qualifications:</strong> {g.qualifications.map((q) => q.degree || q).join(', ')}</p>
+                  )}
+                  {g.missingTech?.length > 0 && (
+                    <p className="text-amber-700"><strong>No match for:</strong> {g.missingTech.join(', ')}</p>
+                  )}
+                  {!g.bio && !g.skills?.length && <p className="text-slate-400">This guide has not filled in a profile yet.</p>}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+          {guides.map((g) => {
+            const eligible = g.academicYear?._id === team.academicYear?._id
+              && [].concat(g.assignedSemester ?? []).map(Number).includes(team.semester);
+            return (
+              <label key={g._id} className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50">
+                <input
+                  type="checkbox"
+                  checked={selectedGuideIds.includes(g._id)}
+                  onChange={() => toggleGuide(g._id)}
+                />
+                <span>{g.name} · {g.email} (Sem {[].concat(g.assignedSemester ?? []).join(', ')}){!eligible && ' — different sem/year'}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
       <div className="alert-info text-xs mt-3"><Info className="w-4 h-4 flex-shrink-0" /> Every selected guide and all team members will be notified.</div>
     </Modal>
   );
