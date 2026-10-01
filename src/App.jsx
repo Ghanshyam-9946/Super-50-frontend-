@@ -65,6 +65,7 @@ import AcademicCalendarManagePage from './pages/admin/AcademicCalendarManagePage
 import StudentAcademicCalendarPage from './pages/student/StudentAcademicCalendarPage';
 import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
 import ActivityLogsPage from './pages/admin/ActivityLogsPage';
+import AiKnowledgePage from './pages/admin/AiKnowledgePage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import ParentAlertsPage from './pages/admin/ParentAlertsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
@@ -314,6 +315,9 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/backup-settings" element={
           <RoleGuard allowed={['admin']}><BackupSettingsPage /></RoleGuard>
+        } />
+        <Route path="/admin/ai-knowledge" element={
+          <RoleGuard allowed={['admin']}><AiKnowledgePage /></RoleGuard>
         } />
         <Route path="/admin/students" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage /></RoleGuard>

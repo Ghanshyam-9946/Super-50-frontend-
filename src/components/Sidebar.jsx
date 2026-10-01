@@ -6,7 +6,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video
+  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -263,6 +263,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { category: 'System', links: [
       { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
       { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
+      { to: '/admin/ai-knowledge', icon: Sparkles, label: 'AI Knowledge' },
     ] },
   ];
 

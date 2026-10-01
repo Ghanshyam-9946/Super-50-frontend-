@@ -7,6 +7,7 @@ import { fetchMe } from '../features/auth/authSlice';
 import { ChatSocketProvider } from '../context/ChatSocketContext';
 import FloatingChatBubble from './chat/FloatingChatBubble';
 import ReminderAlarm from './reminders/ReminderAlarm';
+import AssistantBubble from './assistant/AssistantBubble';
 
 export default function Layout({ theme, toggleTheme }) {
   const { user, token } = useSelector((s) => s.auth);
@@ -48,6 +49,8 @@ export default function Layout({ theme, toggleTheme }) {
           </AnimatePresence>
         </main>
         <FloatingChatBubble />
+        {/* Bottom middle on every signed-in page, for every role. */}
+        <AssistantBubble />
         <ReminderAlarm />
       </div>
     </ChatSocketProvider>
