@@ -345,32 +345,26 @@ export default function SecurityGatePassPage() {
         </div>
       </header>
 
-<<<<<<< HEAD
-      {tab === 'history' && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {[['all', 'Everyone'], ['student', 'Students'], ['faculty', 'Faculty']].map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setHistKind(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                histKind === key
-                  ? 'bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]'
-                  : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)]'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {tab === 'history' ? (
-=======
       {tab === 'leaderboard' ? (
         <GatePassLeaderboard />
       ) : tab === 'history' ? (
->>>>>>> 5ccd34bc7a9d302fe362b2fac58c9debbaaeb61c
-        <div className="glass-card p-6 rounded-3xl space-y-3">
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {[['all', 'Everyone'], ['student', 'Students'], ['faculty', 'Faculty']].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setHistKind(key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                  histKind === key
+                    ? 'bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]'
+                    : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="glass-card p-6 rounded-3xl space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <History size={16} className="text-[var(--primary)]" />
@@ -388,7 +382,8 @@ export default function SecurityGatePassPage() {
             </div>
           )}
         </div>
-      ) : (
+      </div>
+    ) : (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Main Action Card */}
           <div className="glass-card p-8 rounded-3xl space-y-6 flex flex-col justify-between">
