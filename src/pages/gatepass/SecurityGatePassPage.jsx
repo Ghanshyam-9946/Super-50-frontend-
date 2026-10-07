@@ -345,30 +345,6 @@ export default function SecurityGatePassPage() {
         </div>
       </header>
 
-<<<<<<< HEAD
-      {tab === 'history' && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {[['all', 'Everyone'], ['student', 'Students'], ['faculty', 'Faculty']].map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setHistKind(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                histKind === key
-                  ? 'bg-[var(--primary)]/15 text-[var(--primary)] border-[var(--primary)]'
-                  : 'bg-[var(--bg-card)] text-[var(--text-secondary)] border-[var(--border-light)]'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {tab === 'leaderboard' ? (
-        <GatePassLeaderboard />
-      ) : tab === 'history' ? (
-        <div className="glass-card p-6 rounded-3xl space-y-3">
-=======
       {tab === 'leaderboard' ? (
         <GatePassLeaderboard />
       ) : tab === 'history' ? (
@@ -389,7 +365,6 @@ export default function SecurityGatePassPage() {
             ))}
           </div>
           <div className="glass-card p-6 rounded-3xl space-y-3">
->>>>>>> bf89ef09c2b76bc3d268a1df456496cfc2cec387
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <History size={16} className="text-[var(--primary)]" />
