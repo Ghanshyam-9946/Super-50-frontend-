@@ -67,6 +67,8 @@ import NoDuesAdminPage from './pages/admin/NoDuesAdminPage';
 import ActivityLogsPage from './pages/admin/ActivityLogsPage';
 import AiKnowledgePage from './pages/admin/AiKnowledgePage';
 import LeaderboardAwardsPage from './pages/admin/LeaderboardAwardsPage';
+import BoardsListPage from './pages/boards/BoardsListPage';
+import BoardPage from './pages/boards/BoardPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import ParentAlertsPage from './pages/admin/ParentAlertsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
@@ -322,6 +324,15 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/leaderboard-awards" element={
           <RoleGuard allowed={['admin']}><LeaderboardAwardsPage /></RoleGuard>
+        } />
+        {/* Teaching whiteboards. Faculty keep their own; /boards/live is the
+            share link, which anybody signed in may open. */}
+        <Route path="/boards" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><BoardsListPage /></RoleGuard>
+        } />
+        <Route path="/boards/live" element={<BoardPage />} />
+        <Route path="/boards/:id" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><BoardPage /></RoleGuard>
         } />
         <Route path="/admin/students" element={
           <RoleGuard allowed={['admin', 'super50_admin']}><StudentsPage /></RoleGuard>

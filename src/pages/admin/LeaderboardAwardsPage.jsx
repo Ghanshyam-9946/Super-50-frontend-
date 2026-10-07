@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Trophy, Loader2, Rocket, Undo2, Download, AlertTriangle, Palette } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { CertificateTab } from "./TrainingsPage";
 
 // Every month the leaderboard's top ten get a certificate.
 //
@@ -19,6 +20,7 @@ export default function LeaderboardAwardsPage() {
   const [templateId, setTemplateId] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
+  const [designing, setDesigning] = useState(false);
 
   const loadPreview = async (m) => {
     const { data } = await api.get("/leaderboard-awards/preview", { params: m ? { month: m } : {} });
@@ -141,10 +143,30 @@ export default function LeaderboardAwardsPage() {
           </button>
         </div>
 
-        {templates.length === 0 && (
-          <p className="text-xs text-amber-600 flex items-center gap-1.5">
-            <Palette size={13} /> Design a certificate under Trainings first — the same designs are used here.
-          </p>
+        <button
+          onClick={() => setDesigning((v) => !v)}
+          className="text-xs font-bold text-[var(--primary)] hover:underline flex items-center gap-1.5"
+        >
+          <Palette size={13} /> {designing ? "Close the designer" : "Design the certificate"}
+        </button>
+
+        {designing && (
+          // The same designer the trainings use: upload the artwork, drag the
+          // text where it belongs.
+          <div className="border border-[var(--border-light)] rounded-2xl p-4">
+            <CertificateTab
+              canManage
+              selectedTemplateId={templateId}
+              defaultName={`Top 10 — ${preview?.monthLabel || "monthly"} certificate`}
+              onSelectTemplate={(id) => setTemplateId(id || "")}
+              onChanged={load}
+              placeholders={[
+                "{{name}}", "{{enrollment}}", "{{semester}}", "{{semesterRoman}}", "{{branch}}",
+                "{{rank}}", "{{rankOrdinal}}", "{{month}}", "{{score}}", "{{award}}",
+                "{{certificateNo}}", "{{issuedOn}}",
+              ]}
+            />
+          </div>
         )}
 
         <div>

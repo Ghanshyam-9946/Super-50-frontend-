@@ -20,6 +20,9 @@ export default function Layout({ theme, toggleTheme }) {
     }
   }, [dispatch, token]);
 
+  // An open board, not the board list.
+  const onBoard = /^\/boards\/(?!$)/.test(location.pathname);
+
   if (!token || !user) return <Navigate to="/login" replace />;
 
   // Force password change on first login for students
@@ -48,9 +51,12 @@ export default function Layout({ theme, toggleTheme }) {
             </motion.div>
           </AnimatePresence>
         </main>
-        <FloatingChatBubble />
+        {/* A whiteboard takes the whole screen for teaching — floating
+            bubbles over the writing surface get in the way, and get drawn
+            on by accident. */}
+        {!onBoard && <FloatingChatBubble />}
         {/* Bottom middle on every signed-in page, for every role. */}
-        <AssistantBubble />
+        {!onBoard && <AssistantBubble />}
         <ReminderAlarm />
       </div>
     </ChatSocketProvider>

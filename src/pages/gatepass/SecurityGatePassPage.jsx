@@ -345,7 +345,6 @@ export default function SecurityGatePassPage() {
         </div>
       </header>
 
-<<<<<<< HEAD
       {tab === 'history' && (
         <div className="flex flex-wrap gap-1.5 mb-3">
           {[['all', 'Everyone'], ['student', 'Students'], ['faculty', 'Faculty']].map(([key, label]) => (
@@ -364,12 +363,9 @@ export default function SecurityGatePassPage() {
         </div>
       )}
 
-      {tab === 'history' ? (
-=======
       {tab === 'leaderboard' ? (
         <GatePassLeaderboard />
       ) : tab === 'history' ? (
->>>>>>> 5ccd34bc7a9d302fe362b2fac58c9debbaaeb61c
         <div className="glass-card p-6 rounded-3xl space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">

@@ -87,11 +87,16 @@ const AllFacultyWeek = ({ weekOf }) => {
 
   return (
     <div className="glass-card rounded-3xl overflow-hidden">
-      <div className="px-5 py-3 border-b border-[var(--border-light)] flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="font-display font-black text-base text-[var(--text-primary)]">{data.week.label}</div>
-          <div className="text-[11px] text-[var(--text-secondary)]">
-            {data.totals.submitted} of {data.totals.faculty} submitted · {data.totals.hours} hours logged
+      <div className="px-5 py-4 border-b border-[var(--border-light)] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex-1 min-w-[260px] text-center sm:text-left">
+          <div className="font-display font-black text-sm text-[var(--text-primary)] uppercase tracking-wide">
+            {data.heading?.department || "Department of Computer Science & Engineering"}
+          </div>
+          <div className="font-display font-black text-base text-[var(--text-primary)]">
+            {data.heading?.title || "Weekly Report - All Faculty"}
+          </div>
+          <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+            {data.week.label} · {data.totals.submitted} of {data.totals.faculty} submitted · {data.totals.hours} hours logged
           </div>
         </div>
         <button onClick={downloadPdf} disabled={downloading}
@@ -145,6 +150,67 @@ const AllFacultyWeek = ({ weekOf }) => {
           </tbody>
         </table>
       </div>
+
+      {/* The grid says who and how much; this says what they actually did. */}
+      {data.rows.some((r) => r.tasks?.length) && (
+        <div className="border-t border-[var(--border-light)] p-5 space-y-4">
+          <h3 className="font-display font-black text-sm text-[var(--text-primary)]">
+            Faculty-wise detail
+          </h3>
+          {data.rows.filter((r) => r.tasks?.length).map((row) => (
+            <div key={row.faculty._id} className="rounded-2xl border border-[var(--border-light)] overflow-hidden">
+              <div className="px-4 py-2 bg-[var(--primary)]/5 flex flex-wrap items-center justify-between gap-2">
+                <span className="font-bold text-sm text-[var(--text-primary)]">{row.faculty.name}</span>
+                <span className="text-[11px] text-[var(--text-secondary)]">
+                  {row.daysFilled}/7 days · {row.totalHours} hours ·{" "}
+                  {row.submitted
+                    ? <span className="text-emerald-600 font-bold">submitted</span>
+                    : <span className="text-amber-600 font-bold">not submitted</span>}
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[640px]">
+                  <thead>
+                    <tr className="text-[var(--text-secondary)] text-left">
+                      <th className="px-3 py-2 font-black uppercase tracking-wider w-24">Date</th>
+                      <th className="px-3 py-2 font-black uppercase tracking-wider">Task</th>
+                      <th className="px-3 py-2 font-black uppercase tracking-wider w-28">Time</th>
+                      <th className="px-3 py-2 font-black uppercase tracking-wider w-16">Hrs</th>
+                      <th className="px-3 py-2 font-black uppercase tracking-wider w-36">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {row.tasks.map((t, i) => (
+                      <tr key={i} className="border-t border-[var(--border-light)] align-top">
+                        <td className="px-3 py-2 whitespace-nowrap text-[var(--text-secondary)]">{t.date}</td>
+                        <td className="px-3 py-2">
+                          <div className="font-bold text-[var(--text-primary)]">{t.taskName}</div>
+                          {t.description && (
+                            <div
+                              className="text-[11px] text-[var(--text-secondary)] mt-0.5 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+                              dangerouslySetInnerHTML={{ __html: t.description }}
+                            />
+                          )}
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap text-[var(--text-secondary)]">
+                          {t.timeFrom || "—"}{t.timeTo ? ` – ${t.timeTo}` : ""}
+                        </td>
+                        <td className="px-3 py-2 font-bold text-[var(--text-primary)]">{t.totalHours ?? 0}</td>
+                        <td className="px-3 py-2">
+                          <span className="capitalize text-[var(--text-primary)]">{String(t.status || "").replace("_", " ")}</span>
+                          {t.expectedCompletionDate && (
+                            <div className="text-[10px] text-[var(--text-secondary)]">by {t.expectedCompletionDate}</div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

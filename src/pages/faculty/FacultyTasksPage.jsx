@@ -80,6 +80,7 @@ export default function FacultyTasksPage() {
   const [faculty, setFaculty] = useState([]);
   const [assigned, setAssigned] = useState([]);
   const [allocated, setAllocated] = useState([]);
+  const [allocatedCounts, setAllocatedCounts] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadStats = useCallback(async () => {
@@ -112,7 +113,11 @@ export default function FacultyTasksPage() {
     const { data } = await api.get('/tasks/allocated', {
       params: facultyId ? { faculty: facultyId } : {},
     });
-    if (data.success) setAllocated(data.data);
+    if (data.success) {
+      setAllocated(data.data);
+      // Counts for the faculty being looked at, not for the viewer.
+      setAllocatedCounts(facultyId ? data.counts || null : null);
+    }
   }, []);
 
   useEffect(() => {
@@ -228,7 +233,7 @@ export default function FacultyTasksPage() {
                 }}
               />
             )}
-            {tab === 'allocated' && <AllocatedTasks tasks={allocated} faculty={faculty} onFilter={loadAllocated} />}
+            {tab === 'allocated' && <AllocatedTasks tasks={allocated} faculty={faculty} onFilter={loadAllocated} counts={allocatedCounts} />}
           </motion.div>
         </AnimatePresence>
       )}
@@ -934,7 +939,7 @@ function AddTaskForm({ faculty, onCreated }) {
 
 /* ────────────────────────  FACULTY ALLOCATED LIST  ──────────────────────── */
 
-function AllocatedTasks({ tasks, faculty, onFilter }) {
+function AllocatedTasks({ tasks, faculty, onFilter, counts }) {
   const { user } = useSelector((s) => s.auth);
   const [filterId, setFilterId] = useState('');
   const [openId, setOpenId] = useState(null);
@@ -965,6 +970,24 @@ function AllocatedTasks({ tasks, faculty, onFilter }) {
           ))}
         </select>
       </div>
+
+      {/* How that one person is doing — their own status on each task, not
+          the task's roll-up across everybody assigned to it. */}
+      {filterId && counts && (
+        <div className="glass-card p-4 rounded-2xl flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-black uppercase tracking-widest text-[var(--text-secondary)]">
+            Their own progress
+          </span>
+          {[['open', 'Open'], ['started', 'Started'], ['pending', 'Pending'],
+            ['completed', 'Completed'], ['rejected', 'Rejected'], ['forwarded', 'Forwarded']].map(([key, label]) => (
+            <span key={key} className="px-2.5 py-1 rounded-lg bg-[var(--bg-input)] border border-[var(--border-light)]">
+              <strong className="text-[var(--text-primary)]">{counts[key] ?? 0}</strong>
+              <span className="text-[var(--text-secondary)] ml-1">{label}</span>
+            </span>
+          ))}
+          <span className="ml-auto text-[var(--text-secondary)]">{counts.total} task(s) in total</span>
+        </div>
+      )}
 
       {tasks.length === 0 ? (
         <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">

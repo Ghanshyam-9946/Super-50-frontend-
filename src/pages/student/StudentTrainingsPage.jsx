@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { TrainingChoice, TrainingFeedbackForm } from "./TrainingChoiceAndFeedback";
 
 const fmt = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -78,6 +79,10 @@ export default function StudentTrainingsPage() {
         </div>
       </header>
 
+      {/* Which training they want to do, before any of it has run. Renders
+          nothing when no round is open for them. */}
+      <TrainingChoice />
+
       {loading ? (
         <div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
       ) : items.length === 0 ? (
@@ -143,6 +148,9 @@ export default function StudentTrainingsPage() {
                     )}
                   </div>
                 )}
+
+                {/* Only shows once the coordinator opens feedback. */}
+                <TrainingFeedbackForm trainingId={item.training._id} />
               </div>
             );
           })}
