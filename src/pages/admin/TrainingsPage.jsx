@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   GraduationCap, Plus, Loader2, Upload, Award, Users, Download, Trash2, X, Calendar,
-  MapPin, CheckCircle2, AlertCircle, FileSpreadsheet, Eye, Rocket, EyeOff, Palette, Search,
+  MapPin, CheckCircle2, AlertCircle, FileSpreadsheet, Eye, Rocket, EyeOff, Palette, Search, MessageSquare, ListChecks,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { getImageUrl } from "../../utils/imageUrl";
+import { BatchesPanel, SessionalLinkPanel, FeedbackPanel, ChoiceRoundsPanel } from "./TrainingExtras";
 
 const fmt = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }) : "—";
@@ -34,6 +35,7 @@ export default function TrainingsPage() {
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [openId, setOpenId] = useState(null);
+  const [view, setView] = useState("list"); // list | choices
 
   const load = async () => {
     setLoading(true);
@@ -93,13 +95,22 @@ export default function TrainingsPage() {
           </div>
         </div>
         {canManage && (
-          <button onClick={() => setCreating((v) => !v)} className="btn-premium text-sm px-4 py-2.5 flex items-center gap-1.5">
-            <Plus size={15} /> Schedule training
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setView(view === "choices" ? "list" : "choices")}
+              className="btn-outline-premium text-sm px-4 py-2.5 flex items-center gap-1.5">
+              <ListChecks size={15} /> {view === "choices" ? "Back to trainings" : "Training choices"}
+            </button>
+            <button onClick={() => setCreating((v) => !v)} className="btn-premium text-sm px-4 py-2.5 flex items-center gap-1.5">
+              <Plus size={15} /> Schedule training
+            </button>
+          </div>
         )}
       </header>
 
-      {creating && (
+      {/* Which training each student wants to do, before any of it is run. */}
+      {view === "choices" && <ChoiceRoundsPanel />}
+
+      {view !== "choices" && creating && (
         <form onSubmit={create} className="glass-card p-6 rounded-3xl space-y-4">
           <h2 className="font-display font-black text-lg text-[var(--text-primary)]">New training</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -158,7 +169,7 @@ export default function TrainingsPage() {
         </form>
       )}
 
-      {loading ? (
+      {view === "choices" ? null : loading ? (
         <div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
       ) : trainings.length === 0 ? (
         <div className="glass-card p-16 text-center rounded-3xl text-[var(--text-secondary)]">
@@ -203,6 +214,9 @@ export default function TrainingsPage() {
 
 const TABS = [
   { key: "students", label: "Students", icon: Users },
+  { key: "batches", label: "Batches", icon: Users },
+  { key: "sessional", label: "To Sessional", icon: Upload },
+  { key: "feedback", label: "Feedback", icon: MessageSquare },
   { key: "certificate", label: "Certificate", icon: Palette },
 ];
 
@@ -356,7 +370,13 @@ const TrainingDetail = ({ id, onClose }) => {
               ))}
             </div>
 
-            {tab === "students" ? (
+            {tab === "batches" ? (
+              <BatchesPanel training={data} records={records} onChanged={load} />
+            ) : tab === "sessional" ? (
+              <SessionalLinkPanel training={data} onChanged={load} />
+            ) : tab === "feedback" ? (
+              <FeedbackPanel training={data} onChanged={load} />
+            ) : tab === "students" ? (
               <div className="space-y-3">
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] opacity-60" />
@@ -430,9 +450,19 @@ const TrainingDetail = ({ id, onClose }) => {
 
 /* ================= certificate design ================= */
 
-const CertificateTab = ({ training, canManage, onChanged, onPreview }) => {
+// Also used by the monthly leaderboard awards page, which has no training:
+// `onSelectTemplate` is how the parent records the chosen design, and
+// `placeholders` lets each caller document its own {{…}} tags.
+export const CertificateTab = ({
+  training = {}, canManage, onChanged = () => {}, onPreview,
+  onSelectTemplate, defaultName, placeholders, selectedTemplateId,
+}) => {
   const [templates, setTemplates] = useState([]);
-  const [selected, setSelected] = useState(training.certificateTemplate?._id || training.certificateTemplate || "");
+  // `selectedTemplateId` lets a caller that has its own design picker keep
+  // the two in step, instead of this one quietly saying "none".
+  const [selected, setSelected] = useState(
+    selectedTemplateId || training.certificateTemplate?._id || training.certificateTemplate || "",
+  );
   const [design, setDesign] = useState(training.certificateTemplate?.blocks ? training.certificateTemplate : null);
   const [activeBlock, setActiveBlock] = useState(0);
   const [busy, setBusy] = useState("");
@@ -441,6 +471,13 @@ const CertificateTab = ({ training, canManage, onChanged, onPreview }) => {
   // A block's `size` is a fraction of the page height, exactly as the PDF
   // uses it — so the preview has to know how tall it is being drawn.
   const [canvasHeight, setCanvasHeight] = useState(0);
+
+  // The tags this particular certificate can print. A caller that supplies
+  // its own (the leaderboard award) replaces the training ones outright,
+  // so nobody is offered a tag that would come out blank.
+  const chips = placeholders?.length
+    ? placeholders.map((p) => String(p).replace(/[{}]/g, "").trim())
+    : PLACEHOLDERS;
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -453,18 +490,29 @@ const CertificateTab = ({ training, canManage, onChanged, onPreview }) => {
 
   const loadTemplates = async () => {
     const { data } = await api.get("/trainings/templates");
-    setTemplates(data.data || []);
-    const current = (data.data || []).find((t) => t._id === selected);
+    const list = data.data || [];
+    setTemplates(list);
+    const current = list.find((t) => t._id === selected);
     if (current) setDesign(current);
+    return list;
   };
 
   useEffect(() => { loadTemplates(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
-  const attach = async (templateId) => {
+  // `templateDoc` is the design itself when the caller already has it (we
+  // just created it, say). Without it we would look the new design up in a
+  // `templates` list that React has not re-rendered yet, find nothing, and
+  // leave the editor closed — which is what "New design" used to do.
+  const attach = async (templateId, templateDoc) => {
     setSelected(templateId);
-    setDesign(templates.find((t) => t._id === templateId) || null);
+    setDesign(templateDoc || templates.find((t) => t._id === templateId) || null);
     try {
-      await api.put(`/trainings/${training._id}`, { certificateTemplate: templateId || null });
+      if (onSelectTemplate) {
+        // The caller owns what "attached" means (a leaderboard month, say).
+        await onSelectTemplate(templateId || null);
+      } else if (training._id) {
+        await api.put(`/trainings/${training._id}`, { certificateTemplate: templateId || null });
+      }
       onChanged();
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not attach the design");
@@ -472,12 +520,15 @@ const CertificateTab = ({ training, canManage, onChanged, onPreview }) => {
   };
 
   const createDesign = async () => {
-    const name = window.prompt("Name this certificate design", `${training.name} certificate`);
+    const name = window.prompt("Name this certificate design", defaultName || `${training.name || "New"} certificate`);
     if (!name) return;
     try {
       const { data } = await api.post("/trainings/templates", { name });
+      const created = data.data;
       await loadTemplates();
-      attach(data.data._id);
+      // Hand the new design straight over, so the canvas opens on it.
+      await attach(created._id, created);
+      setActiveBlock(0);
       toast.success(data.message);
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not create the design");
@@ -649,7 +700,7 @@ const CertificateTab = ({ training, canManage, onChanged, onPreview }) => {
                     className={`${inputCls} font-normal normal-case tracking-normal`} />
                 </label>
                 <div className="flex flex-wrap gap-1">
-                  {PLACEHOLDERS.map((p) => (
+                  {chips.map((p) => (
                     <button key={p} onClick={() => setBlock(activeBlock, { text: `${block.text}{{${p}}}` })}
                       className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--border-light)] text-[var(--text-secondary)] hover:border-[var(--primary)]">
                       {p}

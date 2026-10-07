@@ -600,7 +600,11 @@ function EntryTab({ user, coordinator }) {
 function CaMarksGrid({ sheets, onChange, coordinator, user }) {
   const uid = user?._id;
   const first = sheets[0];
-  const subjectActivities = first?.subjectRef?.activities || [];
+  // `myActivities` is this faculty's own list, sent with the sheet. The
+  // subject's `activities` is the shared legacy list and still holds
+  // whatever anybody added before activities became per-faculty — offering
+  // those here would just get the entry rejected by the server.
+  const subjectActivities = first?.myActivities || first?.subjectRef?.activities || [];
   const marksActivities = subjectActivities.filter((a) => a.type === "marks" || a.type === "both");
   const categoryOptions = marksActivities.length ? marksActivities.map((a) => a.label) : CA_CATEGORIES;
   const defaultMaxFor = (category) => {
@@ -644,7 +648,10 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
     if (sheet.locked) return false;
     const assigned = sheet.faculty?._id === uid || sheet.faculty === uid;
     if (!assigned && !coordinator) return false;
-    if (!coordinator && isCategoryDeadlinePassed(category)) return false;
+    // The deadline is the students' cut-off, not the faculty's. Marks
+    // entered after it still go in; the server records them as late so the
+    // coordinator can see which ones they were. The real stop is a locked
+    // sheet, which an admin controls.
     return true;
   };
 
@@ -723,8 +730,10 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
           Max Marks
           <input type="number" min="0" value={max} onChange={(e) => setMax(e.target.value)} className="w-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
         </label>
-        {isCategoryDeadlinePassed(category) && !coordinator && (
-          <span className="text-xs text-red-500 font-bold">Deadline passed — read-only for you</span>
+        {isCategoryDeadlinePassed(category) && (
+          <span className="text-xs text-amber-600 font-bold">
+            Deadline passed — you can still enter marks, they are recorded as late
+          </span>
         )}
         <span className="text-xs text-[var(--text-secondary)] ml-auto">Type a value and press Enter — saves automatically.</span>
       </div>
@@ -913,7 +922,7 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
   // one is linked — falls back to the legacy fixed list for sheets that
   // predate the Subject Catalog (see Subject.js / masterDataController.js's
   // backfillSubjectCatalog). Same fallback the backend validates against.
-  const subjectActivities = sheet.subjectRef?.activities || [];
+  const subjectActivities = sheet.myActivities || sheet.subjectRef?.activities || [];
   const marksActivities = subjectActivities.filter((a) => a.type === "marks" || a.type === "both");
   const categoryOptions = marksActivities.length ? marksActivities.map((a) => a.label) : CA_CATEGORIES;
   const categoryLabel = (cat) => CATEGORY_LABELS[cat] || cat;
@@ -1113,7 +1122,7 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
               {deadline && (
                 <span className={`text-[10px] font-bold ${deadlinePassed ? "text-red-500" : "text-[var(--text-secondary)]"}`}>
                   Deadline: {new Date(deadline).toLocaleDateString()}
-                  {deadlinePassed && " (passed)"}
+                  {deadlinePassed && " (passed — late entries still allowed)"}
                 </span>
               )}
             </div>
@@ -1203,8 +1212,10 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
           </label>
           <button
             onClick={saveEntry}
-            disabled={saving || isCategoryDeadlinePassed(form.category)}
-            title={isCategoryDeadlinePassed(form.category) ? `The deadline for "${categoryLabel(form.category)}" has passed` : undefined}
+            disabled={saving}
+            title={isCategoryDeadlinePassed(form.category)
+              ? `The deadline for "${categoryLabel(form.category)}" has passed — this will be recorded as late`
+              : undefined}
             className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} {form.entryId ? "Update" : "Add"}

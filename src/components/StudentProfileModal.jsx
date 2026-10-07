@@ -18,9 +18,31 @@ import {
   AttendanceGraph
 } from './StudentAnalyticsGraphs';
 
+
+// The reasons a TG records a remark against a student. Shared wording
+// matters here: these get counted and compared across the department.
+const REMARK_PURPOSES = [
+  'Low Attendance',
+  'Fee Due / Fee Reminder',
+  'Behavioral Issues',
+  'Low Academic Performance',
+  'Poor Class Participation',
+  'POD AI Performance',
+  'Training Performance',
+  'Placement',
+  'Parent–Teacher Meeting (PTM)',
+  'Counselling Required',
+  'Student Achievement',
+  'Participation & Engagement',
+];
+
 export default function StudentProfileModal({ isOpen, onClose, studentId, initialTab = 'menu', startInEditMode = false }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  // Why a remark was written. Fixed so the same reason is worded the same
+  // way every time and can be reported on later.
+  const [purposeChoice, setPurposeChoice] = useState('');
+  const [purposeOther, setPurposeOther] = useState('');
   // Students (and alumni, who keep the student role) see their own read-only
   // view; staff get the editing and remark tools.
   const viewerIsStudent = isStudentAccount(user);
@@ -813,7 +835,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                       <form onSubmit={async (e) => {
                         e.preventDefault();
                         const text = e.target.remark.value;
-                        const purpose = e.target.purpose.value;
+                        const purpose = purposeChoice === 'Other' ? purposeOther.trim() : purposeChoice;
+                        if (!purpose) { toast.error('Please choose a purpose'); return; }
                         const actionTaken = e.target.actionTaken.value;
                         if (!text.trim()) return;
 
@@ -828,6 +851,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                           }));
                           e.target.reset();
                           toast.success('Remark added successfully');
+                          setPurposeChoice('');
+                          setPurposeOther('');
                         } catch (err) {
                           toast.error('Failed to add remark');
                         }
@@ -835,11 +860,28 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                         <div className="grid sm:grid-cols-2 gap-3 mb-3">
                           <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
                             Purpose
-                            <input
+                            {/* A fixed list so remarks can be counted and
+                                compared later; "Other" keeps the free-text
+                                escape hatch for anything unforeseen. */}
+                            <select
                               name="purpose"
+                              value={purposeChoice}
+                              onChange={(e) => setPurposeChoice(e.target.value)}
                               className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
-                              placeholder="e.g. Low attendance counselling"
-                            />
+                            >
+                              <option value="">Select a purpose…</option>
+                              {REMARK_PURPOSES.map((p) => <option key={p} value={p}>{p}</option>)}
+                              <option value="Other">Other</option>
+                            </select>
+                            {purposeChoice === 'Other' && (
+                              <input
+                                name="purposeOther"
+                                value={purposeOther}
+                                onChange={(e) => setPurposeOther(e.target.value)}
+                                className="w-full mt-1.5 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                                placeholder="Write the purpose"
+                              />
+                            )}
                           </label>
                           <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
                             Action taken

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchAllStudents, toggleStudentStatus, toggleStudentSuper50, createStudent, deleteStudent } from '../../features/students/studentsSlice';
-import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight, Printer, KeyRound, ShieldCheck, Check, Copy, AlertCircle } from 'lucide-react';
+import { Search, Filter, UserPlus, X, Loader2, ChevronDown, ChevronUp, TrendingUp, Calendar, Users, Eye, ClipboardList, Plus, Trash2, Edit, Download, RefreshCw, ChevronLeft, ChevronRight, Printer, KeyRound, ShieldCheck, Check, Copy, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
@@ -615,6 +615,7 @@ export default function StudentsPage({ isSuper50 = false }) {
   const [dept, setDept] = useState('');
   const [batch, setBatch] = useState('');
   const [mentorId, setMentorId] = useState('');
+  const [exporting, setExporting] = useState(false);
   const [mentorsList, setMentorsList] = useState([]);
   const [sortField, setSortField] = useState('enrollmentNumber');
   const [sortDir, setSortDir] = useState('asc');
@@ -715,6 +716,36 @@ export default function StudentsPage({ isSuper50 = false }) {
     setCurrentPage(1);
   }, [search, dept, batch, mentorId, sortField, sortDir, isSuper50]);
 
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      const res = await api.get('/admin/students/export', {
+        params: {
+          department: dept || undefined,
+          batch: batch || undefined,
+          mentorId: mentorId || undefined,
+          search: search || undefined,
+          isSuper50: isSuper50 ? 'true' : undefined,
+        },
+        responseType: 'blob',
+      });
+      // The server names the file after the filters; keep that name.
+      const disposition = res.headers['content-disposition'] || '';
+      const named = /filename="([^"]+)"/.exec(disposition)?.[1] || 'Students.xlsx';
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = named;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      toast.success(`Downloaded ${named}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not build the Excel file');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const totalPages = Math.ceil(allStudents.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedStudents = allStudents.slice(startIndex, startIndex + itemsPerPage);
@@ -808,6 +839,18 @@ export default function StudentsPage({ isSuper50 = false }) {
                 <ChevronDown size={14} />
               </div>
             </div>
+
+            {/* Whatever is filtered on screen is what comes down — so
+                "batch-wise" and "TG-wise" are just the filters above. */}
+            <button
+              onClick={exportExcel}
+              disabled={exporting}
+              title="Download this list as an Excel file"
+              className="shrink-0 bg-[var(--bg-select)] border border-[var(--border-light)] rounded-2xl py-3 px-5 text-[13px] font-bold text-[var(--text-primary)] hover:border-[var(--primary)] transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
+            >
+              {exporting ? <Loader2 size={15} className="animate-spin" /> : <FileSpreadsheet size={15} className="text-emerald-600" />}
+              Excel
+            </button>
           </div>
 
           <motion.div className="glass-card overflow-hidden"
@@ -877,12 +920,29 @@ export default function StudentsPage({ isSuper50 = false }) {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex-1 h-2 bg-[var(--bg-input)] rounded-full min-w-[60px] overflow-hidden border border-[var(--border-light)]">
-                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${student.attendancePercentage}%`, background: student.attendancePercentage >= 75 ? '#10b981' : student.attendancePercentage >= 50 ? '#f59e0b' : '#ef4444' }} />
-                            </div>
-                            <span className="text-[11px] font-black text-[var(--text-primary)] min-w-[32px]">{Math.round(student.attendancePercentage)}%</span>
-                          </div>
+                          {/* The current semester's figure when one has been
+                              recorded; otherwise the last stored one, said
+                              plainly so it is not mistaken for current. */}
+                          {(() => {
+                            const att = student.currentAttendance
+                              || { percent: student.attendancePercentage || 0, live: false, semester: null };
+                            const pct = Math.round(att.percent || 0);
+                            return (
+                              <div className="flex flex-col gap-1 min-w-[120px]">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex-1 h-2 bg-[var(--bg-input)] rounded-full min-w-[60px] overflow-hidden border border-[var(--border-light)]">
+                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: pct >= 75 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444' }} />
+                                  </div>
+                                  <span className="text-[11px] font-black text-[var(--text-primary)] min-w-[32px]">{pct}%</span>
+                                </div>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                                  {att.live
+                                    ? `Sem ${att.semester} · current${att.totalDays ? ` (${att.totalPresent}/${att.totalDays})` : ''}`
+                                    : 'last recorded'}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4">
                           <span className="text-xl font-display font-black" style={{ color: student.performanceScore >= 75 ? '#10b981' : student.performanceScore >= 50 ? '#7c3aed' : student.performanceScore >= 25 ? '#f59e0b' : '#ef4444' }}>

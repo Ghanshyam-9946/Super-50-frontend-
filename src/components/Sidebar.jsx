@@ -6,7 +6,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles
+  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles, PenLine
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -108,6 +108,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/boards', icon: PenLine, label: 'Whiteboard' },
       { to: '/faculty/my-gate-pass', icon: DoorOpen, label: 'My Gate Pass' },
       { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
@@ -158,6 +159,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/calendar-reminders', icon: BellRing, label: 'My Reminders' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (TG)' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/boards', icon: PenLine, label: 'Whiteboard' },
       { to: '/faculty/my-gate-pass', icon: DoorOpen, label: 'My Gate Pass' },
       { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
       { to: '/faculty/tg-students', icon: Users, label: 'My TG Students' },
@@ -211,6 +213,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
       { to: '/admin/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },
+      { to: '/boards', icon: PenLine, label: 'Whiteboard' },
       { to: '/faculty/my-gate-pass', icon: DoorOpen, label: 'My Gate Pass' },
       { to: '/admin/leave', icon: FileText, label: 'Leave Applications' },
       { to: '/faculty/leave', icon: FileText, label: 'Leave (TG)' },
