@@ -43,6 +43,28 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
   // way every time and can be reported on later.
   const [purposeChoice, setPurposeChoice] = useState('');
   const [purposeOther, setPurposeOther] = useState('');
+  // An open correction. The author or an admin may make one; the stamp the
+  // server adds is what keeps it honest.
+  const [editingRemark, setEditingRemark] = useState(null);
+  const [savingRemark, setSavingRemark] = useState(false);
+
+  const saveRemarkEdit = async () => {
+    if (!editingRemark?.text?.trim()) { toast.error('A remark cannot be emptied'); return; }
+    setSavingRemark(true);
+    try {
+      const { data: res } = await api.patch(
+        `/mentoring/students/${studentId}/remarks/${editingRemark.id}`,
+        { text: editingRemark.text, purpose: editingRemark.purpose, actionTaken: editingRemark.actionTaken },
+      );
+      setData((prev) => ({ ...prev, student: { ...prev.student, remarks: res.data.remarks } }));
+      setEditingRemark(null);
+      toast.success('Remark updated');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not update the remark');
+    } finally {
+      setSavingRemark(false);
+    }
+  };
   // Students (and alumni, who keep the student role) see their own read-only
   // view; staff get the editing and remark tools.
   const viewerIsStudent = isStudentAccount(user);
@@ -885,19 +907,23 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                           </label>
                           <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
                             Action taken
-                            <input
+                            {/* A textarea, not an input: what was done about
+                                something usually takes more than one line. */}
+                            <textarea
                               name="actionTaken"
-                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
-                              placeholder="e.g. Parent called, warning given"
+                              rows="3"
+                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] resize-y"
+                              placeholder={'e.g. Parent called on 12 Sept\nWarned about attendance\nTo review next week'}
                             />
                           </label>
                         </div>
                         <textarea
                           name="remark"
-                          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none mb-3"
-                          rows="3"
-                          placeholder="Type your remark here..."
+                          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-y mb-1"
+                          rows="5"
+                          placeholder={'What happened, in as much detail as is useful.\nLine breaks are kept.'}
                         />
+                        <p className="text-[10px] text-slate-400 mb-3">Line breaks are kept exactly as you type them.</p>
                         <div className="flex justify-end">
                           <button type="submit" className="btn-premium px-6 py-2 text-xs font-bold rounded-xl shadow-sm">
                             Add Remark
@@ -911,21 +937,71 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                       {(!data.student.remarks || data.student.remarks.length === 0) ? (
                         <div className="text-center py-10 text-slate-500">No remarks found.</div>
                       ) : (
-                        data.student.remarks.slice().reverse().map(remark => (
+                        data.student.remarks.slice().reverse().map(remark => {
+                          const mine = String(remark.addedBy?._id || remark.addedBy) === String(user?._id);
+                          const canEdit = mine || user?.role === 'admin';
+                          const editing = editingRemark?.id === remark._id;
+                          return (
                           <div key={remark._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                            <p className="text-sm font-medium text-slate-800 mb-2 whitespace-pre-wrap">{remark.text}</p>
-                            {(remark.purpose || remark.actionTaken) && (
-                              <div className="space-y-1 mb-3 text-xs">
-                                {remark.purpose && <div><span className="text-slate-500">Purpose:</span> <strong className="text-slate-800">{remark.purpose}</strong></div>}
-                                {remark.actionTaken && <div><span className="text-slate-500">Action taken:</span> <strong className="text-slate-800">{remark.actionTaken}</strong></div>}
+                            {editing ? (
+                              <div className="space-y-2">
+                                <select value={editingRemark.purpose}
+                                  onChange={(e) => setEditingRemark({ ...editingRemark, purpose: e.target.value })}
+                                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2 px-3 text-[13px]">
+                                  {[...REMARK_PURPOSES, editingRemark.purpose].filter((p, i, a) => p && a.indexOf(p) === i)
+                                    .map((p) => <option key={p} value={p}>{p}</option>)}
+                                </select>
+                                <textarea value={editingRemark.text} rows="4"
+                                  onChange={(e) => setEditingRemark({ ...editingRemark, text: e.target.value })}
+                                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2 px-3 text-[13px] resize-y" />
+                                <textarea value={editingRemark.actionTaken} rows="3" placeholder="Action taken"
+                                  onChange={(e) => setEditingRemark({ ...editingRemark, actionTaken: e.target.value })}
+                                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2 px-3 text-[13px] resize-y" />
+                                <div className="flex gap-2 justify-end">
+                                  <button onClick={() => setEditingRemark(null)} className="text-xs font-bold text-slate-500 px-3">Cancel</button>
+                                  <button onClick={saveRemarkEdit} disabled={savingRemark}
+                                    className="btn-premium px-4 py-1.5 text-xs font-bold rounded-xl disabled:opacity-50">
+                                    {savingRemark ? 'Saving…' : 'Save changes'}
+                                  </button>
+                                </div>
                               </div>
+                            ) : (
+                              <>
+                                <p className="text-sm font-medium text-slate-800 mb-2 whitespace-pre-wrap">{remark.text}</p>
+                                {(remark.purpose || remark.actionTaken) && (
+                                  <div className="space-y-1 mb-3 text-xs">
+                                    {remark.purpose && <div><span className="text-slate-500">Purpose:</span> <strong className="text-slate-800">{remark.purpose}</strong></div>}
+                                    {remark.actionTaken && <div className="whitespace-pre-wrap"><span className="text-slate-500">Action taken:</span> <strong className="text-slate-800">{remark.actionTaken}</strong></div>}
+                                  </div>
+                                )}
+                                <div className="flex flex-wrap justify-between items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 border-t border-slate-100 pt-3">
+                                  <span>By: {remark.addedBy?.name || 'Unknown'}</span>
+                                  <span className="flex items-center gap-2">
+                                    {new Date(remark.addedAt).toLocaleString('en-IN')}
+                                    {/* A corrected remark says so, with when. */}
+                                    {remark.editedAt && (
+                                      <span className="text-amber-600 normal-case tracking-normal">
+                                        edited {new Date(remark.editedAt).toLocaleString('en-IN')}
+                                        {remark.editedBy?.name ? ` by ${remark.editedBy.name}` : ''}
+                                      </span>
+                                    )}
+                                    {canEdit && (
+                                      <button onClick={() => setEditingRemark({
+                                        id: remark._id,
+                                        text: remark.text || '',
+                                        purpose: remark.purpose || '',
+                                        actionTaken: remark.actionTaken || '',
+                                      })} className="text-[var(--primary)] normal-case tracking-normal hover:underline">
+                                        Edit
+                                      </button>
+                                    )}
+                                  </span>
+                                </div>
+                              </>
                             )}
-                            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400 border-t border-slate-100 pt-3">
-                              <span>By: {remark.addedBy?.name || 'Unknown'}</span>
-                              <span>{new Date(remark.addedAt).toLocaleString('en-IN')}</span>
-                            </div>
                           </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>

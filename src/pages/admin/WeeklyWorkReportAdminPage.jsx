@@ -106,45 +106,44 @@ const AllFacultyWeek = ({ weekOf }) => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-xs min-w-[760px]">
+        <table className="w-full text-sm min-w-[780px]">
           <thead>
             <tr className="bg-[var(--primary)]/5 text-[var(--text-secondary)]">
-              <th className="text-left px-4 py-2.5 font-black uppercase tracking-wider sticky left-0 bg-[var(--bg-card)]">Faculty</th>
+              <th className="text-left px-4 py-3 text-xs font-black uppercase tracking-wider sticky left-0 bg-[var(--bg-card)]">Faculty</th>
               {data.days.map((d) => (
-                <th key={d.date} className="px-2 py-2.5 font-black uppercase tracking-wider text-center whitespace-nowrap">
+                <th key={d.date} className="px-3 py-3 text-xs font-black uppercase tracking-wider text-center whitespace-nowrap">
                   {d.dayName.slice(0, 3)}
-                  <div className="font-bold normal-case opacity-70">{d.date.slice(8)}/{d.date.slice(5, 7)}</div>
+                  <div className="text-[11px] font-bold normal-case opacity-70">{d.date.slice(8)}/{d.date.slice(5, 7)}</div>
                 </th>
               ))}
-              <th className="px-2 py-2.5 font-black uppercase tracking-wider text-center">Days</th>
-              <th className="px-2 py-2.5 font-black uppercase tracking-wider text-center">Hours</th>
+              <th className="px-3 py-3 text-xs font-black uppercase tracking-wider text-center">Days</th>
+              <th className="px-3 py-3 text-xs font-black uppercase tracking-wider text-center">Hours</th>
             </tr>
           </thead>
           <tbody>
             {data.rows.map((row) => (
               <tr key={row.faculty._id} className="border-t border-[var(--border-light)]">
-                <td className="px-4 py-2 sticky left-0 bg-[var(--bg-card)]">
-                  <div className="font-bold text-[var(--text-primary)] whitespace-nowrap">{row.faculty.name}</div>
-                  <div className="text-[10px] text-[var(--text-secondary)]">
+                <td className="px-4 py-2.5 sticky left-0 bg-[var(--bg-card)]">
+                  <div className="font-bold text-[15px] text-[var(--text-primary)] whitespace-nowrap">{row.faculty.name}</div>
+                  <div className="text-[11px]">
                     {row.submitted
                       ? <span className="text-emerald-600 font-bold">submitted</span>
                       : <span className="text-amber-600 font-bold">not submitted</span>}
                   </div>
                 </td>
+                {/* A tick or a cross, nothing else — the hours live in their
+                    own column where they can be compared down the page. */}
                 {row.perDay.map((d, i) => (
-                  <td key={i} className="px-2 py-2 text-center">
-                    {d.filled ? (
-                      <span className="inline-flex flex-col items-center">
-                        <Check size={15} className="text-emerald-500" />
-                        <span className="text-[10px] text-[var(--text-secondary)]">{d.hours}h</span>
-                      </span>
-                    ) : (
-                      <X size={15} className="text-red-400 inline" />
-                    )}
+                  <td key={i} className="px-3 py-2.5 text-center">
+                    {d.filled
+                      ? <Check size={20} className="text-emerald-500 inline" strokeWidth={3} />
+                      : <X size={20} className="text-red-400 inline" strokeWidth={3} />}
                   </td>
                 ))}
-                <td className="px-2 py-2 text-center font-bold text-[var(--text-primary)]">{row.daysFilled}/7</td>
-                <td className="px-2 py-2 text-center font-bold text-[var(--text-primary)]">{row.totalHours}</td>
+                <td className="px-3 py-2.5 text-center font-black text-[15px] text-[var(--text-primary)]">
+                  {row.daysFilled}/{row.workingDays || data.days.length}
+                </td>
+                <td className="px-3 py-2.5 text-center font-black text-[15px] text-[var(--text-primary)]">{row.totalHours}</td>
               </tr>
             ))}
           </tbody>
@@ -169,7 +168,7 @@ const AllFacultyWeek = ({ weekOf }) => {
                 </span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs min-w-[640px]">
+                <table className="w-full text-[13px] min-w-[640px]">
                   <thead>
                     <tr className="text-[var(--text-secondary)] text-left">
                       <th className="px-3 py-2 font-black uppercase tracking-wider w-24">Date</th>

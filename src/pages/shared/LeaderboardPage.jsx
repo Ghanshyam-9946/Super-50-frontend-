@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { fetchLeaderboard } from '../../features/students/studentsSlice';
 import { Search, Filter } from 'lucide-react';
 import { MyLeaderboardCertificates } from '../admin/LeaderboardAwardsPage';
+import { DashboardNotifications } from "../../components/notifications/NotificationAlerts";
 
 const getInitials = (name) => {
   if (!name) return 'U';
@@ -52,6 +53,10 @@ export default function LeaderboardPage({ limit }) {
 
   return (
     <div id="leaderboard" className="p-4 md:p-8 max-w-6xl mx-auto space-y-12">
+      {/* The leaderboard is where an admin lands after signing in, so what
+          is new belongs here as well as on the dashboard. */}
+      <DashboardNotifications />
+
       {/* Months this student finished in the top ten, each with its
           certificate. Renders nothing when they have none. */}
       {user?.role === 'student' && <MyLeaderboardCertificates />}

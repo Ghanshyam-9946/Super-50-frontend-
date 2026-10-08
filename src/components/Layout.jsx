@@ -8,6 +8,7 @@ import { ChatSocketProvider } from '../context/ChatSocketContext';
 import FloatingChatBubble from './chat/FloatingChatBubble';
 import ReminderAlarm from './reminders/ReminderAlarm';
 import AssistantBubble from './assistant/AssistantBubble';
+import NotificationAlerts from './notifications/NotificationAlerts';
 
 export default function Layout({ theme, toggleTheme }) {
   const { user, token } = useSelector((s) => s.auth);
@@ -57,6 +58,9 @@ export default function Layout({ theme, toggleTheme }) {
         {!onBoard && <FloatingChatBubble />}
         {/* Bottom middle on every signed-in page, for every role. */}
         {!onBoard && <AssistantBubble />}
+        {/* Anything new, for every role, with a sound. Hidden on a board so
+            it does not land on the writing surface mid-lesson. */}
+        {!onBoard && <NotificationAlerts />}
         <ReminderAlarm />
       </div>
     </ChatSocketProvider>

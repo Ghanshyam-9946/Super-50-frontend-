@@ -617,32 +617,49 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
     return !!d && new Date() > new Date(d);
   };
 
-  const [category, setCategory] = useState(categoryOptions[0] || "Assignment");
   const [kind, setKind] = useState(ACTIVITY_KINDS[0]);
   const [unit, setUnit] = useState(1);
-  const [max, setMax] = useState(defaultMaxFor(categoryOptions[0]));
   const [cells, setCells] = useState({});
   const timers = useRef({});
   const inputRefs = useRef({});
 
-  // Recompute each row's visible value + entryId whenever the
-  // category/kind/unit selection changes, or sheets update after a save.
+  // Which activities are columns. Everything by default — the point of the
+  // grid is filling several at once — but a faculty with a dozen can narrow
+  // it down.
+  const [shown, setShown] = useState(categoryOptions);
+  useEffect(() => { setShown(categoryOptions); }, [categoryOptions.join("|")]);
+
+  // Each column keeps its own max, taken from the activity itself.
+  const [maxes, setMaxes] = useState({});
+  useEffect(() => {
+    setMaxes((prev) => {
+      const next = { ...prev };
+      categoryOptions.forEach((c) => { if (next[c] === undefined) next[c] = defaultMaxFor(c); });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryOptions.join("|")]);
+
+  const cellKey = (sheetId, cat) => `${sheetId}::${cat}`;
+
+  // One cell per student per activity, rebuilt whenever the sheets change.
   useEffect(() => {
     const next = {};
     sheets.forEach((s) => {
-      const entry = (s.caEntries || []).find(
-        (e) => e.category === category && Number(e.unit) === Number(unit) && (category !== "Activity" || e.kind === kind)
-      );
-      next[s._id] = { value: entry ? String(entry.obtained) : "", entryId: entry?._id || null, status: "idle" };
+      categoryOptions.forEach((cat) => {
+        const entry = (s.caEntries || []).find(
+          (e) => e.category === cat && Number(e.unit) === Number(unit) && (cat !== "Activity" || e.kind === kind)
+        );
+        next[cellKey(s._id, cat)] = {
+          value: entry ? String(entry.obtained) : "",
+          entryId: entry?._id || null,
+          status: "idle",
+        };
+      });
     });
     setCells(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheets, category, kind, unit]);
-
-  useEffect(() => {
-    setMax(defaultMaxFor(category));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  }, [sheets, categoryOptions.join("|"), kind, unit]);
 
   const canEditSheet = (sheet) => {
     if (sheet.locked) return false;
@@ -655,13 +672,15 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
     return true;
   };
 
-  const saveCell = async (sheetId, value) => {
-    if (value === "" || max === "") return;
-    setCells((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "saving" } }));
+  const saveCell = async (sheetId, cat, value) => {
+    const key = cellKey(sheetId, cat);
+    const max = maxes[cat];
+    if (value === "" || max === "" || max === undefined) return;
+    setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "saving" } }));
     try {
       const { data } = await api.patch(`/sessional-marks/sheets/${sheetId}/ca`, {
-        entryId: cells[sheetId]?.entryId || null,
-        category,
+        entryId: cells[key]?.entryId || null,
+        category: cat,
         kind,
         unit: Number(unit),
         obtained: Number(value),
@@ -670,72 +689,69 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
       if (data.success) {
         onChange(data.data);
         const savedEntry = (data.data.caEntries || []).find(
-          (e) => e.category === category && Number(e.unit) === Number(unit) && (category !== "Activity" || e.kind === kind)
+          (e) => e.category === cat && Number(e.unit) === Number(unit) && (cat !== "Activity" || e.kind === kind)
         );
         setCells((prev) => ({
           ...prev,
-          [sheetId]: { value: String(savedEntry?.obtained ?? value), entryId: savedEntry?._id || null, status: "saved" },
+          [key]: { value: String(savedEntry?.obtained ?? value), entryId: savedEntry?._id || null, status: "saved" },
         }));
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save");
-      setCells((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "error" } }));
+      setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "error" } }));
     }
   };
 
-  const onCellChange = (sheetId, rawValue) => {
-    setCells((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], value: rawValue, status: "idle" } }));
-    clearTimeout(timers.current[sheetId]);
-    timers.current[sheetId] = setTimeout(() => saveCell(sheetId, rawValue), 600);
+  const onCellChange = (sheetId, cat, rawValue) => {
+    const key = cellKey(sheetId, cat);
+    setCells((prev) => ({ ...prev, [key]: { ...prev[key], value: rawValue, status: "idle" } }));
+    clearTimeout(timers.current[key]);
+    timers.current[key] = setTimeout(() => saveCell(sheetId, cat, rawValue), 600);
   };
 
-  const focusRow = (index) => {
-    const sheet = sheets[index];
-    if (sheet) inputRefs.current[sheet._id]?.focus();
+  // Enter and the arrows walk down a column; Tab moves across the row,
+  // which is what the browser already does.
+  const focusCell = (rowIndex, cat) => {
+    const sheet = sheets[rowIndex];
+    if (sheet) inputRefs.current[cellKey(sheet._id, cat)]?.focus();
   };
-  const onKeyDown = (e, index) => {
+  const onKeyDown = (e, index, cat) => {
     if (e.key === "Enter" || e.key === "ArrowDown") {
       e.preventDefault();
-      focusRow(index + 1);
+      focusCell(index + 1, cat);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      focusRow(index - 1);
+      focusCell(index - 1, cat);
     }
   };
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
-      <div className="flex flex-wrap items-end gap-3 p-4 border-b border-[var(--border-light)]">
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-          Category
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm">
-            {categoryOptions.map((c) => (
-              <option key={c} value={c}>{CATEGORY_LABELS[c] || c}</option>
-            ))}
-          </select>
-        </label>
-        {category === "Activity" && (
-          <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-            Kind
-            <select value={kind} onChange={(e) => setKind(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm">
-              {ACTIVITY_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
-            </select>
-          </label>
-        )}
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+      <div className="flex flex-wrap items-center gap-3 p-4 border-b border-[var(--border-light)]">
+        <span className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">Activities</span>
+        <div className="flex flex-wrap gap-1.5">
+          {categoryOptions.map((c) => {
+            const on = shown.includes(c);
+            return (
+              <button key={c} type="button"
+                onClick={() => setShown(on ? shown.filter((x) => x !== c) : categoryOptions.filter((x) => shown.includes(x) || x === c))}
+                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
+                  on ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
+                     : "border-[var(--border-light)] text-[var(--text-secondary)]"
+                }`}>
+                {CATEGORY_LABELS[c] || c}
+              </button>
+            );
+          })}
+        </div>
+        <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-[var(--text-secondary)]">
           Unit
-          <input type="number" min="1" value={unit} onChange={(e) => setUnit(e.target.value)} className="w-20 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
+          <input type="number" min="1" value={unit} onChange={(e) => setUnit(e.target.value)}
+            className="w-16 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2 py-1.5 text-sm" />
         </label>
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-          Max Marks
-          <input type="number" min="0" value={max} onChange={(e) => setMax(e.target.value)} className="w-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm" />
-        </label>
-        {isCategoryDeadlinePassed(category) && (
-          <span className="text-xs text-amber-600 font-bold">
-            Deadline passed — you can still enter marks, they are recorded as late
-          </span>
-        )}
-        <span className="text-xs text-[var(--text-secondary)] ml-auto">Type a value and press Enter — saves automatically.</span>
+        <span className="text-xs text-[var(--text-secondary)] ml-auto">
+          Fill any column — each value saves by itself.
+        </span>
       </div>
 
       <div className="overflow-x-auto">
@@ -743,43 +759,65 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
           <thead>
             <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
               <th className="sticky left-0 bg-[var(--bg-card)] px-4 py-3 min-w-[220px]">Student</th>
-              <th className="px-4 py-3 min-w-[140px]">Obtained / {max || "?"}</th>
-              <th className="px-4 py-3">Status</th>
+              {shown.map((c) => (
+                <th key={c} className="px-3 py-3 min-w-[120px] align-bottom">
+                  <div className="text-[var(--text-primary)] normal-case tracking-normal font-bold text-xs truncate" title={CATEGORY_LABELS[c] || c}>
+                    {CATEGORY_LABELS[c] || c}
+                  </div>
+                  <div className="flex items-center gap-1 mt-1 normal-case tracking-normal">
+                    <span className="text-[10px]">out of</span>
+                    <input type="number" min="0" value={maxes[c] ?? ""}
+                      onChange={(e) => setMaxes({ ...maxes, [c]: e.target.value })}
+                      className="w-14 bg-[var(--bg-input)] border border-[var(--border-light)] rounded px-1.5 py-0.5 text-xs" />
+                  </div>
+                  {isCategoryDeadlinePassed(c) && (
+                    <div className="text-[9px] text-amber-600 font-bold normal-case tracking-normal mt-0.5">late</div>
+                  )}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {sheets.map((sheet, i) => {
-              const cell = cells[sheet._id] || { value: "", status: "idle" };
               const editable = canEditSheet(sheet);
               return (
                 <tr key={sheet._id} className="border-b border-[var(--border-light)]">
                   <td className="sticky left-0 bg-[var(--bg-card)] px-4 py-2.5">
                     <div className="font-bold text-[var(--text-primary)]">{sheet.student?.name}</div>
-                    <div className="text-xs text-[var(--text-secondary)]">{sheet.student?.enrollmentNumber}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">
+                      {sheet.student?.enrollmentNumber}
+                      {sheet.locked && <span className="ml-2 text-[10px] font-bold uppercase">locked</span>}
+                    </div>
                   </td>
-                  <td className="px-4 py-2.5">
-                    <input
-                      ref={(el) => (inputRefs.current[sheet._id] = el)}
-                      type="number"
-                      min="0"
-                      max={max || undefined}
-                      disabled={!editable || max === ""}
-                      value={cell.value}
-                      onChange={(e) => onCellChange(sheet._id, e.target.value)}
-                      onKeyDown={(e) => onKeyDown(e, i)}
-                      className="w-24 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40"
-                    />
-                  </td>
-                  <td className="px-4 py-2.5 text-xs">
-                    {cell.status === "saving" && (
-                      <span className="flex items-center gap-1 text-[var(--text-secondary)]">
-                        <Loader2 size={12} className="animate-spin" /> Saving…
-                      </span>
-                    )}
-                    {cell.status === "saved" && <span className="text-emerald-500 font-bold">Saved ✓</span>}
-                    {cell.status === "error" && <span className="text-red-500 font-bold">Failed — retry</span>}
-                    {sheet.locked && <span className="text-[var(--text-secondary)]">Locked</span>}
-                  </td>
+                  {shown.map((c) => {
+                    const key = `${sheet._id}::${c}`;
+                    const cc = cells[key] || { value: "", status: "idle" };
+                    const colMax = maxes[c];
+                    return (
+                      <td key={c} className="px-3 py-2.5">
+                        <div className="relative">
+                          <input
+                            ref={(el) => (inputRefs.current[key] = el)}
+                            type="number"
+                            min="0"
+                            max={colMax || undefined}
+                            disabled={!editable || colMax === "" || colMax === undefined}
+                            value={cc.value}
+                            onChange={(e) => onCellChange(sheet._id, c, e.target.value)}
+                            onKeyDown={(e) => onKeyDown(e, i, c)}
+                            className={`w-20 bg-[var(--bg-input)] border rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40 ${
+                              cc.status === "error" ? "border-red-500"
+                                : cc.status === "saved" ? "border-emerald-500/60"
+                                : "border-[var(--border-light)]"
+                            }`}
+                          />
+                          {cc.status === "saving" && (
+                            <Loader2 size={11} className="animate-spin absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
                 </tr>
               );
             })}

@@ -239,7 +239,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/students', icon: Users, label: 'All Students' },
       { to: '/admin/bulk-create', icon: UserPlus, label: 'Student Upload' },
       { to: '/admin/bulk-create-faculty', icon: UserPlus, label: 'Faculty Upload' },
-      { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Student Calling by Guide' },
+      { to: '/admin/calling-tracker', icon: ClipboardList, label: 'Mentoring System' },
       { to: '/admin/super50-students', icon: Star, label: 'Super50 Students' },
       { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
       { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },

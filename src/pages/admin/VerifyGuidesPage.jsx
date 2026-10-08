@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, ShieldCheck, ShieldAlert, Check, X, Loader2, Trash2, Award, Plus, KeyRound, Copy, AlertCircle } from 'lucide-react';
+import { UserPlus, Search, ShieldCheck, ShieldAlert, Check, X, Loader2, Trash2, Award, Plus, KeyRound, Copy, AlertCircle, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -134,6 +134,34 @@ export default function VerifyGuidesPage() {
   // Responsibility Modal state
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [guideResps, setGuideResps] = useState([]);
+  const [editingDept, setEditingDept] = useState(null);
+  const [deptValue, setDeptValue] = useState('');
+  const [savingDept, setSavingDept] = useState(false);
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    api.get('/admin/departments')
+      .then(({ data }) => setDepartments(data.data || []))
+      .catch(() => {});
+  }, []);
+
+  const saveDepartment = async (id) => {
+    setSavingDept(true);
+    try {
+      const { data } = await api.patch(`/admin/guides/${id}/profile`, { department: deptValue.trim() });
+      setGuides((prev) => prev.map((g) => (g._id === id ? { ...g, department: data.data.department } : g)));
+      setEditingDept(null);
+      toast.success('Department updated');
+      // A new spelling should be offered to the next person who edits.
+      if (deptValue.trim() && !departments.includes(deptValue.trim())) {
+        setDepartments((prev) => [...prev, deptValue.trim()].sort());
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not change the department');
+    } finally {
+      setSavingDept(false);
+    }
+  };
   const [customResp, setCustomResp] = useState('');
 
   // Set Password Modal state
@@ -345,7 +373,43 @@ export default function VerifyGuidesPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-bold text-[var(--text-primary)]">
-                    {guide.department || 'N/A'}
+                    {/* Editable in place: a faculty member moving department
+                        is routine, and it was previously only fixable in the
+                        database. */}
+                    {editingDept === guide._id ? (
+                      <div className="flex items-center gap-1.5">
+                        <datalist id="known-departments">
+                          {departments.map((d) => <option key={d} value={d} />)}
+                        </datalist>
+                        <input
+                          list="known-departments"
+                          value={deptValue}
+                          autoFocus
+                          onChange={(e) => setDeptValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveDepartment(guide._id);
+                            if (e.key === 'Escape') setEditingDept(null);
+                          }}
+                          className="w-40 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2 py-1 text-sm font-normal"
+                        />
+                        <button onClick={() => saveDepartment(guide._id)} disabled={savingDept}
+                          className="p-1 rounded text-emerald-600 hover:bg-emerald-500/10" title="Save">
+                          {savingDept ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                        </button>
+                        <button onClick={() => setEditingDept(null)} className="p-1 rounded text-slate-400 hover:bg-slate-500/10" title="Cancel">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setEditingDept(guide._id); setDeptValue(guide.department || ''); }}
+                        className="flex items-center gap-1.5 hover:text-[var(--primary)] group"
+                        title="Change department"
+                      >
+                        {guide.department || <span className="text-slate-400 italic font-normal">not set</span>}
+                        <Pencil size={12} className="opacity-0 group-hover:opacity-60" />
+                      </button>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     {guide.isActive ? (

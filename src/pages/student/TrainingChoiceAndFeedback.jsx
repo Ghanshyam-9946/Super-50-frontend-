@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ListChecks, Loader2, Check, Star, MessageSquare, Clock } from "lucide-react";
+import { ListChecks, Loader2, Check, Star, MessageSquare, Clock, MapPin, Lock } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 
@@ -186,6 +186,19 @@ export const TrainingFeedbackForm = ({ trainingId }) => {
     }
   };
 
+  // Short of the attendance bar — say so, rather than leaving a gap where
+  // the form should be and letting them wonder.
+  if (form && form.eligible === false) {
+    return (
+      <div className="border-t border-[var(--border-light)] pt-3 mt-3">
+        <p className="text-[11px] text-[var(--text-secondary)] flex items-start gap-1.5">
+          <Lock size={12} className="mt-0.5 shrink-0" />
+          <span>{form.message}</span>
+        </p>
+      </div>
+    );
+  }
+
   if (!form?.trainers?.length) return null;
 
   return (
@@ -239,6 +252,109 @@ export const TrainingFeedbackForm = ({ trainingId }) => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+/* --------------------- picking a venue for a training --------------------- */
+
+// One choice only. The seat is taken the moment it is picked, so two people
+// cannot both claim the last place in a room.
+export const TrainingBatchChoice = () => {
+  const [items, setItems] = useState([]);
+  const [busy, setBusy] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    try {
+      const { data } = await api.get("/trainings/batch-choices/mine");
+      setItems(data.data || []);
+    } catch {
+      /* nothing open for this student */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const choose = async (training, batch) => {
+    if (!window.confirm(`Choose "${batch.name}"? You get one pick \u2014 after this only the admin can move you.`)) return;
+    setBusy(batch.name);
+    try {
+      const { data } = await api.post(`/trainings/${training._id}/choose-batch`, { batchName: batch.name });
+      toast.success(data.message);
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not take that place");
+      await load();
+    } finally {
+      setBusy("");
+    }
+  };
+
+  if (loading || items.length === 0) return null;
+
+  return (
+    <div className="space-y-4">
+      {items.map((t) => (
+        <div key={t._id} className="glass-card p-5 rounded-3xl space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h2 className="font-display font-black text-base text-[var(--text-primary)] flex items-center gap-2">
+                <MapPin size={17} className="text-[var(--primary)]" /> {t.name} \u2014 choose your venue
+              </h2>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-1 flex items-center gap-1.5">
+                <Clock size={11} />
+                {t.deadline
+                  ? `Closes ${new Date(t.deadline).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`
+                  : "No deadline"}
+                {" \u00b7 "}one choice only
+              </p>
+            </div>
+            {t.myBatch && (
+              <span className="text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-600">
+                You are in {t.myBatch}
+              </span>
+            )}
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-2">
+            {t.batches.map((b) => {
+              const mine = t.myBatch === b.name;
+              const blocked = !!t.myBatch || b.full || !t.live;
+              return (
+                <button
+                  key={b.name}
+                  type="button"
+                  disabled={blocked && !mine}
+                  onClick={() => choose(t, b)}
+                  className={`text-left border rounded-2xl p-3 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+                    mine ? "border-emerald-500 bg-emerald-500/5"
+                      : b.full ? "border-[var(--border-light)]"
+                      : "border-[var(--border-light)] hover:border-[var(--primary)]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-[var(--text-primary)]">{b.name}</span>
+                    <span className={`text-[11px] font-bold ${b.full ? "text-red-500" : "text-[var(--text-secondary)]"}`}>
+                      {busy === b.name ? "\u2026" : b.capacity != null ? `${b.taken}/${b.capacity}${b.full ? " full" : ""}` : `${b.taken} in`}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                    {[b.venue, b.schedule, b.faculty?.name].filter(Boolean).join(" \u00b7 ")}
+                  </div>
+                  {b.instructions && (
+                    <div className="text-[11px] text-[var(--text-primary)] mt-1.5 whitespace-pre-wrap border-l-2 border-[var(--primary)]/30 pl-2">
+                      {b.instructions}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 };

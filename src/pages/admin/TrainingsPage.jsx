@@ -221,6 +221,8 @@ const TABS = [
 ];
 
 const TrainingDetail = ({ id, onClose }) => {
+  // Which course outcome the next assessment sheet belongs to.
+  const [co, setCo] = useState("");
   const [data, setData] = useState(null);
   const [records, setRecords] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -247,12 +249,15 @@ const TrainingDetail = ({ id, onClose }) => {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
-  const upload = async (kind, file) => {
+  const upload = async (kind, file, extra = {}) => {
     if (!file) return;
     setBusy(kind);
     try {
       const fd = new FormData();
       fd.append("file", file);
+      // A course outcome files the sheet alongside the others instead of
+      // replacing them, so several can be uploaded for one training.
+      Object.entries(extra).forEach(([k, v]) => { if (v) fd.append(k, v); });
       const res = await api.post(`/trainings/${id}/${kind}`, fd);
       toast.success(res.data.message);
       load();
@@ -339,11 +344,17 @@ const TrainingDetail = ({ id, onClose }) => {
                   <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!busy}
                     onChange={(e) => { upload("attendance", e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
-                <label className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--primary)]">
-                  {busy === "assessment" ? <Loader2 size={13} className="animate-spin" /> : <FileSpreadsheet size={13} />} Upload assessment
-                  <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!busy}
-                    onChange={(e) => { upload("assessment", e.target.files?.[0]); e.target.value = ""; }} />
-                </label>
+                <span className="flex items-center gap-1.5 border border-[var(--border-light)] rounded-xl pl-2 pr-1 py-1">
+                  <input value={co} onChange={(e) => setCo(e.target.value)} placeholder="CO1"
+                    title="Leave blank to replace the overall assessment; give a CO to file it alongside the others"
+                    className="w-14 bg-transparent text-xs font-bold outline-none text-[var(--text-primary)]" />
+                  <label className="text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer hover:text-[var(--primary)]">
+                    {busy === "assessment" ? <Loader2 size={13} className="animate-spin" /> : <FileSpreadsheet size={13} />}
+                    Upload assessment
+                    <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!busy}
+                      onChange={(e) => { upload("assessment", e.target.files?.[0], { co: co.trim(), name: co.trim() ? `${co.trim()} assessment` : "" }); e.target.value = ""; }} />
+                  </label>
+                </span>
                 <button onClick={() => openPdf(`/trainings/${id}/export`, `training-${data.name}.csv`)} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5">
                   <Download size={13} /> Export CSV
                 </button>

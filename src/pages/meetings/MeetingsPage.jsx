@@ -40,6 +40,16 @@ export default function MeetingsPage() {
   const [saving, setSaving] = useState(false);
   const [people, setPeople] = useState([]);
   const [search, setSearch] = useState("");
+  // Staff or students, and which class of students. Students are fetched on
+  // demand — a college has thousands and a dropdown of all of them is
+  // useless anyway.
+  const [pickType, setPickType] = useState("staff");
+  const [pick, setPick] = useState({ batch: "", semester: "", section: "" });
+  const [filters, setFilters] = useState({ batches: [], sections: [] });
+  const [studentTotal, setStudentTotal] = useState(0);
+  const [truncated, setTruncated] = useState(false);
+  const [loadingPeople, setLoadingPeople] = useState(false);
+  const [addingClass, setAddingClass] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [copied, setCopied] = useState("");
 
@@ -51,6 +61,7 @@ export default function MeetingsPage() {
       if (data.canSchedule) {
         const res = await api.get("/meetings/invitees");
         setPeople(res.data.data || []);
+        setFilters(res.data.filters || { batches: [], sections: [] });
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not load meetings");
@@ -98,11 +109,54 @@ export default function MeetingsPage() {
     }
   };
 
-  const filteredPeople = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return people;
-    return people.filter((p) => `${p.name} ${p.email} ${p.department || ""}`.toLowerCase().includes(q));
-  }, [people, search]);
+  // Staff are filtered in the browser (there are few of them); students are
+  // asked for, because the list is far too long to hold.
+  useEffect(() => {
+    if (!canSchedule) return undefined;
+    const t = setTimeout(async () => {
+      setLoadingPeople(true);
+      try {
+        const { data } = await api.get("/meetings/invitees", {
+          params: {
+            type: pickType,
+            q: search.trim() || undefined,
+            batch: pick.batch || undefined,
+            semester: pick.semester || undefined,
+            section: pick.section || undefined,
+          },
+        });
+        setPeople(data.data || []);
+        setStudentTotal(data.studentTotal || 0);
+        setTruncated(!!data.truncated);
+        if (data.filters) setFilters(data.filters);
+      } catch {
+        /* leave whatever was already listed */
+      } finally {
+        setLoadingPeople(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [canSchedule, pickType, search, pick.batch, pick.semester, pick.section]);
+
+  const filteredPeople = people;
+
+  // Every student of a batch / semester / section at once, for a class.
+  const inviteWholeClass = async () => {
+    if (!pick.batch && !pick.semester && !pick.section) {
+      return toast.error("Choose a batch, semester or section first");
+    }
+    setAddingClass(true);
+    try {
+      const { data } = await api.post("/meetings/invitees/resolve", pick);
+      const ids = (data.data || []).map((x) => x._id);
+      setForm((f) => ({ ...f, invitees: [...new Set([...f.invitees, ...ids])] }));
+      toast.success(`${ids.length} student(s) added to the invite list`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not add them");
+    } finally {
+      setAddingClass(false);
+    }
+  };
 
   const toggleInvitee = (id) =>
     setForm((f) => ({ ...f, invitees: f.invitees.includes(id) ? f.invitees.filter((x) => x !== id) : [...f.invitees, id] }));
@@ -168,27 +222,81 @@ export default function MeetingsPage() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
-                Invite faculty ({form.invitees.length} selected)
+                Who is invited ({form.invitees.length} selected)
               </span>
-              <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…"
-                  className={`${inputCls} pl-8 py-1.5 text-xs w-48`} />
+              <div className="flex items-center gap-1.5">
+                {[["staff", "Faculty"], ["student", "Students"]].map(([key, label]) => (
+                  <button key={key} type="button" onClick={() => setPickType(key)}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
+                      pickType === key
+                        ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
+                        : "border-[var(--border-light)] text-[var(--text-secondary)]"
+                    }`}>{label}</button>
+                ))}
+                <div className="relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)}
+                    placeholder={pickType === "student" ? "Name or enrollment…" : "Search…"}
+                    className={`${inputCls} pl-8 py-1.5 text-xs w-44`} />
+                </div>
               </div>
             </div>
+
+            {/* Students come from any batch — a project review or a
+                counselling session does not care whose tutor group they are
+                in. Only the people named here can join. */}
+            {pickType === "student" && (
+              <div className="flex flex-wrap items-end gap-2">
+                <select value={pick.batch} onChange={(e) => setPick({ ...pick, batch: e.target.value })}
+                  className={`${inputCls} py-1.5 text-xs w-32`}>
+                  <option value="">Any batch</option>
+                  {(filters.batches || []).map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <select value={pick.semester} onChange={(e) => setPick({ ...pick, semester: e.target.value })}
+                  className={`${inputCls} py-1.5 text-xs w-28`}>
+                  <option value="">Any sem</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>Sem {n}</option>)}
+                </select>
+                <select value={pick.section} onChange={(e) => setPick({ ...pick, section: e.target.value })}
+                  className={`${inputCls} py-1.5 text-xs w-28`}>
+                  <option value="">Any section</option>
+                  {(filters.sections || []).map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+                <button type="button" onClick={inviteWholeClass} disabled={addingClass}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-[var(--primary)] text-[var(--primary)] flex items-center gap-1.5 disabled:opacity-50">
+                  {addingClass ? <Loader2 size={11} className="animate-spin" /> : <Users size={11} />}
+                  Invite all {studentTotal ? `(${studentTotal})` : ""}
+                </button>
+              </div>
+            )}
+
             <div className="max-h-44 overflow-y-auto grid sm:grid-cols-2 gap-1.5">
-              {filteredPeople.map((p) => (
+              {loadingPeople ? (
+                <span className="text-xs text-[var(--text-secondary)] p-2">Looking…</span>
+              ) : filteredPeople.length === 0 ? (
+                <span className="text-xs text-[var(--text-secondary)] p-2">Nobody matches.</span>
+              ) : filteredPeople.map((p) => (
                 <label key={p._id} className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl border cursor-pointer ${
                   form.invitees.includes(p._id) ? "bg-[var(--primary)]/10 border-[var(--primary)]" : "bg-[var(--bg-input)] border-[var(--border-light)]"
                 }`}>
                   <input type="checkbox" checked={form.invitees.includes(p._id)} onChange={() => toggleInvitee(p._id)} />
                   <span className="truncate">
                     <strong className="text-[var(--text-primary)]">{p.name}</strong>
-                    <span className="text-[var(--text-secondary)]"> · {p.department || p.role}</span>
+                    <span className="text-[var(--text-secondary)]">
+                      {" · "}
+                      {p.role === "student"
+                        ? [p.enrollmentNumber, p.batch, p.semester ? `Sem ${p.semester}` : "", p.section].filter(Boolean).join(" · ")
+                        : (p.department || p.role)}
+                    </span>
                   </span>
                 </label>
               ))}
             </div>
+            {truncated && pickType === "student" && (
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                Showing the first {filteredPeople.length} of {studentTotal} — narrow it down, or use "Invite all".
+              </p>
+            )}
           </div>
 
           <div className="space-y-2 border-t border-[var(--border-light)] pt-3">
