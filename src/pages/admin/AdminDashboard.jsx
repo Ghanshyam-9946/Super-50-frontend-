@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import StudentProfileModal from '../../components/StudentProfileModal';
 import api from '../../services/api';
+import { DashboardNotifications } from "../../components/notifications/NotificationAlerts";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarElement, Tooltip, Legend, ArcElement
@@ -96,6 +97,9 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
+      {/* Anything new, right where they land. */}
+      <DashboardNotifications />
+
       {/* Header */}
       <header className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 rounded-3xl">
         <div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Users, Loader2, Search, KeyRound, Copy, Check, X, ShieldCheck, RefreshCw, AlertCircle,
-  Pencil, ClipboardList,
+  Pencil, ClipboardList, Phone, FileText,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -17,7 +17,32 @@ export default function TgStudentsPage() {
   const [search, setSearch] = useState("");
   const [target, setTarget] = useState(null); // student whose password is being set
   // The full student profile modal, opened straight on the tab we want.
-  const [profile, setProfile] = useState(null); // { id, tab, edit }
+  const [profile, setProfile] = useState(null);
+  // The remarks this TG has written, as a PDF, for whatever dates they pick.
+  const [range, setRange] = useState({ from: "", to: "" });
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadRemarks = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.get("/mentoring/report.pdf", {
+        params: { from: range.from || undefined, to: range.to || undefined },
+        responseType: "blob",
+      });
+      const named = /filename="([^"]+)"/.exec(res.headers["content-disposition"] || "")?.[1] || "Mentoring-Records.pdf";
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = named;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      toast.success(`Downloaded ${named}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not build the report");
+    } finally {
+      setDownloading(false);
+    }
+  }; // { id, tab, edit }
 
   const load = async () => {
     setLoading(true);
@@ -39,7 +64,7 @@ export default function TgStudentsPage() {
     const q = search.trim().toLowerCase();
     if (!q) return students;
     return students.filter((s) =>
-      `${s.name} ${s.enrollmentNumber || s.enrollmentNo || ""} ${s.email || ""} ${s.section || ""}`.toLowerCase().includes(q)
+      `${s.name} ${s.enrollmentNumber || s.enrollmentNo || ""} ${s.email || ""} ${s.section || ""} ${s.mobile || ""} ${s.parentMobile || ""}`.toLowerCase().includes(q)
     );
   }, [students, search]);
 
@@ -60,9 +85,26 @@ export default function TgStudentsPage() {
             </p>
           </div>
         </div>
-        <button onClick={load} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5">
-          <RefreshCw size={13} /> Refresh
-        </button>
+        <div className="flex flex-wrap items-end gap-2">
+          {/* The remarks this TG has written, for whatever dates they pick. */}
+          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+            From
+            <input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })}
+              className="mt-1 block bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm font-normal normal-case tracking-normal" />
+          </label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+            To
+            <input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })}
+              className="mt-1 block bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm font-normal normal-case tracking-normal" />
+          </label>
+          <button onClick={downloadRemarks} disabled={downloading}
+            className="btn-premium text-xs px-3 py-2.5 flex items-center gap-1.5 disabled:opacity-50">
+            {downloading ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />} Remark report
+          </button>
+          <button onClick={load} className="btn-outline-premium text-xs px-3 py-2.5 flex items-center gap-1.5">
+            <RefreshCw size={13} /> Refresh
+          </button>
+        </div>
       </header>
 
       {loading ? (
@@ -105,7 +147,45 @@ export default function TgStudentsPage() {
                   <div className="text-[11px] text-[var(--text-secondary)]">
                     {[s.department, s.semester ? `Sem ${s.semester}` : "", s.section ? `Sec ${s.section}` : "", s.batch].filter(Boolean).join(" · ")}
                   </div>
+                  {/* The two numbers a TG actually reaches for, and where
+                      their attendance stands. */}
+                  <div className="text-[11px] mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                      <Phone size={10} />
+                      {s.mobile
+                        ? <a href={`tel:${s.mobile}`} className="font-bold text-[var(--text-primary)] hover:text-[var(--primary)]">{s.mobile}</a>
+                        : <span className="italic">no mobile</span>}
+                    </span>
+                    <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                      <Users size={10} /> Parent:
+                      {s.parentMobile
+                        ? <a href={`tel:${s.parentMobile}`} className="font-bold text-[var(--text-primary)] hover:text-[var(--primary)]">{s.parentMobile}</a>
+                        : <span className="italic">not on record</span>}
+                    </span>
+                  </div>
                 </div>
+
+                {(() => {
+                  const att = s.currentAttendance || { percent: s.attendancePercentage || 0, live: false };
+                  const pct = Math.round(att.percent || 0);
+                  return (
+                    <div className="w-24 shrink-0">
+                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">
+                        <span>Attendance</span>
+                        <span className={pct >= 75 ? "text-emerald-600" : pct >= 50 ? "text-amber-600" : "text-red-500"}>{pct}%</span>
+                      </div>
+                      <div className="h-1.5 mt-1 bg-[var(--bg-card)] rounded-full overflow-hidden border border-[var(--border-light)]">
+                        <div className="h-full rounded-full"
+                          style={{ width: `${pct}%`, background: pct >= 75 ? "#10b981" : pct >= 50 ? "#f59e0b" : "#ef4444" }} />
+                      </div>
+                      <div className="text-[9px] text-[var(--text-secondary)] mt-0.5">
+                        {att.live
+                          ? `Sem ${att.semester}${att.totalDays ? ` · ${att.totalPresent}/${att.totalDays}` : ""}`
+                          : "last recorded"}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {s.passwordChanged === false && (
                   <span className="text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full border bg-amber-500/10 text-amber-600 border-amber-500/30">
                     Must set own password

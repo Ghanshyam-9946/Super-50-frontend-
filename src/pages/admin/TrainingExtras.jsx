@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  Loader2, Save, Plus, Trash2, Shuffle, Link2, Upload, Star, MessageSquare, Users,
+  Loader2, Save, Plus, Trash2, Shuffle, Link2, Upload, Star, MessageSquare, Users, ListChecks,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -18,10 +18,29 @@ export const BatchesPanel = ({ training, records, onChanged }) => {
   const [rows, setRows] = useState(training.batches || []);
   const [busy, setBusy] = useState("");
   const [faculty, setFaculty] = useState([]);
+  const [choiceOpen, setChoiceOpen] = useState(!!training.batchChoiceOpen);
+  const [choiceDeadline, setChoiceDeadline] = useState(
+    training.batchChoiceDeadline ? String(training.batchChoiceDeadline).slice(0, 16) : "",
+  );
 
   useEffect(() => {
     api.get("/tasks/faculty-list").then(({ data }) => setFaculty(data.data || [])).catch(() => {});
   }, []);
+
+  const toggleChoice = async () => {
+    setBusy("choice");
+    try {
+      const { data } = await api.put(`/trainings/${training._id}/batch-choice`, {
+        open: !choiceOpen,
+        deadline: choiceDeadline || null,
+      });
+      setChoiceOpen(data.data.batchChoiceOpen);
+      toast.success(data.message);
+      await onChanged();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not change it");
+    } finally { setBusy(""); }
+  };
 
   const save = async () => {
     setBusy("save");
@@ -81,6 +100,14 @@ export const BatchesPanel = ({ training, records, onChanged }) => {
             <button onClick={() => setRows(rows.filter((_, j) => j !== i))} className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10">
               <Trash2 size={14} />
             </button>
+            {/* What a student needs to know before choosing this one. */}
+            <textarea
+              value={b.instructions || ""}
+              onChange={(e) => setRows(rows.map((r, j) => (j === i ? { ...r, instructions: e.target.value } : r)))}
+              rows={2}
+              placeholder="Instructions for students — what to bring, which gate, what the sessions cover"
+              className={`${inputCls} w-full resize-y text-xs`}
+            />
           </div>
         ))}
         <button onClick={() => setRows([...rows, { name: `Batch ${String.fromCharCode(65 + rows.length)}`, capacity: "", venue: "", schedule: "" }])}
@@ -89,10 +116,25 @@ export const BatchesPanel = ({ training, records, onChanged }) => {
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button onClick={save} disabled={!!busy} className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
           {busy === "save" ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save batches
         </button>
+        {/* Students pick one for themselves; the admin can still move
+            anybody afterwards. */}
+        <button onClick={toggleChoice} disabled={!!busy || rows.length === 0}
+          className={`text-xs px-4 py-2 rounded-xl font-bold border flex items-center gap-1.5 disabled:opacity-50 ${
+            choiceOpen ? "border-red-500/40 text-red-500" : "border-emerald-500/40 text-emerald-600"
+          }`}>
+          {busy === "choice" ? <Loader2 size={13} className="animate-spin" /> : <ListChecks size={13} />}
+          {choiceOpen ? "Close student choice" : "Let students choose"}
+        </button>
+        <label className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1.5">
+          until
+          <input type="datetime-local" value={choiceDeadline}
+            onChange={(e) => setChoiceDeadline(e.target.value)}
+            className={`${inputCls} py-1.5 text-xs w-52`} />
+        </label>
         <button onClick={autoSplit} disabled={!!busy || rows.length === 0}
           className="btn-outline-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
           {busy === "split" ? <Loader2 size={13} className="animate-spin" /> : <Shuffle size={13} />} Divide everyone evenly
@@ -267,29 +309,30 @@ export const FeedbackPanel = ({ training, onChanged }) => {
     <div className="space-y-4">
       <div>
         <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1.5">
-          Who delivered this training
+          Who gets rated
         </p>
-        <div className="flex flex-wrap gap-1.5">
-          {faculty.map((f) => {
-            const on = trainers.includes(f._id);
-            return (
-              <button key={f._id} type="button"
-                onClick={() => setTrainers(on ? trainers.filter((t) => t !== f._id) : [...trainers, f._id])}
-                className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
-                  on ? "border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]"
-                     : "border-[var(--border-light)] text-[var(--text-secondary)]"
-                }`}>
-                {f.name}
-              </button>
-            );
-          })}
-        </div>
+        {/* Taken from the venues, not chosen again here: whoever was put in
+            charge of a batch is who that batch's students rate. */}
+        {(training.batches || []).filter((b) => b.faculty).length === 0 ? (
+          <p className="text-xs text-amber-600">
+            No venue has a trainer yet. Name one on the Batches tab and they will appear here.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {(training.batches || []).filter((b) => b.faculty).map((b) => (
+              <span key={b.name}
+                className="text-[11px] font-bold px-2.5 py-1 rounded-lg border border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)]">
+                {b.faculty?.name || "Trainer"} <span className="opacity-70">· {b.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
+        <p className="text-[11px] text-[var(--text-secondary)] mt-1.5">
+          Each student rates only the trainer of their own batch.
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => save(open)} disabled={!!busy} className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
-          {busy === "save" ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save trainers
-        </button>
         <button onClick={() => save(!open)} disabled={!!busy}
           className={`text-xs px-4 py-2 rounded-xl font-bold border flex items-center gap-1.5 disabled:opacity-50 ${
             open ? "border-red-500/40 text-red-500" : "border-emerald-500/40 text-emerald-600"
@@ -306,7 +349,14 @@ export const FeedbackPanel = ({ training, onChanged }) => {
           {report.data.map((row) => (
             <div key={row.faculty._id} className="border border-[var(--border-light)] rounded-2xl p-3 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-bold text-sm text-[var(--text-primary)]">{row.faculty.name}</span>
+                <span className="font-bold text-sm text-[var(--text-primary)]">
+                  {row.faculty.name}
+                  {row.batches?.length > 0 && (
+                    <span className="ml-2 text-[11px] font-normal text-[var(--text-secondary)]">
+                      {row.batches.join(", ")}
+                    </span>
+                  )}
+                </span>
                 <span className="flex items-center gap-1.5 text-sm font-black">
                   <Star size={14} className="text-amber-500" />
                   {row.overall ?? "—"}<span className="text-[var(--text-secondary)] font-normal text-xs"> / 5 · {row.responses} response(s)</span>

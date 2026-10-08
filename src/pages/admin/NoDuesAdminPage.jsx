@@ -125,6 +125,19 @@ function OverviewTab({ user }) {
 
   const handleChange = (updated) => setForms((prev) => prev.map((f) => (f._id === updated._id ? updated : f)));
 
+  const deleteForm = async (id) => {
+    const form = forms.find((f) => f._id === id);
+    if (!window.confirm(`Delete ${form?.student?.name || 'this student'}'s No Dues form? Every tick on it goes too.`)) return;
+    try {
+      const { data } = await api.delete(`/no-dues/${id}`);
+      toast.success(data.message || 'Form deleted');
+      setForms((prev) => prev.filter((f) => f._id !== id));
+      setOpenFormId(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not delete the form');
+    }
+  };
+
   // Only fully-completed, not-yet-forwarded forms can be bulk-selected.
   const eligibleIds = useMemo(
     () => forms.filter((f) => f.isCompleted && !f.forwarded).map((f) => f._id),
@@ -393,7 +406,15 @@ function OverviewTab({ user }) {
                   {open && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                       <div className="px-5 pb-5 pt-1 border-t border-[var(--border-light)]">
-                        <NoDuesFormDetail form={form} currentUser={user} onChange={handleChange} showDeleteButton={false} />
+                        {/* An admin can remove a form that was released by
+                            mistake — to the wrong student, or twice. */}
+                        <NoDuesFormDetail
+                          form={form}
+                          currentUser={user}
+                          onChange={handleChange}
+                          showDeleteButton
+                          onDelete={deleteForm}
+                        />
                       </div>
                     </motion.div>
                   )}
