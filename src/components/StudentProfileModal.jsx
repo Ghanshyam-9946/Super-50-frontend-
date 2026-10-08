@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import RemarkForm from './remarks/RemarkForm';
+import { REMARK_PURPOSES } from '../utils/remarkPurposes';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Building2, CheckCircle, XCircle, Clock, Loader2, ArrowRight, Award, Activity, User, ClipboardList, Camera, Pencil, Trash2, Check, TrendingUp, BarChart3, Sparkles } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,30 +21,11 @@ import {
 } from './StudentAnalyticsGraphs';
 
 
-// The reasons a TG records a remark against a student. Shared wording
-// matters here: these get counted and compared across the department.
-const REMARK_PURPOSES = [
-  'Low Attendance',
-  'Fee Due / Fee Reminder',
-  'Behavioral Issues',
-  'Low Academic Performance',
-  'Poor Class Participation',
-  'POD AI Performance',
-  'Training Performance',
-  'Placement',
-  'Parent–Teacher Meeting (PTM)',
-  'Counselling Required',
-  'Student Achievement',
-  'Participation & Engagement',
-];
 
 export default function StudentProfileModal({ isOpen, onClose, studentId, initialTab = 'menu', startInEditMode = false }) {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  // Why a remark was written. Fixed so the same reason is worded the same
   // way every time and can be reported on later.
-  const [purposeChoice, setPurposeChoice] = useState('');
-  const [purposeOther, setPurposeOther] = useState('');
   // An open correction. The author or an admin may make one; the stamp the
   // server adds is what keeps it honest.
   const [editingRemark, setEditingRemark] = useState(null);
@@ -70,6 +53,18 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
   const viewerIsStudent = isStudentAccount(user);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState(null);
+
+  // Attendance across the whole course, sent by the API as
+  // `student.attendanceOverall`. `attendancePercentage` is only ever the
+  // last sheet uploaded for one semester, so it was showing a single term
+  // under the words "Overall Attendance".
+  const overallAtt = data?.student?.attendanceOverall || null;
+  const overallPct = overallAtt && overallAtt.semesterCount
+    ? Math.round(overallAtt.percent)
+    : Math.round(data?.student?.attendancePercentage || 0);
+  const overallNote = overallAtt?.semesterCount
+    ? `Average of ${overallAtt.semesterCount} semester${overallAtt.semesterCount > 1 ? 's' : ''}`
+    : 'From the last uploaded sheet \u2014 no semester history yet';
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
@@ -663,7 +658,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                             <div className="flex justify-between"><span className="text-slate-500">CGPA:</span><span className="font-bold text-slate-900">{data.student.cgpa || 'N/A'}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Residence:</span><span className="font-bold text-indigo-600">{data.student.residenceType || 'Day Scholar'}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">POD AI Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
-                            <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600">{Math.round(data.student.attendancePercentage || 0)}%</span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600" title={overallNote}>{overallPct}%</span></div>
                           </div>
                         </div>
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -852,85 +847,13 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                     {/* Particular Graph for Remarks */}
                     <RemarksGraph remarks={data.student?.remarks} />
 
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                      <h4 className="font-bold text-slate-900 mb-4">Add Remark</h4>
-                      <form onSubmit={async (e) => {
-                        e.preventDefault();
-                        const text = e.target.remark.value;
-                        const purpose = purposeChoice === 'Other' ? purposeOther.trim() : purposeChoice;
-                        if (!purpose) { toast.error('Please choose a purpose'); return; }
-                        const actionTaken = e.target.actionTaken.value;
-                        if (!text.trim()) return;
-
-                        try {
-                          const res = await api.post(`/admin/students/${studentId}/remarks`, { text, purpose, actionTaken });
-                          setData(prev => ({
-                            ...prev,
-                            student: {
-                              ...prev.student,
-                              remarks: res.data.data.remarks
-                            }
-                          }));
-                          e.target.reset();
-                          toast.success('Remark added successfully');
-                          setPurposeChoice('');
-                          setPurposeOther('');
-                        } catch (err) {
-                          toast.error('Failed to add remark');
-                        }
-                      }}>
-                        <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                          <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                            Purpose
-                            {/* A fixed list so remarks can be counted and
-                                compared later; "Other" keeps the free-text
-                                escape hatch for anything unforeseen. */}
-                            <select
-                              name="purpose"
-                              value={purposeChoice}
-                              onChange={(e) => setPurposeChoice(e.target.value)}
-                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
-                            >
-                              <option value="">Select a purpose…</option>
-                              {REMARK_PURPOSES.map((p) => <option key={p} value={p}>{p}</option>)}
-                              <option value="Other">Other</option>
-                            </select>
-                            {purposeChoice === 'Other' && (
-                              <input
-                                name="purposeOther"
-                                value={purposeOther}
-                                onChange={(e) => setPurposeOther(e.target.value)}
-                                className="w-full mt-1.5 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
-                                placeholder="Write the purpose"
-                              />
-                            )}
-                          </label>
-                          <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                            Action taken
-                            {/* A textarea, not an input: what was done about
-                                something usually takes more than one line. */}
-                            <textarea
-                              name="actionTaken"
-                              rows="3"
-                              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium normal-case tracking-normal text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] resize-y"
-                              placeholder={'e.g. Parent called on 12 Sept\nWarned about attendance\nTo review next week'}
-                            />
-                          </label>
-                        </div>
-                        <textarea
-                          name="remark"
-                          className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-y mb-1"
-                          rows="5"
-                          placeholder={'What happened, in as much detail as is useful.\nLine breaks are kept.'}
-                        />
-                        <p className="text-[10px] text-slate-400 mb-3">Line breaks are kept exactly as you type them.</p>
-                        <div className="flex justify-end">
-                          <button type="submit" className="btn-premium px-6 py-2 text-xs font-bold rounded-xl shadow-sm">
-                            Add Remark
-                          </button>
-                        </div>
-                      </form>
-                    </div>
+                    {/* The same form the admin's Mentoring System page uses, so
+                        both record a purpose and an action taken and feed
+                        the same reports. */}
+                    <RemarkForm
+                      studentId={studentId}
+                      onAdded={(remarks) => setData((prev) => ({ ...prev, student: { ...prev.student, remarks } }))}
+                    />
 
                     <div className="space-y-4">
                       <h4 className="font-bold text-slate-900">Previous Remarks</h4>
@@ -1023,7 +946,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                         <p className="text-xs text-slate-500 mt-0.5">Logs of individual Super 50 class sessions.</p>
                       </div>
                       <div className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3.5 py-2 rounded-xl border border-indigo-100 shadow-sm">
-                        Overall Attendance: <span className="font-black text-sm">{Math.round(data?.student?.attendancePercentage || 0)}%</span>
+                        Overall Attendance: <span className="font-black text-sm">{overallPct}%</span>
+                        <span className="block font-semibold text-[10px] text-indigo-400 mt-0.5">{overallNote}</span>
                       </div>
                     </div>
 
@@ -1079,6 +1003,18 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                         <h4 className="font-bold text-slate-900">Semester-wise Attendance History</h4>
                         <p className="text-xs text-slate-500 mt-0.5">Historical attendance records per semester.</p>
                       </div>
+                      {overallAtt?.semesterCount > 0 && (
+                        <div className="text-right">
+                          <div className="text-xs font-bold text-slate-500">All semesters</div>
+                          <div className="font-black text-lg text-emerald-600">{overallPct}%</div>
+                          <div className="text-[10px] font-semibold text-slate-400">
+                            {overallNote}
+                            {overallAtt.daysCoverAllSemesters && overallAtt.totalDays > 0 && (
+                              <span className="block">{overallAtt.totalPresent} of {overallAtt.totalDays} days</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {(!data?.semesterAttendance || data.semesterAttendance.length === 0) ? (

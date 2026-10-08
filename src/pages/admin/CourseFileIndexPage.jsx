@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  FolderOpen, Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save, Rocket, EyeOff, FlaskConical, BookOpen,
-  Upload, FileCheck2,
+  FolderOpen, Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save, Rocket, EyeOff, FlaskConical, BookOpen, Upload, FileCheck2, Users, Layers,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -55,7 +54,22 @@ export default function CourseFileIndexPage() {
   };
 
   const setItem = (idx, patch) => setItems((list) => list.map((i, n) => (n === idx ? { ...i, ...patch } : i)));
-  const addItem = () => setItems((list) => [...list, { title: "", description: "", required: true }]);
+  const addItem = () => setItems((list) => [...list, { title: "", description: "", required: true, mode: "individual" }]);
+
+  // Switching a heading back to Individual leaves the uploaded copy in
+  // place but stops it being used, so the admin can switch back without
+  // uploading it again. Saying so out loud beats letting them wonder where
+  // the file went.
+  const setMode = (idx, item, mode) => {
+    if (mode === "individual" && item.commonFile?.url) {
+      if (!window.confirm(
+        `"${item.title || "This heading"}" has a department copy uploaded.\n\n`
+        + "Switching to Individual means every faculty uploads their own instead. "
+        + "The uploaded copy is kept and will be used again if you switch back to Combined.",
+      )) return;
+    }
+    setItem(idx, { mode });
+  };
 
   const saveLimit = async () => {
     setSavingMb(true);
@@ -220,9 +234,40 @@ export default function CourseFileIndexPage() {
                     <input type="checkbox" checked={item.required !== false} disabled={!canManage}
                       onChange={(e) => setItem(idx, { required: e.target.checked })} /> Required
                   </label>
-                  {canManage && item._id && (
-                    // Only a saved heading can carry a file — a brand new row
-                    // has no id to attach it to yet.
+                  {/* Who provides this heading. Individual: every faculty
+                      uploads their own. Combined: one copy for everybody. */}
+                  <div className="flex items-center rounded-xl border border-[var(--border-light)] overflow-hidden mt-2 shrink-0">
+                    {[
+                      ["individual", "Individual", Users, "Every faculty uploads their own for their subject"],
+                      ["combine", "Combined", Layers, "One file from the admin, used for every subject"],
+                    ].map(([value, label, Icon, hint]) => {
+                      const on = (item.mode || "individual") === value;
+                      return (
+                        <button key={value} type="button" title={hint} disabled={!canManage}
+                          onClick={() => setMode(idx, item, value)}
+                          className={`text-[11px] font-bold px-2.5 py-1.5 flex items-center gap-1 transition-colors disabled:opacity-50 ${
+                            on
+                              ? "bg-[var(--primary)] text-white"
+                              : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                          }`}>
+                          <Icon size={12} /> {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {canManage && item._id && (item.mode || "individual") === "individual" && (
+                    <div className="w-full pl-9 text-[11px] text-[var(--text-secondary)]">
+                      Each faculty uploads their own file for this heading.
+                    </div>
+                  )}
+                  {canManage && !item._id && (item.mode || "individual") === "combine" && (
+                    // A brand new row has no id yet, so there is nothing to
+                    // attach a file to until it has been saved once.
+                    <div className="w-full pl-9 text-[11px] font-bold text-amber-600">
+                      Save the index first, then upload the common file here.
+                    </div>
+                  )}
+                  {canManage && item._id && (item.mode || "individual") === "combine" && (
                     <div className="w-full flex flex-wrap items-center gap-2 pl-9">
                       {item.commonFile?.url ? (
                         <>
@@ -239,9 +284,9 @@ export default function CourseFileIndexPage() {
                           </button>
                         </>
                       ) : (
-                        <label className="text-[11px] font-bold text-[var(--primary)] cursor-pointer hover:underline flex items-center gap-1">
+                        <label className="text-[11px] font-bold text-amber-600 cursor-pointer hover:underline flex items-center gap-1">
                           <Upload size={12} />
-                          {busyItem === item._id ? "Uploading…" : "Upload a common file for all subjects"}
+                          {busyItem === item._id ? "Uploading…" : "Waiting for the common file — upload it"}
                           <input type="file" accept="application/pdf" className="hidden"
                             disabled={busyItem === item._id}
                             onChange={(e) => { uploadCommon(item, e.target.files?.[0]); e.target.value = ""; }} />

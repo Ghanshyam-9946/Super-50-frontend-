@@ -407,7 +407,9 @@ export default function VerifyGuidesPage() {
                         title="Change department"
                       >
                         {guide.department || <span className="text-slate-400 italic font-normal">not set</span>}
-                        <Pencil size={12} className="opacity-0 group-hover:opacity-60" />
+                        {/* Was opacity-0: the only hint that a department could be
+                            changed appeared on hover, so nobody found it. */}
+                        <Pencil size={12} className="opacity-40 group-hover:opacity-100" />
                       </button>
                     )}
                   </td>

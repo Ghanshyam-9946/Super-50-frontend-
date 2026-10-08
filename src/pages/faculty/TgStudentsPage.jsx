@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Users, Loader2, Search, KeyRound, Copy, Check, X, ShieldCheck, RefreshCw, AlertCircle,
-  Pencil, ClipboardList, Phone, FileText,
-} from "lucide-react";
+import { Users, Loader2, Search, KeyRound, Copy, Check, X, ShieldCheck, RefreshCw, AlertCircle, Pencil, ClipboardList, Phone, FileText, CheckCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { getImageUrl } from "../../utils/imageUrl";
@@ -163,6 +160,39 @@ export default function TgStudentsPage() {
                         : <span className="italic">not on record</span>}
                     </span>
                   </div>
+                  {/* The last thing said about this student and what was
+                      done about it — the two lines a TG opens the page for.
+                      Shown here so they do not have to open each profile to
+                      remember where they left off. */}
+                  <div className="text-[11px] mt-1.5 border-l-2 border-[var(--border-light)] pl-2">
+                    {s.lastRemark ? (
+                      <>
+                        <div className="flex items-start gap-1 text-[var(--text-secondary)]">
+                          <ClipboardList size={10} className="mt-0.5 shrink-0" />
+                          <span className="min-w-0">
+                            <span className="font-bold text-[var(--text-primary)]">Last remark:</span>{" "}
+                            <span className="line-clamp-2">{s.lastRemark.text || "—"}</span>
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-1 text-[var(--text-secondary)] mt-0.5">
+                          <CheckCheck size={10} className="mt-0.5 shrink-0" />
+                          <span className="min-w-0">
+                            <span className="font-bold text-[var(--text-primary)]">Action:</span>{" "}
+                            {s.lastRemark.actionTaken
+                              ? <span className="line-clamp-2">{s.lastRemark.actionTaken}</span>
+                              : <span className="italic">nothing recorded</span>}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">
+                          {s.lastRemark.purpose ? `${s.lastRemark.purpose} · ` : ""}
+                          {new Date(s.lastRemark.addedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          {s.lastRemark.editedAt ? " · edited" : ""}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-[var(--text-secondary)] italic">No remark yet</span>
+                    )}
+                  </div>
                 </div>
 
                 {(() => {
@@ -191,24 +221,26 @@ export default function TgStudentsPage() {
                     Must set own password
                   </span>
                 )}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setProfile({ id: s._id, tab: "profile", edit: true })}
-                    className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"
-                    title="Edit this student's profile"
-                  >
-                    <Pencil size={13} /> Edit profile
-                  </button>
-                  <button
-                    onClick={() => setProfile({ id: s._id, tab: "remarks", edit: false })}
-                    className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"
-                    title="Add or read remarks"
-                  >
-                    <ClipboardList size={13} /> Remark
-                  </button>
-                  <button onClick={() => setTarget(s)} className="btn-premium text-xs px-3.5 py-2 flex items-center gap-1.5">
-                    <KeyRound size={13} /> Set password
-                  </button>
+                {/* Icons only: the labels took the width the remark now
+                    uses. Each keeps its tooltip and an aria-label, so what
+                    the button does is still available to anybody who cannot
+                    read the icon. */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {[
+                    [Pencil, "Edit profile", () => setProfile({ id: s._id, tab: "profile", edit: true })],
+                    [ClipboardList, "Add or read remarks", () => setProfile({ id: s._id, tab: "remarks", edit: false })],
+                    [KeyRound, "Set password", () => setTarget(s)],
+                  ].map(([Icon, label, onClick]) => (
+                    <button
+                      key={label}
+                      onClick={onClick}
+                      title={label}
+                      aria-label={label}
+                      className="p-1.5 rounded-lg border border-[var(--border-light)] text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--primary)] transition-colors"
+                    >
+                      <Icon size={14} />
+                    </button>
+                  ))}
                 </div>
               </div>
             ))}

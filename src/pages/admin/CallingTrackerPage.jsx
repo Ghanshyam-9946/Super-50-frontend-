@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import RemarkForm, { RemarkCard } from '../../components/remarks/RemarkForm';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Loader2, PhoneCall, User, ClipboardList, Plus, UserCheck, MessageSquare, Calendar, ChevronRight, FileText } from 'lucide-react';
+import { Search, Loader2, PhoneCall, User, ClipboardList, UserCheck, MessageSquare, Calendar, ChevronRight, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -13,8 +14,6 @@ export default function CallingTrackerPage() {
   
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [newRemark, setNewRemark] = useState('');
-  const [submittingRemark, setSubmittingRemark] = useState(false);
   // How much mentoring each faculty member has done. Shown on screen only —
   // the PDF is the student record, not a staff scorecard.
   const [summary, setSummary] = useState(null);
@@ -76,33 +75,13 @@ export default function CallingTrackerPage() {
     }
   };
 
-  const handleAddRemark = async (e) => {
-    e.preventDefault();
-    if (!newRemark.trim() || !selectedStudent) return;
-
-    setSubmittingRemark(true);
-    try {
-      const { data } = await api.post(`/admin/students/${selectedStudent._id}/remarks`, {
-        text: newRemark.trim()
-      });
-      
-      // Update selected student's remarks in the state
-      const updatedRemarks = data.data.remarks;
-      setSelectedStudent(prev => ({
-        ...prev,
-        remarks: updatedRemarks
-      }));
-
-      // Update in main students list
-      setStudents(prev => prev.map(s => s._id === selectedStudent._id ? { ...s, remarks: updatedRemarks } : s));
-      
-      setNewRemark('');
-      toast.success('Calling remark added successfully');
-    } catch (err) {
-      toast.error('Failed to add remark');
-    } finally {
-      setSubmittingRemark(false);
-    }
+  // The form posts and hands back the student's full remark list; this
+  // only has to put it where the page already keeps it.
+  const onRemarkAdded = (updatedRemarks) => {
+    setSelectedStudent((prev) => ({ ...prev, remarks: updatedRemarks }));
+    setStudents((prev) => prev.map((s) => (
+      s._id === selectedStudent._id ? { ...s, remarks: updatedRemarks } : s
+    )));
   };
 
   // Filter guides
@@ -323,24 +302,16 @@ export default function CallingTrackerPage() {
                   <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-0.5">{selectedStudent.enrollmentNumber} • {selectedStudent.department}</p>
                 </div>
 
-                {/* Add Calling Log Form */}
-                <form onSubmit={handleAddRemark} className="space-y-3 border-t pt-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Add New Calling Remark</span>
-                  <textarea
-                    rows="3"
-                    value={newRemark}
-                    onChange={(e) => setNewRemark(e.target.value)}
-                    placeholder="Type call notes or mentor observation..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-inner-sm"
+                {/* The same form the TG fills in, so a remark written here
+                    carries the same purpose and action taken and lands in
+                    the same reports. */}
+                <div className="border-t pt-4">
+                  <RemarkForm
+                    studentId={selectedStudent._id}
+                    onAdded={onRemarkAdded}
+                    title="Add New Calling Remark"
                   />
-                  <button
-                    type="submit"
-                    disabled={submittingRemark || !newRemark.trim()}
-                    className="btn-premium w-full py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl shadow-sm"
-                  >
-                    {submittingRemark ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add Remark
-                  </button>
-                </form>
+                </div>
 
                 {/* Timeline of Remarks */}
                 <div className="space-y-4 border-t pt-4">
@@ -348,13 +319,7 @@ export default function CallingTrackerPage() {
                   <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
                     {selectedStudent.remarks && selectedStudent.remarks.length > 0 ? (
                       selectedStudent.remarks.slice().reverse().map((remark, idx) => (
-                        <div key={remark._id || idx} className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2">
-                          <p className="text-xs font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">{remark.text}</p>
-                          <div className="flex flex-col gap-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400 pt-2 border-t border-slate-200/50">
-                            <span className="text-indigo-600">By: {remark.addedBy?.name || 'Admin'}</span>
-                            <span>{new Date(remark.addedAt).toLocaleString('en-IN')}</span>
-                          </div>
-                        </div>
+                        <RemarkCard key={remark._id || idx} remark={remark} />
                       ))
                     ) : (
                       <div className="text-center text-xs text-slate-400 py-6">
