@@ -1,18 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Video, Plus, Loader2, Calendar, Users, Trash2, X, Copy, Check, LogIn, Search, Clock,
-} from "lucide-react";
+import { Video, Plus, Loader2, Calendar, Users, Trash2, X, Copy, Check, LogIn, Search, Clock, Pencil } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 
 const fmt = (d) =>
   new Date(d).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-const localNow = () => {
-  const d = new Date(Date.now() + 10 * 60000);
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// With no argument: ten minutes from now, for a fresh meeting. With one:
+// that meeting's own start time, for the edit form.
+const localNow = (when) => {
+  const d = when ? new Date(when) : new Date(Date.now() + 10 * 60000);
+  // What <input type="datetime-local"> wants, read in Indian time. The old
+  // version used getFullYear()/getHours(), which are the viewer's own zone:
+  // somebody abroad picked "2:30 PM" and scheduled it for their own
+  // afternoon, not the college's.
+  const date = new Date(d).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const time = new Date(d).toLocaleTimeString("en-GB", {
+    timeZone: "Asia/Kolkata", hour12: false, hour: "2-digit", minute: "2-digit",
+  });
+  return `${date}T${time}`;
 };
 
 const emptyForm = () => ({
@@ -36,6 +43,9 @@ export default function MeetingsPage() {
   const [canSchedule, setCanSchedule] = useState(false);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  // The id being edited, or null when the panel is scheduling a new one.
+  // One form serves both so the two can never drift apart.
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [people, setPeople] = useState([]);
@@ -76,16 +86,46 @@ export default function MeetingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const { data } = await api.post("/meetings", form);
+      const { data } = editingId
+        ? await api.put(`/meetings/${editingId}`, form)
+        : await api.post("/meetings", form);
       toast.success(data.message);
       setForm(emptyForm());
       setCreating(false);
+      setEditingId(null);
       load();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Could not schedule the meeting");
+      toast.error(err.response?.data?.message
+        || (editingId ? "Could not save the changes" : "Could not schedule the meeting"));
     } finally {
       setSaving(false);
     }
+  };
+
+  // Opens the same panel with this meeting's details already in it.
+  const startEdit = (meeting) => {
+    setForm({
+      title: meeting.title || "",
+      agenda: meeting.agenda || "",
+      startAt: localNow(meeting.startAt),
+      durationMinutes: meeting.durationMinutes || 60,
+      invitees: (meeting.invitees || []).map((i) => String(i?._id || i)),
+      allowStudents: !!meeting.allowStudents,
+      studentScope: {
+        batch: meeting.studentScope?.batch || "",
+        semester: meeting.studentScope?.semester ? String(meeting.studentScope.semester) : "",
+        section: meeting.studentScope?.section || "",
+      },
+    });
+    setEditingId(meeting._id);
+    setCreating(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelForm = () => {
+    setCreating(false);
+    setEditingId(null);
+    setForm(emptyForm());
   };
 
   const remove = async (meeting) => {
@@ -196,7 +236,14 @@ export default function MeetingsPage() {
 
       {creating && (
         <form onSubmit={create} className="glass-card p-6 rounded-3xl space-y-4">
-          <h2 className="font-display font-black text-lg text-[var(--text-primary)]">New meeting</h2>
+          <h2 className="font-display font-black text-lg text-[var(--text-primary)]">
+            {editingId ? "Edit meeting" : "New meeting"}
+          </h2>
+          {editingId && (
+            <p className="text-[11px] text-[var(--text-secondary)] -mt-2">
+              Everyone already invited keeps their link — the room code does not change.
+            </p>
+          )}
           <div className="grid sm:grid-cols-2 gap-3">
             <label className={`${labelCls} sm:col-span-2`}>
               Title
@@ -324,9 +371,10 @@ export default function MeetingsPage() {
 
           <div className="flex gap-2">
             <button type="submit" disabled={saving} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
-              {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Schedule
+              {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+              {editingId ? "Save changes" : "Schedule"}
             </button>
-            <button type="button" onClick={() => setCreating(false)} className="text-sm font-bold px-4 py-2.5 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)]">
+            <button type="button" onClick={cancelForm} className="text-sm font-bold px-4 py-2.5 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)]">
               Cancel
             </button>
           </div>
@@ -368,6 +416,12 @@ export default function MeetingsPage() {
                   {m.status !== "ended" && m.status !== "cancelled" && (
                     <button onClick={() => navigate(`/meetings/${m.roomCode}`)} className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5">
                       <Video size={13} /> Join
+                    </button>
+                  )}
+                  {m.isHost && m.status !== "ended" && (
+                    <button onClick={() => startEdit(m)} title="Edit this meeting"
+                      className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--primary)]">
+                      <Pencil size={15} />
                     </button>
                   )}
                   {m.isHost && (
