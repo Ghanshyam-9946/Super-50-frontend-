@@ -70,6 +70,18 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
   const viewerIsStudent = isStudentAccount(user);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState(null);
+
+  // Attendance across the whole course, sent by the API as
+  // `student.attendanceOverall`. `attendancePercentage` is only ever the
+  // last sheet uploaded for one semester, so it was showing a single term
+  // under the words "Overall Attendance".
+  const overallAtt = data?.student?.attendanceOverall || null;
+  const overallPct = overallAtt && overallAtt.semesterCount
+    ? Math.round(overallAtt.percent)
+    : Math.round(data?.student?.attendancePercentage || 0);
+  const overallNote = overallAtt?.semesterCount
+    ? `Average of ${overallAtt.semesterCount} semester${overallAtt.semesterCount > 1 ? 's' : ''}`
+    : 'From the last uploaded sheet \u2014 no semester history yet';
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
@@ -663,7 +675,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                             <div className="flex justify-between"><span className="text-slate-500">CGPA:</span><span className="font-bold text-slate-900">{data.student.cgpa || 'N/A'}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">Residence:</span><span className="font-bold text-indigo-600">{data.student.residenceType || 'Day Scholar'}</span></div>
                             <div className="flex justify-between"><span className="text-slate-500">POD AI Score:</span><span className="font-bold text-indigo-600">{data.student.performanceScore}</span></div>
-                            <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600">{Math.round(data.student.attendancePercentage || 0)}%</span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Attendance:</span><span className="font-bold text-emerald-600" title={overallNote}>{overallPct}%</span></div>
                           </div>
                         </div>
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -1023,7 +1035,8 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                         <p className="text-xs text-slate-500 mt-0.5">Logs of individual Super 50 class sessions.</p>
                       </div>
                       <div className="text-xs font-bold bg-indigo-50 text-indigo-600 px-3.5 py-2 rounded-xl border border-indigo-100 shadow-sm">
-                        Overall Attendance: <span className="font-black text-sm">{Math.round(data?.student?.attendancePercentage || 0)}%</span>
+                        Overall Attendance: <span className="font-black text-sm">{overallPct}%</span>
+                        <span className="block font-semibold text-[10px] text-indigo-400 mt-0.5">{overallNote}</span>
                       </div>
                     </div>
 
@@ -1079,6 +1092,18 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                         <h4 className="font-bold text-slate-900">Semester-wise Attendance History</h4>
                         <p className="text-xs text-slate-500 mt-0.5">Historical attendance records per semester.</p>
                       </div>
+                      {overallAtt?.semesterCount > 0 && (
+                        <div className="text-right">
+                          <div className="text-xs font-bold text-slate-500">All semesters</div>
+                          <div className="font-black text-lg text-emerald-600">{overallPct}%</div>
+                          <div className="text-[10px] font-semibold text-slate-400">
+                            {overallNote}
+                            {overallAtt.daysCoverAllSemesters && overallAtt.totalDays > 0 && (
+                              <span className="block">{overallAtt.totalPresent} of {overallAtt.totalDays} days</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {(!data?.semesterAttendance || data.semesterAttendance.length === 0) ? (
