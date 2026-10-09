@@ -72,6 +72,9 @@ import BoardPage from './pages/boards/BoardPage';
 import BackupSettingsPage from './pages/admin/BackupSettingsPage';
 import ParentAlertsPage from './pages/admin/ParentAlertsPage';
 import NoDuesPage from './pages/faculty/NoDuesPage';
+import CourseCoveragePage from './pages/faculty/CourseCoveragePage';
+import CourseCoverageAdminPage from './pages/admin/CourseCoverageAdminPage';
+import FacultyPublicationsPage from './pages/admin/FacultyPublicationsPage';
 import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
 import StudentAssignmentsPage from './pages/student/StudentAssignmentsPage';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
@@ -396,6 +399,18 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/academic-calendar" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><AcademicCalendarManagePage /></RoleGuard>
+        } />
+        {/* Course Coverage: the admin releases it, every faculty fills it
+            in for each subject they teach. */}
+        <Route path="/faculty/course-coverage" element={
+          <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><CourseCoveragePage /></RoleGuard>
+        } />
+        {/* Every faculty member's Google Scholar papers, and the sheet. */}
+        <Route path="/admin/publications" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><FacultyPublicationsPage /></RoleGuard>
+        } />
+        <Route path="/admin/course-coverage" element={
+          <RoleGuard allowed={['admin', 'super50_admin']}><CourseCoverageAdminPage /></RoleGuard>
         } />
         <Route path="/admin/no-dues" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><NoDuesAdminPage /></RoleGuard>

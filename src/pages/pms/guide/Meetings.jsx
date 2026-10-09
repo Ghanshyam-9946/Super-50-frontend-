@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CalendarClock, Save, Users, CheckCircle2, Clock, Copy } from 'lucide-react';
+import { CalendarClock, Save, Users, CheckCircle2, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
@@ -22,42 +22,38 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
   const [data, setData] = useState({});
   const [saving, setSaving] = useState(false);
 
+  // The guide meets the group, so there is one mark and one date for it.
+  // Each student can still carry their own remark.
+  const [teamMarks, setTeamMarks] = useState('');
+  const [metOn, setMetOn] = useState('');
+
   useEffect(() => {
     const map = {};
     (team.members || []).forEach((m) => {
       const sid = m.student?._id;
       const ev = rows.find((r) => String(r.student) === String(sid));
-      map[sid] = {
-        marks: ev?.marks ?? '',
-        remark: ev?.remark || '',
-        metOn: dateInput(ev?.metOn) || '',
-      };
+      map[sid] = { remark: ev?.remark || '' };
     });
     setData(map);
+    // Older meetings were marked student by student; show what the first
+    // member holds rather than an empty box.
+    setTeamMarks(rows[0]?.marks ?? '');
+    setMetOn(dateInput(rows[0]?.metOn) || '');
   }, [team, rows]);
 
   const setField = (sid, patch) => setData((p) => ({ ...p, [sid]: { ...p[sid], ...patch } }));
 
-  const copyFirstToAll = () => {
-    const first = Object.values(data)[0];
-    if (!first) return;
-    setData((p) => Object.fromEntries(Object.keys(p).map((k) => [k, { ...first }])));
-    toast.success('Copied to every member — edit where needed');
-  };
-
   const save = async () => {
-    const students = Object.entries(data).map(([studentId, v]) => ({
-      studentId,
-      marks: v.marks,
-      remark: v.remark,
-      metOn: v.metOn || null,
-    }));
-    if (students.some((s) => s.marks !== '' && Number(s.marks) > meeting.maxMarks)) {
+    if (teamMarks === '' || teamMarks === null) return toast.error('Enter the marks for this group');
+    if (Number(teamMarks) > meeting.maxMarks) {
       return toast.error(`Maximum is ${meeting.maxMarks} marks`);
     }
+    const students = Object.entries(data).map(([studentId, v]) => ({ studentId, remark: v.remark }));
     setSaving(true);
     try {
-      await guideAPI.saveMeetingEvaluations(meeting._id, { teamId: team._id, students });
+      await guideAPI.saveMeetingEvaluations(meeting._id, {
+        teamId: team._id, teamMarks, metOn: metOn || null, students,
+      });
       toast.success('Saved');
       onSaved();
     } catch (err) {
@@ -67,7 +63,7 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
     }
   };
 
-  const filled = Object.values(data).filter((v) => v.marks !== '' && v.marks !== null).length;
+  const marked = teamMarks !== '' && teamMarks !== null;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -77,20 +73,33 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
           <div className="text-xs text-slate-500">{team.groupName} · {team.members?.length || 0} members</div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={filled === (team.members?.length || 0) && filled > 0 ? 'badge-success' : 'badge-secondary'}>
-            {filled}/{team.members?.length || 0} marked
+          <span className={marked ? 'badge-success' : 'badge-secondary'}>
+            {marked ? `${teamMarks}/${meeting.maxMarks}` : 'Not marked'}
           </span>
-          {(team.members?.length || 0) > 1 && (
-            <button onClick={copyFirstToAll} className="btn-outline btn-sm" title="Copy the first row to every member">
-              <Copy className="w-3 h-3" /> Same for all
-            </button>
-          )}
         </div>
       </div>
+      {/* The group's mark and the day they actually met. */}
+      <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="form-label">Marks for this group (/{meeting.maxMarks})</label>
+          <input type="number" min="0" max={meeting.maxMarks} step="0.5"
+            className="form-input py-1.5 w-32" value={teamMarks}
+            onChange={(e) => setTeamMarks(e.target.value)} />
+        </div>
+        <div>
+          <label className="form-label">Met on</label>
+          <input type="date" className="form-input py-1.5 w-44" value={metOn}
+            onChange={(e) => setMetOn(e.target.value)} />
+        </div>
+        <p className="text-xs text-slate-500 pb-1.5">
+          This mark goes to every member of the group.
+        </p>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="data-table">
           <thead>
-            <tr><th>Student</th><th className="w-28">Marks (/{meeting.maxMarks})</th><th className="w-36">Met on</th><th>Remark</th></tr>
+            <tr><th>Student</th><th>Remark (optional)</th></tr>
           </thead>
           <tbody>
             {(team.members || []).map((m) => {
@@ -101,16 +110,6 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
                   <td>
                     <div className="font-medium">{m.student?.name}</div>
                     <div className="text-xs text-slate-500 font-mono">{m.student?.enrollmentNo}</div>
-                  </td>
-                  <td>
-                    <input
-                      type="number" min="0" max={meeting.maxMarks} step="0.5" className="form-input py-1.5"
-                      value={v.marks ?? ''}
-                      onChange={(e) => setField(sid, { marks: e.target.value })}
-                    />
-                  </td>
-                  <td>
-                    <input type="date" className="form-input py-1.5" value={v.metOn || ''} onChange={(e) => setField(sid, { metOn: e.target.value })} />
                   </td>
                   <td>
                     <input

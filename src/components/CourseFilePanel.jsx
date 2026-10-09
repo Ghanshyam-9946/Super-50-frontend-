@@ -143,8 +143,28 @@ export default function CourseFilePanel({ subjectId }) {
                           provided by admin
                         </span>
                       )}
+                      {item.sharedBySubject && (
+                        <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-indigo-500">
+                          shared for this subject
+                        </span>
+                      )}
                     </div>
                     {item.description && <div className="text-[11px] text-[var(--text-secondary)]">{item.description}</div>}
+                    {/* Who covered a shared heading. Without this the file
+                        simply appears and nobody knows whom to ask about
+                        it. */}
+                    {item.sharedBySubject && item.sharedBy && (
+                      <div className="text-[11px] text-[var(--text-secondary)]">
+                        {item.uploadedByMe
+                          ? "You uploaded this for everybody teaching this subject."
+                          : `Uploaded by ${item.sharedBy.name} \u2014 it counts for you too.`}
+                      </div>
+                    )}
+                    {item.sharedBySubject && !item.sharedBy && (
+                      <div className="text-[11px] text-[var(--text-secondary)]">
+                        Whoever uploads this first covers everybody teaching this subject.
+                      </div>
+                    )}
                     {item.file && (
                       <a href={getImageUrl(item.file.url)} target="_blank" rel="noreferrer"
                         className="text-[11px] font-bold text-[var(--primary)] hover:underline inline-flex items-center gap-1 mt-0.5">
@@ -157,17 +177,27 @@ export default function CourseFilePanel({ subjectId }) {
                       <span className="text-[11px] text-[var(--text-secondary)] text-right max-w-[160px]">
                         Same copy for every subject — already in your merged file
                       </span>
+                    ) : item.sharedBySubject && item.file && !item.uploadedByMe ? (
+                      // Somebody else on this subject has already provided
+                      // it, so there is nothing left for this faculty to do
+                      // — and nothing for them to delete either.
+                      <span className="text-[11px] text-[var(--text-secondary)] text-right max-w-[170px]">
+                        Already covered for this subject — it is in your merged file
+                      </span>
                     ) : (
                       <>
-                        <label className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--primary)]">
-                          {busy === item._id ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
-                          {item.file ? "Replace" : "Upload PDF"}
-                          <input type="file" accept="application/pdf" className="hidden" disabled={!!busy}
-                            onChange={(e) => { upload(kind, item._id, e.target.files?.[0]); e.target.value = ""; }} />
-                        </label>
-                        {item.file && (
+                        {item.canUpload !== false && (
+                          <label className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--primary)]">
+                            {busy === item._id ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                            {item.file ? "Replace" : "Upload PDF"}
+                            <input type="file" accept="application/pdf" className="hidden" disabled={!!busy}
+                              onChange={(e) => { upload(kind, item._id, e.target.files?.[0]); e.target.value = ""; }} />
+                          </label>
+                        )}
+                        {item.file && item.canDelete !== false && (
                           <button onClick={() => remove(kind, item._id, item.title)} disabled={!!busy}
-                            className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 disabled:opacity-40" title="Remove">
+                            className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 disabled:opacity-40"
+                            title={item.sharedBySubject ? "Remove — this will remove it for everybody on this subject" : "Remove"}>
                             <Trash2 size={14} />
                           </button>
                         )}
