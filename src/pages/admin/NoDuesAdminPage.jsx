@@ -82,23 +82,58 @@ function OverviewTab({ user }) {
     }
   };
 
+  // A page at a time. Every form carries its subjects and four populated
+  // references, so asking for all of them made the page wait on a payload
+  // that grows with the college.
+  const PAGE = 50;
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchPage = useCallback(async (which) => {
+    const params = { page: which, limit: PAGE };
+    // "Forwarded" is now a filter the server understands, so it is no
+    // longer narrowed down here after fetching everything.
+    if (filter === 'true' || filter === 'false') params.completed = filter;
+    if (filter === 'forwarded') params.forwarded = 'true';
+    const { data } = await api.get('/no-dues', { params });
+    return data;
+  }, [filter]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
-      // "Forwarded" isn't a param the backend understands (it filters on
-      // isCompleted only) — fetch everything and narrow it down here.
-      if (filter === 'true' || filter === 'false') params.completed = filter;
-      const { data } = await api.get('/no-dues', { params });
+      const data = await fetchPage(1);
       if (data.success) {
-        setForms(filter === 'forwarded' ? data.data.filter((f) => f.forwarded) : data.data);
+        setForms(data.data);
+        setTotal(data.total || data.data.length);
+        setHasMore(!!data.hasMore);
+        setPage(1);
       }
     } catch {
       toast.error('Failed to load No Dues forms');
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [fetchPage]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const next = page + 1;
+      const data = await fetchPage(next);
+      if (data.success) {
+        setForms((prev) => [...prev, ...data.data]);
+        setHasMore(!!data.hasMore);
+        setPage(next);
+      }
+    } catch {
+      toast.error('Could not load more');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -489,6 +524,23 @@ function OverviewTab({ user }) {
             );
           })}
         </div>
+      )}
+      {!loading && hasMore && (
+        <div className="flex flex-col items-center gap-2 py-2">
+          <button onClick={loadMore} disabled={loadingMore}
+            className="btn-outline-premium text-xs px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
+            {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
+            Load more
+          </button>
+          <span className="text-[11px] text-[var(--text-secondary)]">
+            Showing {forms.length} of {total}
+          </span>
+        </div>
+      )}
+      {!loading && !hasMore && total > 0 && (
+        <p className="text-center text-[11px] text-[var(--text-secondary)] py-1">
+          All {total} form(s) shown
+        </p>
       )}
     </div>
   );

@@ -43,28 +43,35 @@ const AllFacultyWeek = ({ weekOf }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  // One department at a time, which is how a HOD reads this. Empty means
+  // the whole college, as before.
+  const [department, setDepartment] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api.get("/weekly-work-report/admin/week-matrix", { params: weekOf ? { weekOf } : {} })
+    api.get("/weekly-work-report/admin/week-matrix", {
+      params: { ...(weekOf ? { weekOf } : {}), ...(department ? { department } : {}) },
+    })
       .then(({ data: res }) => { if (!cancelled) setData(res); })
       .catch(() => { if (!cancelled) setData(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [weekOf]);
+  }, [weekOf, department]);
 
   const downloadPdf = async () => {
     setDownloading(true);
     try {
       const res = await api.get("/weekly-work-report/admin/week-matrix/pdf", {
-        params: weekOf ? { weekOf } : {},
+        // The PDF follows whatever is on screen — a filtered view that
+        // printed the whole college would be worse than no filter.
+        params: { ...(weekOf ? { weekOf } : {}), ...(department ? { department } : {}) },
         responseType: "blob",
       });
       const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Weekly-Matrix-${data?.week?.endDay || "week"}.pdf`;
+      a.download = `Weekly-Matrix-${department ? `${department}-` : ""}${data?.week?.endDay || "week"}.pdf`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 30000);
     } catch {
@@ -99,10 +106,17 @@ const AllFacultyWeek = ({ weekOf }) => {
             {data.week.label} · {data.totals.submitted} of {data.totals.faculty} submitted · {data.totals.hours} hours logged
           </div>
         </div>
-        <button onClick={downloadPdf} disabled={downloading}
-          className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
-          {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
-        </button>
+        <div className="flex items-center gap-2">
+          <select value={department} onChange={(e) => setDepartment(e.target.value)}
+            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-xs font-bold text-[var(--text-primary)] outline-none focus:border-[var(--primary)]">
+            <option value="">All departments</option>
+            {(data.departments || []).map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <button onClick={downloadPdf} disabled={downloading}
+            className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
+            {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">

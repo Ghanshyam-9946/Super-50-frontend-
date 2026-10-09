@@ -18,11 +18,18 @@ export default function CourseFilePanel({ subjectId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
+  // Theory and lab are separate files with separate indexes, so they get
+  // separate tabs rather than running one under the other down the page.
+  const [activeKind, setActiveKind] = useState("theory");
 
   const load = async () => {
     try {
       const res = await api.get(`/course-file/subject/${subjectId}`);
-      setData(res.data.data || {});
+      const got = res.data.data || {};
+      setData(got);
+      // Land on whichever this subject actually has — a lab-only subject
+      // should not open on an empty Theory tab.
+      setActiveKind((cur) => (got[cur] ? cur : Object.keys(got)[0] || "theory"));
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not load the course file");
     } finally {
@@ -99,8 +106,38 @@ export default function CourseFilePanel({ subjectId }) {
   }
 
   return (
-    <div className="space-y-6">
-      {kinds.map((kind) => {
+    <div className="space-y-4">
+      {/* Only shown when the subject has both — a single tab is just a
+          label taking up room. */}
+      {kinds.length > 1 && (
+        <div className="flex gap-2">
+          {kinds.map((k) => {
+            const { label, icon: Icon } = KIND_META[k];
+            const sec = data[k];
+            const on = activeKind === k;
+            return (
+              <button key={k} onClick={() => setActiveKind(k)}
+                className={`text-xs font-bold px-4 py-2.5 rounded-xl border flex items-center gap-2 transition ${
+                  on
+                    ? "bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm"
+                    : "border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                }`}>
+                <Icon size={13} /> {label.replace(" Course File", "")}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  on ? "bg-white/20"
+                    : sec.done === sec.total && sec.total > 0
+                      ? "bg-emerald-500/15 text-emerald-600"
+                      : "bg-[var(--bg-input)] text-[var(--text-secondary)]"
+                }`}>
+                  {sec.done}/{sec.total}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {kinds.filter((k) => k === activeKind).map((kind) => {
         const section = data[kind];
         const { label, icon: Icon } = KIND_META[kind];
         const pct = section.total ? Math.round((section.done / section.total) * 100) : 0;
