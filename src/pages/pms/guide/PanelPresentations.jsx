@@ -14,9 +14,8 @@ const TeamRow = ({ presentation, row, onSaved }) => {
   const [saving, setSaving] = useState(false);
   const { team, evaluation, assignedDate } = row;
 
-  // The panel gives the group one mark, not one per head, so there is one
-  // box for it. Each member can still carry their own remark.
-  const [teamMarks, setTeamMarks] = useState('');
+  // Marks are each student's own. The one thing that belongs to the whole
+  // group is the panel's feedback, which has its own box at the bottom.
   const [heldOn, setHeldOn] = useState('');
 
   useEffect(() => {
@@ -24,13 +23,10 @@ const TeamRow = ({ presentation, row, onSaved }) => {
     (team.members || []).forEach((m) => {
       const sid = m.student?._id;
       const saved = (evaluation?.students || []).find((x) => String(x.student) === String(sid));
-      map[sid] = { remark: saved?.remark || '' };
+      map[sid] = { marks: saved?.marks ?? '' };
     });
     setData(map);
     setFeedback(evaluation?.feedback || '');
-    // Older rounds were marked student by student before there was a group
-    // field; show the first member's mark rather than a blank box.
-    setTeamMarks(evaluation?.teamMarks ?? (evaluation?.students || [])[0]?.marks ?? '');
     setHeldOn(
       evaluation?.heldOn
         ? new Date(evaluation.heldOn).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
@@ -41,15 +37,17 @@ const TeamRow = ({ presentation, row, onSaved }) => {
   const setField = (sid, patch) => setData((p) => ({ ...p, [sid]: { ...p[sid], ...patch } }));
 
   const save = async () => {
-    if (teamMarks === '' || teamMarks === null) return toast.error('Enter the marks for this group');
-    if (Number(teamMarks) > presentation.totalMarks) {
+    const students = Object.entries(data).map(([studentId, v]) => ({ studentId, marks: v.marks }));
+    if (students.every((x) => x.marks === '' || x.marks === null)) {
+      return toast.error('Enter marks for at least one student');
+    }
+    if (students.some((x) => x.marks !== '' && Number(x.marks) > presentation.totalMarks)) {
       return toast.error(`Maximum is ${presentation.totalMarks} marks`);
     }
-    const students = Object.entries(data).map(([studentId, v]) => ({ studentId, remark: v.remark }));
     setSaving(true);
     try {
       await guideAPI.savePresentationMarks(presentation._id, {
-        teamId: team._id, teamMarks, heldOn: heldOn || null, feedback, students,
+        teamId: team._id, heldOn: heldOn || null, feedback, students,
       });
       toast.success('Marks saved');
       onSaved();
@@ -60,7 +58,7 @@ const TeamRow = ({ presentation, row, onSaved }) => {
     }
   };
 
-  const marked = teamMarks !== '' && teamMarks !== null;
+  const filled = Object.values(data).filter((v) => v.marks !== '' && v.marks !== null).length;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -74,33 +72,27 @@ const TeamRow = ({ presentation, row, onSaved }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={marked ? 'badge-success' : 'badge-secondary'}>
-            {marked ? `${teamMarks}/${presentation.totalMarks}` : 'Not marked'}
+          <span className={filled === (team.members?.length || 0) && filled > 0 ? 'badge-success' : 'badge-secondary'}>
+            {filled}/{team.members?.length || 0} marked
           </span>
         </div>
       </div>
-      {/* The group's mark and the day it was actually held — which is not
-          always the day somebody got round to entering it. */}
+      {/* The day it was actually held — which is not always the day
+          somebody got round to entering the marks. */}
       <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-end gap-3">
-        <div>
-          <label className="form-label">Marks for this group (/{presentation.totalMarks})</label>
-          <input type="number" min="0" max={presentation.totalMarks} step="0.5"
-            className="form-input py-1.5 w-32" value={teamMarks}
-            onChange={(e) => setTeamMarks(e.target.value)} />
-        </div>
         <div>
           <label className="form-label">Presented on</label>
           <input type="date" className="form-input py-1.5 w-44" value={heldOn}
             onChange={(e) => setHeldOn(e.target.value)} />
         </div>
         <p className="text-xs text-slate-500 pb-1.5">
-          This mark goes to every member of the group.
+          Marks are per student. The feedback below is for the group.
         </p>
       </div>
 
       <div className="overflow-x-auto">
         <table className="data-table">
-          <thead><tr><th>Student</th><th>Remark (optional)</th></tr></thead>
+          <thead><tr><th>Student</th><th className="w-32">Marks (/{presentation.totalMarks})</th></tr></thead>
           <tbody>
             {(team.members || []).map((m) => {
               const sid = m.student?._id;
@@ -112,8 +104,9 @@ const TeamRow = ({ presentation, row, onSaved }) => {
                     <div className="text-xs text-slate-500 font-mono">{m.student?.enrollmentNo}</div>
                   </td>
                   <td>
-                    <input className="form-input py-1.5" placeholder="Remark for this student"
-                      value={v.remark || ''} onChange={(e) => setField(sid, { remark: e.target.value })} />
+                    <input type="number" min="0" max={presentation.totalMarks} step="0.5"
+                      className="form-input py-1.5"
+                      value={v.marks ?? ''} onChange={(e) => setField(sid, { marks: e.target.value })} />
                   </td>
                 </tr>
               );
@@ -122,7 +115,7 @@ const TeamRow = ({ presentation, row, onSaved }) => {
         </table>
       </div>
       <div className="px-4 py-3 border-t border-slate-100 space-y-2">
-        <label className="form-label">Feedback for the group (goes into the evaluation PDF)</label>
+        <label className="form-label">Remark for the group (one for everybody — goes into the evaluation PDF)</label>
         <textarea className="form-input" rows="2" value={feedback} onChange={(e) => setFeedback(e.target.value)} />
         <div className="flex justify-end">
           <button onClick={save} disabled={saving} className="btn-primary btn-sm">
