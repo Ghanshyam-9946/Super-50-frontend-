@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import {
   Layers, UserCheck, Filter, AlertTriangle, Info, Edit3, Trash2, FileText, Plus, X,
   Lock, Unlock, Search, ClipboardCheck, Clock,
@@ -696,6 +697,12 @@ const Teams = () => {
 
   const apply = (e) => { e.preventDefault(); fetchTeams(); };
 
+  // `role` is only roles[0]; the server reads the whole array, so this
+  // must too or the button would hide from admins who have another role
+  // listed first.
+  const { user } = useSelector((st) => st.auth);
+  const isMileAdmin = (user?.roles?.length ? user.roles : [user?.role]).includes('admin');
+
   const handleDelete = async (team) => {
     if (!confirmAction(`Delete team "${team.groupNo}"? This cannot be undone.`)) return;
     try {
@@ -844,9 +851,15 @@ const Teams = () => {
                             >
                               <FileText className="w-3 h-3" />
                             </button>
-                            <button onClick={() => handleDelete(t)} className="btn-secondary btn-sm text-red-600" title="Delete team">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            {/* Deleting a group takes its members, marks and
+                                history with it, so it is the MILE admin's
+                                alone. A PMS admin or Project Coordinator
+                                still edits everything else. */}
+                            {isMileAdmin && (
+                              <button onClick={() => handleDelete(t)} className="btn-secondary btn-sm text-red-600" title="Delete team">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

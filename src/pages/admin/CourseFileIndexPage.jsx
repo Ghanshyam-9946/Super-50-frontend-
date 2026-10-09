@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  FolderOpen, Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save, Rocket, EyeOff, FlaskConical, BookOpen, Upload, FileCheck2, Users, Layers,
+  FolderOpen, Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save, Rocket, EyeOff, FlaskConical, BookOpen, Upload, FileCheck2, Users, Layers, Share2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -114,7 +114,48 @@ export default function CourseFileIndexPage() {
       setBusyItem(null);
     }
   };
-  const removeItem = (idx) => setItems((list) => list.filter((_, n) => n !== idx));
+  // Removing a heading takes the files uploaded against it too, so the
+  // admin is told how many before, not after.
+  const removeItem = (idx) => {
+    const item = items[idx];
+    const uploads = item?.facultyUploads || 0;
+    const hasCommon = !!item?.commonFile?.url;
+    if (item?._id && (uploads || hasCommon)) {
+      const parts = [];
+      if (uploads) parts.push(`${uploads} file(s) uploaded by faculty`);
+      if (hasCommon) parts.push("the common file you uploaded");
+      if (!window.confirm(
+        `Remove "${item.title}"?\n\nThis also deletes ${parts.join(" and ")}. `
+        + "It takes effect when you save, and cannot be undone.",
+      )) return;
+    }
+    setItems((list) => list.filter((_, n) => n !== idx));
+  };
+
+  // The whole list, and everything uploaded against it.
+  const deleteIndex = async () => {
+    const label = kind === "lab" ? "Lab" : "Theory";
+    const uploads = items.reduce((n, i) => n + (i.facultyUploads || 0), 0);
+    if (!window.confirm(
+      `Delete the entire ${label} course file index?\n\n`
+      + `${items.length} heading(s) and ${uploads} file(s) uploaded by faculty will be removed for good.`,
+    )) return;
+    const typed = window.prompt(`This cannot be undone.\n\nType DELETE to confirm.`);
+    if ((typed || "").trim().toUpperCase() !== "DELETE") return toast("Nothing was deleted");
+
+    setSaving(true);
+    try {
+      const res = await api.delete(`/course-file/index/${kind}`);
+      toast.success(res.data.message);
+      await load();
+      setItems([]);
+      setReleased(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not delete the index");
+    } finally {
+      setSaving(false);
+    }
+  };
   const move = (idx, by) =>
     setItems((list) => {
       const next = [...list];
@@ -186,6 +227,15 @@ export default function CourseFileIndexPage() {
                 <button onClick={() => save()} disabled={saving} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
                   {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save
                 </button>
+                {/* Only an admin may wipe a whole list; an Academic
+                    Coordinator can still edit and release it. */}
+                {data?.[kind]?.items?.length > 0 && (
+                  <button onClick={deleteIndex} disabled={saving}
+                    title="Delete this whole index and everything uploaded against it"
+                    className="text-xs font-bold px-3 py-2 rounded-xl border border-red-500/40 text-red-500 hover:bg-red-500/10 flex items-center gap-1.5 disabled:opacity-40">
+                    <Trash2 size={14} /> Delete index
+                  </button>
+                )}
                 {released ? (
                   <button onClick={() => save(false)} disabled={saving} className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)] flex items-center gap-1.5">
                     <EyeOff size={13} /> Hide from faculty
@@ -239,6 +289,7 @@ export default function CourseFileIndexPage() {
                   <div className="flex items-center rounded-xl border border-[var(--border-light)] overflow-hidden mt-2 shrink-0">
                     {[
                       ["individual", "Individual", Users, "Every faculty uploads their own for their subject"],
+                      ["common", "Common", Share2, "The faculty upload it, but one upload covers everybody teaching that same subject"],
                       ["combine", "Combined", Layers, "One file from the admin, used for every subject"],
                     ].map(([value, label, Icon, hint]) => {
                       const on = (item.mode || "individual") === value;
@@ -255,9 +306,21 @@ export default function CourseFileIndexPage() {
                       );
                     })}
                   </div>
-                  {canManage && item._id && (item.mode || "individual") === "individual" && (
+                  {canManage && (item.mode || "individual") === "individual" && (
                     <div className="w-full pl-9 text-[11px] text-[var(--text-secondary)]">
                       Each faculty uploads their own file for this heading.
+                      {item.facultyUploads > 0 && (
+                        <span className="font-bold text-[var(--text-primary)]">
+                          {" "}{item.facultyUploads} uploaded so far.
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {canManage && item.mode === "common" && (
+                    <div className="w-full pl-9 text-[11px] text-[var(--text-secondary)]">
+                      The faculty upload this one. Where several of them teach the same
+                      subject, the first upload counts for all of them and the rest are
+                      not asked again.
                     </div>
                   )}
                   {canManage && !item._id && (item.mode || "individual") === "combine" && (

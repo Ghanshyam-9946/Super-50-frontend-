@@ -183,7 +183,14 @@ export default function ParentAlertsPage() {
           {!options.configured && (
             <div className="flex items-start gap-3 p-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 text-amber-600 text-sm font-medium">
               <AlertTriangle size={18} className="shrink-0 mt-0.5" />
-              <span>WhatsApp is not configured yet. Add <code className="font-mono">GUPSHUP_API_KEY</code> to the backend <code className="font-mono">.env</code> and restart the server. You can still preview lists.</span>
+              {/* The server names the settings that are actually missing;
+                  naming only the API key sent people looking in the wrong
+                  place when it was the sender number that was absent. */}
+              <span>
+                {options.configProblem || "WhatsApp is not configured yet."}{" "}
+                Add them to the backend <code className="font-mono">.env</code> and restart the server.
+                You can still preview lists.
+              </span>
             </div>
           )}
 

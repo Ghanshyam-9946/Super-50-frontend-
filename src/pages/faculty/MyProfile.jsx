@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import ScholarSection from "../../components/profile/ScholarSection";
 import { useSelector } from "react-redux";
 import { IdCard, Loader2, Plus, Trash2, Download, Pencil, X } from "lucide-react";
 import toast from "react-hot-toast";
@@ -233,6 +234,9 @@ export default function MyProfile() {
           />
         </label>
       </div>
+
+      {/* Google Scholar: the link, and the papers fetched from it. */}
+      <ScholarSection />
 
       {/* Skills */}
       <div className="glass-card p-5 rounded-2xl space-y-3">

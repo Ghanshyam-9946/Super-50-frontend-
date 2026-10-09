@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  Loader2, Save, Plus, Trash2, Shuffle, Link2, Upload, Star, MessageSquare, Users, ListChecks,
+  Loader2, Save, Plus, Trash2, Shuffle, Link2, Upload, Star, MessageSquare, Users, ListChecks, UserPlus, UserMinus, Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -63,6 +63,91 @@ export const BatchesPanel = ({ training, records, onChanged }) => {
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not divide them");
     } finally { setBusy(""); }
+  };
+
+  // Adding students by hand. Not every training is run by choice filling,
+  // so the admin needs to be able to say outright who is in a batch.
+  const [adding, setAdding] = useState(false);
+  const [candidates, setCandidates] = useState([]);
+  const [candQuery, setCandQuery] = useState("");
+  const [candAll, setCandAll] = useState(false);
+  const [candScope, setCandScope] = useState("");
+  const [candTruncated, setCandTruncated] = useState(false);
+  const [picked, setPicked] = useState([]);
+  const [addTo, setAddTo] = useState("");
+
+  const loadCandidates = async () => {
+    try {
+      const { data } = await api.get(`/trainings/${training._id}/add-candidates`, {
+        params: { q: candQuery.trim(), all: candAll ? 1 : undefined },
+      });
+      setCandidates(data.data || []);
+      setCandScope(data.scope || "");
+      setCandTruncated(!!data.truncated);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not load the student list");
+    }
+  };
+
+  // Typing in the box re-asks the server; the list is far too long to filter
+  // in the browser.
+  useEffect(() => {
+    if (!adding) return undefined;
+    const t = setTimeout(loadCandidates, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adding, candQuery, candAll]);
+
+  const addPicked = async () => {
+    if (picked.length === 0) return toast.error("Pick at least one student");
+    setBusy("add");
+    try {
+      const { data } = await api.post(`/trainings/${training._id}/students`, {
+        studentIds: picked, batchName: addTo || undefined,
+      });
+      toast.success(data.message);
+      if (data.skipped?.length) toast(data.skipped.slice(0, 3).join(", "));
+      setPicked([]);
+      await loadCandidates();
+      onChanged?.();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not add them");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  // Out of the batch, or out of the training altogether.
+  const removeStudent = async (record, batchOnly) => {
+    const what = batchOnly
+      ? `Take ${record.studentName} out of "${record.trainingBatch}"? They stay in the training.`
+      : `Remove ${record.studentName} from this training completely?`;
+    if (!window.confirm(what)) return;
+    setBusy(record._id);
+    try {
+      const { data } = await api.delete(`/trainings/${training._id}/students/${record._id}`, {
+        params: batchOnly ? { batchOnly: 1 } : {},
+      });
+      toast.success(data.message);
+      onChanged?.();
+    } catch (err) {
+      const msg = err.response?.data?.message || "Could not remove them";
+      // The server refuses when attendance or marks already exist, rather
+      // than deleting somebody's recorded work without saying so.
+      if (err.response?.status === 409 && window.confirm(`${msg}\n\nDelete those records too?`)) {
+        try {
+          const { data } = await api.delete(`/trainings/${training._id}/students/${record._id}`, { params: { force: 1 } });
+          toast.success(data.message);
+          onChanged?.();
+        } catch (e2) {
+          toast.error(e2.response?.data?.message || "Could not remove them");
+        }
+      } else {
+        toast.error(msg);
+      }
+    } finally {
+      setBusy("");
+    }
   };
 
   const move = async (recordId, batchName) => {
@@ -139,8 +224,79 @@ export const BatchesPanel = ({ training, records, onChanged }) => {
           className="btn-outline-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
           {busy === "split" ? <Loader2 size={13} className="animate-spin" /> : <Shuffle size={13} />} Divide everyone evenly
         </button>
+        <button onClick={() => { setAdding((v) => !v); setPicked([]); }}
+          className="btn-outline-premium text-xs px-4 py-2 flex items-center gap-1.5">
+          <UserPlus size={13} /> {adding ? "Done adding" : "Add students"}
+        </button>
         {unplaced > 0 && <span className="text-xs text-amber-600 self-center">{unplaced} student(s) not in a batch</span>}
       </div>
+
+      {adding && (
+        <div className="border border-[var(--border-light)] rounded-2xl p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <input value={candQuery} onChange={(e) => setCandQuery(e.target.value)}
+              placeholder="Search by name or enrollment number"
+              className={`${inputCls} flex-1 min-w-[200px]`} />
+            <select value={addTo} onChange={(e) => setAddTo(e.target.value)} className={`${inputCls} w-44`}>
+              <option value="">Add without a batch</option>
+              {rows.filter((b) => b.name).map((b) => <option key={b.name} value={b.name}>Into {b.name}</option>)}
+            </select>
+            <label className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1.5">
+              <input type="checkbox" checked={candAll} onChange={(e) => setCandAll(e.target.checked)} />
+              Any class
+            </label>
+          </div>
+          <div className="text-[11px] text-[var(--text-secondary)]">
+            Showing {candidates.length} student(s) not already in this training
+            {candScope && !candAll ? ` from ${candScope}` : ""}
+            {candTruncated ? " \u2014 narrow the search to see the rest" : ""}
+          </div>
+
+          <div className="max-h-56 overflow-y-auto border border-[var(--border-light)] rounded-xl divide-y divide-[var(--border-light)]">
+            {candidates.length === 0 ? (
+              <div className="px-3 py-6 text-center text-xs text-[var(--text-secondary)]">
+                Nobody left to add{candAll ? "" : " from this class \u2014 tick \u201cAny class\u201d to look wider"}.
+              </div>
+            ) : candidates.map((c) => {
+              const on = picked.includes(c._id);
+              return (
+                <button key={c._id} type="button"
+                  onClick={() => setPicked((p) => (on ? p.filter((x) => x !== c._id) : [...p, c._id]))}
+                  className={`w-full text-left px-3 py-2 flex items-center gap-2 text-xs ${on ? "bg-[var(--primary)]/10" : "hover:bg-[var(--bg-hover)]"}`}>
+                  <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${on ? "bg-[var(--primary)] border-[var(--primary)]" : "border-[var(--border-light)]"}`}>
+                    {on && <Check size={11} className="text-white" />}
+                  </span>
+                  <span className="font-bold text-[var(--text-primary)]">{c.name}</span>
+                  <span className="text-[var(--text-secondary)]">{c.enrollmentNumber}</span>
+                  <span className="text-[10px] text-[var(--text-secondary)] ml-auto">
+                    {[c.semester ? `Sem ${c.semester}` : "", c.section, c.batch].filter(Boolean).join(" \u00b7 ")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button onClick={addPicked} disabled={busy === "add" || picked.length === 0}
+              className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-40">
+              {busy === "add" ? <Loader2 size={13} className="animate-spin" /> : <UserPlus size={13} />}
+              Add {picked.length || ""} {picked.length === 1 ? "student" : "students"}
+              {addTo ? ` to ${addTo}` : ""}
+            </button>
+            {picked.length > 0 && (
+              <button onClick={() => setPicked([])} className="text-xs font-bold text-[var(--text-secondary)] hover:underline">
+                Clear
+              </button>
+            )}
+            {candidates.length > 0 && (
+              <button onClick={() => setPicked(candidates.map((c) => c._id))}
+                className="text-xs font-bold text-[var(--primary)] hover:underline ml-auto">
+                Select all {candidates.length} shown
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {records.length > 0 && rows.length > 0 && (
         <div className="overflow-x-auto border border-[var(--border-light)] rounded-2xl">
@@ -149,6 +305,7 @@ export const BatchesPanel = ({ training, records, onChanged }) => {
               <tr className="bg-[var(--primary)]/5 text-[var(--text-secondary)] text-left">
                 <th className="px-3 py-2 font-black uppercase tracking-wider">Student</th>
                 <th className="px-3 py-2 font-black uppercase tracking-wider w-44">Batch</th>
+                <th className="px-3 py-2 font-black uppercase tracking-wider w-24 text-right">Remove</th>
               </tr>
             </thead>
             <tbody>
@@ -163,6 +320,20 @@ export const BatchesPanel = ({ training, records, onChanged }) => {
                       <option value="">Not placed</option>
                       {rows.filter((b) => b.name).map((b) => <option key={b.name} value={b.name}>{b.name}</option>)}
                     </select>
+                  </td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                    {r.trainingBatch && (
+                      <button onClick={() => removeStudent(r, true)} disabled={!!busy}
+                        title="Take out of this batch, but keep them in the training"
+                        className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-amber-600 disabled:opacity-40">
+                        <UserMinus size={14} />
+                      </button>
+                    )}
+                    <button onClick={() => removeStudent(r, false)} disabled={!!busy}
+                      title="Remove from this training altogether"
+                      className="p-1.5 rounded-lg text-red-500 hover:bg-red-500/10 disabled:opacity-40">
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}

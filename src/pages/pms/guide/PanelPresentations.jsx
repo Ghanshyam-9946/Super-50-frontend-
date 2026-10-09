@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Presentation as PresentationIcon, Save, Users, FileText, Copy } from 'lucide-react';
+import { Presentation as PresentationIcon, Save, Users, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { guideAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
@@ -14,34 +14,43 @@ const TeamRow = ({ presentation, row, onSaved }) => {
   const [saving, setSaving] = useState(false);
   const { team, evaluation, assignedDate } = row;
 
+  // The panel gives the group one mark, not one per head, so there is one
+  // box for it. Each member can still carry their own remark.
+  const [teamMarks, setTeamMarks] = useState('');
+  const [heldOn, setHeldOn] = useState('');
+
   useEffect(() => {
     const map = {};
     (team.members || []).forEach((m) => {
       const sid = m.student?._id;
       const saved = (evaluation?.students || []).find((x) => String(x.student) === String(sid));
-      map[sid] = { marks: saved?.marks ?? '', remark: saved?.remark || '' };
+      map[sid] = { remark: saved?.remark || '' };
     });
     setData(map);
     setFeedback(evaluation?.feedback || '');
-  }, [team, evaluation]);
+    // Older rounds were marked student by student before there was a group
+    // field; show the first member's mark rather than a blank box.
+    setTeamMarks(evaluation?.teamMarks ?? (evaluation?.students || [])[0]?.marks ?? '');
+    setHeldOn(
+      evaluation?.heldOn
+        ? new Date(evaluation.heldOn).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+        : (assignedDate ? new Date(assignedDate).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) : ''),
+    );
+  }, [team, evaluation, assignedDate]);
 
   const setField = (sid, patch) => setData((p) => ({ ...p, [sid]: { ...p[sid], ...patch } }));
 
-  const copyFirstToAll = () => {
-    const first = Object.values(data)[0];
-    if (!first) return;
-    setData((p) => Object.fromEntries(Object.keys(p).map((k) => [k, { ...first }])));
-    toast.success('Copied to every member');
-  };
-
   const save = async () => {
-    const students = Object.entries(data).map(([studentId, v]) => ({ studentId, marks: v.marks, remark: v.remark }));
-    if (students.some((s) => s.marks !== '' && Number(s.marks) > presentation.totalMarks)) {
+    if (teamMarks === '' || teamMarks === null) return toast.error('Enter the marks for this group');
+    if (Number(teamMarks) > presentation.totalMarks) {
       return toast.error(`Maximum is ${presentation.totalMarks} marks`);
     }
+    const students = Object.entries(data).map(([studentId, v]) => ({ studentId, remark: v.remark }));
     setSaving(true);
     try {
-      await guideAPI.savePresentationMarks(presentation._id, { teamId: team._id, feedback, students });
+      await guideAPI.savePresentationMarks(presentation._id, {
+        teamId: team._id, teamMarks, heldOn: heldOn || null, feedback, students,
+      });
       toast.success('Marks saved');
       onSaved();
     } catch (err) {
@@ -51,7 +60,7 @@ const TeamRow = ({ presentation, row, onSaved }) => {
     }
   };
 
-  const filled = Object.values(data).filter((v) => v.marks !== '' && v.marks !== null).length;
+  const marked = teamMarks !== '' && teamMarks !== null;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -65,17 +74,33 @@ const TeamRow = ({ presentation, row, onSaved }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={filled === (team.members?.length || 0) && filled > 0 ? 'badge-success' : 'badge-secondary'}>
-            {filled}/{team.members?.length || 0} marked
+          <span className={marked ? 'badge-success' : 'badge-secondary'}>
+            {marked ? `${teamMarks}/${presentation.totalMarks}` : 'Not marked'}
           </span>
-          {(team.members?.length || 0) > 1 && (
-            <button onClick={copyFirstToAll} className="btn-outline btn-sm"><Copy className="w-3 h-3" /> Same for all</button>
-          )}
         </div>
       </div>
+      {/* The group's mark and the day it was actually held — which is not
+          always the day somebody got round to entering it. */}
+      <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="form-label">Marks for this group (/{presentation.totalMarks})</label>
+          <input type="number" min="0" max={presentation.totalMarks} step="0.5"
+            className="form-input py-1.5 w-32" value={teamMarks}
+            onChange={(e) => setTeamMarks(e.target.value)} />
+        </div>
+        <div>
+          <label className="form-label">Presented on</label>
+          <input type="date" className="form-input py-1.5 w-44" value={heldOn}
+            onChange={(e) => setHeldOn(e.target.value)} />
+        </div>
+        <p className="text-xs text-slate-500 pb-1.5">
+          This mark goes to every member of the group.
+        </p>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="data-table">
-          <thead><tr><th>Student</th><th className="w-28">Marks (/{presentation.totalMarks})</th><th>Remark</th></tr></thead>
+          <thead><tr><th>Student</th><th>Remark (optional)</th></tr></thead>
           <tbody>
             {(team.members || []).map((m) => {
               const sid = m.student?._id;
@@ -85,10 +110,6 @@ const TeamRow = ({ presentation, row, onSaved }) => {
                   <td>
                     <div className="font-medium">{m.student?.name}</div>
                     <div className="text-xs text-slate-500 font-mono">{m.student?.enrollmentNo}</div>
-                  </td>
-                  <td>
-                    <input type="number" min="0" max={presentation.totalMarks} step="0.5" className="form-input py-1.5"
-                      value={v.marks ?? ''} onChange={(e) => setField(sid, { marks: e.target.value })} />
                   </td>
                   <td>
                     <input className="form-input py-1.5" placeholder="Remark for this student"
