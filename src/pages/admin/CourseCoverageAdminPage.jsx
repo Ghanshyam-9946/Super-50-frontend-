@@ -17,7 +17,8 @@ const dateInput = (d) => (d ? new Date(d).toLocaleDateString("en-CA", { timeZone
 
 export default function CourseCoverageAdminPage() {
   const [forms, setForms] = useState([]);
-  const [canRelease, setCanRelease] = useState([]);
+  // { 1: [semesters still free for MST 1], 2: [...] }
+  const [canRelease, setCanRelease] = useState({ 1: [], 2: [] });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [draft, setDraft] = useState(null);
@@ -28,7 +29,7 @@ export default function CourseCoverageAdminPage() {
     try {
       const { data } = await api.get("/course-coverage/forms");
       setForms(data.data || []);
-      setCanRelease(data.canRelease || []);
+      setCanRelease(data.canRelease || { 1: [], 2: [] });
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not load the forms");
     } finally {
@@ -40,6 +41,7 @@ export default function CourseCoverageAdminPage() {
 
   const release = async () => {
     if (!draft?.title?.trim()) return toast.error("Give the form a title");
+    if (!(draft.semesters || []).length) return toast.error("Choose at least one semester");
     if (!draft.releaseDate || !draft.deadlineDate) return toast.error("Both dates are needed");
     setBusy("release");
     try {
@@ -127,11 +129,11 @@ export default function CourseCoverageAdminPage() {
   };
 
   if (loading) {
-    return <div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div>;
+    return <div className="p-4 md:p-8 max-w-6xl mx-auto"><div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div></div>;
   }
 
   return (
-    <div className="space-y-5">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display font-black text-2xl text-[var(--text-primary)] flex items-center gap-2">
@@ -141,40 +143,38 @@ export default function CourseCoverageAdminPage() {
             Released to every faculty, filled in per subject. Launched twice — once before MST 1, once before MST 2.
           </p>
         </div>
-        {canRelease.length > 0 && !draft && (
+        {!draft && (canRelease[1]?.length || canRelease[2]?.length) > 0 && (
           <button
-            onClick={() => setDraft({
-              title: `Course Coverage before MST ${canRelease[0]}`,
-              round: canRelease[0], releaseDate: dateInput(new Date()), deadlineDate: "",
-            })}
+            onClick={() => {
+              const round = canRelease[1]?.length ? 1 : 2;
+              setDraft({
+                title: `Course Coverage before MST ${round}`,
+                round, semesters: [], releaseDate: dateInput(new Date()), deadlineDate: "",
+              });
+            }}
             className="btn-premium text-xs px-4 py-2.5 flex items-center gap-1.5">
-            <Rocket size={14} /> Release MST {canRelease[0]} form
+            <Rocket size={14} /> Release a form
           </button>
         )}
       </div>
 
-      {canRelease.length === 0 && !draft && (
+      {!draft && !(canRelease[1]?.length || canRelease[2]?.length) && (
         <p className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1.5">
-          <CheckCircle2 size={12} /> Both rounds have been released. Edit the dates below if you need to extend one.
+          <CheckCircle2 size={12} /> Both rounds are out for every semester. Edit the dates below to extend one.
         </p>
       )}
 
       {draft && (
         <div className="glass-card rounded-3xl p-5 space-y-4">
           <h2 className="font-display font-black text-lg text-[var(--text-primary)]">
-            Release the MST {draft.round} form
+            Release a Course Coverage form
           </h2>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <label className={`${labelCls} sm:col-span-2`}>
               Title
               <input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })}
                 className={`${inputCls} normal-case tracking-normal font-normal`} />
-            </label>
-            <label className={labelCls}>
-              Round
-              <select value={draft.round} onChange={(e) => setDraft({ ...draft, round: Number(e.target.value) })} className={inputCls}>
-                {canRelease.map((r) => <option key={r} value={r}>Before MST {r}</option>)}
-              </select>
             </label>
             <label className={labelCls}>
               Release date
@@ -187,13 +187,79 @@ export default function CourseCoverageAdminPage() {
                 onChange={(e) => setDraft({ ...draft, deadlineDate: e.target.value })} className={inputCls} />
             </label>
           </div>
-          <p className="text-[11px] text-[var(--text-secondary)]">
-            MST {draft.round}: faculty must enter the lectures required to complete <b>MST {draft.round}</b> for every
-            subject assigned to them. The deadline runs to the end of that day.
+
+          <div className="space-y-2">
+            <span className={labelCls}>Round</span>
+            <div className="flex gap-2">
+              {[1, 2].map((r) => (
+                <button key={r} type="button"
+                  onClick={() => setDraft({
+                    ...draft, round: r, semesters: [],
+                    title: `Course Coverage before MST ${r}`,
+                  })}
+                  disabled={!canRelease[r]?.length}
+                  title={canRelease[r]?.length ? `` : `Every semester already has an MST ${r} form`}
+                  className={`text-xs font-bold px-4 py-2 rounded-xl border transition disabled:opacity-40 ${
+                    draft.round === r
+                      ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                      : "border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                  }`}>
+                  Before MST {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Semesters, several at once. Only the ones that do not already
+              have this round's form are offered, so a click cannot fail. */}
+          <div className="space-y-2">
+            <span className={labelCls}>Semesters</span>
+            {!canRelease[draft.round]?.length ? (
+              <p className="text-[11px] text-amber-600">
+                Every semester already has an MST {draft.round} form. Edit one below instead.
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {canRelease[draft.round].map((sem) => {
+                    const on = (draft.semesters || []).includes(sem);
+                    return (
+                      <button key={sem} type="button"
+                        onClick={() => setDraft({
+                          ...draft,
+                          semesters: on
+                            ? draft.semesters.filter((x) => x !== sem)
+                            : [...(draft.semesters || []), sem].sort((a, b) => a - b),
+                        })}
+                        className={`text-xs font-bold px-3.5 py-2 rounded-xl border transition ${
+                          on
+                            ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                            : "border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                        }`}>
+                        Sem {sem}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button type="button"
+                  onClick={() => setDraft({ ...draft, semesters: [...canRelease[draft.round]] })}
+                  className="text-[11px] font-bold text-[var(--primary)] hover:underline">
+                  Select all {canRelease[draft.round].length}
+                </button>
+              </>
+            )}
+          </div>
+
+          <p className="text-[11px] text-[var(--text-secondary)] border-l-2 border-[var(--primary)]/40 pl-2">
+            Each semester gets its own form, so you can extend or close one without touching the rest.
+            Faculty are asked only for the lectures needed to finish <b>MST {draft.round}</b> — the other
+            MST is not shown. The deadline runs to the end of that day.
           </p>
           <div className="flex gap-2">
-            <button onClick={release} disabled={busy === "release"} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
-              {busy === "release" ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />} Release to all faculty
+            <button onClick={release} disabled={busy === "release" || !(draft.semesters || []).length}
+              className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
+              {busy === "release" ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />}
+              Release{(draft.semesters || []).length ? ` for ${draft.semesters.map((x) => `Sem ${x}`).join(", ")}` : ""}
             </button>
             <button onClick={() => setDraft(null)} className="text-sm font-bold px-4 py-2.5 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)]">
               Cancel
@@ -213,7 +279,7 @@ export default function CourseCoverageAdminPage() {
               <div className="font-bold text-[var(--text-primary)] flex items-center gap-2 flex-wrap">
                 {f.title}
                 <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30">
-                  MST {f.round}
+                  Sem {f.semester} · MST {f.round}
                 </span>
                 {f.closed && (
                   <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-red-500/10 text-red-600 border-red-500/30">

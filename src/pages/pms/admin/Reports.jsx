@@ -50,24 +50,26 @@ const Reports = () => {
       const rows = data.rows.map((r) => ({
         heldOn: r.heldOn ? formatDate(r.heldOn) : '',
         group: r.groupNo, groupName: r.groupName, sem: r.semester, project: r.project,
+        enrollment: r.enrollmentNo, student: r.student,
         presentation: r.presentation,
         marks: r.marks ?? '', outOf: r.outOf ?? '',
         panel: r.panelMember, guides: r.guides, feedback: r.feedback,
       }));
       return downloadCSV(rows,
-        ['Date', 'Group', 'Group Name', 'Sem', 'Project', 'Presentation', 'Marks', 'Out Of', 'Panel Member', 'Guides', 'Feedback'],
+        ['Date', 'Group', 'Group Name', 'Sem', 'Project', 'Enrollment', 'Student', 'Presentation', 'Marks', 'Out Of', 'Panel Member', 'Guides', 'Group remark'],
         'presentation_marks.csv');
     }
     if (data.type === 'meeting-marks') {
       const rows = data.rows.map((r) => ({
         metOn: r.metOn ? formatDate(r.metOn) : '',
         group: r.groupNo, groupName: r.groupName, sem: r.semester, project: r.project,
+        enrollment: r.enrollmentNo, student: r.student,
         meeting: r.meeting,
-        marks: r.varies ? 'varies by student' : (r.marks ?? ''), outOf: r.outOf ?? '',
-        guide: r.guide, students: r.students,
+        marks: r.marks ?? '', outOf: r.outOf ?? '',
+        guide: r.guide, remark: r.remark,
       }));
       return downloadCSV(rows,
-        ['Date', 'Group', 'Group Name', 'Sem', 'Project', 'Meeting', 'Marks', 'Out Of', 'Guide', 'Students'],
+        ['Date', 'Group', 'Group Name', 'Sem', 'Project', 'Enrollment', 'Student', 'Meeting', 'Marks', 'Out Of', 'Guide', 'Group remark'],
         'guide_meeting_marks.csv');
     }
     if (data.type === 'attendance') {
@@ -200,7 +202,7 @@ const Reports = () => {
             <div className="overflow-x-auto">
               <table className="data-table">
                 <thead>
-                  <tr><th>Date</th><th>Group</th><th>Project</th><th>Presentation</th><th>Marks</th><th>Panel member</th><th>Feedback</th></tr>
+                  <tr><th>Date</th><th>Group</th><th>Student</th><th>Project</th><th>Presentation</th><th>Marks</th><th>Panel member</th><th>Group remark</th></tr>
                 </thead>
                 <tbody>
                   {data.rows.map((r) => (
@@ -209,6 +211,10 @@ const Reports = () => {
                       <td>
                         <div className="font-semibold">{r.groupNo}</div>
                         <div className="text-xs text-slate-500">{r.groupName}</div>
+                      </td>
+                      <td>
+                        <div className="text-sm">{r.student || '—'}</div>
+                        <div className="text-xs text-slate-500 font-mono">{r.enrollmentNo}</div>
                       </td>
                       <td className="text-sm">{r.project || '\u2014'}</td>
                       <td className="text-sm">{r.presentation}</td>
@@ -236,17 +242,17 @@ const Reports = () => {
                         <div className="font-semibold">{r.groupNo}</div>
                         <div className="text-xs text-slate-500">{r.groupName}</div>
                       </td>
+                      <td>
+                        <div className="text-sm">{r.student || '\u2014'}</div>
+                        <div className="text-xs text-slate-500 font-mono">{r.enrollmentNo}</div>
+                      </td>
                       <td className="text-sm">{r.project || '\u2014'}</td>
                       <td className="text-sm">{r.meeting}</td>
                       <td className="font-semibold whitespace-nowrap">
-                        {/* Older records were given per student, so they can
-                            disagree. Saying so beats printing one of them. */}
-                        {r.varies
-                          ? <span className="text-xs text-amber-600">varies by student</span>
-                          : <>{r.marks ?? '\u2014'}{r.outOf != null ? <span className="text-xs text-slate-500"> / {r.outOf}</span> : null}</>}
+                        {r.marks ?? '\u2014'}{r.outOf != null ? <span className="text-xs text-slate-500"> / {r.outOf}</span> : null}
                       </td>
                       <td className="text-sm">{r.guide || '\u2014'}</td>
-                      <td className="text-sm">{r.students}</td>
+                      <td className="text-xs text-slate-500 max-w-[200px] truncate" title={r.remark}>{r.remark || '\u2014'}</td>
                     </tr>
                   ))}
                 </tbody>

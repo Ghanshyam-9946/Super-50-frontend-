@@ -112,7 +112,7 @@ export default function AiKnowledgePage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1500px] mx-auto">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display font-black text-2xl sm:text-3xl flex items-center gap-2">

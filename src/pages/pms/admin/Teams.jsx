@@ -697,11 +697,12 @@ const Teams = () => {
 
   const apply = (e) => { e.preventDefault(); fetchTeams(); };
 
-  // `role` is only roles[0]; the server reads the whole array, so this
-  // must too or the button would hide from admins who have another role
-  // listed first.
+  // The Super Admin is the top-level `admin` role — pms_admin and
+  // super50_admin are module admins, not above it. `role` is only
+  // roles[0], and the server reads the whole array, so this must too or
+  // the button would hide from admins whose first listed role is another.
   const { user } = useSelector((st) => st.auth);
-  const isMileAdmin = (user?.roles?.length ? user.roles : [user?.role]).includes('admin');
+  const isSuperAdmin = (user?.roles?.length ? user.roles : [user?.role]).includes('admin');
 
   const handleDelete = async (team) => {
     if (!confirmAction(`Delete team "${team.groupNo}"? This cannot be undone.`)) return;
@@ -852,10 +853,10 @@ const Teams = () => {
                               <FileText className="w-3 h-3" />
                             </button>
                             {/* Deleting a group takes its members, marks and
-                                history with it, so it is the MILE admin's
+                                history with it, so it is the Super Admin's
                                 alone. A PMS admin or Project Coordinator
                                 still edits everything else. */}
-                            {isMileAdmin && (
+                            {isSuperAdmin && (
                               <button onClick={() => handleDelete(t)} className="btn-secondary btn-sm text-red-600" title="Delete team">
                                 <Trash2 className="w-3 h-3" />
                               </button>

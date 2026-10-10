@@ -2,19 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  GraduationCap,
-  Plus,
-  Trash2,
-  ChevronRight,
-  Loader2,
-  Upload,
-  RefreshCw,
-  Lock,
-  Unlock,
-  Save,
-  Search,
-  ListChecks,
-  Grid3x3,
+  GraduationCap, Plus, Trash2, ChevronRight, Loader2, Upload, RefreshCw, Lock, Unlock, Save, Search, ListChecks, Grid3x3, Download,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -365,6 +353,65 @@ function EntryTab({ user, coordinator }) {
     load(next);
   };
 
+  // The offline sheet. Shaped from this section's own activities, so what
+  // comes back always matches what the portal expects.
+  const [ioBusy, setIoBusy] = useState("");
+
+  const scopeReady = () => {
+    if (!filters.batch || !filters.semester || !filters.section || !filters.subjectName) {
+      toast.error("Set batch, semester, section and subject first, then Load");
+      return false;
+    }
+    return true;
+  };
+
+  const downloadTemplate = async () => {
+    if (!scopeReady()) return;
+    setIoBusy("download");
+    try {
+      const res = await api.get("/sessional-marks/sheet-template", {
+        params: {
+          batch: filters.batch, semester: filters.semester,
+          section: filters.section, subjectName: filters.subjectName,
+        },
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sessional_${filters.subjectName}_${filters.section}.xlsx`.replace(/[^A-Za-z0-9._-]+/g, "_");
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      let message = "Could not build the sheet";
+      try {
+        if (err.response?.data instanceof Blob) message = JSON.parse(await err.response.data.text()).message || message;
+        else message = err.response?.data?.message || message;
+      } catch { /* keep the default */ }
+      toast.error(message);
+    } finally {
+      setIoBusy("");
+    }
+  };
+
+  const importSheet = async (file) => {
+    if (!file) return;
+    setIoBusy("import");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/sessional-marks/sheet-import", fd);
+      toast.success(data.message);
+      // Anything the server would not take is named, not swallowed.
+      (data.skipped || []).slice(0, 5).forEach((m) => toast.error(m, { duration: 6000 }));
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not read that file");
+    } finally {
+      setIoBusy("");
+    }
+  };
+
   const handleChange = (updated) => setSheets((prev) => prev.map((s) => (s._id === updated._id ? updated : s)));
 
   const runSync = async () => {
@@ -419,6 +466,18 @@ function EntryTab({ user, coordinator }) {
             <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
               semester
               <SemesterSelect value={filters.semester} onChange={(e) => setFilters((f) => ({ ...f, semester: e.target.value }))} />
+            </label>
+            {/* Fill the marks in offline and bring them back. The file is
+                built from this section's activities, lab columns included
+                when the subject has a lab. */}
+            <button onClick={downloadTemplate} disabled={!!ioBusy}
+              className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
+              {ioBusy === "download" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Export sheet
+            </button>
+            <label className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 cursor-pointer">
+              {ioBusy === "import" ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />} Import sheet
+              <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!ioBusy}
+                onChange={(e) => { importSheet(e.target.files?.[0]); e.target.value = ""; }} />
             </label>
             <button onClick={() => load()} className="btn-premium text-xs px-4 py-2.5">
               Load

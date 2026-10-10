@@ -22,9 +22,9 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
   const [data, setData] = useState({});
   const [saving, setSaving] = useState(false);
 
-  // The guide meets the group, so there is one mark and one date for it.
-  // Each student can still carry their own remark.
-  const [teamMarks, setTeamMarks] = useState('');
+  // Marks are each student's own. The remark and the date belong to the
+  // meeting, which was held with the group, so there is one of each.
+  const [groupRemark, setGroupRemark] = useState('');
   const [metOn, setMetOn] = useState('');
 
   useEffect(() => {
@@ -32,27 +32,27 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
     (team.members || []).forEach((m) => {
       const sid = m.student?._id;
       const ev = rows.find((r) => String(r.student) === String(sid));
-      map[sid] = { remark: ev?.remark || '' };
+      map[sid] = { marks: ev?.marks ?? '' };
     });
     setData(map);
-    // Older meetings were marked student by student; show what the first
-    // member holds rather than an empty box.
-    setTeamMarks(rows[0]?.marks ?? '');
+    setGroupRemark(rows[0]?.remark || '');
     setMetOn(dateInput(rows[0]?.metOn) || '');
   }, [team, rows]);
 
   const setField = (sid, patch) => setData((p) => ({ ...p, [sid]: { ...p[sid], ...patch } }));
 
   const save = async () => {
-    if (teamMarks === '' || teamMarks === null) return toast.error('Enter the marks for this group');
-    if (Number(teamMarks) > meeting.maxMarks) {
+    const students = Object.entries(data).map(([studentId, v]) => ({ studentId, marks: v.marks }));
+    if (students.every((x) => x.marks === '' || x.marks === null)) {
+      return toast.error('Enter marks for at least one student');
+    }
+    if (students.some((x) => x.marks !== '' && Number(x.marks) > meeting.maxMarks)) {
       return toast.error(`Maximum is ${meeting.maxMarks} marks`);
     }
-    const students = Object.entries(data).map(([studentId, v]) => ({ studentId, remark: v.remark }));
     setSaving(true);
     try {
       await guideAPI.saveMeetingEvaluations(meeting._id, {
-        teamId: team._id, teamMarks, metOn: metOn || null, students,
+        teamId: team._id, metOn: metOn || null, remark: groupRemark, students,
       });
       toast.success('Saved');
       onSaved();
@@ -63,7 +63,7 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
     }
   };
 
-  const marked = teamMarks !== '' && teamMarks !== null;
+  const filled = Object.values(data).filter((v) => v.marks !== '' && v.marks !== null).length;
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -73,33 +73,27 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
           <div className="text-xs text-slate-500">{team.groupName} · {team.members?.length || 0} members</div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={marked ? 'badge-success' : 'badge-secondary'}>
-            {marked ? `${teamMarks}/${meeting.maxMarks}` : 'Not marked'}
+          <span className={filled === (team.members?.length || 0) && filled > 0 ? 'badge-success' : 'badge-secondary'}>
+            {filled}/{team.members?.length || 0} marked
           </span>
         </div>
       </div>
-      {/* The group's mark and the day they actually met. */}
+      {/* The day they met — one for the meeting, not one per student. */}
       <div className="px-4 py-3 border-b border-slate-100 flex flex-wrap items-end gap-3">
-        <div>
-          <label className="form-label">Marks for this group (/{meeting.maxMarks})</label>
-          <input type="number" min="0" max={meeting.maxMarks} step="0.5"
-            className="form-input py-1.5 w-32" value={teamMarks}
-            onChange={(e) => setTeamMarks(e.target.value)} />
-        </div>
         <div>
           <label className="form-label">Met on</label>
           <input type="date" className="form-input py-1.5 w-44" value={metOn}
             onChange={(e) => setMetOn(e.target.value)} />
         </div>
         <p className="text-xs text-slate-500 pb-1.5">
-          This mark goes to every member of the group.
+          Marks are per student. The remark below is for the group.
         </p>
       </div>
 
       <div className="overflow-x-auto">
         <table className="data-table">
           <thead>
-            <tr><th>Student</th><th>Remark (optional)</th></tr>
+            <tr><th>Student</th><th className="w-32">Marks (/{meeting.maxMarks})</th></tr>
           </thead>
           <tbody>
             {(team.members || []).map((m) => {
@@ -113,10 +107,10 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
                   </td>
                   <td>
                     <input
+                      type="number" min="0" max={meeting.maxMarks} step="0.5"
                       className="form-input py-1.5"
-                      placeholder="What was discussed, what to do next…"
-                      value={v.remark || ''}
-                      onChange={(e) => setField(sid, { remark: e.target.value })}
+                      value={v.marks ?? ''}
+                      onChange={(e) => setField(sid, { marks: e.target.value })}
                     />
                   </td>
                 </tr>
@@ -125,10 +119,18 @@ const TeamMeetingCard = ({ meeting, team, rows, onSaved }) => {
           </tbody>
         </table>
       </div>
-      <div className="px-4 py-3 border-t border-slate-100 flex justify-end">
-        <button onClick={save} disabled={saving} className="btn-primary btn-sm">
-          {saving ? <Spinner size="sm" className="text-white" /> : <><Save className="w-3.5 h-3.5" /> Save marks & remarks</>}
-        </button>
+      {/* One remark for the meeting, the same for every member — the
+          guide met the group, not each student separately. */}
+      <div className="px-4 py-3 border-t border-slate-100 space-y-2">
+        <label className="form-label">Remark for the group (one for everybody)</label>
+        <textarea className="form-input" rows="2" value={groupRemark}
+          onChange={(e) => setGroupRemark(e.target.value)}
+          placeholder="What was discussed, what to do next…" />
+        <div className="flex justify-end">
+          <button onClick={save} disabled={saving} className="btn-primary btn-sm">
+            {saving ? <Spinner size="sm" className="text-white" /> : <><Save className="w-3.5 h-3.5" /> Save marks & remark</>}
+          </button>
+        </div>
       </div>
     </div>
   );

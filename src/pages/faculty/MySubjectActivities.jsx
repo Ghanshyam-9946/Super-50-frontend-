@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  BookOpen, Plus, Trash2, Loader2, Paperclip, FileText, FlaskConical, BookMarked,
-  Upload, Search, Save, RotateCcw, ListChecks, Target, MessageSquareText, FolderOpen,
-  CheckCircle2, AlertCircle, GraduationCap, Layers,
+  BookOpen, Plus, Trash2, Loader2, Paperclip, FileText, FlaskConical, BookMarked, Upload, Search, Save, RotateCcw, ListChecks, Target, MessageSquareText, FolderOpen, CheckCircle2, AlertCircle, GraduationCap, Layers, ClipboardList,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { getImageUrl } from "../../utils/imageUrl";
 import CourseFilePanel from "../../components/CourseFilePanel";
+import SubjectCoverage from "../../components/SubjectCoverage";
 
 const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null, pdfUrl: null, pdfFileName: null });
 const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
@@ -24,6 +23,7 @@ const TABS = [
   { key: "survey", label: "Survey", icon: MessageSquareText },
   { key: "materials", label: "Materials", icon: FolderOpen, labOnly: true },
   { key: "coursefile", label: "Course File", icon: FolderOpen, labOnly: true },
+  { key: "coverage", label: "Course Coverage", icon: ClipboardList, labOnly: true },
 ];
 
 const draftOf = (subject) => ({
@@ -700,6 +700,16 @@ export default function MySubjectActivities() {
                       Course File
                     </SectionTitle>
                     <CourseFilePanel subjectId={selected._id} />
+                  </div>
+                )}
+
+                {/* ---------- course coverage ---------- */}
+                {tab === "coverage" && (
+                  <div className="space-y-3">
+                    <SectionTitle icon={ClipboardList} hint="How far this subject has got, for whichever MST round the admin has released.">
+                      Course Coverage
+                    </SectionTitle>
+                    <SubjectCoverage subject={selected} />
                   </div>
                 )}
 

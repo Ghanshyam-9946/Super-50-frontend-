@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  GraduationCap, Plus, Loader2, Upload, Award, Users, Download, Trash2, X, Calendar,
-  MapPin, CheckCircle2, AlertCircle, FileSpreadsheet, Eye, Rocket, EyeOff, Palette, Search, MessageSquare, ListChecks,
+  GraduationCap, Plus, Loader2, Upload, Award, Users, Download, Trash2, X, Calendar, MapPin, CheckCircle2, AlertCircle, FileSpreadsheet, Eye, Rocket, EyeOff, Palette, Search, MessageSquare, ListChecks, Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -222,7 +221,9 @@ const TABS = [
 
 const TrainingDetail = ({ id, onClose }) => {
   // Which course outcome the next assessment sheet belongs to.
-  const [co, setCo] = useState("");
+  // Which course outcomes already have a sheet, so the five slots can show
+  // what is done. Derived from the records the page loads.
+  const [uploadedCos, setUploadedCos] = useState([]);
   const [data, setData] = useState(null);
   const [records, setRecords] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -237,6 +238,9 @@ const TrainingDetail = ({ id, onClose }) => {
       const res = await api.get(`/trainings/${id}`);
       setData(res.data.data);
       setRecords(res.data.records || []);
+      setUploadedCos([...new Set((res.data.records || [])
+        .flatMap((r) => (r.coAssessments || []).map((c) => c.co))
+        .filter(Boolean))].sort());
       setSummary(res.data.summary);
       setCanManage(!!res.data.canManage);
     } catch (err) {
@@ -249,9 +253,9 @@ const TrainingDetail = ({ id, onClose }) => {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
 
-  const upload = async (kind, file, extra = {}) => {
+  const upload = async (kind, file, extra = {}, busyKey) => {
     if (!file) return;
-    setBusy(kind);
+    setBusy(busyKey || kind);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -260,6 +264,7 @@ const TrainingDetail = ({ id, onClose }) => {
       Object.entries(extra).forEach(([k, v]) => { if (v) fd.append(k, v); });
       const res = await api.post(`/trainings/${id}/${kind}`, fd);
       toast.success(res.data.message);
+      if (res.data.uploadedCos) setUploadedCos(res.data.uploadedCos);
       load();
     } catch (err) {
       toast.error(err.response?.data?.message || "Upload failed");
@@ -344,17 +349,47 @@ const TrainingDetail = ({ id, onClose }) => {
                   <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!busy}
                     onChange={(e) => { upload("attendance", e.target.files?.[0]); e.target.value = ""; }} />
                 </label>
-                <span className="flex items-center gap-1.5 border border-[var(--border-light)] rounded-xl pl-2 pr-1 py-1">
-                  <input value={co} onChange={(e) => setCo(e.target.value)} placeholder="CO1"
-                    title="Leave blank to replace the overall assessment; give a CO to file it alongside the others"
-                    className="w-14 bg-transparent text-xs font-bold outline-none text-[var(--text-primary)]" />
-                  <label className="text-xs font-bold px-2 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer hover:text-[var(--primary)]">
-                    {busy === "assessment" ? <Loader2 size={13} className="animate-spin" /> : <FileSpreadsheet size={13} />}
-                    Upload assessment
-                    <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!busy}
-                      onChange={(e) => { upload("assessment", e.target.files?.[0], { co: co.trim(), name: co.trim() ? `${co.trim()} assessment` : "" }); e.target.value = ""; }} />
-                  </label>
-                </span>
+                {/* One slot per course outcome, plus the overall sheet.
+                    The consolidated figure is worked out from the COs by
+                    the server — there is nothing to upload for it. */}
+                <div className="w-full border border-[var(--border-light)] rounded-2xl p-3 space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+                      Assessment by course outcome
+                    </span>
+                    <span className="text-[11px] text-[var(--text-secondary)]">
+                      {uploadedCos.length} of 5 uploaded · consolidated automatically
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {["CO1", "CO2", "CO3", "CO4", "CO5"].map((c) => {
+                      const done = uploadedCos.includes(c);
+                      return (
+                        <label key={c}
+                          title={done ? `${c} is uploaded — choose a file to replace it` : `Upload the ${c} sheet`}
+                          className={`text-xs font-bold px-3 py-2 rounded-xl border flex items-center gap-1.5 cursor-pointer transition ${
+                            done
+                              ? "border-emerald-500/40 text-emerald-600 hover:border-emerald-500"
+                              : "border-[var(--border-light)] text-[var(--text-primary)] hover:border-[var(--primary)]"
+                          }`}>
+                          {busy === `assessment-${c}`
+                            ? <Loader2 size={13} className="animate-spin" />
+                            : done ? <Check size={13} /> : <FileSpreadsheet size={13} />}
+                          {c}
+                          <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!busy}
+                            onChange={(e) => { upload("assessment", e.target.files?.[0], { co: c, name: `${c} assessment` }, `assessment-${c}`); e.target.value = ""; }} />
+                        </label>
+                      );
+                    })}
+                    <label className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)] flex items-center gap-1.5 cursor-pointer hover:border-[var(--primary)]"
+                      title="One sheet for the whole assessment, instead of the CO split. This replaces the consolidated figure.">
+                      {busy === "assessment" ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                      Overall sheet
+                      <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!busy}
+                        onChange={(e) => { upload("assessment", e.target.files?.[0], {}); e.target.value = ""; }} />
+                    </label>
+                  </div>
+                </div>
                 <button onClick={() => openPdf(`/trainings/${id}/export`, `training-${data.name}.csv`)} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5">
                   <Download size={13} /> Export CSV
                 </button>
