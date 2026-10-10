@@ -2,30 +2,7 @@ import { Fragment, useEffect, useState, useCallback, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FileCheck2,
-  Users2,
-  Plus,
-  ClipboardList,
-  ListChecks,
-  Loader2,
-  X,
-  ChevronRight,
-  PartyPopper,
-  Circle,
-  Save,
-  Check,
-  Search,
-  Upload,
-  UserCheck,
-  ArrowRight,
-  Settings2,
-  CheckCircle2,
-  ArrowRightCircle,
-  LayoutDashboard,
-  Wallet,
-  Percent,
-  RefreshCw,
-  Send,
+  FileCheck2, Users2, Plus, ClipboardList, ListChecks, Loader2, X, ChevronRight, PartyPopper, Circle, Save, Check, Search, Upload, UserCheck, ArrowRight, Settings2, CheckCircle2, ArrowRightCircle, LayoutDashboard, Wallet, Percent, RefreshCw, Send, Trash2,
 } from "lucide-react";
 import { Doughnut } from "react-chartjs-2";
 import {
@@ -1288,6 +1265,37 @@ function ManageReleaseGroup({ group, onRefresh }) {
     return () => clearTimeout(t);
   }, [addSearch, group.members]);
 
+  // The whole release. Removing it student by student was the only way,
+  // which is unusable when a release went out wrong — the commonest
+  // reason anybody wants it gone.
+  const [deletingRelease, setDeletingRelease] = useState(false);
+
+  const deleteRelease = async () => {
+    const n = group.members.length;
+    const done = group.members.filter((m) => m.isCompleted || m.forwarded).length;
+    if (!window.confirm(
+      `Delete this entire release?\n\n${n} student form(s) will be removed`
+      + `${done ? `, including ${done} that ${done === 1 ? "is" : "are"} already completed or forwarded` : ""}.`
+      + "\n\nEvery tick and approval on them goes too. This cannot be undone.",
+    )) return;
+    // A release with finished work in it deserves a second ask — that is
+    // somebody's completed approvals going away.
+    if (done && (window.prompt(`This removes ${done} completed/forwarded form(s).\n\nType DELETE to confirm.`) || "")
+      .trim().toUpperCase() !== "DELETE") {
+      return toast("Nothing was deleted");
+    }
+    setDeletingRelease(true);
+    try {
+      const { data } = await api.delete(`/no-dues/releases/${group.releaseId}`);
+      toast.success(data.message);
+      await onRefresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not delete the release");
+    } finally {
+      setDeletingRelease(false);
+    }
+  };
+
   const removeMember = async (form) => {
     if (!window.confirm(`Remove ${form.student?.name} from this release? Their No Dues form will be deleted.`)) return;
     setRemovingId(form._id);
@@ -1324,6 +1332,20 @@ function ManageReleaseGroup({ group, onRefresh }) {
   return (
     <div className="space-y-5">
       <EditReleaseDetailsPanel group={group} onSaved={onRefresh} />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border border-red-500/30 bg-red-500/5 rounded-2xl px-4 py-3">
+        <div className="min-w-0">
+          <div className="text-xs font-bold text-[var(--text-primary)]">Delete this entire release</div>
+          <div className="text-[11px] text-[var(--text-secondary)]">
+            Removes all {group.members.length} student form(s) created together, with every tick on them.
+          </div>
+        </div>
+        <button onClick={deleteRelease} disabled={deletingRelease}
+          className="text-xs font-bold px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-40 flex items-center gap-1.5 shrink-0">
+          {deletingRelease ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+          Delete release
+        </button>
+      </div>
 
       <div className="space-y-2">
         <h5 className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest">

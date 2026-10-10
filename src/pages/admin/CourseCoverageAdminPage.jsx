@@ -128,6 +128,14 @@ export default function CourseCoverageAdminPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Named here so the button and the hint beside it always agree.
+  const missing = !draft ? ""
+    : !draft.title?.trim() ? "Give the form a title"
+      : !(draft.semesters || []).length ? "Pick at least one semester"
+        : !draft.releaseDate ? "Set the release date"
+          : !draft.deadlineDate ? "Set the deadline"
+            : "";
+
   if (loading) {
     return <div className="p-4 md:p-8 max-w-6xl mx-auto"><div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div></div>;
   }
@@ -149,7 +157,13 @@ export default function CourseCoverageAdminPage() {
               const round = canRelease[1]?.length ? 1 : 2;
               setDraft({
                 title: `Course Coverage before MST ${round}`,
-                round, semesters: [], releaseDate: dateInput(new Date()), deadlineDate: "",
+                round,
+                semesters: [],
+                releaseDate: dateInput(new Date()),
+                // Prefilled a fortnight out. An empty deadline was the
+                // likeliest reason a release "failed": the form refused
+                // and the admin read that as an error.
+                deadlineDate: dateInput(new Date(Date.now() + 14 * 86400000)),
               });
             }}
             className="btn-premium text-xs px-4 py-2.5 flex items-center gap-1.5">
@@ -256,11 +270,17 @@ export default function CourseCoverageAdminPage() {
             MST is not shown. The deadline runs to the end of that day.
           </p>
           <div className="flex gap-2">
-            <button onClick={release} disabled={busy === "release" || !(draft.semesters || []).length}
+            <button onClick={release} disabled={busy === "release" || !!missing}
+              title={missing || "Release this form to the faculty of the chosen semesters"}
               className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
               {busy === "release" ? <Loader2 size={15} className="animate-spin" /> : <Rocket size={15} />}
               Release{(draft.semesters || []).length ? ` for ${draft.semesters.map((x) => `Sem ${x}`).join(", ")}` : ""}
             </button>
+            {missing && (
+              <span className="self-center text-[11px] font-bold text-amber-600 flex items-center gap-1.5">
+                <AlertCircle size={12} /> {missing}
+              </span>
+            )}
             <button onClick={() => setDraft(null)} className="text-sm font-bold px-4 py-2.5 rounded-xl border border-[var(--border-light)] text-[var(--text-secondary)]">
               Cancel
             </button>
