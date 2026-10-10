@@ -467,18 +467,6 @@ function EntryTab({ user, coordinator }) {
               semester
               <SemesterSelect value={filters.semester} onChange={(e) => setFilters((f) => ({ ...f, semester: e.target.value }))} />
             </label>
-            {/* Fill the marks in offline and bring them back. The file is
-                built from this section's activities, lab columns included
-                when the subject has a lab. */}
-            <button onClick={downloadTemplate} disabled={!!ioBusy}
-              className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
-              {ioBusy === "download" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Export sheet
-            </button>
-            <label className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 cursor-pointer">
-              {ioBusy === "import" ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />} Import sheet
-              <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!ioBusy}
-                onChange={(e) => { importSheet(e.target.files?.[0]); e.target.value = ""; }} />
-            </label>
             <button onClick={() => load()} className="btn-premium text-xs px-4 py-2.5">
               Load
             </button>
@@ -512,6 +500,18 @@ function EntryTab({ user, coordinator }) {
             )}
           </>
         )}
+        {/* Fill the marks in offline and bring them back. The file is
+        built from this section's activities, lab columns included
+        when the subject has a lab. */}
+        <button onClick={downloadTemplate} disabled={!!ioBusy}
+        className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
+        {ioBusy === "download" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Export sheet
+        </button>
+        <label className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 cursor-pointer">
+        {ioBusy === "import" ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />} Import sheet
+        <input type="file" accept=".xlsx,.xls" className="hidden" disabled={!!ioBusy}
+        onChange={(e) => { importSheet(e.target.files?.[0]); e.target.value = ""; }} />
+        </label>
       </div>
 
       {syncOpen && (
