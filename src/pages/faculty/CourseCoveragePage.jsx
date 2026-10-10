@@ -170,7 +170,7 @@ export default function CourseCoveragePage() {
   const open = useMemo(() => forms.find((f) => f._id === openId), [forms, openId]);
 
   if (loading) {
-    return <div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div>;
+    return <div className="p-4 md:p-8 max-w-5xl mx-auto"><div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div></div>;
   }
 
   return (

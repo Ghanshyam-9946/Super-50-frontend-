@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { MessageSquareShare, Loader2, Search, Send, AlertTriangle, CheckCircle2, XCircle, MinusCircle, History } from 'lucide-react';
+import { MessageSquareShare, Loader2, Search, Send, AlertTriangle, CheckCircle2, XCircle, MinusCircle, History, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -30,6 +30,10 @@ const Field = ({ label, children }) => (
 );
 
 export default function ParentAlertsPage() {
+  // Proves the WhatsApp setup without messaging anybody.
+  const [check, setCheck] = useState(null);
+  const [checking, setChecking] = useState(false);
+
   const [options, setOptions] = useState(null);
   const [tab, setTab] = useState('podai');
   const [filters, setFilters] = useState({});
@@ -49,6 +53,18 @@ export default function ParentAlertsPage() {
       /* history is secondary — the page still works without it */
     }
   }, []);
+
+  const runCheck = async () => {
+    setChecking(true);
+    try {
+      const { data } = await api.get('/parent-alerts/check');
+      setCheck(data);
+    } catch (err) {
+      setCheck({ ok: false, message: err.response?.data?.message || 'Could not reach the server' });
+    } finally {
+      setChecking(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -186,11 +202,50 @@ export default function ParentAlertsPage() {
               {/* The server names the settings that are actually missing;
                   naming only the API key sent people looking in the wrong
                   place when it was the sender number that was absent. */}
-              <span>
-                {options.configProblem || "WhatsApp is not configured yet."}{" "}
-                Add them to the backend <code className="font-mono">.env</code> and restart the server.
-                You can still preview lists.
+              <div className="space-y-2">
+                <div>
+                  {options.configProblem || "WhatsApp is not configured yet."}{" "}
+                  Add them to the backend <code className="font-mono">.env</code> and restart the server.
+                  You can still preview lists.
+                </div>
+                <div className="text-[11px] opacity-90">
+                  <code className="font-mono block">GUPSHUP_SOURCE=91XXXXXXXXXX</code>
+                  <code className="font-mono block">GUPSHUP_SRC_NAME=YourGupshupAppName</code>
+                  Both are on your Gupshup dashboard: the registered WhatsApp number, and the
+                  app it is registered under.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Proves the setup without messaging anybody — one read of
+              Gupshup's template list. */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button onClick={runCheck} disabled={checking}
+              className="btn-outline-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
+              {checking ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+              Check WhatsApp setup
+            </button>
+            {check && (
+              <span className={`text-[11px] font-bold ${check.ok ? 'text-emerald-600' : 'text-red-500'}`}>
+                {check.message}
               </span>
+            )}
+          </div>
+
+          {check?.ok && (
+            <div className="flex flex-wrap gap-2">
+              {(check.templates || []).map((t) => (
+                <span key={t.key}
+                  title={t.approved ? 'Approved on Gupshup' : t.hasId ? 'This id is not in your Gupshup account' : 'No template id set'}
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+                    t.approved
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-600'
+                      : 'border-red-500/40 bg-red-500/10 text-red-500'
+                  }`}>
+                  {t.label} {t.approved ? '✓' : '✗'}
+                </span>
+              ))}
             </div>
           )}
 

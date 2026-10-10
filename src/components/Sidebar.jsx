@@ -126,8 +126,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
-      { to: '/admin/course-coverage', icon: ClipboardList, label: 'Course Coverage' },
-      { to: '/admin/publications', icon: GraduationCap, label: 'Faculty Publications' },
       { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
       { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
@@ -171,7 +169,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
-      { to: '/admin/course-coverage', icon: ClipboardList, label: 'Course Coverage' },
       { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
       { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
@@ -216,6 +213,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { category: 'Compliance', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
       { to: '/admin/course-coverage', icon: ClipboardList, label: 'Course Coverage' },
+      { to: '/admin/publications', icon: GraduationCap, label: 'Faculty Publications' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
       { to: '/admin/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
       { to: '/faculty/gate-pass', icon: DoorOpen, label: 'Gate Pass (TG)' },

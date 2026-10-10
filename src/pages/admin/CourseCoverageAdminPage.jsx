@@ -129,11 +129,11 @@ export default function CourseCoverageAdminPage() {
   };
 
   if (loading) {
-    return <div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div>;
+    return <div className="p-4 md:p-8 max-w-6xl mx-auto"><div className="glass-card p-16 flex justify-center rounded-3xl"><Loader2 className="animate-spin text-[var(--primary)]" /></div></div>;
   }
 
   return (
-    <div className="space-y-5">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="font-display font-black text-2xl text-[var(--text-primary)] flex items-center gap-2">
