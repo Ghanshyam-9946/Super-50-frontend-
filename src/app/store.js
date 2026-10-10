@@ -6,6 +6,7 @@ import activitiesReducer from '../features/activities/activitiesSlice';
 import attendanceReducer from '../features/attendance/attendanceSlice';
 import placementReducer from '../features/placement/placementSlice';
 import projectReducer from '../features/project/projectSlice';
+import chatReducer from '../features/chat/chatSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     attendance: attendanceReducer,
     placement: placementReducer,
     project: projectReducer,
+    chat: chatReducer,
   },
 });
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import RemarkForm, { RemarkCard } from '../../components/remarks/RemarkForm';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Loader2, PhoneCall, User, ClipboardList, Plus, UserCheck, MessageSquare, Calendar, ChevronRight } from 'lucide-react';
+import { Search, Loader2, PhoneCall, User, ClipboardList, UserCheck, MessageSquare, Calendar, ChevronRight, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -13,8 +14,46 @@ export default function CallingTrackerPage() {
   
   const [selectedGuide, setSelectedGuide] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [newRemark, setNewRemark] = useState('');
-  const [submittingRemark, setSubmittingRemark] = useState(false);
+  // How much mentoring each faculty member has done. Shown on screen only —
+  // the PDF is the student record, not a staff scorecard.
+  const [summary, setSummary] = useState(null);
+  const [range, setRange] = useState({ from: '', to: '' });
+  const [downloading, setDownloading] = useState(false);
+
+  const loadSummary = async (r = range) => {
+    try {
+      const { data } = await api.get('/mentoring/summary', {
+        params: { from: r.from || undefined, to: r.to || undefined },
+      });
+      setSummary(data);
+    } catch {
+      setSummary(null);
+    }
+  };
+
+  useEffect(() => { loadSummary(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const downloadRecords = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.get('/mentoring/report.pdf', {
+        params: { scope: 'all', from: range.from || undefined, to: range.to || undefined },
+        responseType: 'blob',
+      });
+      const named = /filename="([^"]+)"/.exec(res.headers['content-disposition'] || '')?.[1] || 'Mentoring-Records.pdf';
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = named;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      toast.success(`Downloaded ${named}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not build the report');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     fetchInitialData();
@@ -36,33 +75,13 @@ export default function CallingTrackerPage() {
     }
   };
 
-  const handleAddRemark = async (e) => {
-    e.preventDefault();
-    if (!newRemark.trim() || !selectedStudent) return;
-
-    setSubmittingRemark(true);
-    try {
-      const { data } = await api.post(`/admin/students/${selectedStudent._id}/remarks`, {
-        text: newRemark.trim()
-      });
-      
-      // Update selected student's remarks in the state
-      const updatedRemarks = data.data.remarks;
-      setSelectedStudent(prev => ({
-        ...prev,
-        remarks: updatedRemarks
-      }));
-
-      // Update in main students list
-      setStudents(prev => prev.map(s => s._id === selectedStudent._id ? { ...s, remarks: updatedRemarks } : s));
-      
-      setNewRemark('');
-      toast.success('Calling remark added successfully');
-    } catch (err) {
-      toast.error('Failed to add remark');
-    } finally {
-      setSubmittingRemark(false);
-    }
+  // The form posts and hands back the student's full remark list; this
+  // only has to put it where the page already keeps it.
+  const onRemarkAdded = (updatedRemarks) => {
+    setSelectedStudent((prev) => ({ ...prev, remarks: updatedRemarks }));
+    setStudents((prev) => prev.map((s) => (
+      s._id === selectedStudent._id ? { ...s, remarks: updatedRemarks } : s
+    )));
   };
 
   // Filter guides
@@ -90,11 +109,64 @@ export default function CallingTrackerPage() {
             <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-500 border border-indigo-200 shadow-sm shrink-0">
               <PhoneCall size={32} />
             </div>
-            Student Calling by Guide
+            Mentoring System
           </h1>
-          <p className="text-[var(--text-secondary)] font-medium mt-1">Track student calling logs and communication remarks submitted by their dedicated mentors.</p>
+          <p className="text-[var(--text-secondary)] font-medium mt-1">Every remark a mentor has recorded against their students, and how much mentoring each faculty member has done.</p>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+            From
+            <input type="date" value={range.from}
+              onChange={(e) => { const r = { ...range, from: e.target.value }; setRange(r); loadSummary(r); }}
+              className="mt-1 block bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm font-normal normal-case tracking-normal" />
+          </label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+            To
+            <input type="date" value={range.to}
+              onChange={(e) => { const r = { ...range, to: e.target.value }; setRange(r); loadSummary(r); }}
+              className="mt-1 block bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm font-normal normal-case tracking-normal" />
+          </label>
+          <button onClick={downloadRecords} disabled={downloading}
+            className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 disabled:opacity-50">
+            {downloading ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />} Mentoring Records
+          </button>
         </div>
       </header>
+
+      {/* Who is doing the mentoring, and in which semesters. */}
+      {summary?.data?.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-display font-black text-lg text-[var(--text-primary)]">Remarks by faculty</h2>
+            <span className="text-xs text-[var(--text-secondary)]">
+              {summary.totals.remarks} remark(s) · {summary.totals.faculty} faculty · {summary.totals.students} student(s)
+              {range.from || range.to ? ' in the chosen dates' : ''}
+            </span>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {summary.data.map((f) => (
+              <div key={f.facultyId} className="glass-card rounded-2xl p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm text-[var(--text-primary)] truncate">{f.name}</div>
+                    <div className="text-[11px] text-[var(--text-secondary)]">{f.students} student(s)</div>
+                  </div>
+                  <span className="text-2xl font-display font-black text-[var(--primary)] leading-none">{f.total}</span>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {f.semesters.map((sm) => (
+                    <span key={sm.semester}
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[var(--primary)]/10 text-[var(--primary)]">
+                      Sem {sm.semester}: {sm.count}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-600 gap-3">
@@ -230,24 +302,16 @@ export default function CallingTrackerPage() {
                   <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-0.5">{selectedStudent.enrollmentNumber} • {selectedStudent.department}</p>
                 </div>
 
-                {/* Add Calling Log Form */}
-                <form onSubmit={handleAddRemark} className="space-y-3 border-t pt-4">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">Add New Calling Remark</span>
-                  <textarea
-                    rows="3"
-                    value={newRemark}
-                    onChange={(e) => setNewRemark(e.target.value)}
-                    placeholder="Type call notes or mentor observation..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none shadow-inner-sm"
+                {/* The same form the TG fills in, so a remark written here
+                    carries the same purpose and action taken and lands in
+                    the same reports. */}
+                <div className="border-t pt-4">
+                  <RemarkForm
+                    studentId={selectedStudent._id}
+                    onAdded={onRemarkAdded}
+                    title="Add New Calling Remark"
                   />
-                  <button
-                    type="submit"
-                    disabled={submittingRemark || !newRemark.trim()}
-                    className="btn-premium w-full py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl shadow-sm"
-                  >
-                    {submittingRemark ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add Remark
-                  </button>
-                </form>
+                </div>
 
                 {/* Timeline of Remarks */}
                 <div className="space-y-4 border-t pt-4">
@@ -255,13 +319,7 @@ export default function CallingTrackerPage() {
                   <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
                     {selectedStudent.remarks && selectedStudent.remarks.length > 0 ? (
                       selectedStudent.remarks.slice().reverse().map((remark, idx) => (
-                        <div key={remark._id || idx} className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2">
-                          <p className="text-xs font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">{remark.text}</p>
-                          <div className="flex flex-col gap-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400 pt-2 border-t border-slate-200/50">
-                            <span className="text-indigo-600">By: {remark.addedBy?.name || 'Admin'}</span>
-                            <span>{new Date(remark.addedAt).toLocaleString('en-IN')}</span>
-                          </div>
-                        </div>
+                        <RemarkCard key={remark._id || idx} remark={remark} />
                       ))
                     ) : (
                       <div className="text-center text-xs text-slate-400 py-6">

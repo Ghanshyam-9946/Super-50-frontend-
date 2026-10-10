@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { hasRole } from '../../utils/roles';
 import { CheckCircle2, Circle, Loader2, PartyPopper, MessageSquare, Trash2, Percent, Save, Wallet, CalendarHeart, Plus, X, ArrowRightCircle, Undo2, Settings2, ChevronDown, Search, UserCog, Repeat, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -58,7 +59,10 @@ export default function NoDuesFormDetail({ form, currentUser, onChange, onDelete
       return next;
     });
 
-  const isAdmin = currentUser?.role === 'admin';
+  // `role` is only roles[0]; the server checks the whole roles array, so
+  // asking about `role` hid Delete from admins whose first role is not
+  // 'admin' — the button was missing for people allowed to use it.
+  const isAdmin = hasRole(currentUser, 'admin');
   const isCreator = form.createdBy?._id === uid;
   const canEditRemarks = isCreator || isAdmin;
   // The student's TG (mentor) — and only them (or admin) — manages every

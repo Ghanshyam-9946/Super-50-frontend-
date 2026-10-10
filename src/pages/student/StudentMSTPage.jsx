@@ -52,7 +52,41 @@ const StudentMSTPage = () => {
 
   const activeResult = results[selectedResultIndex];
   const scores = activeResult?.scores || {};
-  const scoreEntries = Object.entries(scores);
+  
+  const testNameLower = (activeResult?.testName || '').toLowerCase();
+  
+  let calculatedTotal = 0;
+  let totalMaxMarks = 0;
+  const scoreEntries = [];
+
+  Object.entries(scores).forEach(([subject, score]) => {
+    const lowerSub = subject.toLowerCase();
+    // Skip existing total or id columns
+    if (lowerSub.includes('total') || lowerSub.includes('id') || lowerSub.includes('enrollment') || lowerSub.includes('roll')) {
+      return;
+    }
+
+    const numericScore = Number(score);
+    if (!isNaN(numericScore)) {
+      calculatedTotal += numericScore;
+      
+      const isCrt = lowerSub.includes('crt') || lowerSub.includes('aptitude');
+      let maxMarks = 100;
+      if (!isCrt) {
+        if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+          maxMarks = 28;
+        } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+          maxMarks = 42;
+        }
+      }
+      totalMaxMarks += maxMarks;
+    }
+    scoreEntries.push([subject, score]);
+  });
+
+  if (scoreEntries.length > 0) {
+    scoreEntries.push(['Grand Total', calculatedTotal, totalMaxMarks]);
+  }
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8">
@@ -137,32 +171,33 @@ const StudentMSTPage = () => {
                 {scoreEntries.length === 0 ? (
                   <p className="text-sm text-[var(--text-secondary)]">No subject scores available in this report.</p>
                 ) : (
-                  scoreEntries.map(([subject, score], idx) => {
+                  scoreEntries.map(([subject, score, customMax], idx) => {
                     const numericScore = Number(score);
                     const isTotal = subject.toLowerCase().includes('total');
                     
-                    const testNameLower = (activeResult?.testName || '').toLowerCase();
-                    const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
-                    let maxMarks = 100;
-                    if (!isCrt) {
-                      if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
-                        maxMarks = 28;
-                      } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
-                        maxMarks = 42;
+                    let maxMarks = customMax;
+                    if (!isTotal) {
+                      const isCrt = subject.toLowerCase().includes('crt') || subject.toLowerCase().includes('aptitude');
+                      maxMarks = 100;
+                      if (!isCrt) {
+                        if (testNameLower.includes('mst-1') || testNameLower.includes('mst 1') || testNameLower.includes('mst1')) {
+                          maxMarks = 28;
+                        } else if (testNameLower.includes('mst-2') || testNameLower.includes('mst 2') || testNameLower.includes('mst2')) {
+                          maxMarks = 42;
+                        }
                       }
                     }
                     
-                    const isIdKey = subject.toLowerCase().includes('id') || subject.toLowerCase().includes('enrollment') || subject.toLowerCase().includes('roll');
-                    const isPercentage = !isTotal && !isIdKey && !isNaN(numericScore) && numericScore <= maxMarks && numericScore >= 0;
+                    const isPercentage = !isNaN(numericScore) && maxMarks > 0;
                     
                     return (
                       <div 
                         key={idx} 
-                        className="glass-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-sm transition-all"
+                        className={`glass-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-sm transition-all ${isTotal ? 'bg-indigo-50/50 border-indigo-100' : ''}`}
                       >
                         <div className="space-y-1">
-                          <h4 className="font-bold text-[var(--text-primary)] capitalize flex items-center gap-2">
-                            <ChevronRight size={14} className="text-indigo-500" />
+                          <h4 className={`font-bold capitalize flex items-center gap-2 ${isTotal ? 'text-indigo-600 text-lg' : 'text-[var(--text-primary)]'}`}>
+                            <ChevronRight size={14} className={isTotal ? 'text-indigo-600' : 'text-indigo-500'} />
                             {subject}
                           </h4>
                         </div>
@@ -171,16 +206,16 @@ const StudentMSTPage = () => {
                           {isPercentage && (
                             <div className="w-24 bg-slate-100 h-2.5 rounded-full overflow-hidden shrink-0 hidden sm:block">
                               <div 
-                                className="bg-indigo-500 h-full rounded-full" 
+                                className={`${isTotal ? 'bg-emerald-500' : 'bg-indigo-500'} h-full rounded-full`} 
                                 style={{ width: `${Math.min((numericScore / maxMarks) * 100, 100)}%` }}
                               />
                             </div>
                           )}
                           <div className="text-right">
-                            <span className="font-black text-lg text-[var(--text-primary)]">
+                            <span className={`font-black text-lg ${isTotal ? 'text-emerald-600' : 'text-[var(--text-primary)]'}`}>
                               {score}
                             </span>
-                            {!isTotal && !isIdKey && !isNaN(numericScore) && (
+                            {isPercentage && (
                               <span className="text-[10px] text-[var(--text-secondary)] font-bold ml-1">/ {maxMarks}</span>
                             )}
                           </div>

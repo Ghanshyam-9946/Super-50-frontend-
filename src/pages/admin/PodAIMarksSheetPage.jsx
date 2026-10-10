@@ -8,15 +8,17 @@ export default function PodAIMarksSheetPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ tests: [], students: [] });
   const [searchQuery, setSearchQuery] = useState('');
+  const [semesterFilter, setSemesterFilter] = useState('');
 
   useEffect(() => {
     fetchMarksSheet();
-  }, []);
+  }, [semesterFilter]);
 
   const fetchMarksSheet = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/podai/marks-sheet');
+      const url = semesterFilter ? `/podai/marks-sheet?semester=${semesterFilter}` : '/podai/marks-sheet';
+      const res = await api.get(url);
       setData(res.data.data);
     } catch (err) {
       toast.error('Failed to load marks sheet');
@@ -56,14 +58,28 @@ export default function PodAIMarksSheetPage() {
           transition={{ delay: 0.2 }}
           className="relative min-w-[300px]"
         >
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search student by name or enrollment..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
-          />
+          <div className="flex gap-4 w-full md:w-auto">
+            <select
+              value={semesterFilter}
+              onChange={(e) => setSemesterFilter(e.target.value)}
+              className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+            >
+              <option value="">All Semesters</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                <option key={s} value={s}>Semester {s}</option>
+              ))}
+            </select>
+            <div className="relative flex-1 md:w-[300px]">
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search student by name or enrollment..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+              />
+            </div>
+          </div>
         </motion.div>
       </header>
 

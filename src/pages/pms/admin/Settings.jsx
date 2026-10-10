@@ -5,6 +5,7 @@ import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, EmptyState } from '../../../components/pms/Common';
 import { useAuth } from '../../../context/pms/AuthContext';
+import { getFileUrl } from '../../../utils/imageUrl';
 
 const Settings = () => {
   const { refreshBranding } = useAuth();
@@ -112,7 +113,7 @@ const Settings = () => {
             <div className="text-center py-2">
               {settings?.appLogo ? (
                 <img
-                  src={`/uploads/branding/${settings.appLogo}`}
+                  src={getFileUrl(settings.appLogo, 'branding')}
                   alt="Current logo"
                   className="mx-auto max-w-[120px] max-h-[120px] object-contain rounded-xl bg-slate-50 p-2"
                 />

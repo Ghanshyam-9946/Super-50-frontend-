@@ -185,6 +185,7 @@ const CreateDrivePage = () => {
                 <option value="internship">Internship</option>
                 <option value="internship+ppo">Internship + PPO</option>
                 <option value="placement drive">Placement Drive</option>
+                <option value="hackathon">Hackathon</option>
               </select>
             </div>
             

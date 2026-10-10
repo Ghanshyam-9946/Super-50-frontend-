@@ -168,7 +168,7 @@ export default function RegisterPage() {
                 <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="text"
-                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-light)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition-colors"
                   style={{ paddingLeft: 40 }}
                   placeholder="Dr. John Doe"
                   value={form.name}
@@ -187,7 +187,7 @@ export default function RegisterPage() {
                 <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="email"
-                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-light)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition-colors"
                   style={{ paddingLeft: 40 }}
                   placeholder="faculty@university.edu"
                   value={form.email}
@@ -205,7 +205,7 @@ export default function RegisterPage() {
               <div style={{ position: 'relative' }}>
                 <Building size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <select
-                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors appearance-none"
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-light)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition-colors appearance-none"
                   style={{ paddingLeft: 40, appearance: 'none' }}
                   value={form.department}
                   onChange={(e) => setForm({ ...form, department: e.target.value })}
@@ -213,10 +213,6 @@ export default function RegisterPage() {
                 >
                   <option value="" disabled>Select Department</option>
                   <option value="Computer Science">Computer Science</option>
-                  <option value="Information Technology">Information Technology</option>
-                  <option value="Electronics">Electronics</option>
-                  <option value="Mechanical">Mechanical</option>
-                  <option value="Civil">Civil</option>
                 </select>
               </div>
             </div>
@@ -229,7 +225,7 @@ export default function RegisterPage() {
               <div style={{ position: 'relative' }}>
                 <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <select
-                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors appearance-none"
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-light)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition-colors appearance-none"
                   style={{ paddingLeft: 40, appearance: 'none' }}
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -253,7 +249,7 @@ export default function RegisterPage() {
                 <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input
                   type="password"
-                  className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-app)] border border-[var(--border-light)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition-colors"
                   style={{ paddingLeft: 40 }}
                   placeholder="Create a strong password"
                   value={form.password}
@@ -292,7 +288,7 @@ export default function RegisterPage() {
                   <Key size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     type="text"
-                    className="w-full bg-black/50 border border-slate-700/50 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-purple-500/50 transition-colors text-center tracking-[0.5em]"
+                    className="w-full bg-[var(--bg-app)] border border-[var(--border-light)] rounded-xl py-3 pl-10 pr-4 text-[var(--text-primary)] focus:outline-none focus:border-purple-500/50 transition-colors text-center tracking-[0.5em]"
                     placeholder="------"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
@@ -369,7 +365,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="w-full mt-4 bg-transparent border border-slate-700 text-white font-medium py-3 rounded-xl transition-all duration-200 hover:bg-white/5"
+                className="w-full mt-4 bg-transparent border border-[var(--border-light)] text-[var(--text-primary)] font-medium py-3 rounded-xl transition-all duration-200 hover:bg-[var(--bg-hover)]"
                 disabled={loading}
               >
                 Back to Details

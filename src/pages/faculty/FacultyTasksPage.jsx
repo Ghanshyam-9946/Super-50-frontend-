@@ -74,15 +74,22 @@ export default function FacultyTasksPage() {
 
   const [tab, setTab] = useState('assigned'); // assigned | add | allocated
   const [stats, setStats] = useState(null);
+  // Tasks this faculty handed to somebody else — counted separately from
+  // their own queue, since they never appear in the list below.
+  const [allocatedStats, setAllocatedStats] = useState(null);
   const [faculty, setFaculty] = useState([]);
   const [assigned, setAssigned] = useState([]);
   const [allocated, setAllocated] = useState([]);
+  const [allocatedCounts, setAllocatedCounts] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadStats = useCallback(async () => {
     try {
       const { data } = await api.get('/tasks/stats');
-      if (data.success) setStats(data.data);
+      if (data.success) {
+        setStats(data.data);
+        setAllocatedStats(data.allocated || null);
+      }
     } catch {
       /* silent — cards fall back to 0 */
     }
@@ -106,7 +113,11 @@ export default function FacultyTasksPage() {
     const { data } = await api.get('/tasks/allocated', {
       params: facultyId ? { faculty: facultyId } : {},
     });
-    if (data.success) setAllocated(data.data);
+    if (data.success) {
+      setAllocated(data.data);
+      // Counts for the faculty being looked at, not for the viewer.
+      setAllocatedCounts(facultyId ? data.counts || null : null);
+    }
   }, []);
 
   useEffect(() => {
@@ -148,7 +159,8 @@ export default function FacultyTasksPage() {
             📋 Faculty Task Manager
           </h1>
           <p className="text-[var(--text-secondary)] mt-2 font-medium">
-            Allocate, track and forward tasks across faculty — {stats?.total || 0} in your queue.
+            Allocate, track and forward tasks across faculty — {stats?.total || 0} in your queue
+            {allocatedStats?.total ? `, ${allocatedStats.total} allocated to others` : ''}.
           </p>
         </div>
         <button onClick={() => setTab('add')} className="btn-premium flex items-center gap-2 text-xs self-start md:self-auto">
@@ -221,7 +233,7 @@ export default function FacultyTasksPage() {
                 }}
               />
             )}
-            {tab === 'allocated' && <AllocatedTasks tasks={allocated} faculty={faculty} onFilter={loadAllocated} />}
+            {tab === 'allocated' && <AllocatedTasks tasks={allocated} faculty={faculty} onFilter={loadAllocated} counts={allocatedCounts} />}
           </motion.div>
         </AnimatePresence>
       )}
@@ -287,7 +299,12 @@ function TaskCard({ task, faculty, onChange }) {
   const [editForm, setEditForm] = useState(null);
   const [editSearch, setEditSearch] = useState('');
 
-  const status = STATUS_META[task.status] || STATUS_META.open;
+  // Everyone assigned has their own status. `myStatus` is this faculty's
+  // own; the task's own status is only a roll-up of everybody's, so acting
+  // on it would mark the task done for the others too.
+  const isMine = !!task.myStatus;
+  const myStatus = task.myStatus || task.status;
+  const status = STATUS_META[myStatus] || STATUS_META.open;
   const deadline = fmtDate(task.deadline);
   const StatusIcon = status.icon;
 
@@ -300,8 +317,8 @@ function TaskCard({ task, faculty, onChange }) {
   // right now are ever offered — this is what stops anyone from acting out
   // of sequence (no jumping back to pending after starting, nothing at all
   // once completed/rejected).
-  const nextActions = STATUS_TRANSITIONS[task.status] || [];
-  const canForward = FORWARDABLE_FROM.includes(task.status);
+  const nextActions = isMine ? (STATUS_TRANSITIONS[myStatus] || []) : [];
+  const canForward = isMine && FORWARDABLE_FROM.includes(myStatus);
   const isLocked = nextActions.length === 0 && !canForward;
 
   const closePanel = () => {
@@ -469,9 +486,35 @@ function TaskCard({ task, faculty, onChange }) {
             )}
           </div>
 
-          {task.status === 'rejected' && task.rejectionReason && (
+          {/* Who is on this task and where each of them has got to */}
+          {(task.assignments || []).length > 1 && (
+            <div className="rounded-xl border border-[var(--border-light)] p-3">
+              <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2">
+                Status per faculty
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {task.assignments.map((a) => {
+                  const m = STATUS_META[a.status] || STATUS_META.open;
+                  const MIcon = m.icon;
+                  const isMe = (a.faculty?._id || a.faculty) === user?._id;
+                  return (
+                    <span
+                      key={a.faculty?._id || a.faculty}
+                      className={`badge border ${m.ring} ${m.color} whitespace-nowrap`}
+                      title={a.rejectionReason || ''}
+                    >
+                      <MIcon size={12} />
+                      {a.faculty?.name || 'Faculty'}{isMe ? ' (you)' : ''} · {m.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {myStatus === 'rejected' && (task.myRejectionReason || task.rejectionReason) && (
             <div className="mt-3 flex items-start gap-2 text-xs text-red-500 bg-red-500/5 border border-red-500/15 rounded-lg p-2.5">
-              <AlertTriangle size={14} className="mt-0.5 shrink-0" /> <span>{task.rejectionReason}</span>
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" /> <span>{task.myRejectionReason || task.rejectionReason}</span>
             </div>
           )}
 
@@ -896,7 +939,8 @@ function AddTaskForm({ faculty, onCreated }) {
 
 /* ────────────────────────  FACULTY ALLOCATED LIST  ──────────────────────── */
 
-function AllocatedTasks({ tasks, faculty, onFilter }) {
+function AllocatedTasks({ tasks, faculty, onFilter, counts }) {
+  const { user } = useSelector((s) => s.auth);
   const [filterId, setFilterId] = useState('');
   const [openId, setOpenId] = useState(null);
 
@@ -927,6 +971,24 @@ function AllocatedTasks({ tasks, faculty, onFilter }) {
         </select>
       </div>
 
+      {/* How that one person is doing — their own status on each task, not
+          the task's roll-up across everybody assigned to it. */}
+      {filterId && counts && (
+        <div className="glass-card p-4 rounded-2xl flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-black uppercase tracking-widest text-[var(--text-secondary)]">
+            Their own progress
+          </span>
+          {[['open', 'Open'], ['started', 'Started'], ['pending', 'Pending'],
+            ['completed', 'Completed'], ['rejected', 'Rejected'], ['forwarded', 'Forwarded']].map(([key, label]) => (
+            <span key={key} className="px-2.5 py-1 rounded-lg bg-[var(--bg-input)] border border-[var(--border-light)]">
+              <strong className="text-[var(--text-primary)]">{counts[key] ?? 0}</strong>
+              <span className="text-[var(--text-secondary)] ml-1">{label}</span>
+            </span>
+          ))}
+          <span className="ml-auto text-[var(--text-secondary)]">{counts.total} task(s) in total</span>
+        </div>
+      )}
+
       {tasks.length === 0 ? (
         <div className="glass-card p-16 text-center flex flex-col items-center gap-3 rounded-3xl">
           <ClipboardList size={40} className="text-[var(--text-secondary)] opacity-50" />
@@ -945,8 +1007,11 @@ function AllocatedTasks({ tasks, faculty, onFilter }) {
               </thead>
               <tbody>
                 {tasks.map((t) => {
-                  const s = STATUS_META[t.status] || STATUS_META.open;
+                  const rowStatus = t.myStatus || t.status;
+                  const s = STATUS_META[rowStatus] || STATUS_META.open;
                   const SIcon = s.icon;
+                  const others = (t.assignments || []).filter((a) => (a.faculty?._id || a.faculty) !== user?._id);
+                  const mixed = others.length > 0 && others.some((a) => a.status !== rowStatus);
                   const open = openId === t._id;
                   return (
                     <Fragment key={t._id}>
@@ -965,17 +1030,34 @@ function AllocatedTasks({ tasks, faculty, onFilter }) {
                         </td>
                         <td className="px-5 py-4">
                           <div className="flex flex-wrap gap-1 max-w-[220px]">
-                            {(t.assignedTo || []).map((a) => (
-                              <span key={a._id} className="text-xs font-semibold px-2 py-1 rounded-lg bg-[var(--bg-hover)] text-[var(--text-primary)] whitespace-nowrap">{a.name}</span>
-                            ))}
+                            {(t.assignedTo || []).map((a) => {
+                              const row = (t.assignments || []).find((x) => (x.faculty?._id || x.faculty) === a._id);
+                              const meta = row ? STATUS_META[row.status] : null;
+                              return (
+                                <span
+                                  key={a._id}
+                                  className={`text-xs font-semibold px-2 py-1 rounded-lg bg-[var(--bg-hover)] whitespace-nowrap ${meta ? meta.color : 'text-[var(--text-primary)]'}`}
+                                  title={meta ? meta.label : ''}
+                                >
+                                  {a.name}
+                                </span>
+                              );
+                            })}
                           </div>
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap text-[var(--text-secondary)] font-medium">{t.createdBy?.name || '—'}</td>
                         <td className="px-5 py-4 whitespace-nowrap text-[var(--text-secondary)] font-medium">{fmtDate(t.deadline) || '—'}</td>
                         <td className="px-5 py-4">
-                          <span className={`badge border ${s.ring} ${s.color} whitespace-nowrap`}>
-                            <SIcon size={12} /> {s.label}
-                          </span>
+                          <div className="flex flex-col items-start gap-1">
+                            <span className={`badge border ${s.ring} ${s.color} whitespace-nowrap`}>
+                              <SIcon size={12} /> {s.label}{t.myStatus ? '' : ' (overall)'}
+                            </span>
+                            {mixed && (
+                              <span className="text-[10px] text-[var(--text-secondary)] whitespace-nowrap">
+                                others: {others.map((a) => `${a.faculty?.name?.split(' ')[0] || 'Faculty'} ${STATUS_META[a.status]?.label || a.status}`).join(', ')}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-4 text-right">
                           <ChevronRight size={16} className={`text-[var(--text-secondary)] transition-transform ${open ? 'rotate-90' : ''}`} />
