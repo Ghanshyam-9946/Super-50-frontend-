@@ -198,6 +198,21 @@ export default function MeetingsPage() {
     }
   };
 
+  // Everybody in the faculty list as it stands — so a search narrows what
+  // "all" means (all of CSE, say) instead of being ignored.
+  const shownStaffIds = pickType === "staff" ? people.map((p) => p._id) : [];
+  const allStaffPicked = shownStaffIds.length > 0 && shownStaffIds.every((id) => form.invitees.includes(id));
+
+  const toggleAllStaff = () =>
+    setForm((f) => ({
+      ...f,
+      invitees: allStaffPicked
+        // Only the ones on screen are dropped; students and anybody picked
+        // under another search stay invited.
+        ? f.invitees.filter((id) => !shownStaffIds.includes(id))
+        : [...new Set([...f.invitees, ...shownStaffIds])],
+    }));
+
   const toggleInvitee = (id) =>
     setForm((f) => ({ ...f, invitees: f.invitees.includes(id) ? f.invitees.filter((x) => x !== id) : [...f.invitees, id] }));
 
@@ -314,6 +329,29 @@ export default function MeetingsPage() {
                   {addingClass ? <Loader2 size={11} className="animate-spin" /> : <Users size={11} />}
                   Invite all {studentTotal ? `(${studentTotal})` : ""}
                 </button>
+              </div>
+            )}
+
+            {pickType === "staff" && people.length > 0 && !loadingPeople && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={toggleAllStaff}
+                  className={`text-[11px] font-bold px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ${
+                    allStaffPicked
+                      ? "border-[var(--border-light)] text-[var(--text-secondary)]"
+                      : "border-[var(--primary)] text-[var(--primary)]"
+                  }`}>
+                  <Users size={11} />
+                  {allStaffPicked
+                    ? "Unselect all"
+                    : search.trim()
+                      ? `Select all ${people.length} shown`
+                      : `Select all faculty (${people.length})`}
+                </button>
+                {search.trim() && (
+                  <span className="text-[11px] text-[var(--text-secondary)]">
+                    Only the ones matching "{search.trim()}" — clear the search to select everybody.
+                  </span>
+                )}
               </div>
             )}
 

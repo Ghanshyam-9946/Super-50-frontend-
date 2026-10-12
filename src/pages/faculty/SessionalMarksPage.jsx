@@ -734,7 +734,25 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
   const saveCell = async (sheetId, cat, value) => {
     const key = cellKey(sheetId, cat);
     const max = maxes[cat];
-    if (value === "" || max === "" || max === undefined) return;
+    // An emptied box takes the saved mark away. With nothing saved yet
+    // there is nothing to do.
+    if (String(value).trim() === "") {
+      const entryId = cells[key]?.entryId;
+      if (!entryId) return;
+      setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "saving" } }));
+      try {
+        const { data } = await api.delete(`/sessional-marks/sheets/${sheetId}/ca/${entryId}`);
+        if (data.success) {
+          onChange(data.data);
+          setCells((prev) => ({ ...prev, [key]: { value: "", entryId: null, status: "saved" } }));
+        }
+      } catch (err) {
+        toast.error(err.response?.data?.message || "Could not clear the marks");
+        setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "error" } }));
+      }
+      return;
+    }
+    if (max === "" || max === undefined) return;
     setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "saving" } }));
     try {
       const { data } = await api.patch(`/sessional-marks/sheets/${sheetId}/ca`, {
@@ -754,6 +772,11 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
           ...prev,
           [key]: { value: String(savedEntry?.obtained ?? value), entryId: savedEntry?._id || null, status: "saved" },
         }));
+        // The box changes from 0 to 1 by itself; say why, or it looks like
+        // the page altered somebody's entry on a whim.
+        if (Number(value) === 0 && Number(savedEntry?.obtained) === 1) {
+          toast("0 is saved as 1 — the minimum mark is 1", { icon: "ℹ️" });
+        }
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save");
@@ -911,19 +934,35 @@ function LabMarksGrid({ sheets, onChange, coordinator, user }) {
     return (assigned || coordinator) && !sheet.locked;
   };
 
-  const saveRow = async (sheetId) => {
-    const row = rows[sheetId];
+  // `row` is passed in by the caller: the timer that fires this was set
+  // before the re-render, so reading `rows` here would give the values
+  // from before the last keystroke.
+  const saveRow = async (sheetId, row) => {
     if (!row) return;
     setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "saving" } }));
     try {
+      // An emptied box is sent as null, which clears that mark.
       const payload = {};
-      if (row.attendance !== "") payload.attendance = Number(row.attendance);
-      if (row.submission !== "") payload.submission = Number(row.submission);
-      if (row.viva !== "") payload.viva = Number(row.viva);
+      for (const field of ["attendance", "submission", "viva"]) {
+        payload[field] = String(row[field]).trim() === "" ? null : Number(row[field]);
+      }
       const { data } = await api.patch(`/sessional-marks/sheets/${sheetId}/lab`, payload);
       if (data.success) {
         onChange(data.data);
-        setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "saved" } }));
+        // Show what was actually stored: a 0 comes back as 1.
+        setRows((prev) => ({
+          ...prev,
+          [sheetId]: {
+            ...prev[sheetId],
+            attendance: data.data.lab?.attendance ?? "",
+            submission: data.data.lab?.submission ?? "",
+            viva: data.data.lab?.viva ?? "",
+            status: "saved",
+          },
+        }));
+        if (Object.values(payload).some((v) => v === 0)) {
+          toast("0 is saved as 1 — the minimum mark is 1", { icon: "ℹ️" });
+        }
       }
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save lab marks");
@@ -932,9 +971,10 @@ function LabMarksGrid({ sheets, onChange, coordinator, user }) {
   };
 
   const onFieldChange = (sheetId, field, value) => {
+    const next = { ...(rows[sheetId] || { attendance: "", submission: "", viva: "" }), [field]: value, status: "idle" };
     setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], [field]: value, status: "idle" } }));
     clearTimeout(timers.current[sheetId]);
-    timers.current[sheetId] = setTimeout(() => saveRow(sheetId), 600);
+    timers.current[sheetId] = setTimeout(() => saveRow(sheetId, next), 600);
   };
 
   const focusField = (index, field) => {
@@ -1057,13 +1097,14 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
   const saveLab = async () => {
     setSavingLab(true);
     try {
+      // An emptied box is sent as null, which clears that mark.
       const payload = {};
-      if (labForm.attendance !== "") payload.attendance = Number(labForm.attendance);
-      if (labForm.submission !== "") payload.submission = Number(labForm.submission);
-      if (labForm.viva !== "") payload.viva = Number(labForm.viva);
+      for (const field of ["attendance", "submission", "viva"]) {
+        payload[field] = String(labForm[field]).trim() === "" ? null : Number(labForm[field]);
+      }
       const { data } = await api.patch(`/sessional-marks/sheets/${sheet._id}/lab`, payload);
       if (data.success) {
-        toast.success("Lab marks saved");
+        toast.success(data.message || "Lab marks saved");
         onChange(data.data);
       }
     } catch (err) {
