@@ -21,6 +21,9 @@ const PLACEHOLDERS = [
 const emptyForm = () => ({
   name: "", fromDate: todayStr(), toDate: todayStr(), location: "",
   semester: "", batch: "", department: "", organizedBy: "", attendanceThreshold: 75,
+  // Feedback's own bar. Starts equal to the certificate's, which is what
+  // most trainings want; change it to ask a wider or narrower group.
+  feedbackAttendanceThreshold: 75,
 });
 
 const inputCls = "bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)] w-full";
@@ -134,6 +137,14 @@ export default function TrainingsPage() {
               <div className="flex items-center gap-2">
                 <input type="number" min="0" max="100" value={form.attendanceThreshold}
                   onChange={(e) => setForm({ ...form, attendanceThreshold: Number(e.target.value) })} className={inputCls} />
+                <span className="text-sm text-[var(--text-secondary)]">%</span>
+              </div>
+            </label>
+            <label className={labelCls}>
+              Attendance needed to give feedback
+              <div className="flex items-center gap-2">
+                <input type="number" min="0" max="100" value={form.feedbackAttendanceThreshold}
+                  onChange={(e) => setForm({ ...form, feedbackAttendanceThreshold: Number(e.target.value) })} className={inputCls} />
                 <span className="text-sm text-[var(--text-secondary)]">%</span>
               </div>
             </label>
@@ -322,7 +333,7 @@ const TrainingDetail = ({ id, onClose }) => {
               <div>
                 <h2 className="text-xl font-display font-black text-[var(--text-primary)]">{data.name}</h2>
                 <p className="text-xs text-[var(--text-secondary)] mt-1">
-                  {fmt(data.fromDate)} → {fmt(data.toDate)}{data.location ? ` · ${data.location}` : ""} · certificate needs {data.attendanceThreshold}% attendance
+                  {fmt(data.fromDate)} → {fmt(data.toDate)}{data.location ? ` · ${data.location}` : ""} · certificate needs {data.attendanceThreshold}% attendance · feedback needs {data.feedbackAttendanceThreshold ?? data.attendanceThreshold}%
                 </p>
               </div>
               <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"><X size={18} /></button>

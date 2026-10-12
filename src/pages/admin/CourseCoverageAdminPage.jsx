@@ -299,8 +299,15 @@ export default function CourseCoverageAdminPage() {
               <div className="font-bold text-[var(--text-primary)] flex items-center gap-2 flex-wrap">
                 {f.title}
                 <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/30">
-                  Sem {f.semester} · MST {f.round}
+                  {/* A form released by the first version has no semester.
+                      Say so, rather than printing "Sem undefined". */}
+                  {f.semester ? `Sem ${f.semester}` : "No semester (old form)"} · MST {f.round}
                 </span>
+                {!f.semester && (
+                  <span className="text-[10px] font-bold text-amber-600">
+                    Faculty cannot see this one — delete it and release again for a semester
+                  </span>
+                )}
                 {f.closed && (
                   <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border bg-red-500/10 text-red-600 border-red-500/30">
                     closed

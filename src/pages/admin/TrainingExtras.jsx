@@ -455,12 +455,50 @@ export const FeedbackPanel = ({ training, onChanged }) => {
   const [open, setOpen] = useState(!!training.feedbackOpen);
   const [report, setReport] = useState(null);
   const [busy, setBusy] = useState("");
+  // The questions the students are asked. Only an admin may change them;
+  // the server says who that is rather than this page guessing from a role.
+  const [questions, setQuestions] = useState([]);
+  const [bar, setBar] = useState(training.feedbackAttendanceThreshold ?? training.attendanceThreshold ?? 75);
+
+  const takeReport = (data) => {
+    setReport(data);
+    setQuestions(data.questions || []);
+    if (data.attendanceBar !== undefined) setBar(data.attendanceBar);
+  };
 
   useEffect(() => {
     api.get("/tasks/faculty-list").then(({ data }) => setFaculty(data.data || [])).catch(() => {});
     api.get(`/trainings/${training._id}/feedback/report`)
-      .then(({ data }) => setReport(data)).catch(() => {});
+      .then(({ data }) => takeReport(data)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [training._id]);
+
+  const saveQuestions = async () => {
+    const cleaned = questions.map((q) => q.trim()).filter(Boolean);
+    if (!cleaned.length) return toast.error("Write at least one question");
+    setBusy("questions");
+    try {
+      await api.put(`/trainings/${training._id}/feedback-setup`, { questions: cleaned });
+      toast.success("Questions saved");
+      const r = await api.get(`/trainings/${training._id}/feedback/report`);
+      takeReport(r.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not save the questions");
+    } finally { setBusy(""); }
+  };
+
+  const saveBar = async () => {
+    setBusy("bar");
+    try {
+      await api.put(`/trainings/${training._id}`, { feedbackAttendanceThreshold: Number(bar) });
+      toast.success("Feedback attendance criteria saved");
+      await onChanged();
+      const r = await api.get(`/trainings/${training._id}/feedback/report`);
+      takeReport(r.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not save");
+    } finally { setBusy(""); }
+  };
 
   const save = async (nextOpen = open) => {
     setBusy("save");
@@ -470,7 +508,7 @@ export const FeedbackPanel = ({ training, onChanged }) => {
       setOpen(nextOpen);
       await onChanged();
       const r = await api.get(`/trainings/${training._id}/feedback/report`);
-      setReport(r.data);
+      takeReport(r.data);
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not save");
     } finally { setBusy(""); }
@@ -503,6 +541,77 @@ export const FeedbackPanel = ({ training, onChanged }) => {
         </p>
       </div>
 
+      {/* Who may answer: feedback's own attendance bar. */}
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1.5">
+          Attendance needed to give feedback
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input type="number" min="0" max="100" value={bar} onChange={(e) => setBar(e.target.value)}
+            className={`${inputCls} w-24`} />
+          <span className="text-sm text-[var(--text-secondary)]">%</span>
+          <button onClick={saveBar} disabled={!!busy}
+            className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
+            {busy === "bar" ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save
+          </button>
+          {report && (
+            <span className="text-[11px] text-[var(--text-secondary)]">
+              <b className="text-[var(--text-primary)]">{report.eligible}</b> of {report.enrolled} student(s) qualify
+              {report.usesCertificateBar ? " \u00b7 same as the certificate criteria" : ""}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* The questions. Written by the admin; everybody else reads them. */}
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1.5">
+          Questions the students answer (rated 1 to 5)
+        </p>
+        {report?.canEditQuestions ? (
+          <div className="space-y-2">
+            {questions.map((q, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[var(--text-secondary)] w-5 text-right">{i + 1}.</span>
+                <input value={q}
+                  onChange={(e) => setQuestions((list) => list.map((x, n) => (n === i ? e.target.value : x)))}
+                  placeholder="Write the question" className={`${inputCls} flex-1`} />
+                <button onClick={() => setQuestions((list) => list.filter((_, n) => n !== i))}
+                  title="Remove this question"
+                  className="p-2 rounded-lg text-red-500 hover:bg-red-500/10"><Trash2 size={14} /></button>
+              </div>
+            ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <button onClick={() => setQuestions((list) => [...list, ""])}
+                className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5">
+                <Plus size={13} /> Add a question
+              </button>
+              <button onClick={saveQuestions} disabled={!!busy}
+                className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
+                {busy === "questions" ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save questions
+              </button>
+              {report.usingDefaultQuestions && (
+                <span className="text-[11px] text-[var(--text-secondary)]">
+                  These are the standard questions. Edit them to write your own.
+                </span>
+              )}
+              {report.responses > 0 && (
+                <span className="text-[11px] text-amber-600">
+                  {report.responses} response(s) are in, so the wording can no longer be changed.
+                </span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <ol className="list-decimal pl-5 space-y-0.5 text-xs text-[var(--text-primary)]">
+            {questions.map((q) => <li key={q}>{q}</li>)}
+            <li className="list-none text-[11px] text-[var(--text-secondary)] mt-1">
+              Only an admin can change these.
+            </li>
+          </ol>
+        )}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <button onClick={() => save(!open)} disabled={!!busy}
           className={`text-xs px-4 py-2 rounded-xl font-bold border flex items-center gap-1.5 disabled:opacity-50 ${
@@ -515,7 +624,7 @@ export const FeedbackPanel = ({ training, onChanged }) => {
       {report?.data?.length > 0 && (
         <div className="space-y-3">
           <p className="text-[11px] text-[var(--text-secondary)]">
-            {report.enrolled} student(s) attended. Answers are anonymous — no name is stored against a rating here.
+            {report.eligible} of {report.enrolled} student(s) qualify to answer. Answers are anonymous — no name is stored against a rating here.
           </p>
           {report.data.map((row) => (
             <div key={row.faculty._id} className="border border-[var(--border-light)] rounded-2xl p-3 space-y-2">
