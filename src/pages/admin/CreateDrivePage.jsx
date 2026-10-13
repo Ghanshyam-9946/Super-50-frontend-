@@ -26,6 +26,9 @@ const CreateDrivePage = () => {
     batch: '2023-27',
   });
 
+  const [isCustomDriveType, setIsCustomDriveType] = useState(false);
+  const [isCustomCampusType, setIsCustomCampusType] = useState(false);
+
   const [rounds, setRounds] = useState([
     { name: 'Aptitude', description: 'Initial aptitude & reasoning test' },
     { name: 'Technical', description: 'Technical coding & core concepts' },
@@ -40,6 +43,8 @@ const CreateDrivePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.driveType?.trim()) return toast.error('Please specify Drive Type');
+    if (!form.campusType?.trim()) return toast.error('Please specify Campus Type');
     if (rounds.some(r => !r.name.trim())) return toast.error('All rounds must have a name');
     if (rounds.length === 0) return toast.error('Add at least one round');
     if (!targetFile) return toast.error('Please upload an eligible students list file (Excel/PDF)');
@@ -111,7 +116,7 @@ const CreateDrivePage = () => {
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'placement drive', campusType: 'on campus', jobDescription: '', deadline: '', batch: '2023-27' }); setTargetFile(null); setJdFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
+              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'placement drive', campusType: 'on campus', jobDescription: '', deadline: '', batch: '2023-27' }); setIsCustomDriveType(false); setIsCustomCampusType(false); setTargetFile(null); setJdFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
               className="btn-outline-premium flex-1 py-3"
             >
               Create Another Drive
@@ -175,31 +180,116 @@ const CreateDrivePage = () => {
               />
             </div>
             <div className="md:col-span-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Drive Type *</label>
-              <select
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
-                value={form.driveType}
-                onChange={(e) => setForm({ ...form, driveType: e.target.value })}
-                required
-              >
-                <option value="internship">Internship</option>
-                <option value="internship+ppo">Internship + PPO</option>
-                <option value="placement drive">Placement Drive</option>
-                <option value="hackathon">Hackathon</option>
-              </select>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Drive Type *</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomDriveType;
+                    setIsCustomDriveType(next);
+                    if (next) {
+                      setForm({ ...form, driveType: '' });
+                    } else {
+                      setForm({ ...form, driveType: 'placement drive' });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:opacity-80 transition-all bg-[var(--primary)]/10 px-2 py-0.5 rounded-lg border border-[var(--primary)]/20"
+                >
+                  <Plus size={12} />
+                  {isCustomDriveType ? 'Choose from list' : '+ Add Custom'}
+                </button>
+              </div>
+
+              {isCustomDriveType ? (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    className="w-full bg-[var(--bg-input)] border-2 border-[var(--primary)]/40 rounded-xl py-3 px-4 text-[14px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)] transition-all placeholder:font-normal placeholder:text-slate-400"
+                    placeholder="Enter custom drive type (e.g., Pool Campus Drive, Apprenticeship)..."
+                    value={form.driveType}
+                    onChange={(e) => setForm({ ...form, driveType: e.target.value })}
+                    required
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-[var(--text-secondary)] font-medium">✍️ Custom drive type active. Click "Choose from list" to revert.</p>
+                </div>
+              ) : (
+                <select
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
+                  value={form.driveType}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomDriveType(true);
+                      setForm({ ...form, driveType: '' });
+                    } else {
+                      setForm({ ...form, driveType: e.target.value });
+                    }
+                  }}
+                  required
+                >
+                  <option value="placement drive">Placement Drive</option>
+                  <option value="internship">Internship</option>
+                  <option value="internship+ppo">Internship + PPO</option>
+                  <option value="hackathon">Hackathon</option>
+                  <option value="__custom__">+ Add Custom Drive Type...</option>
+                </select>
+              )}
             </div>
             
             <div className="md:col-span-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Campus Type *</label>
-              <select
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
-                value={form.campusType}
-                onChange={(e) => setForm({ ...form, campusType: e.target.value })}
-                required
-              >
-                <option value="on campus">On Campus</option>
-                <option value="off campus">Off Campus</option>
-              </select>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Campus Type *</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomCampusType;
+                    setIsCustomCampusType(next);
+                    if (next) {
+                      setForm({ ...form, campusType: '' });
+                    } else {
+                      setForm({ ...form, campusType: 'on campus' });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:opacity-80 transition-all bg-[var(--primary)]/10 px-2 py-0.5 rounded-lg border border-[var(--primary)]/20"
+                >
+                  <Plus size={12} />
+                  {isCustomCampusType ? 'Choose from list' : '+ Add Custom'}
+                </button>
+              </div>
+
+              {isCustomCampusType ? (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    className="w-full bg-[var(--bg-input)] border-2 border-[var(--primary)]/40 rounded-xl py-3 px-4 text-[14px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 focus:border-[var(--primary)] transition-all placeholder:font-normal placeholder:text-slate-400"
+                    placeholder="Enter custom campus type (e.g., Pool Campus, Virtual / Remote)..."
+                    value={form.campusType}
+                    onChange={(e) => setForm({ ...form, campusType: e.target.value })}
+                    required
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-[var(--text-secondary)] font-medium">✍️ Custom campus type active. Click "Choose from list" to revert.</p>
+                </div>
+              ) : (
+                <select
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-3 px-4 text-[14px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
+                  value={form.campusType}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomCampusType(true);
+                      setForm({ ...form, campusType: '' });
+                    } else {
+                      setForm({ ...form, campusType: e.target.value });
+                    }
+                  }}
+                  required
+                >
+                  <option value="on campus">On Campus</option>
+                  <option value="off campus">Off Campus</option>
+                  <option value="pool campus">Pool Campus</option>
+                  <option value="__custom__">+ Add Custom Campus Type...</option>
+                </select>
+              )}
             </div>
             
             <div className="md:col-span-1">

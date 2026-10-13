@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, UserPlus, FileSpreadsheet, Users, ChevronDown, ChevronUp,
-  Search, X, CheckCircle, Mail, Phone, BookOpen, GraduationCap, RefreshCw, Trash2
+  Search, X, CheckCircle, Mail, Phone, BookOpen, GraduationCap, RefreshCw, Trash2,
+  Download, CheckCircle2, XCircle, Filter
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -15,11 +17,17 @@ const EnrollStudentsPage = () => {
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [expandedBatch, setExpandedBatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [preferenceFilter, setPreferenceFilter] = useState('all'); // 'all', 'want', 'not_want'
 
   const [showManualAddModal, setShowManualAddModal] = useState(false);
   const [selectedBatchForManualAdd, setSelectedBatchForManualAdd] = useState('');
   const [manualEnrollmentNumbers, setManualEnrollmentNumbers] = useState('');
   const [enrollingManual, setEnrollingManual] = useState(false);
+
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [downloadFilter, setDownloadFilter] = useState('all'); // 'all', 'want', 'not_want'
+  const [downloadBatch, setDownloadBatch] = useState('all');
+  const [updatingStudentId, setUpdatingStudentId] = useState(null);
 
   const handleManualEnroll = async (e) => {
     e.preventDefault();
@@ -95,6 +103,84 @@ const EnrollStudentsPage = () => {
     }
   };
 
+  // Aggregate student preference counts
+  const allStudents = batches.flatMap(b => b.students || []);
+  const wantCount = allStudents.filter(s => (s.placementPreference || 'want') === 'want').length;
+  const notWantCount = allStudents.filter(s => s.placementPreference === 'not_want').length;
+
+  const handleUpdatePreference = async (studentId, preference) => {
+    const prevBatches = batches;
+    // Optimistic UI update
+    setBatches(current =>
+      current.map(b => ({
+        ...b,
+        students: b.students.map(s =>
+          s._id === studentId ? { ...s, placementPreference: preference } : s
+        ),
+      }))
+    );
+
+    setUpdatingStudentId(studentId);
+    try {
+      await api.patch(`/placement/enrolled-students/${studentId}/preference`, { preference });
+      toast.success(
+        preference === 'want'
+          ? 'Marked: Wants placement from institute'
+          : 'Marked: Does not want placement from institute'
+      );
+    } catch (err) {
+      setBatches(prevBatches);
+      toast.error(err.response?.data?.message || 'Failed to update preference');
+    } finally {
+      setUpdatingStudentId(null);
+    }
+  };
+
+  const handleDownloadExcel = () => {
+    let listToExport = [];
+    if (downloadBatch === 'all') {
+      listToExport = batches.flatMap(b => b.students || []);
+    } else {
+      const found = batches.find(b => b.batch === downloadBatch);
+      listToExport = found ? found.students : [];
+    }
+
+    if (downloadFilter === 'want') {
+      listToExport = listToExport.filter(s => (s.placementPreference || 'want') === 'want');
+    } else if (downloadFilter === 'not_want') {
+      listToExport = listToExport.filter(s => s.placementPreference === 'not_want');
+    }
+
+    if (listToExport.length === 0) {
+      return toast.error('No students found matching the selected download criteria');
+    }
+
+    const data = listToExport.map((s, idx) => ({
+      'S.No': idx + 1,
+      'Student Name': s.name || '',
+      'Enrollment Number': s.enrollmentNumber || '',
+      'Email': s.email || '',
+      'Mobile': s.mobile || '',
+      'Department': s.department || '',
+      'Batch': s.batch || '',
+      'Placement Preference': (s.placementPreference || 'want') === 'want' ? 'Want Placement from Institute' : 'Not Want Placement from Institute',
+      'Mentor': s.mentor?.name || (typeof s.mentor === 'string' ? s.mentor : 'Unassigned'),
+      'Status': 'Enrolled'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Enrolled Students');
+
+    const filterLabel = downloadFilter === 'want' ? 'Want_Placement' : downloadFilter === 'not_want' ? 'Not_Want_Placement' : 'All_Students';
+    const batchLabel = downloadBatch === 'all' ? 'All_Batches' : `Batch_${downloadBatch}`;
+    const filename = `Placement_${filterLabel}_${batchLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    XLSX.writeFile(wb, filename);
+    toast.success(`Successfully exported ${listToExport.length} students to ${filename}!`);
+    setShowDownloadModal(false);
+  };
+
   const batchColors = [
     { bg: 'from-purple-500/10 to-violet-500/5', border: 'border-purple-500/20', text: 'text-purple-500', badge: 'bg-purple-500/10 text-purple-400' },
     { bg: 'from-blue-500/10 to-cyan-500/5', border: 'border-blue-500/20', text: 'text-blue-500', badge: 'bg-blue-500/10 text-blue-400' },
@@ -125,14 +211,39 @@ const EnrollStudentsPage = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="glass-card px-5 py-3 flex items-center gap-3">
-              <Users className="text-emerald-500" size={20} />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="glass-card px-4 py-2.5 flex items-center gap-3">
+              <Users className="text-purple-500" size={18} />
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Total Enrolled</p>
-                <p className="text-2xl font-display font-black text-[var(--text-primary)]">{total}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Total</p>
+                <p className="text-xl font-display font-black text-[var(--text-primary)]">{total}</p>
               </div>
             </div>
+
+            <div className="glass-card px-4 py-2.5 flex items-center gap-3 border-emerald-500/20 bg-emerald-500/5">
+              <CheckCircle2 className="text-emerald-500" size={18} />
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600">Want Placement</p>
+                <p className="text-xl font-display font-black text-emerald-600">{wantCount}</p>
+              </div>
+            </div>
+
+            <div className="glass-card px-4 py-2.5 flex items-center gap-3 border-rose-500/20 bg-rose-500/5">
+              <XCircle className="text-rose-500" size={18} />
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">Not Want</p>
+                <p className="text-xl font-display font-black text-rose-500">{notWantCount}</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowDownloadModal(true)}
+              className="flex items-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+              title="Download Students List"
+            >
+              <Download size={16} /> Download List
+            </button>
+
             <button onClick={fetchEnrolledStudents} className="btn-outline-premium p-3 rounded-xl" title="Refresh">
               <RefreshCw size={18} className={loadingStudents ? 'animate-spin' : ''} />
             </button>
@@ -226,22 +337,71 @@ const EnrollStudentsPage = () => {
 
       {/* Enrolled Students by Batch */}
       <div>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-display font-black text-[var(--text-primary)]">Enrolled Students by Batch</h2>
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-[var(--text-secondary)] opacity-60" size={16} />
-            <input
-              type="text"
-              placeholder="Search students..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium w-52"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                <X size={14} />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+          <div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)]">Enrolled Students by Batch</h2>
+            <p className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">Filter by preference or export student lists to Excel</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Filter Tabs */}
+            <div className="inline-flex items-center p-1 bg-[var(--bg-input)]/50 border border-[var(--border-light)] rounded-xl text-xs font-bold gap-1">
+              <button
+                type="button"
+                onClick={() => setPreferenceFilter('all')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  preferenceFilter === 'all'
+                    ? 'bg-[var(--primary)] text-white shadow-sm font-black'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                All ({total})
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => setPreferenceFilter('want')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  preferenceFilter === 'want'
+                    ? 'bg-emerald-600 text-white shadow-sm font-black'
+                    : 'text-[var(--text-secondary)] hover:text-emerald-500'
+                }`}
+              >
+                Want Placement ({wantCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreferenceFilter('not_want')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  preferenceFilter === 'not_want'
+                    ? 'bg-rose-600 text-white shadow-sm font-black'
+                    : 'text-[var(--text-secondary)] hover:text-rose-500'
+                }`}
+              >
+                Not Want ({notWantCount})
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowDownloadModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              <Download size={14} /> Download List
+            </button>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-[var(--text-secondary)] opacity-60" size={16} />
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium w-48"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -264,15 +424,18 @@ const EnrollStudentsPage = () => {
               const color = batchColors[idx % batchColors.length];
               const isExpanded = expandedBatch === batchData.batch;
 
-              const filteredStudents = searchQuery
-                ? batchData.students.filter(s =>
-                    s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    s.enrollmentNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    s.email?.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                : batchData.students;
+              const filteredStudents = batchData.students.filter(s => {
+                const matchesSearch = !searchQuery || (
+                  s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  s.enrollmentNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  s.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+                const pref = s.placementPreference || 'want';
+                const matchesPref = preferenceFilter === 'all' || pref === preferenceFilter;
+                return matchesSearch && matchesPref;
+              });
 
-              const shouldShow = !searchQuery || filteredStudents.length > 0;
+              const shouldShow = !searchQuery && preferenceFilter === 'all' ? true : filteredStudents.length > 0;
               if (!shouldShow) return null;
 
               return (
@@ -289,7 +452,7 @@ const EnrollStudentsPage = () => {
                       <div className="text-left">
                         <h3 className={`text-xl font-display font-black ${color.text}`}>Batch {batchData.batch}</h3>
                         <p className="text-[var(--text-secondary)] text-sm font-medium mt-0.5">
-                          {searchQuery ? `${filteredStudents.length} of ${batchData.count}` : batchData.count} students enrolled
+                          {filteredStudents.length} of {batchData.count} students shown
                         </p>
                       </div>
                     </div>
@@ -313,7 +476,7 @@ const EnrollStudentsPage = () => {
 
                   {/* Expanded Students Table */}
                   <AnimatePresence>
-                    {(isExpanded || searchQuery) && filteredStudents.length > 0 && (
+                    {(isExpanded || searchQuery || preferenceFilter !== 'all') && filteredStudents.length > 0 && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
@@ -332,7 +495,7 @@ const EnrollStudentsPage = () => {
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Mentor</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Department</th>
                                 <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Mobile</th>
-                                <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Status</th>
+                                <th className="text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Placement Preference (Institute)</th>
                                 <th className="text-right px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Actions</th>
                               </tr>
                             </thead>
@@ -370,9 +533,36 @@ const EnrollStudentsPage = () => {
                                     ) : '—'}
                                   </td>
                                   <td className="px-6 py-4">
-                                    <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg w-fit">
-                                      <CheckCircle size={12} /> Enrolled
-                                    </span>
+                                    <div className="inline-flex items-center p-1 bg-[var(--bg-input)]/70 border border-[var(--border-light)] rounded-xl gap-1 shadow-sm">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdatePreference(student._id, 'want')}
+                                        disabled={updatingStudentId === student._id}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                          (student.placementPreference || 'want') === 'want'
+                                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 font-black'
+                                            : 'text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/10'
+                                        }`}
+                                        title="Student wants placement from institute"
+                                      >
+                                        <CheckCircle2 size={13} className={(student.placementPreference || 'want') === 'want' ? 'text-white' : 'text-emerald-500'} />
+                                        <span>Want Placement</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdatePreference(student._id, 'not_want')}
+                                        disabled={updatingStudentId === student._id}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                          student.placementPreference === 'not_want'
+                                            ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/30 font-black'
+                                            : 'text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/10'
+                                        }`}
+                                        title="Student does not want placement from institute"
+                                      >
+                                        <XCircle size={13} className={student.placementPreference === 'not_want' ? 'text-white' : 'text-rose-500'} />
+                                        <span>Not Want</span>
+                                      </button>
+                                    </div>
                                   </td>
                                   <td className="px-6 py-4 text-right">
                                     <button 
@@ -435,6 +625,134 @@ const EnrollStudentsPage = () => {
                 )}
               </button>
             </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Download Enrolled Students Modal */}
+      {showDownloadModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-2xl rounded-3xl relative" style={{ width: '92%', maxWidth: 520, padding: 32 }}>
+            <button onClick={() => setShowDownloadModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/50 p-2 rounded-full transition-colors cursor-pointer">
+              <X size={20} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 mb-4 shadow-sm">
+              <Download size={24} />
+            </div>
+            <h2 className="text-2xl font-display font-black text-[var(--text-primary)] mb-1">Download Enrolled Students</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
+              Select which category of students you want to export into an Excel (.xlsx) sheet.
+            </p>
+
+            {/* 3 Selectable Categories */}
+            <div className="space-y-3 mb-6">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Category to Export *</label>
+
+              {/* 1. All Students */}
+              <div
+                onClick={() => setDownloadFilter('all')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                  downloadFilter === 'all'
+                    ? 'border-emerald-500 bg-emerald-500/5 shadow-sm'
+                    : 'border-[var(--border-light)] bg-[var(--bg-input)]/20 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${downloadFilter === 'all' ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-card)] text-slate-400 border border-[var(--border-light)]'}`}>
+                    <Users size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-[var(--text-primary)]">All Students</h4>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium">Download complete enrolled student records</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-[var(--text-primary)]">{total}</span>
+                  <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
+                </div>
+              </div>
+
+              {/* 2. Want Placement */}
+              <div
+                onClick={() => setDownloadFilter('want')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                  downloadFilter === 'want'
+                    ? 'border-emerald-500 bg-emerald-500/5 shadow-sm'
+                    : 'border-[var(--border-light)] bg-[var(--bg-input)]/20 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${downloadFilter === 'want' ? 'bg-emerald-600 text-white' : 'bg-[var(--bg-card)] text-emerald-500 border border-[var(--border-light)]'}`}>
+                    <CheckCircle2 size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-[var(--text-primary)]">Want Placement from Institute</h4>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium">Only students who want institute placement</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-emerald-600">{wantCount}</span>
+                  <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
+                </div>
+              </div>
+
+              {/* 3. Not Want Placement */}
+              <div
+                onClick={() => setDownloadFilter('not_want')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                  downloadFilter === 'not_want'
+                    ? 'border-rose-500 bg-rose-500/5 shadow-sm'
+                    : 'border-[var(--border-light)] bg-[var(--bg-input)]/20 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${downloadFilter === 'not_want' ? 'bg-rose-600 text-white' : 'bg-[var(--bg-card)] text-rose-500 border border-[var(--border-light)]'}`}>
+                    <XCircle size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-[var(--text-primary)]">Not Want Placement from Institute</h4>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium">Students opted out / not wanting placement</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-rose-600">{notWantCount}</span>
+                  <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Batch Filter Option */}
+            <div className="mb-6">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Filter by Batch (Optional)</label>
+              <select
+                value={downloadBatch}
+                onChange={(e) => setDownloadBatch(e.target.value)}
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+              >
+                <option value="all">All Batches ({total} Students)</option>
+                {batches.map(b => (
+                  <option key={b.batch} value={b.batch}>Batch {b.batch} ({b.count} Students)</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDownloadModal(false)}
+                className="btn-outline-premium flex-1 py-3 text-xs font-bold cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadExcel}
+                className="btn-premium flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Download size={16} /> Download Excel (.xlsx)
+              </button>
+            </div>
           </motion.div>
         </div>
       )}
