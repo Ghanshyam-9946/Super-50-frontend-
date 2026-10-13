@@ -1,109 +1,163 @@
-import { useState, useEffect } from "react";
-import ScholarSection from "../../components/profile/ScholarSection";
+import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
-import { IdCard, Loader2, Plus, Trash2, Download, Pencil, X } from "lucide-react";
+import { IdCard, Loader2, Plus, Download, Pencil, X, Paperclip, Save, UserRound, Wrench, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { downloadFile } from "../../utils/downloadFile";
 import { getImageUrl } from "../../utils/imageUrl";
 import ProfileEditModal from "../../components/ProfileEditModal";
+import ScholarSection from "../../components/profile/ScholarSection";
+import EntryList, { AttachmentLink } from "../../components/profile/ProfileEntries";
+import { PROFILE_SECTIONS, emptyProfile } from "../../utils/facultyProfileSections";
 
-// Every section below (Qualifications, Experience, ..., Other Activities)
-// is an array of small objects with different field shapes but an
-// identical add/list/remove interaction — one generic repeater handles
-// all 8, rather than hand-writing 8 near-identical card blocks.
-function RepeaterSection({ title, items, fields, renderSummary, onChange }) {
-  const emptyEntry = () => Object.fromEntries(fields.map((f) => [f.key, f.type === "checkbox" ? false : ""]));
-  const [draft, setDraft] = useState(emptyEntry());
-  const [adding, setAdding] = useState(false);
+const inputCls = "bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-full";
+const labelCls = "flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1";
 
-  const startAdd = () => {
-    setDraft(emptyEntry());
-    setAdding(true);
-  };
+const blankEntry = (section) => ({
+  ...Object.fromEntries(section.fields.map((f) => [f.key, f.type === "checkbox" ? false : ""])),
+  attachmentUrl: "",
+  attachmentName: "",
+});
 
-  const confirmAdd = () => {
-    const requiredKey = fields[0].key;
-    if (!draft[requiredKey]?.toString().trim()) {
-      return toast.error(`${fields[0].label} is required`);
+// The add / edit form of one entry. The supporting document is uploaded as
+// soon as it is chosen; the entry only keeps where it was stored.
+function EntryForm({ section, initial, onSave, onCancel }) {
+  const [draft, setDraft] = useState(initial);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+
+  const set = (key, value) => setDraft((d) => ({ ...d, [key]: value }));
+
+  const pickFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) return toast.error("The file is larger than 10 MB");
+    const body = new FormData();
+    body.append("file", file);
+    setUploading(true);
+    try {
+      const { data } = await api.post("/faculty-profile/mine/attachment", body, { headers: { "Content-Type": "multipart/form-data" } });
+      setDraft((d) => ({ ...d, ...data.data }));
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Could not attach the file");
+    } finally {
+      setUploading(false);
     }
-    onChange([...items, draft]);
-    setAdding(false);
   };
 
-  const remove = (idx) => onChange(items.filter((_, i) => i !== idx));
+  const submit = () => {
+    const first = section.fields[0];
+    if (!String(draft[first.key] || "").trim()) return toast.error(`${first.label} is required`);
+    onSave(draft);
+  };
 
   return (
-    <div className="glass-card p-5 rounded-2xl space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">{title}</h3>
-        {!adding && (
-          <button onClick={startAdd} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
-            <Plus size={12} /> Add
-          </button>
+    <div className="border border-[var(--primary)]/40 rounded-2xl p-4 space-y-3 bg-[var(--bg-input)]/40">
+      <div className="grid sm:grid-cols-2 gap-3">
+        {section.fields.map((f) =>
+          f.type === "checkbox" ? (
+            <label key={f.key} className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)] sm:col-span-2">
+              <input type="checkbox" checked={!!draft[f.key]} onChange={(e) => set(f.key, e.target.checked)} />
+              {f.label}
+            </label>
+          ) : f.type === "textarea" ? (
+            <label key={f.key} className={`${labelCls} sm:col-span-2`}>
+              {f.label}
+              <textarea value={draft[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} rows={3} className={inputCls} />
+            </label>
+          ) : f.options ? (
+            <label key={f.key} className={labelCls}>
+              {f.label}
+              <select value={draft[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} className={inputCls}>
+                <option value="">Select</option>
+                {/* A value saved before the list existed stays selectable. */}
+                {[...new Set([...f.options, draft[f.key]].filter(Boolean))].map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </label>
+          ) : (
+            <label key={f.key} className={labelCls}>
+              {f.label}
+              <input value={draft[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} className={inputCls} />
+            </label>
+          )
         )}
       </div>
 
-      {items.length === 0 && !adding && <p className="text-xs text-[var(--text-secondary)]">Nothing added yet.</p>}
-
-      <div className="space-y-2">
-        {items.map((item, idx) => (
-          <div key={idx} className="flex items-start gap-3 bg-[var(--bg-input)] border border-dashed border-[var(--border-light)] rounded-xl p-3">
-            <div className="flex-1 text-xs">{renderSummary(item)}</div>
-            <button onClick={() => remove(idx)}>
-              <Trash2 size={14} className="text-red-400" />
-            </button>
-          </div>
-        ))}
+      <div className="space-y-1.5">
+        <div className="text-[10px] font-bold uppercase text-[var(--text-secondary)]">Attachment (certificate / proof)</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" className="hidden" onChange={pickFile} />
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+            className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
+            {uploading ? <Loader2 size={13} className="animate-spin" /> : <Paperclip size={13} />}
+            {draft.attachmentUrl ? "Replace file" : "Attach a file"}
+          </button>
+          {draft.attachmentUrl && (
+            <>
+              <AttachmentLink url={draft.attachmentUrl} name={draft.attachmentName} />
+              <button type="button" onClick={() => setDraft((d) => ({ ...d, attachmentUrl: "", attachmentName: "" }))}
+                className="text-[11px] font-bold text-red-500 hover:underline">Remove</button>
+            </>
+          )}
+          <span className="text-[11px] text-[var(--text-secondary)]">PDF, image or Word · up to 10 MB</span>
+        </div>
       </div>
 
-      {adding && (
-        <div className="border-t border-[var(--border-light)] pt-3 space-y-2">
-          <div className="grid sm:grid-cols-2 gap-2">
-            {fields.map((f) =>
-              f.type === "checkbox" ? (
-                <label key={f.key} className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-                  <input type="checkbox" checked={!!draft[f.key]} onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.checked }))} />
-                  {f.label}
-                </label>
-              ) : f.type === "textarea" ? (
-                <textarea
-                  key={f.key}
-                  placeholder={f.label}
-                  value={draft[f.key]}
-                  onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                  rows={2}
-                  className="sm:col-span-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
-                />
-              ) : (
-                <input
-                  key={f.key}
-                  placeholder={f.label}
-                  value={draft[f.key]}
-                  onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
-                  className="bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-xs"
-                />
-              )
-            )}
-          </div>
-          <div className="flex gap-2">
-            <button onClick={confirmAdd} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)]">
-              Add Entry
-            </button>
-            <button onClick={() => setAdding(false)} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
-              <X size={12} /> Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2">
+        <button onClick={submit} disabled={uploading} className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
+          <Save size={13} /> Save entry
+        </button>
+        <button onClick={onCancel} className="btn-outline-premium text-xs px-4 py-2 flex items-center gap-1.5">
+          <X size={13} /> Cancel
+        </button>
+      </div>
     </div>
   );
 }
 
-const emptyProfile = () => ({
-  headline: "", bio: "", skills: [], qualifications: [], experience: [], certifications: [],
-  papersPublished: [], booksPublished: [], patents: [], conferencesAttended: [], otherActivities: [],
-});
+// One repeating section: its entries, and the form to add or change one.
+function EntrySection({ section, items, onChange, saving }) {
+  // null = closed, -1 = adding, n = editing the n-th entry
+  const [editing, setEditing] = useState(null);
+  const Icon = section.icon;
+
+  const save = (entry) => {
+    onChange(editing === -1 ? [...items, entry] : items.map((x, i) => (i === editing ? entry : x)));
+    setEditing(null);
+  };
+  const remove = (idx) => {
+    if (!window.confirm("Delete this entry?")) return;
+    onChange(items.filter((_, i) => i !== idx));
+    setEditing(null);
+  };
+
+  return (
+    <div className="glass-card p-5 rounded-2xl space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="p-2.5 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] shrink-0"><Icon size={18} /></div>
+          <div className="min-w-0">
+            <h3 className="font-display font-bold text-base text-[var(--text-primary)]">{section.title}</h3>
+            <p className="text-xs text-[var(--text-secondary)]">{section.hint}</p>
+          </div>
+        </div>
+        {editing === null && (
+          <button onClick={() => setEditing(-1)} className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5">
+            <Plus size={13} /> Add
+          </button>
+        )}
+      </div>
+
+      {editing === -1 && <EntryForm section={section} initial={blankEntry(section)} onSave={save} onCancel={() => setEditing(null)} />}
+      {editing !== null && editing >= 0 && (
+        <EntryForm key={editing} section={section} initial={{ ...blankEntry(section), ...items[editing] }} onSave={save} onCancel={() => setEditing(null)} />
+      )}
+
+      <EntryList section={section} items={items} onEdit={saving ? undefined : setEditing} onRemove={saving ? undefined : remove} />
+    </div>
+  );
+}
 
 export default function MyProfile() {
   const { user } = useSelector((s) => s.auth);
@@ -111,47 +165,42 @@ export default function MyProfile() {
   const [skillDraft, setSkillDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/faculty-profile/mine");
-      if (data.success) setProfile({ ...emptyProfile(), ...data.data });
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to load your profile");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [tab, setTab] = useState("basic");
 
   useEffect(() => {
-    load();
+    api.get("/faculty-profile/mine")
+      .then(({ data }) => { if (data.success) setProfile({ ...emptyProfile(), ...data.data }); })
+      .catch((err) => toast.error(err.response?.data?.message || "Failed to load your profile"))
+      .finally(() => setLoading(false));
   }, []);
 
-  const addSkill = () => {
-    const trimmed = skillDraft.trim();
-    if (!trimmed) return;
-    if (profile.skills.includes(trimmed)) return setSkillDraft("");
-    setProfile((p) => ({ ...p, skills: [...p.skills, trimmed] }));
-    setSkillDraft("");
-  };
-  const removeSkill = (skill) => setProfile((p) => ({ ...p, skills: p.skills.filter((s) => s !== skill) }));
-
-  const save = async () => {
+  // Every change is saved as it is made — an entry added and then lost to
+  // a forgotten Save button is the one thing this page must not do.
+  const persist = async (next, { quiet = true } = {}) => {
+    setProfile(next);
     setSaving(true);
     try {
-      const { data } = await api.put("/faculty-profile/mine", profile);
+      const { data } = await api.put("/faculty-profile/mine", next);
       if (data.success) {
-        toast.success(data.message || "Profile saved");
         setProfile({ ...emptyProfile(), ...data.data });
+        setSavedAt(new Date());
+        if (!quiet) toast.success("Profile saved");
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save profile");
+      toast.error(err.response?.data?.message || "Failed to save — your last change was not stored");
     } finally {
       setSaving(false);
     }
+  };
+
+  const addSkill = () => {
+    const trimmed = skillDraft.trim();
+    setSkillDraft("");
+    if (!trimmed || profile.skills.some((s) => s.toLowerCase() === trimmed.toLowerCase())) return;
+    persist({ ...profile, skills: [...profile.skills, trimmed] });
   };
 
   const downloadPdf = async () => {
@@ -173,8 +222,15 @@ export default function MyProfile() {
     );
   }
 
+  const tabs = [
+    { key: "basic", title: "Basic Information", icon: UserRound },
+    { key: "skills", title: "Skills", icon: Wrench, count: profile.skills.length },
+    ...PROFILE_SECTIONS.map((s) => ({ key: s.key, title: s.title, icon: s.icon, count: (profile[s.key] || []).length })),
+  ];
+  const section = PROFILE_SECTIONS.find((s) => s.key === tab);
+
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-8 max-w-6xl mx-auto space-y-6">
       <header className="glass-card flex flex-wrap items-center gap-4 p-8 rounded-3xl">
         <div className="p-3 bg-[var(--primary)]/10 text-[var(--primary)] rounded-2xl border border-[var(--primary)]/20">
           <IdCard size={26} />
@@ -182,223 +238,133 @@ export default function MyProfile() {
         <div className="flex-1 min-w-[200px]">
           <h1 className="text-3xl md:text-4xl font-display font-black tracking-tight text-[var(--text-primary)]">My Profile</h1>
           <p className="text-[var(--text-secondary)] font-medium text-sm mt-1">
-            Build a rich profile — Skills, Qualifications, Experience, Publications and more — then export it as a designed PDF anytime.
+            Fill in each section and attach the certificate or proof with it. Whatever you add here is what the admin sees on your profile.
           </p>
         </div>
-        <button
-          onClick={downloadPdf}
-          disabled={downloading}
-          className="btn-premium text-sm px-4 py-2.5 flex items-center gap-1.5 disabled:opacity-40"
-        >
-          {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} Download PDF
-        </button>
+        <div className="flex flex-col items-end gap-1.5">
+          <button onClick={downloadPdf} disabled={downloading} className="btn-premium text-sm px-4 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
+            {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />} Download PDF
+          </button>
+          <span className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1 h-4">
+            {saving ? <><Loader2 size={11} className="animate-spin" /> Saving…</>
+              : savedAt ? <><CheckCircle2 size={11} className="text-green-500" /> All changes saved</> : null}
+          </span>
+        </div>
       </header>
 
-      {/* Basic Information */}
-      <div className="glass-card p-5 rounded-2xl space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">Basic Information</h3>
-          <button onClick={() => setEditModalOpen(true)} className="text-xs font-bold px-3 py-1.5 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
-            <Pencil size={12} /> Edit
-          </button>
-        </div>
-        <div className="flex items-center gap-4">
-          {user?.profileImage ? (
-            <img src={getImageUrl(user.profileImage)} alt={user.name} className="w-16 h-16 rounded-2xl object-cover border border-[var(--border-light)]" />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center justify-center text-[var(--text-secondary)] font-bold text-lg">
-              {(user?.name || "?").charAt(0)}
+      <div className="grid lg:grid-cols-[230px_1fr] gap-6 items-start">
+        {/* Section menu: a column on wide screens, a scrolling strip on narrow ones. */}
+        <nav className="glass-card rounded-2xl p-2 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-4">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-left whitespace-nowrap lg:whitespace-normal transition-colors ${
+                tab === t.key ? "bg-[var(--primary)] text-white" : "text-[var(--text-primary)] hover:bg-[var(--bg-input)]"
+              }`}
+            >
+              <t.icon size={15} className="shrink-0" />
+              <span className="flex-1">{t.title}</span>
+              {t.count > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${tab === t.key ? "bg-white/20" : "bg-[var(--border-light)] text-[var(--text-secondary)]"}`}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        <div className="space-y-6 min-w-0">
+          {tab === "basic" && (
+            <div className="glass-card p-5 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Basic Information</h3>
+                <button onClick={() => setEditModalOpen(true)} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5">
+                  <Pencil size={12} /> Edit name, photo, contact
+                </button>
+              </div>
+              <div className="flex items-center gap-4">
+                {user?.profileImage ? (
+                  <img src={getImageUrl(user.profileImage)} alt={user.name} className="w-16 h-16 rounded-2xl object-cover border border-[var(--border-light)]" />
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-light)] flex items-center justify-center text-[var(--text-secondary)] font-bold text-lg">
+                    {(user?.name || "?").charAt(0)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="font-bold text-sm text-[var(--text-primary)]">{user?.name}</div>
+                  <div className="text-xs text-[var(--text-secondary)] break-words">
+                    {[user?.designation, user?.department, user?.email, user?.mobile].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+              </div>
+              <label className={labelCls}>
+                Headline
+                <input
+                  value={profile.headline}
+                  onChange={(e) => setProfile((p) => ({ ...p, headline: e.target.value }))}
+                  placeholder="e.g. Associate Professor, CSE | Distributed Systems Researcher"
+                  className={inputCls}
+                />
+              </label>
+              <label className={labelCls}>
+                About / Bio
+                <textarea value={profile.bio} onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))} rows={4} className={inputCls} />
+              </label>
+              <button onClick={() => persist(profile, { quiet: false })} disabled={saving}
+                className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-40">
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save headline and bio
+              </button>
             </div>
           )}
-          <div>
-            <div className="font-bold text-sm text-[var(--text-primary)]">{user?.name}</div>
-            <div className="text-xs text-[var(--text-secondary)]">{user?.designation || user?.department} · {user?.email}</div>
-          </div>
-        </div>
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-          Headline
-          <input
-            value={profile.headline}
-            onChange={(e) => setProfile((p) => ({ ...p, headline: e.target.value }))}
-            placeholder="e.g. Associate Professor, CSE | Distributed Systems Researcher"
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
-        </label>
-        <label className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
-          About / Bio
-          <textarea
-            value={profile.bio}
-            onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
-            rows={3}
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm"
-          />
-        </label>
-      </div>
 
-      {/* Google Scholar: the link, and the papers fetched from it. */}
-      <ScholarSection />
+          {tab === "skills" && (
+            <div className="glass-card p-5 rounded-2xl space-y-4">
+              <div>
+                <h3 className="font-display font-bold text-base text-[var(--text-primary)]">Skills</h3>
+                <p className="text-xs text-[var(--text-secondary)]">Technologies, tools and subject areas you work in.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.length === 0 && <span className="text-sm text-[var(--text-secondary)]">No skills added yet.</span>}
+                {profile.skills.map((skill) => (
+                  <span key={skill} className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">
+                    {skill}
+                    <button onClick={() => persist({ ...profile, skills: profile.skills.filter((s) => s !== skill) })} title="Remove">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2 max-w-md">
+                <input
+                  value={skillDraft}
+                  onChange={(e) => setSkillDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
+                  placeholder="e.g. Machine Learning"
+                  className={inputCls}
+                />
+                <button onClick={addSkill} className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 shrink-0">
+                  <Plus size={13} /> Add
+                </button>
+              </div>
+            </div>
+          )}
 
-      {/* Skills */}
-      <div className="glass-card p-5 rounded-2xl space-y-3">
-        <h3 className="font-display font-bold text-sm text-[var(--text-primary)]">Skills</h3>
-        <div className="flex flex-wrap gap-2">
-          {profile.skills.map((skill) => (
-            <span key={skill} className="badge flex items-center gap-1.5">
-              {skill}
-              <button onClick={() => removeSkill(skill)}>
-                <X size={11} />
-              </button>
-            </span>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            value={skillDraft}
-            onChange={(e) => setSkillDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
-            placeholder="e.g. Node.js"
-            className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm flex-1"
-          />
-          <button onClick={addSkill} className="text-xs font-bold px-3 py-2 rounded-lg border border-[var(--border-light)] flex items-center gap-1">
-            <Plus size={12} /> Add
-          </button>
+          {section && (
+            <>
+              {/* The papers fetched from Google Scholar sit with the ones typed in by hand. */}
+              {section.key === "papersPublished" && <ScholarSection />}
+              <EntrySection
+                key={section.key}
+                section={section}
+                items={profile[section.key] || []}
+                saving={saving}
+                onChange={(items) => persist({ ...profile, [section.key]: items })}
+              />
+            </>
+          )}
         </div>
       </div>
-
-      <RepeaterSection
-        title="Qualifications"
-        items={profile.qualifications}
-        onChange={(items) => setProfile((p) => ({ ...p, qualifications: items }))}
-        fields={[
-          { key: "degree", label: "Degree" }, { key: "institution", label: "Institution" },
-          { key: "specialization", label: "Specialization" }, { key: "year", label: "Year" },
-        ]}
-        renderSummary={(q) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{q.degree}</div>
-            <div className="text-[var(--text-secondary)]">{[q.institution, q.specialization, q.year].filter(Boolean).join(" · ")}</div>
-          </>
-        )}
-      />
-
-      <RepeaterSection
-        title="Experience"
-        items={profile.experience}
-        onChange={(items) => setProfile((p) => ({ ...p, experience: items }))}
-        fields={[
-          { key: "title", label: "Title" }, { key: "organization", label: "Organization" },
-          { key: "startDate", label: "Start Year" }, { key: "endDate", label: "End Year" },
-          { key: "current", label: "Currently working here", type: "checkbox" },
-          { key: "description", label: "Description", type: "textarea" },
-        ]}
-        renderSummary={(e) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{[e.title, e.organization].filter(Boolean).join(" — ")}</div>
-            <div className="text-[var(--text-secondary)]">{[e.startDate, e.current ? "Present" : e.endDate].filter(Boolean).join(" – ")}</div>
-            {e.description && <div className="text-[var(--text-secondary)] mt-1">{e.description}</div>}
-          </>
-        )}
-      />
-
-      <RepeaterSection
-        title="Certifications"
-        items={profile.certifications}
-        onChange={(items) => setProfile((p) => ({ ...p, certifications: items }))}
-        fields={[
-          { key: "title", label: "Title" }, { key: "issuedBy", label: "Issued By" },
-          { key: "year", label: "Year" }, { key: "credentialUrl", label: "Credential URL" },
-        ]}
-        renderSummary={(c) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{c.title}</div>
-            <div className="text-[var(--text-secondary)]">{[c.issuedBy, c.year].filter(Boolean).join(" · ")}</div>
-          </>
-        )}
-      />
-
-      <RepeaterSection
-        title="Papers Published"
-        items={profile.papersPublished}
-        onChange={(items) => setProfile((p) => ({ ...p, papersPublished: items }))}
-        fields={[
-          { key: "title", label: "Title" }, { key: "journal", label: "Journal" },
-          { key: "year", label: "Year" }, { key: "link", label: "Link" },
-        ]}
-        renderSummary={(p) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{p.title}</div>
-            <div className="text-[var(--text-secondary)]">{[p.journal, p.year].filter(Boolean).join(" · ")}</div>
-          </>
-        )}
-      />
-
-      <RepeaterSection
-        title="Books Published"
-        items={profile.booksPublished}
-        onChange={(items) => setProfile((p) => ({ ...p, booksPublished: items }))}
-        fields={[
-          { key: "title", label: "Title" }, { key: "publisher", label: "Publisher" },
-          { key: "year", label: "Year" }, { key: "isbn", label: "ISBN" },
-        ]}
-        renderSummary={(b) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{b.title}</div>
-            <div className="text-[var(--text-secondary)]">{[b.publisher, b.year, b.isbn && `ISBN ${b.isbn}`].filter(Boolean).join(" · ")}</div>
-          </>
-        )}
-      />
-
-      <RepeaterSection
-        title="Patents"
-        items={profile.patents}
-        onChange={(items) => setProfile((p) => ({ ...p, patents: items }))}
-        fields={[
-          { key: "title", label: "Title" }, { key: "patentNumber", label: "Patent Number" },
-          { key: "year", label: "Year" }, { key: "status", label: "Status" },
-        ]}
-        renderSummary={(p) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{p.title}</div>
-            <div className="text-[var(--text-secondary)]">{[p.patentNumber, p.year, p.status].filter(Boolean).join(" · ")}</div>
-          </>
-        )}
-      />
-
-      <RepeaterSection
-        title="Conferences Attended"
-        items={profile.conferencesAttended}
-        onChange={(items) => setProfile((p) => ({ ...p, conferencesAttended: items }))}
-        fields={[
-          { key: "title", label: "Conference Title" }, { key: "event", label: "Event" },
-          { key: "role", label: "Role (e.g. Speaker)" }, { key: "year", label: "Year" },
-        ]}
-        renderSummary={(c) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{c.title}</div>
-            <div className="text-[var(--text-secondary)]">{[c.event, c.role, c.year].filter(Boolean).join(" · ")}</div>
-          </>
-        )}
-      />
-
-      <RepeaterSection
-        title="Other Activities"
-        items={profile.otherActivities}
-        onChange={(items) => setProfile((p) => ({ ...p, otherActivities: items }))}
-        fields={[
-          { key: "title", label: "Title" }, { key: "year", label: "Year" },
-          { key: "description", label: "Description", type: "textarea" },
-        ]}
-        renderSummary={(a) => (
-          <>
-            <div className="font-bold text-[var(--text-primary)]">{a.title} {a.year && <span className="text-[var(--text-secondary)] font-medium">({a.year})</span>}</div>
-            {a.description && <div className="text-[var(--text-secondary)] mt-1">{a.description}</div>}
-          </>
-        )}
-      />
-
-      <button onClick={save} disabled={saving} className="btn-premium text-sm px-6 py-3 flex items-center gap-1.5 disabled:opacity-40">
-        {saving ? <Loader2 size={16} className="animate-spin" /> : "Save Profile"}
-      </button>
 
       <ProfileEditModal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} />
     </div>
