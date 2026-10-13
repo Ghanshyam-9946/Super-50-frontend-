@@ -114,6 +114,7 @@ import PMSRoutes from './pages/pms/PMSRoutes';
 
 // Admin reports
 import FacultyReportsPage from './pages/admin/FacultyReportsPage';
+import FacultyProfileViewPage from './pages/admin/FacultyProfileViewPage';
 import CourseFileIndexPage from './pages/admin/CourseFileIndexPage';
 
 // Alumni network
@@ -463,6 +464,10 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/faculty-reports" element={
           <RoleGuard allowed={['admin']}><FacultyReportsPage /></RoleGuard>
+        } />
+        {/* One faculty, complete — opened by clicking a name in a faculty list */}
+        <Route path="/admin/faculty/:id" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><FacultyProfileViewPage /></RoleGuard>
         } />
         <Route path="/admin/weekly-work-report" element={
           <RoleGuard allowed={['admin']}><WeeklyWorkReportAdminPage /></RoleGuard>

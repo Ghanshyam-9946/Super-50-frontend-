@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search, ShieldCheck, ShieldAlert, Check, X, Loader2, Trash2, Award, Plus, KeyRound, Copy, AlertCircle, Pencil } from 'lucide-react';
@@ -317,7 +318,10 @@ export default function VerifyGuidesPage() {
                         {guide.name[0]}
                       </div>
                       <div>
-                        <div className="text-[14px] font-bold text-[var(--text-primary)]">{guide.name}</div>
+                        <Link to={`/admin/faculty/${guide._id}`} title="Open full profile"
+                          className="text-[14px] font-bold text-[var(--text-primary)] hover:text-[var(--primary)] hover:underline">
+                          {guide.name}
+                        </Link>
                         <div className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-widest opacity-80 mt-0.5">{guide.email}</div>
                         {/* Display assigned responsibilities */}
                         {guide.responsibilities && guide.responsibilities.length > 0 && (

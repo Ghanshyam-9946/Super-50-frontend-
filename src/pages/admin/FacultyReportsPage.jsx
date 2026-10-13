@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3, Loader2, Search, Download, RefreshCw, X, ChevronRight, Users, ClipboardList,
@@ -194,7 +195,10 @@ export default function FacultyReportsPage() {
               {sorted.map((r) => (
                 <tr key={r.faculty._id} className="border-b border-[var(--border-light)] last:border-0 hover:bg-[var(--bg-input)]/50">
                   <td className="px-4 py-3">
-                    <div className="font-bold text-[var(--text-primary)]">{r.faculty.name}</div>
+                    <Link to={`/admin/faculty/${r.faculty._id}`} title="Open full profile"
+                      className="font-bold text-[var(--text-primary)] hover:text-[var(--primary)] hover:underline">
+                      {r.faculty.name}
+                    </Link>
                     <div className="text-[11px] text-[var(--text-secondary)]">
                       {(r.faculty.roles?.length ? r.faculty.roles : [r.faculty.role]).join(" + ")}
                       {r.faculty.department ? ` · ${r.faculty.department}` : ""}
