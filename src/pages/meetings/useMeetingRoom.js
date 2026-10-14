@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
+import api from "../../services/api";
 
 // Everything that makes a meeting room work, kept out of the page itself.
 //
@@ -11,12 +12,10 @@ import { io } from "socket.io-client";
 const SIGNAL_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/api\/?$/, "");
 
 // Public STUN is enough on most college and home networks. A network that
-// blocks direct connections outright would need a TURN server of your own;
-// that is a deployment decision, not a code one.
-const ICE_SERVERS = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-];
+// blocks direct connections outright (mobile data, a strict firewall) can
+// only be reached through a TURN relay; the server hands one out when it is
+// configured (GET /meetings/ice-servers), and this is the fallback.
+const DEFAULT_ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }];
 
 // A meeting mic wants the browser's cleanup on; a laptop speaker without
 // echo cancellation turns two people in one room into a howl.
@@ -68,6 +67,13 @@ export default function useMeetingRoom(roomCode) {
   const localStreamRef = useRef(null);
   const screenStreamRef = useRef(null);
   const peersRef = useRef(new Map()); // socketId -> RTCPeerConnection
+  // Per connection: who yields when both sides offer at once, the offer in
+  // flight, candidates that arrived early, and the tracks received so far.
+  const linkRef = useRef(new Map()); // socketId -> { polite, makingOffer, ignoreOffer, pendingIce, remote, restarts }
+  // Signalling for one connection is handled strictly in arrival order —
+  // a candidate must never be applied before the offer it belongs to.
+  const queueRef = useRef(new Map()); // socketId -> Promise
+  const iceServersRef = useRef(DEFAULT_ICE);
   const recorderRef = useRef(null);
   const recordedRef = useRef([]);
   const boardHandlerRef = useRef(null);
@@ -75,44 +81,136 @@ export default function useMeetingRoom(roomCode) {
   const setStream = (socketId, stream) =>
     setStreams((prev) => ({ ...prev, [socketId]: stream }));
 
+  const dropPeer = (socketId) => {
+    peersRef.current.get(socketId)?.close();
+    peersRef.current.delete(socketId);
+    linkRef.current.delete(socketId);
+    queueRef.current.delete(socketId);
+    setStreams((prev) => {
+      const next = { ...prev };
+      delete next[socketId];
+      return next;
+    });
+  };
+
   // --- one peer connection, wired both ways ---
-  const createPeer = useCallback((socketId, polite) => {
+  //
+  // Both kinds of media are always negotiated, whatever this machine has.
+  // A connection is only as wide as its offer: someone joining with no
+  // camera used to offer audio alone and so never received anybody's
+  // video, and someone with neither camera nor mic offered nothing at all
+  // and connected to nobody. `initiator` is the side that calls out — the
+  // newcomer — and it asks to receive audio and video regardless.
+  const createPeer = useCallback((socketId, initiator) => {
     if (peersRef.current.has(socketId)) return peersRef.current.get(socketId);
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    peersRef.current.set(socketId, pc);
-
-    localStreamRef.current?.getTracks().forEach((track) => pc.addTrack(track, localStreamRef.current));
-
-    pc.ontrack = (event) => setStream(socketId, event.streams[0]);
-    pc.onicecandidate = (event) => {
-      if (event.candidate) socketRef.current?.emit("webrtc:ice", { to: socketId, payload: event.candidate });
+    const pc = new RTCPeerConnection({ iceServers: iceServersRef.current });
+    const link = {
+      // Settles a collision when both sides renegotiate at the same moment
+      // (screen share started on both ends): the polite side gives way.
+      polite: String(socketRef.current?.id || "") > String(socketId),
+      makingOffer: false,
+      ignoreOffer: false,
+      pendingIce: [],
+      remote: new MediaStream(),
+      restarts: 0,
     };
-    pc.onconnectionstatechange = () => {
-      if (["failed", "closed"].includes(pc.connectionState)) {
-        pc.close();
-        peersRef.current.delete(socketId);
-        setStreams((prev) => {
-          const next = { ...prev };
-          delete next[socketId];
-          return next;
-        });
+    peersRef.current.set(socketId, pc);
+    linkRef.current.set(socketId, link);
+
+    const local = localStreamRef.current;
+    local?.getTracks().forEach((track) => pc.addTrack(track, local));
+    // Somebody who is already presenting shows their screen to newcomers too.
+    const screenTrack = screenStreamRef.current?.getVideoTracks?.()[0];
+    if (screenTrack) {
+      const videoSender = pc.getSenders().find((x) => x.track?.kind === "video");
+      if (videoSender) videoSender.replaceTrack(screenTrack);
+      else pc.addTrack(screenTrack, screenStreamRef.current);
+    }
+    if (initiator) {
+      ["audio", "video"].forEach((kind) => {
+        if (!pc.getSenders().some((x) => x.track?.kind === kind)) pc.addTransceiver(kind, { direction: "recvonly" });
+      });
+    }
+
+    // Every track from this person goes into one stream for their tile. A
+    // fresh MediaStream object each time makes the tile pick up a track that
+    // arrived after the first one.
+    pc.ontrack = ({ track }) => {
+      const { remote } = link;
+      remote.getTracks().filter((t) => t.kind === track.kind && t !== track).forEach((t) => remote.removeTrack(t));
+      if (!remote.getTracks().includes(track)) remote.addTrack(track);
+      const show = () => setStream(socketId, new MediaStream(link.remote.getTracks()));
+      show();
+      track.onunmute = show;
+    };
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) socketRef.current?.emit("webrtc:ice", { to: socketId, payload: candidate });
+    };
+    pc.onnegotiationneeded = async () => {
+      try {
+        link.makingOffer = true;
+        await pc.setLocalDescription();
+        socketRef.current?.emit("webrtc:offer", { to: socketId, payload: pc.localDescription });
+      } catch (err) {
+        console.error("offer failed", err);
+      } finally {
+        link.makingOffer = false;
       }
     };
-
-    // The newcomer calls out to everyone who was already in the room.
-    if (polite) {
-      pc.onnegotiationneeded = async () => {
-        try {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          socketRef.current?.emit("webrtc:offer", { to: socketId, payload: pc.localDescription });
-        } catch (err) {
-          console.error("offer failed", err);
-        }
-      };
-    }
+    // A dropped network path is tried again instead of leaving a black tile
+    // for the rest of the meeting.
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "failed" && link.restarts < 3) {
+        link.restarts += 1;
+        pc.restartIce();
+      }
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === "connected") link.restarts = 0;
+      if (pc.connectionState === "closed") dropPeer(socketId);
+    };
     return pc;
   }, []);
+
+  const inOrder = (socketId, job) => {
+    const next = (queueRef.current.get(socketId) || Promise.resolve())
+      .then(job)
+      .catch((err) => console.warn("signalling step failed:", err.message));
+    queueRef.current.set(socketId, next);
+  };
+
+  const onDescription = async (from, description) => {
+    const pc = description.type === "offer" ? createPeer(from, false) : peersRef.current.get(from);
+    const link = linkRef.current.get(from);
+    if (!pc || !link) return;
+    const collision = description.type === "offer" && (link.makingOffer || pc.signalingState !== "stable");
+    link.ignoreOffer = !link.polite && collision;
+    if (link.ignoreOffer) return;
+    await pc.setRemoteDescription(description);
+    // Candidates that came in before this description can go in now.
+    for (const candidate of link.pendingIce.splice(0)) {
+      await pc.addIceCandidate(candidate).catch(() => {});
+    }
+    if (description.type === "offer") {
+      await pc.setLocalDescription();
+      socketRef.current?.emit("webrtc:answer", { to: from, payload: pc.localDescription });
+    }
+  };
+
+  const onIce = async (from, candidate) => {
+    const pc = peersRef.current.get(from);
+    const link = linkRef.current.get(from);
+    if (!pc || !link || !candidate) return;
+    if (!pc.remoteDescription) {
+      link.pendingIce.push(candidate);
+      return;
+    }
+    try {
+      await pc.addIceCandidate(candidate);
+    } catch (err) {
+      if (!link.ignoreOffer) console.warn("ice candidate rejected", err.message);
+    }
+  };
 
   // --- join ---
   useEffect(() => {
@@ -142,6 +240,19 @@ export default function useMeetingRoom(roomCode) {
         setVideoOn(!!cam);
       }
       setMediaError(mediaWhy);
+
+      // Where to look for the others — including the TURN relay, if the
+      // server has one. Without it the public STUN servers are used.
+      try {
+        const { data } = await api.get("/meetings/ice-servers");
+        if (Array.isArray(data?.data) && data.data.length) iceServersRef.current = data.data;
+      } catch {
+        /* keep the defaults */
+      }
+      if (cancelled) {
+        stream?.getTracks().forEach((t) => t.stop());
+        return;
+      }
 
       socket = io(`${SIGNAL_URL}/meeting`, {
         auth: { token: localStorage.getItem("super50_token") },
@@ -180,41 +291,17 @@ export default function useMeetingRoom(roomCode) {
       });
 
       socket.on("peer:left", ({ socketId }) => {
-        peersRef.current.get(socketId)?.close();
-        peersRef.current.delete(socketId);
+        dropPeer(socketId);
         setPeers((prev) => prev.filter((p) => p.socketId !== socketId));
-        setStreams((prev) => {
-          const next = { ...prev };
-          delete next[socketId];
-          return next;
-        });
       });
 
       socket.on("peer:state", ({ socketId, audio, video, sharing: isSharing }) => {
         setPeers((prev) => prev.map((p) => (p.socketId === socketId ? { ...p, audio, video, sharing: isSharing } : p)));
       });
 
-      socket.on("webrtc:offer", async ({ from, payload }) => {
-        const pc = createPeer(from, false);
-        await pc.setRemoteDescription(new RTCSessionDescription(payload));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit("webrtc:answer", { to: from, payload: pc.localDescription });
-      });
-
-      socket.on("webrtc:answer", async ({ from, payload }) => {
-        const pc = peersRef.current.get(from);
-        if (pc) await pc.setRemoteDescription(new RTCSessionDescription(payload));
-      });
-
-      socket.on("webrtc:ice", async ({ from, payload }) => {
-        const pc = peersRef.current.get(from);
-        try {
-          if (pc && payload) await pc.addIceCandidate(new RTCIceCandidate(payload));
-        } catch (err) {
-          console.warn("ice candidate rejected", err.message);
-        }
-      });
+      socket.on("webrtc:offer", ({ from, payload }) => inOrder(from, () => onDescription(from, payload)));
+      socket.on("webrtc:answer", ({ from, payload }) => inOrder(from, () => onDescription(from, payload)));
+      socket.on("webrtc:ice", ({ from, payload }) => inOrder(from, () => onIce(from, payload)));
 
       // Keyed on the server's timestamp and sender, so a reconnect that
       // replays the tail of the conversation cannot double it up either.
@@ -238,6 +325,8 @@ export default function useMeetingRoom(roomCode) {
       if (socketRef.current === socket) socketRef.current = null;
       peersRef.current.forEach((pc) => pc.close());
       peersRef.current.clear();
+      linkRef.current.clear();
+      queueRef.current.clear();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
       screenStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -264,12 +353,15 @@ export default function useMeetingRoom(roomCode) {
     socketRef.current?.emit("media:state", { video: track.enabled });
   };
 
-  // Screen share swaps the outgoing video track on every peer connection,
-  // so nobody has to renegotiate.
+  // Screen share swaps the outgoing video track on every connection. Someone
+  // without a camera has a video slot that only receives; it is switched to
+  // sending, and the connection renegotiates by itself.
   const replaceVideoTrack = async (track) => {
     peersRef.current.forEach((pc) => {
-      const sender = pc.getSenders().find((s) => s.track && s.track.kind === "video");
-      if (sender) sender.replaceTrack(track);
+      const slot = pc.getTransceivers().find((t) => t.receiver.track?.kind === "video" && !t.stopped);
+      if (!slot) return;
+      slot.sender.replaceTrack(track).catch(() => {});
+      if (track && (slot.direction === "recvonly" || slot.direction === "inactive")) slot.direction = "sendrecv";
     });
   };
 
