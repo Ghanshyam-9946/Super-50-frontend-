@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, UserPlus, FileSpreadsheet, Users, ChevronDown, ChevronUp,
   Search, X, CheckCircle, Mail, Phone, BookOpen, GraduationCap, RefreshCw, Trash2,
-  Download, CheckCircle2, XCircle, Filter
+  Download, CheckCircle2, XCircle, Filter, AlertTriangle, FileText
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -107,6 +108,7 @@ const EnrollStudentsPage = () => {
   const allStudents = batches.flatMap(b => b.students || []);
   const wantCount = allStudents.filter(s => (s.placementPreference || 'want') === 'want').length;
   const notWantCount = allStudents.filter(s => s.placementPreference === 'not_want').length;
+  const notEligibleAcademicCount = allStudents.filter(s => s.placementPreference === 'not_eligible_academic').length;
 
   const handleUpdatePreference = async (studentId, preference) => {
     const prevBatches = batches;
@@ -126,7 +128,9 @@ const EnrollStudentsPage = () => {
       toast.success(
         preference === 'want'
           ? 'Marked: Wants placement from institute'
-          : 'Marked: Does not want placement from institute'
+          : preference === 'not_want'
+          ? 'Marked: Does not want placement from institute'
+          : 'Marked: Not eligible due to academic criteria'
       );
     } catch (err) {
       setBatches(prevBatches);
@@ -136,7 +140,7 @@ const EnrollStudentsPage = () => {
     }
   };
 
-  const handleDownloadExcel = () => {
+  const getFilteredExportList = () => {
     let listToExport = [];
     if (downloadBatch === 'all') {
       listToExport = batches.flatMap(b => b.students || []);
@@ -149,7 +153,15 @@ const EnrollStudentsPage = () => {
       listToExport = listToExport.filter(s => (s.placementPreference || 'want') === 'want');
     } else if (downloadFilter === 'not_want') {
       listToExport = listToExport.filter(s => s.placementPreference === 'not_want');
+    } else if (downloadFilter === 'not_eligible_academic') {
+      listToExport = listToExport.filter(s => s.placementPreference === 'not_eligible_academic');
     }
+
+    return listToExport;
+  };
+
+  const handleDownloadExcel = () => {
+    const listToExport = getFilteredExportList();
 
     if (listToExport.length === 0) {
       return toast.error('No students found matching the selected download criteria');
@@ -163,7 +175,11 @@ const EnrollStudentsPage = () => {
       'Mobile': s.mobile || '',
       'Department': s.department || '',
       'Batch': s.batch || '',
-      'Placement Preference': (s.placementPreference || 'want') === 'want' ? 'Want Placement from Institute' : 'Not Want Placement from Institute',
+      'Placement Preference': s.placementPreference === 'not_eligible_academic'
+        ? 'Not Eligible due to Academic Criteria'
+        : (s.placementPreference || 'want') === 'want'
+        ? 'Want Placement from Institute'
+        : 'Not Want Placement from Institute',
       'Mentor': s.mentor?.name || (typeof s.mentor === 'string' ? s.mentor : 'Unassigned'),
       'Status': 'Enrolled'
     }));
@@ -172,13 +188,234 @@ const EnrollStudentsPage = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Enrolled Students');
 
-    const filterLabel = downloadFilter === 'want' ? 'Want_Placement' : downloadFilter === 'not_want' ? 'Not_Want_Placement' : 'All_Students';
+    const filterLabel = downloadFilter === 'want'
+      ? 'Want_Placement'
+      : downloadFilter === 'not_want'
+      ? 'Not_Want_Placement'
+      : downloadFilter === 'not_eligible_academic'
+      ? 'Not_Eligible_Academic_Criteria'
+      : 'All_Students';
     const batchLabel = downloadBatch === 'all' ? 'All_Batches' : `Batch_${downloadBatch}`;
     const filename = `Placement_${filterLabel}_${batchLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
     XLSX.writeFile(wb, filename);
     toast.success(`Successfully exported ${listToExport.length} students to ${filename}!`);
     setShowDownloadModal(false);
+  };
+
+  const handleDownloadPdf = () => {
+    const listToExport = getFilteredExportList();
+
+    if (listToExport.length === 0) {
+      return toast.error('No students found matching the selected download criteria');
+    }
+
+    try {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth(); // 297mm
+      const pageHeight = doc.internal.pageSize.getHeight(); // 210mm
+      const margin = 12;
+
+      const filterTitle = downloadFilter === 'want'
+        ? 'WANT PLACEMENT FROM INSTITUTE'
+        : downloadFilter === 'not_want'
+        ? 'NOT WANT PLACEMENT FROM INSTITUTE'
+        : downloadFilter === 'not_eligible_academic'
+        ? 'NOT ELIGIBLE DUE TO ACADEMIC CRITERIA'
+        : 'ALL ENROLLED STUDENTS';
+
+      const batchTitle = downloadBatch === 'all' ? 'All Batches' : `Batch ${downloadBatch}`;
+      const exportDate = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      });
+
+      // Columns configuration (Total printable: 273mm)
+      const cols = [
+        { header: '#', width: 12, align: 'center' },
+        { header: 'Student Name', width: 48, align: 'left' },
+        { header: 'Enrollment No', width: 36, align: 'left' },
+        { header: 'Email ID', width: 54, align: 'left' },
+        { header: 'Department', width: 26, align: 'left' },
+        { header: 'Batch', width: 18, align: 'center' },
+        { header: 'Placement Preference / Status', width: 54, align: 'left' },
+        { header: 'Mentor', width: 25, align: 'left' },
+      ];
+
+      const drawHeader = (startY) => {
+        // Dark Navy Banner
+        doc.setFillColor(15, 23, 42);
+        doc.rect(margin, startY, pageWidth - margin * 2, 17, 'F');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(255, 255, 255);
+        doc.text('T&P CELL - PLACEMENT ENROLLED STUDENTS REPORT', margin + 6, startY + 6.5);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(203, 213, 225);
+        doc.text(`Category: ${filterTitle}  |  Batch: ${batchTitle}  |  Export Count: ${listToExport.length}  |  Date: ${exportDate}`, margin + 6, startY + 12.5);
+
+        // Summary badges
+        let chipY = startY + 21;
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'bold');
+
+        const stats = [
+          { label: `Total Enrolled: ${total}`, bg: [241, 245, 249], fg: [51, 65, 85] },
+          { label: `Want Placement: ${wantCount}`, bg: [236, 253, 245], fg: [5, 150, 105] },
+          { label: `Not Want: ${notWantCount}`, bg: [255, 241, 242], fg: [225, 29, 72] },
+          { label: `Not Eligible (Academic): ${notEligibleAcademicCount}`, bg: [254, 243, 199], fg: [217, 119, 6] },
+        ];
+
+        let chipX = margin;
+        stats.forEach(st => {
+          doc.setFillColor(st.bg[0], st.bg[1], st.bg[2]);
+          const chipW = doc.getTextWidth(st.label) + 6;
+          doc.roundedRect(chipX, chipY, chipW, 5.5, 1.2, 1.2, 'F');
+          doc.setTextColor(st.fg[0], st.fg[1], st.fg[2]);
+          doc.text(st.label, chipX + 3, chipY + 3.8);
+          chipX += chipW + 3;
+        });
+
+        return chipY + 9;
+      };
+
+      const drawTableHeader = (startY) => {
+        doc.setFillColor(30, 41, 59);
+        doc.rect(margin, startY, pageWidth - margin * 2, 7, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(255, 255, 255);
+
+        let curX = margin;
+        cols.forEach(col => {
+          if (col.align === 'center') {
+            doc.text(col.header, curX + col.width / 2, startY + 4.6, { align: 'center' });
+          } else {
+            doc.text(col.header, curX + 2, startY + 4.6);
+          }
+          curX += col.width;
+        });
+
+        return startY + 7;
+      };
+
+      let currentY = drawHeader(margin);
+      currentY = drawTableHeader(currentY);
+
+      // Data Rows
+      const rowHeight = 6.5;
+      const bottomLimit = pageHeight - 14;
+
+      listToExport.forEach((s, idx) => {
+        if (currentY + rowHeight > bottomLimit) {
+          doc.addPage();
+          currentY = drawTableHeader(margin);
+        }
+
+        // Alternating background
+        if (idx % 2 === 1) {
+          doc.setFillColor(248, 250, 252);
+          doc.rect(margin, currentY, pageWidth - margin * 2, rowHeight, 'F');
+        }
+
+        // Row border
+        doc.setDrawColor(226, 232, 240);
+        doc.line(margin, currentY + rowHeight, pageWidth - margin, currentY + rowHeight);
+
+        // Cells
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.2);
+        doc.setTextColor(30, 41, 59);
+
+        let curX = margin;
+
+        // 1. S.No
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(100, 116, 139);
+        doc.text(String(idx + 1), curX + cols[0].width / 2, currentY + 4.3, { align: 'center' });
+        curX += cols[0].width;
+
+        // 2. Student Name
+        doc.setTextColor(15, 23, 42);
+        doc.text(doc.splitTextToSize(s.name || '—', cols[1].width - 3)[0] || '', curX + 2, currentY + 4.3);
+        curX += cols[1].width;
+
+        // 3. Enrollment No
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(30, 41, 59);
+        doc.text(s.enrollmentNumber || '—', curX + 2, currentY + 4.3);
+        curX += cols[2].width;
+
+        // 4. Email
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(51, 65, 85);
+        doc.text(doc.splitTextToSize(s.email || '—', cols[3].width - 3)[0] || '', curX + 2, currentY + 4.3);
+        curX += cols[3].width;
+
+        // 5. Department
+        doc.text(doc.splitTextToSize(s.department || '—', cols[4].width - 3)[0] || '', curX + 2, currentY + 4.3);
+        curX += cols[4].width;
+
+        // 6. Batch
+        doc.text(String(s.batch || '—'), curX + cols[5].width / 2, currentY + 4.3, { align: 'center' });
+        curX += cols[5].width;
+
+        // 7. Status / Placement Preference
+        const pref = s.placementPreference || 'want';
+        doc.setFont('helvetica', 'bold');
+        if (pref === 'not_eligible_academic') {
+          doc.setTextColor(180, 83, 9); // amber-700
+          doc.text('Not Eligible (Academic Criteria)', curX + 2, currentY + 4.3);
+        } else if (pref === 'not_want') {
+          doc.setTextColor(190, 18, 60); // rose-700
+          doc.text('Not Want Placement', curX + 2, currentY + 4.3);
+        } else {
+          doc.setTextColor(4, 120, 87); // emerald-700
+          doc.text('Want Placement', curX + 2, currentY + 4.3);
+        }
+        curX += cols[6].width;
+
+        // 8. Mentor
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        const mentorName = s.mentor?.name || (typeof s.mentor === 'string' ? s.mentor : 'Unassigned');
+        doc.text(doc.splitTextToSize(mentorName, cols[7].width - 3)[0] || '', curX + 2, currentY + 4.3);
+
+        currentY += rowHeight;
+      });
+
+      // Footer with page numbering
+      const totalPages = doc.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        doc.setPage(p);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.2);
+        doc.setTextColor(148, 163, 184);
+        doc.setDrawColor(226, 232, 240);
+        doc.line(margin, pageHeight - 9, pageWidth - margin, pageHeight - 9);
+        doc.text('Confidential - Training & Placement Department', margin, pageHeight - 5);
+        doc.text(`Page ${p} of ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+      }
+
+      const filterLabel = downloadFilter === 'want'
+        ? 'Want_Placement'
+        : downloadFilter === 'not_want'
+        ? 'Not_Want_Placement'
+        : downloadFilter === 'not_eligible_academic'
+        ? 'Not_Eligible_Academic_Criteria'
+        : 'All_Students';
+      const batchLabel = downloadBatch === 'all' ? 'All_Batches' : `Batch_${downloadBatch}`;
+      const filename = `Placement_${filterLabel}_${batchLabel}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      doc.save(filename);
+      toast.success(`Successfully exported PDF for ${listToExport.length} students!`);
+      setShowDownloadModal(false);
+    } catch (err) {
+      console.error('PDF export error:', err);
+      toast.error('Failed to generate PDF. Please try again.');
+    }
   };
 
   const batchColors = [
@@ -233,6 +470,14 @@ const EnrollStudentsPage = () => {
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">Not Want</p>
                 <p className="text-xl font-display font-black text-rose-500">{notWantCount}</p>
+              </div>
+            </div>
+
+            <div className="glass-card px-4 py-2.5 flex items-center gap-3 border-amber-500/20 bg-amber-500/5">
+              <AlertTriangle className="text-amber-500" size={18} />
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">Not Eligible (Academic)</p>
+                <p className="text-xl font-display font-black text-amber-600">{notEligibleAcademicCount}</p>
               </div>
             </div>
 
@@ -377,6 +622,17 @@ const EnrollStudentsPage = () => {
                 }`}
               >
                 Not Want ({notWantCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreferenceFilter('not_eligible_academic')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  preferenceFilter === 'not_eligible_academic'
+                    ? 'bg-amber-600 text-white shadow-sm font-black'
+                    : 'text-[var(--text-secondary)] hover:text-amber-500'
+                }`}
+              >
+                Not Eligible (Academic Criteria) ({notEligibleAcademicCount})
               </button>
             </div>
 
@@ -562,6 +818,20 @@ const EnrollStudentsPage = () => {
                                         <XCircle size={13} className={student.placementPreference === 'not_want' ? 'text-white' : 'text-rose-500'} />
                                         <span>Not Want</span>
                                       </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdatePreference(student._id, 'not_eligible_academic')}
+                                        disabled={updatingStudentId === student._id}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                          student.placementPreference === 'not_eligible_academic'
+                                            ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30 font-black'
+                                            : 'text-[var(--text-secondary)] hover:text-amber-500 hover:bg-amber-500/10'
+                                        }`}
+                                        title="Student not eligible due to academic criteria"
+                                      >
+                                        <AlertTriangle size={13} className={student.placementPreference === 'not_eligible_academic' ? 'text-white' : 'text-amber-500'} />
+                                        <span>Not Eligible (Academic Criteria)</span>
+                                      </button>
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 text-right">
@@ -642,10 +912,10 @@ const EnrollStudentsPage = () => {
             </div>
             <h2 className="text-2xl font-display font-black text-[var(--text-primary)] mb-1">Download Enrolled Students</h2>
             <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
-              Select which category of students you want to export into an Excel (.xlsx) sheet.
+              Select which category of students you want to export into Excel (.xlsx) or PDF (.pdf).
             </p>
 
-            {/* 3 Selectable Categories */}
+            {/* Selectable Categories */}
             <div className="space-y-3 mb-6">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Category to Export *</label>
 
@@ -720,6 +990,30 @@ const EnrollStudentsPage = () => {
                   <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
                 </div>
               </div>
+
+              {/* 4. Not Eligible due to Academic Criteria */}
+              <div
+                onClick={() => setDownloadFilter('not_eligible_academic')}
+                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${
+                  downloadFilter === 'not_eligible_academic'
+                    ? 'border-amber-500 bg-amber-500/5 shadow-sm'
+                    : 'border-[var(--border-light)] bg-[var(--bg-input)]/20 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${downloadFilter === 'not_eligible_academic' ? 'bg-amber-600 text-white' : 'bg-[var(--bg-card)] text-amber-500 border border-[var(--border-light)]'}`}>
+                    <AlertTriangle size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black text-[var(--text-primary)]">Not Eligible due to Academic Criteria</h4>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium">Students not meeting academic criteria for placement</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black text-amber-600">{notEligibleAcademicCount}</span>
+                  <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
+                </div>
+              </div>
             </div>
 
             {/* Batch Filter Option */}
@@ -737,20 +1031,27 @@ const EnrollStudentsPage = () => {
               </select>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2.5">
               <button
                 type="button"
                 onClick={() => setShowDownloadModal(false)}
-                className="btn-outline-premium flex-1 py-3 text-xs font-bold cursor-pointer"
+                className="btn-outline-premium px-4 py-3 text-xs font-bold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleDownloadExcel}
-                className="btn-premium flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                className="btn-outline-premium flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10"
               >
-                <Download size={16} /> Download Excel (.xlsx)
+                <FileSpreadsheet size={16} /> Download Excel (.xlsx)
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                className="btn-premium flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-md shadow-rose-600/20"
+              >
+                <FileText size={16} /> Download PDF (.pdf)
               </button>
             </div>
           </motion.div>
