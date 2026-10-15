@@ -1,3 +1,6 @@
+import { useBranding } from '../../utils/institute';
+import { getImageUrl } from '../../utils/imageUrl';
+import { isPathEnabled, loadInstitute } from '../../utils/institute';
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
@@ -7,6 +10,7 @@ import { GraduationCap, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
+  const branding = useBranding();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, user, otpRequired, tempEmail } = useSelector((state) => state.auth);
@@ -34,7 +38,15 @@ export default function LoginPage() {
         } else if (user.role === 'alumni') {
           path = '/alumni';
         }
-        navigate(path);
+        // An institute without the module behind the usual first page
+        // starts somewhere it does have.
+        loadInstitute().then((info) => {
+          if (isPathEnabled(path, info)) return navigate(path);
+          const fallback = user.role === 'student' ? '/student/attendance'
+            : user.role === 'admin' ? '/admin/students'
+              : user.role === 'teacher' ? '/teacher/dashboard' : '/notifications';
+          return navigate(fallback);
+        });
       }
     }
   }, [user, navigate]);
@@ -104,13 +116,15 @@ export default function LoginPage() {
               boxShadow: '0 0 40px rgba(124,58,237,0.4)',
             }}
           >
-            <GraduationCap size={36} color="white" />
+            {branding.logoUrl
+              ? <img src={getImageUrl(branding.logoUrl)} alt={branding.shortName} style={{ width: 56, height: 56, objectFit: 'contain', background: 'white', borderRadius: 14 }} />
+              : <GraduationCap size={36} color="white" />}
           </motion.div>
           <h1 style={{ fontSize: 30, fontWeight: 900, letterSpacing: '0.1em', marginBottom: 8 }}>
-            <span className="gradient-text">MILE</span><span style={{ color: '#7c3aed' }}>.</span>
+            <span className="gradient-text">{branding.appName}</span><span style={{ color: '#7c3aed' }}>.</span>
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>
-            Monitoring Individual Learning & Excellence
+            {branding.own ? (branding.tagline || branding.name) : 'Monitoring Individual Learning & Excellence'}
           </p>
         </div>
 

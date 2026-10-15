@@ -1,3 +1,4 @@
+import { useBranding } from '../../utils/institute';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,6 +8,7 @@ import { Award, Upload, Trash2, Eye, FileText, Image, Plus, X, Loader2, ShieldCh
 import toast from 'react-hot-toast';
 
 function UploadModal({ onClose }) {
+  const brand = useBranding();
   const dispatch = useDispatch();
   const { uploading } = useSelector((s) => s.certificates);
   const [file, setFile] = useState(null);
@@ -80,7 +82,7 @@ function UploadModal({ onClose }) {
         {/* Mandatory Warning Message */}
         <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-center gap-3 text-amber-800 text-xs font-bold shadow-sm my-4">
           <AlertTriangle size={18} className="text-amber-600 shrink-0" />
-          <span>⚠️ <strong>Notice:</strong> <em>*Only Outside SISTec Certifications are Allowed*</em></span>
+          <span>⚠️ <strong>Notice:</strong> <em>*Only Outside {brand.shortName} Certifications are Allowed*</em></span>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">

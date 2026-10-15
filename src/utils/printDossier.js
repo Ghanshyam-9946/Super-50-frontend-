@@ -1,3 +1,5 @@
+import { getImageUrl } from './imageUrl';
+import { getBranding } from './institute';
 import sistecLogo from '../assets/SISTec_Logo.png';
 
 export function printStudentDossier(data, portalLabel = 'MILE Verified Official Academic Record') {
@@ -45,7 +47,17 @@ export function printStudentDossier(data, portalLabel = 'MILE Verified Official 
     enroll.includes('0194') ||
     enroll.includes('0517');
 
-  const institutionInfo = isRatibad
+  const own = getBranding();
+  const institutionInfo = own.own
+    ? {
+        fullName: String(own.name).toUpperCase(),
+        shortName: own.shortName,
+        campusName: own.address || '',
+        tagline: `${portalLabel}${own.address ? ` • ${own.address}` : ''}`,
+        footer: `CONFIDENTIAL ACADEMIC DOSSIER • ${String(own.name).toUpperCase()}`,
+        signatory: `${own.shortName} Authorized Signatory`,
+      }
+    : isRatibad
     ? {
         fullName: 'SAGAR INSTITUTE OF SCIENCE TECHNOLOGY AND RESEARCH (SISTEC-R)',
         shortName: 'SISTec-R',
@@ -749,7 +761,7 @@ export function printStudentDossier(data, portalLabel = 'MILE Verified Official 
     <!-- Header -->
     <div class="header-box">
       <div class="header-left">
-        <img src="${sistecLogo}" alt="SISTec" class="header-logo" />
+        ${own.own ? (own.logoUrl ? `<img src="${getImageUrl(own.logoUrl)}" alt="${own.shortName}" class="header-logo" />` : '') : `<img src="${sistecLogo}" alt="SISTec" class="header-logo" />`}
         <div>
           <h1 class="header-title">${institutionInfo.fullName}</h1>
           <p class="header-subtitle">Comprehensive Student Academic Dossier & Master Profile</p>

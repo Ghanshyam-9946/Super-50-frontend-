@@ -17,6 +17,9 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('super50_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // The address this page was opened on names the institute (abc.<domain>);
+  // the API may live on another host, so it is sent along.
+  config.headers['x-institute-host'] = window.location.hostname;
 
   const userStr = localStorage.getItem('super50_user');
   if (userStr) {

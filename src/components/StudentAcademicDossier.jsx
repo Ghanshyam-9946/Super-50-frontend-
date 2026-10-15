@@ -1,7 +1,20 @@
+import { getImageUrl } from '../utils/imageUrl';
+import { useBranding } from '../utils/institute';
 import React from 'react';
 import sistecLogo from '../assets/SISTec_Logo.png';
 
 export default function StudentAcademicDossier({ data, portalLabel = 'MILE Verified Official Academic Record' }) {
+  const b = useBranding();
+  // A platform institute's own name and logo; SISTec's campuses as before.
+  const brand = b.own
+    ? {
+        title: b.name, shortName: b.shortName, logo: b.logoUrl ? getImageUrl(b.logoUrl) : '',
+        group: b.address || b.name, footer: `CONFIDENTIAL ACADEMIC DOSSIER • GENERATED VIA ${b.appName} • ${String(b.name).toUpperCase()}`,
+      }
+    : {
+        title: 'Sagar Institute of Science and Technology (SISTec)', shortName: 'SISTec', logo: sistecLogo,
+        group: 'Sagar Group of Institutions, Bhopal', footer: 'CONFIDENTIAL ACADEMIC DOSSIER • GENERATED VIA SISTec MILE PORTAL • SAGAR GROUP OF INSTITUTIONS, BHOPAL',
+      };
   if (!data || !data.student) return null;
 
   const {
@@ -100,8 +113,8 @@ export default function StudentAcademicDossier({ data, portalLabel = 'MILE Verif
         <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 break-inside-avoid">
           <div className="flex items-center gap-3.5">
             <img
-              src={sistecLogo}
-              alt="SISTec Logo"
+              src={brand.logo}
+              alt={`${brand.shortName} Logo`}
               className="h-14 w-auto object-contain shrink-0"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -109,13 +122,13 @@ export default function StudentAcademicDossier({ data, portalLabel = 'MILE Verif
             />
             <div>
               <h1 className="text-base font-black uppercase tracking-tight text-slate-950">
-                Sagar Institute of Science and Technology (SISTec)
+                {brand.title}
               </h1>
               <p className="text-[11px] font-bold text-slate-800">
                 Comprehensive Student Academic Dossier & Master Profile
               </p>
               <p className="text-[9px] text-slate-600 font-semibold">
-                {portalLabel} • Sagar Group of Institutions, Bhopal
+                {portalLabel} • {brand.group}
               </p>
             </div>
           </div>
@@ -692,11 +705,11 @@ export default function StudentAcademicDossier({ data, portalLabel = 'MILE Verif
             <div className="space-y-1">
               <div className="h-8 border-b border-dashed border-slate-400"></div>
               <div className="font-bold text-slate-900 mt-1">Principal / Dean Academic</div>
-              <div className="text-slate-500 text-[9px]">SISTec Authorized Signatory</div>
+              <div className="text-slate-500 text-[9px]">{brand.shortName} Authorized Signatory</div>
             </div>
           </div>
           <div className="text-center text-[8px] text-slate-400 border-t border-slate-200 pt-2 mt-3 font-mono">
-            CONFIDENTIAL ACADEMIC DOSSIER • GENERATED VIA SISTec MILE PORTAL • SAGAR GROUP OF INSTITUTIONS, BHOPAL
+            {brand.footer}
           </div>
         </div>
       </div>

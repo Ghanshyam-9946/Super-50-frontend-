@@ -124,6 +124,15 @@ import AlumniPage from './pages/alumni/AlumniPage';
 // app shell, so it gets its own route below the protected layout.
 import MeetingsPage from './pages/meetings/MeetingsPage';
 import MeetingRoom from './pages/meetings/MeetingRoom';
+import PlatformLogin from './pages/platform/PlatformLogin';
+import { roleVerdict, useInstitute } from './utils/institute';
+import RolesPage from './pages/admin/RolesPage';
+import InstituteSettingsPage from './pages/admin/InstituteSettingsPage';
+import PlatformShell from './pages/platform/PlatformShell';
+import PlatformInstitutesPage from './pages/platform/PlatformInstitutesPage';
+import PlatformInstitutePage from './pages/platform/PlatformInstitutePage';
+import PlatformOverviewPage from './pages/platform/PlatformOverviewPage';
+import PlatformPlansPage from './pages/platform/PlatformPlansPage';
 
 // Leave applications
 import StudentLeavePage from './pages/leave/StudentLeavePage';
@@ -147,13 +156,22 @@ import SecurityGatePassPage from './pages/gatepass/SecurityGatePassPage';
 // "Academic Coordinator" is usually a plain teacher/guide, not a distinct role.
 const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const { user, token } = useSelector((state) => state.auth);
+  const institute = useInstitute();
   if (!token || !user) return <Navigate to="/login" replace />;
 
   const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
   const hasRole = allowed.some(role => userRoles.includes(role));
   const hasResponsibility = allowResponsibility && (user.responsibilities || []).includes(allowResponsibility);
+  // A custom role (made on the Roles & Permissions page) that gives this
+  // page's module opens it too.
+  const grantedByRole = roleVerdict(window.location.pathname, user, institute).granted;
+  // Which module a page belongs to is only known once the institute's
+  // catalog has arrived; somebody holding a custom role waits for it
+  // rather than being sent away on a fresh page load.
+  const holdsGrants = Object.values(user.permissions || {}).some((p) => (p.grants || []).length);
+  if (!hasRole && !hasResponsibility && holdsGrants && !institute.loaded) return null;
 
-  if (!hasRole && !hasResponsibility) {
+  if (!hasRole && !hasResponsibility && !grantedByRole) {
     const fallback = userRoles.includes('parent') ? '/parent/dashboard' :
       userRoles.includes('student') ? '/leaderboard' :
         userRoles.includes('admin') ? '/leaderboard' :
@@ -218,7 +236,22 @@ function IdleTimer() {
   return null;
 }
 
+// The page title and accent colour follow the institute's settings.
+function useBrandingEffects() {
+  const info = useInstitute();
+  const { appName, shortName, primaryColor } = info.branding || {};
+  useEffect(() => {
+    if (!info.loaded) return;
+    document.title = info.institute && !info.institute.legacy
+      ? `${appName || 'MILE'} — ${shortName}`
+      : 'MILE — Student Performance Tracker';
+    if (primaryColor) document.documentElement.style.setProperty('--primary', primaryColor);
+    else document.documentElement.style.removeProperty('--primary');
+  }, [info.loaded, info.institute, appName, shortName, primaryColor]);
+}
+
 function AppRoutes({ theme, toggleTheme }) {
+  useBrandingEffects();
   return (
     <Routes>
       {/* Public */}
@@ -462,6 +495,12 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/course-file-index" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']} allowResponsibility="Academic Coordinator"><CourseFileIndexPage /></RoleGuard>
         } />
+        <Route path="/admin/institute-settings" element={
+          <RoleGuard allowed={['admin']}><InstituteSettingsPage /></RoleGuard>
+        } />
+        <Route path="/admin/roles" element={
+          <RoleGuard allowed={['admin']}><RolesPage /></RoleGuard>
+        } />
         <Route path="/admin/faculty-reports" element={
           <RoleGuard allowed={['admin']}><FacultyReportsPage /></RoleGuard>
         } />
@@ -601,6 +640,15 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/chat" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']}><ChatPage /></RoleGuard>
         } />
+      </Route>
+
+      {/* The platform Super Admin's panel — its own sign-in, its own frame */}
+      <Route path="/platform/login" element={<PlatformLogin />} />
+      <Route path="/platform" element={<PlatformShell />}>
+        <Route index element={<PlatformOverviewPage />} />
+        <Route path="institutes" element={<PlatformInstitutesPage />} />
+        <Route path="institutes/:id" element={<PlatformInstitutePage />} />
+        <Route path="plans" element={<PlatformPlansPage />} />
       </Route>
 
       {/* A meeting room takes the whole screen — no sidebar, no page chrome */}

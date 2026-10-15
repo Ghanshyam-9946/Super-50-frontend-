@@ -1,3 +1,5 @@
+import { getImageUrl } from '../../utils/imageUrl';
+import { useBranding } from '../../utils/institute';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { printStudentDossier } from '../../utils/printDossier';
@@ -47,6 +49,7 @@ import toast from 'react-hot-toast';
 import sistecLogo from '../../assets/SISTec_Logo.png';
 
 export default function ParentDashboard({ theme, toggleTheme }) {
+  const brand = useBranding();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
@@ -186,11 +189,11 @@ export default function ParentDashboard({ theme, toggleTheme }) {
     enroll.includes('0194') ||
     enroll.includes('0517');
 
-  const institutionName = isRatibad
+  const institutionName = brand.own ? brand.name : isRatibad
     ? 'Sagar Institute of Science Technology & Research (SISTec-R)'
     : 'Sagar Institute of Science and Technology (SISTec)';
 
-  const campusLocation = isRatibad ? 'Ratibad Campus, Bhopal' : 'Gandhinagar Campus, Bhopal';
+  const campusLocation = brand.own ? (brand.address || '') : isRatibad ? 'Ratibad Campus, Bhopal' : 'Gandhinagar Campus, Bhopal';
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] transition-colors duration-200 pb-16 font-body">
@@ -204,7 +207,7 @@ export default function ParentDashboard({ theme, toggleTheme }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-display font-black text-lg tracking-tight text-[var(--text-primary)]">
-                  MILE<span className="text-[var(--primary)]">.</span>
+                  {brand.appName}<span className="text-[var(--primary)]">.</span>
                 </span>
                 <span className="rounded-full bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-[var(--primary)]">
                   Parent Portal
@@ -1449,16 +1452,16 @@ export default function ParentDashboard({ theme, toggleTheme }) {
           {/* Institutional Header */}
           <div className="border-b-2 border-slate-900 pb-3 flex items-center justify-between">
             <div className="flex items-center gap-3.5">
-              <img src={sistecLogo} alt="SISTec" className="h-14 w-14 object-contain" />
+              {(brand.own ? brand.logoUrl : sistecLogo) && <img src={brand.own ? getImageUrl(brand.logoUrl) : sistecLogo} alt={brand.shortName} className="h-14 w-14 object-contain" />}
               <div>
                 <h1 className="text-base font-black uppercase tracking-tight text-slate-950">
-                  Sagar Institute of Science and Technology (SISTec)
+                  {brand.own ? brand.name : 'Sagar Institute of Science and Technology (SISTec)'}
                 </h1>
                 <p className="text-[11px] font-bold text-slate-700">
                   Comprehensive Student Academic Dossier & Performance Report
                 </p>
                 <p className="text-[9px] text-slate-500 font-semibold">
-                  MILE Parent Portal Verified Record • Sagar Group of Institutions, Bhopal
+                  {brand.appName} Parent Portal Verified Record • {brand.own ? (brand.address || brand.name) : 'Sagar Group of Institutions, Bhopal'}
                 </p>
               </div>
             </div>
@@ -1892,13 +1895,15 @@ export default function ParentDashboard({ theme, toggleTheme }) {
             <div>
               <div className="border-b border-slate-400 pb-1 font-bold">__________________________</div>
               <div className="font-bold text-slate-900 mt-1">Principal / Academic Authority</div>
-              <div className="text-slate-500 text-[9px]">SISTec College Administration</div>
+              <div className="text-slate-500 text-[9px]">{brand.own ? brand.shortName : 'SISTec'} College Administration</div>
             </div>
           </div>
 
           {/* Disclaimer Footer */}
           <div className="text-center text-[8px] text-slate-400 border-t border-slate-200 pt-2 font-mono">
-            CONFIDENTIAL ACADEMIC DOSSIER • GENERATED VIA SISTec MILE PARENT PORTAL • SAGAR GROUP OF INSTITUTIONS, BHOPAL
+            {brand.own
+              ? `CONFIDENTIAL ACADEMIC DOSSIER • GENERATED VIA ${brand.appName} PARENT PORTAL • ${String(brand.name).toUpperCase()}`
+              : 'CONFIDENTIAL ACADEMIC DOSSIER • GENERATED VIA SISTec MILE PARENT PORTAL • SAGAR GROUP OF INSTITUTIONS, BHOPAL'}
           </div>
         </div>
       </main>

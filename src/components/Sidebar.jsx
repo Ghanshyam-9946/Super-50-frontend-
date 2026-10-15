@@ -1,3 +1,4 @@
+import { isPathEnabled, roleVerdict, useInstitute } from '../utils/institute';
 import { useSelector, useDispatch } from 'react-redux';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from '../features/auth/authSlice';
@@ -6,7 +7,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles, PenLine
+  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles, PenLine, KeyRound, Building2
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +17,7 @@ import NotificationBell from './NotificationBell';
 
 const Sidebar = ({ theme, toggleTheme }) => {
   const { user } = useSelector((state) => state.auth);
+  const institute = useInstitute();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -271,6 +273,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/rgpv', icon: Award, label: 'RGPV Marks Dashboard' },
     ] },
     { category: 'System', links: [
+      { to: '/admin/roles', icon: KeyRound, label: 'Roles & Permissions' },
+      { to: '/admin/institute-settings', icon: Building2, label: 'Institute Settings' },
       { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
       { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
       { to: '/admin/leaderboard-awards', icon: Trophy, label: 'Top 10 Certificates' },
@@ -391,7 +395,29 @@ const Sidebar = ({ theme, toggleTheme }) => {
     return merged.length > 0 ? merged : studentGroups;
   };
 
-  const navGroups = getNavGroups();
+  // Links of modules this institute has not been given, or that this
+  // person's role has had taken away, are left out.
+  const shown = (to) => isPathEnabled(to, institute) && !roleVerdict(to, user, institute).hidden;
+  const baseGroups = getNavGroups()
+    .map((group) => ({
+      ...group,
+      links: group.links
+        .map((link) => (link.children ? { ...link, children: link.children.filter((c) => shown(c.to)) } : link))
+        .filter((link) => (link.children ? link.children.length > 0 : shown(link.to))),
+    }))
+    .filter((group) => group.links.length > 0);
+  // Pages a custom role opens (an "Exam Cell" teacher's admin-side
+  // reports), gathered under their own heading.
+  const present = new Set(baseGroups.flatMap((g) => g.links.flatMap((l) => (l.children ? l.children.map((c) => c.to) : [l.to]))));
+  const roleLinks = [];
+  adminGroups.forEach((group) => group.links.forEach((link) => {
+    (link.children || [link]).forEach((l) => {
+      if (!l.to || present.has(l.to) || !isPathEnabled(l.to, institute) || !roleVerdict(l.to, user, institute).granted) return;
+      present.add(l.to);
+      roleLinks.push(l);
+    });
+  }));
+  const navGroups = roleLinks.length ? [...baseGroups, { category: 'From My Roles', links: roleLinks }] : baseGroups;
 
   // While searching, a NavGroup's (Master Data's) children are flattened
   // directly into the results — so a sub-item is one keystroke away
@@ -432,13 +458,17 @@ const Sidebar = ({ theme, toggleTheme }) => {
       {/* Brand */}
       <div className="p-6 pb-2 relative group">
         <div className={`flex items-center gap-4 ${collapsed ? 'justify-center' : ''}`}>
+          {institute.branding?.logoUrl ? (
+            <img src={getImageUrl(institute.branding.logoUrl)} alt={institute.branding.shortName} className="w-10 h-10 rounded-2xl object-contain bg-white shrink-0" />
+          ) : (
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center shadow-lg shadow-[rgba(139,92,246,0.25)] shrink-0 transition-transform duration-300 group-hover:scale-105">
             <GraduationCap size={20} color="white" />
           </div>
+          )}
           {!collapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden">
               <div className="font-display font-black text-3xl text-[var(--text-primary)] tracking-widest leading-none">
-                MILE<span className="text-[var(--primary)]">.</span>
+                {institute.branding?.appName || 'MILE'}<span className="text-[var(--primary)]">.</span>
               </div>
               <div className="text-[9px] font-black text-[var(--primary)] uppercase tracking-[0.2em] mt-1.5 opacity-80">
                 {user?.role} Portal

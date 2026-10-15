@@ -1,3 +1,4 @@
+import { getBranding } from '../../utils/institute';
 import { forwardRef } from 'react';
 import { CalendarDays } from 'lucide-react';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -169,7 +170,7 @@ const TimetableGrid = forwardRef(({ data }, ref) => {
 
       <div className="flex justify-between text-[10px] mt-1" style={{ color: INK.grayText }}>
         <span>Timetable generated: {fmtDate(data.updatedAt || data.createdAt)}</span>
-        <span className="italic">MILE Timetables</span>
+        <span className="italic">{getBranding().appName} Timetables</span>
       </div>
 
       {/* Signatory boxes */}
