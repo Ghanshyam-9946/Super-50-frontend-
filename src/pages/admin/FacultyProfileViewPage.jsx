@@ -62,6 +62,10 @@ function BasicTab({ user, profile }) {
     [Phone, "WhatsApp", user.whatsapp],
     [Building2, "Department", user.department],
     [UserRound, "Designation", user.designation],
+    [Clock, "Date of joining SGI", profile.joiningDate],
+    [Clock, "Teaching experience", profile.expTeaching],
+    [Clock, "Industrial experience", profile.expIndustrial],
+    [Clock, "Research experience", profile.expResearch],
     [Clock, "Account created", day(user.createdAt)],
   ].filter((r) => r[2]);
   const basicSections = PROFILE_SECTIONS.filter((s) => s.basic);

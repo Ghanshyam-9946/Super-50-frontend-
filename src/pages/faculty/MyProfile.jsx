@@ -8,7 +8,7 @@ import { getImageUrl } from "../../utils/imageUrl";
 import ProfileEditModal from "../../components/ProfileEditModal";
 import ScholarSection from "../../components/profile/ScholarSection";
 import EntryList, { AttachmentLink } from "../../components/profile/ProfileEntries";
-import { PROFILE_SECTIONS, emptyProfile } from "../../utils/facultyProfileSections";
+import { BASIC_PROFILE_FIELDS, PROFILE_GROUPS, PROFILE_SECTIONS, emptyProfile } from "../../utils/facultyProfileSections";
 
 const inputCls = "bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-sm w-full";
 const labelCls = "flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1";
@@ -78,7 +78,7 @@ function EntryForm({ section, initial, onSave, onCancel }) {
           ) : (
             <label key={f.key} className={labelCls}>
               {f.label}
-              <input value={draft[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} className={inputCls} />
+              <input type={f.type === "date" ? "date" : "text"} value={draft[f.key] || ""} onChange={(e) => set(f.key, e.target.value)} className={inputCls} />
             </label>
           )
         )}
@@ -140,6 +140,9 @@ function EntrySection({ section, items, onChange, saving }) {
           <div className="min-w-0">
             <h3 className="font-display font-bold text-base text-[var(--text-primary)]">{section.title}</h3>
             <p className="text-xs text-[var(--text-secondary)]">{section.hint}</p>
+            {section.appraisal && (
+              <p className="text-[11px] font-semibold text-[var(--primary)] mt-0.5">Appraisal form: {section.appraisal} — add the date so it lands in the right appraisal.</p>
+            )}
           </div>
         </div>
         {editing === null && (
@@ -222,10 +225,15 @@ export default function MyProfile() {
     );
   }
 
+  // The menu follows the appraisal form's order, in groups.
   const tabs = [
     { key: "basic", title: "Basic Information", icon: UserRound },
     { key: "skills", title: "Skills", icon: Wrench, count: profile.skills.length },
-    ...PROFILE_SECTIONS.map((s) => ({ key: s.key, title: s.title, icon: s.icon, count: (profile[s.key] || []).length })),
+    ...PROFILE_GROUPS.flatMap((g) => [
+      { key: `group-${g.key}`, heading: g.title },
+      ...PROFILE_SECTIONS.filter((x) => x.group === g.key)
+        .map((x) => ({ key: x.key, title: x.title, icon: x.icon, count: (profile[x.key] || []).length })),
+    ]),
   ];
   const section = PROFILE_SECTIONS.find((s) => s.key === tab);
 
@@ -255,7 +263,9 @@ export default function MyProfile() {
       <div className="grid lg:grid-cols-[230px_1fr] gap-6 items-start">
         {/* Section menu: a column on wide screens, a scrolling strip on narrow ones. */}
         <nav className="glass-card rounded-2xl p-2 flex lg:flex-col gap-1 overflow-x-auto lg:sticky lg:top-4">
-          {tabs.map((t) => (
+          {tabs.map((t) => (t.heading ? (
+            <div key={t.key} className="hidden lg:block px-3 pt-3 pb-1 text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">{t.heading}</div>
+          ) : (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
@@ -271,7 +281,7 @@ export default function MyProfile() {
                 </span>
               )}
             </button>
-          ))}
+          )))}
         </nav>
 
         <div className="space-y-6 min-w-0">
@@ -311,9 +321,21 @@ export default function MyProfile() {
                 About / Bio
                 <textarea value={profile.bio} onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))} rows={4} className={inputCls} />
               </label>
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2">For your appraisal</div>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {BASIC_PROFILE_FIELDS.map((f) => (
+                    <label key={f.key} className={labelCls}>
+                      {f.label}
+                      <input type={f.type === "date" ? "date" : "text"} value={profile[f.key] || ""}
+                        onChange={(e) => setProfile((p) => ({ ...p, [f.key]: e.target.value }))} className={inputCls} />
+                    </label>
+                  ))}
+                </div>
+              </div>
               <button onClick={() => persist(profile, { quiet: false })} disabled={saving}
                 className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-40">
-                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save headline and bio
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save basic information
               </button>
             </div>
           )}
