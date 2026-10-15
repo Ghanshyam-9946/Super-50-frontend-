@@ -17,6 +17,7 @@ export default function AppraisalRoundPage() {
   const [picked, setPicked] = useState([]);
   const [busy, setBusy] = useState("");
   const [status, setStatus] = useState("");
+  const [format, setFormat] = useState("pdf");
 
   const load = useCallback(async () => {
     try {
@@ -60,7 +61,7 @@ export default function AppraisalRoundPage() {
   const zip = async () => {
     setBusy("zip");
     try {
-      await downloadBlob(`/appraisal/cycles/${id}/download`, `${cycle.title}.zip`, status ? { status } : undefined);
+      await downloadBlob(`/appraisal/cycles/${id}/download`, `${cycle.title}.zip`, { format, ...(status ? { status } : {}) });
     } catch (err) {
       toast.error(err.response?.status === 404 ? "No forms in that state" : "Could not download");
     } finally {
@@ -89,8 +90,12 @@ export default function AppraisalRoundPage() {
           <option value="principal">With the Principal</option>
           <option value="completed">Completed</option>
         </select>
+        <select value={format} onChange={(e) => setFormat(e.target.value)} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-3 py-2 text-xs">
+          <option value="pdf">PDF</option>
+          <option value="docx">Word</option>
+        </select>
         <button onClick={zip} disabled={!!busy} className="btn-premium text-xs px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
-          {busy === "zip" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Download {status ? "these" : "all"} (Word, zip)
+          {busy === "zip" ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Download {status ? "these" : "all"} ({format === "pdf" ? "PDF" : "Word"}, zip)
         </button>
         <button onClick={() => setAdding(!adding)} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"><UserPlus size={13} /> Add people</button>
       </header>
@@ -132,9 +137,13 @@ export default function AppraisalRoundPage() {
                 )}
                 <td className="px-4 py-2.5"><span className={`font-bold px-2 py-0.5 rounded-md ${STATUS_STYLE[r.status]}`}>{r.statusLabel}</span></td>
                 <td className="px-4 py-2.5 text-right font-bold">{r.total ?? "—"} <span className="font-medium text-[var(--text-secondary)]">/ {r.totalMax}</span></td>
-                <td className="px-4 py-2.5 text-right">
-                  <button onClick={() => downloadBlob(`/appraisal/appraisals/${r._id}/download`, "Appraisal.docx").catch(() => toast.error("Could not download"))}
-                    title="Download (Word)" className="p-1.5 rounded-lg hover:bg-[var(--bg-input)]"><Download size={14} /></button>
+                <td className="px-4 py-2.5 text-right whitespace-nowrap">
+                  {["pdf", "docx"].map((f) => (
+                    <button key={f} onClick={() => downloadBlob(`/appraisal/appraisals/${r._id}/download`, `Appraisal.${f}`, { format: f }).catch(() => toast.error("Could not download"))}
+                      title={f === "pdf" ? "Download PDF" : "Download Word"} className="ml-1 px-2 py-1 rounded-lg border border-[var(--border-light)] text-[10px] font-bold hover:bg-[var(--bg-input)] inline-flex items-center gap-1">
+                      <Download size={11} /> {f === "pdf" ? "PDF" : "Word"}
+                    </button>
+                  ))}
                 </td>
               </tr>
             ))}

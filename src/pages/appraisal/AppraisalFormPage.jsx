@@ -101,7 +101,7 @@ export default function AppraisalFormPage() {
     if (!note || !note.trim()) return;
     act("back", () => api.post(`/appraisal/appraisals/${id}/send-back`, { note: note.trim() }));
   };
-  const download = () => downloadBlob(`/appraisal/appraisals/${id}/download`, "Appraisal.docx").catch(() => toast.error("Could not download"));
+  const download = (format) => downloadBlob(`/appraisal/appraisals/${id}/download`, `Appraisal.${format}`, { format }).catch(() => toast.error("Could not download"));
 
   const sentBack = [...(data.history || [])].reverse().find((h) => h.action === "sent back");
 
@@ -120,7 +120,10 @@ export default function AppraisalFormPage() {
           </div>
           <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${STATUS_STYLE[data.status]}`}>{data.statusLabel}</span>
           {can.download && (
-            <button onClick={download} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"><Download size={13} /> Word file</button>
+            <>
+              <button onClick={() => download("pdf")} className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5"><Download size={13} /> PDF</button>
+              <button onClick={() => download("docx")} className="btn-outline-premium text-xs px-3 py-2 flex items-center gap-1.5"><Download size={13} /> Word</button>
+            </>
           )}
         </div>
         {sentBack && data.status !== "completed" && (editSelf || can.review) && (
@@ -182,25 +185,24 @@ export default function AppraisalFormPage() {
         </label>
       </div>
 
+      {!review && (
       <div className={card}>
         <H2 hint="A short supporting statement for each — the Principal marks these.">Teaching effectiveness</H2>
         {tpl.TEACHING_ITEMS.map((t) => (
           <div key={t.key} className="space-y-1">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="text-xs font-bold text-[var(--text-primary)] flex-1 min-w-[200px]">{t.key}) {t.label}</div>
-              {review && (
-                <Points value={review.principalFeedback?.[t.key]} max={t.max} disabled={!can.principal}
-                  onChange={(v) => setR({ principalFeedback: { ...review.principalFeedback, [t.key]: v } })} />
-              )}
             </div>
             <textarea rows={2} value={self.teaching?.[t.key] || ""} disabled={!editSelf}
               onChange={(e) => setKey("teaching", { ...self.teaching, [t.key]: e.target.value })} className={inputCls} />
           </div>
         ))}
-        {review && !can.principal && <p className="text-[11px] text-[var(--text-secondary)]">These marks are given by the Principal.</p>}
       </div>
+      )}
 
-      {/* The details the reviewer marks against; filled by the appraisee. */}
+      {/* The details the reviewer marks against; filled by the appraisee.
+          Reviewers see each table under its item in Section B instead. */}
+      {!review && (
       <div className={card}>
         <H2 hint={editSelf ? "List your work under each — your HOD gives the points." : "Listed by the appraisee"}>Supporting details</H2>
         {Object.entries(tpl.DETAIL_TABLES).map(([k, t]) => (
@@ -210,6 +212,7 @@ export default function AppraisalFormPage() {
           </div>
         ))}
       </div>
+      )}
 
       {editSelf && (
         <div className="glass-card rounded-2xl p-4 flex flex-wrap gap-2 sticky bottom-4 z-10">
@@ -264,9 +267,21 @@ export default function AppraisalFormPage() {
                       </div>
                     )}
                     {p.principal && (
-                      <p className="text-[11px] text-[var(--text-secondary)]">
-                        Given in "Teaching effectiveness" above · {totals ? Object.values(review.principalFeedback || {}).reduce((n, v) => n + (Number(v) || 0), 0) : 0} / {p.max}
-                      </p>
+                      <div className="space-y-2">
+                        <p className="text-[11px] italic text-[var(--text-secondary)]">
+                          Faculty members elaborate each point with supporting statements. {can.principal ? "You give the marks." : "Marked by the Principal."}
+                        </p>
+                        {tpl.TEACHING_ITEMS.map((t) => (
+                          <div key={t.key} className="border border-[var(--border-light)] rounded-xl p-3 space-y-1.5">
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <span className="text-xs font-bold text-[var(--text-primary)] flex-1 min-w-[200px]">{t.key}) {t.label}</span>
+                              <Points value={review.principalFeedback?.[t.key]} max={t.max} disabled={!can.principal}
+                                onChange={(v) => setR({ principalFeedback: { ...review.principalFeedback, [t.key]: v } })} />
+                            </div>
+                            <div className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap">{self.teaching?.[t.key] || "No statement given."}</div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {p.items && p.items.map((it) => (
                       <div key={it.key} className="space-y-1.5">
@@ -275,11 +290,20 @@ export default function AppraisalFormPage() {
                           <Points value={review.points?.[it.key]} max={it.max} disabled={!can.review}
                             onChange={(v) => setR({ points: { ...review.points, [it.key]: v } })} />
                         </div>
-                        {it.details && (self.details?.[it.details] || []).length > 0 && (
-                          <RowsTable columns={tpl.DETAIL_TABLES[it.details].columns} rows={self.details[it.details]} />
+                        {it.details && (
+                          <div className="space-y-1 pl-3 border-l-2 border-[var(--border-light)]">
+                            <div className="text-[11px] font-semibold text-[var(--text-secondary)]">{tpl.DETAIL_TABLES[it.details].title}</div>
+                            <RowsTable columns={tpl.DETAIL_TABLES[it.details].columns} rows={self.details?.[it.details] || []} emptyText="Nothing listed by the appraisee." />
+                          </div>
                         )}
                       </div>
                     ))}
+                    {p.details && (
+                      <div className="space-y-1 pl-3 border-l-2 border-[var(--border-light)]">
+                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">{tpl.DETAIL_TABLES[p.details].title}</div>
+                        <RowsTable columns={tpl.DETAIL_TABLES[p.details].columns} rows={self.details?.[p.details] || []} emptyText="Nothing listed by the appraisee." />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

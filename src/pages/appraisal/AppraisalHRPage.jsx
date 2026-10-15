@@ -66,7 +66,7 @@ export default function AppraisalHRPage() {
   const downloadAll = async (c) => {
     setBusy(`zip-${c._id}`);
     try {
-      await downloadBlob(`/appraisal/cycles/${c._id}/download`, `${c.title}.zip`);
+      await downloadBlob(`/appraisal/cycles/${c._id}/download`, `${c.title}.zip`, { format: "pdf" });
     } catch {
       toast.error("Could not download");
     } finally {
@@ -143,7 +143,7 @@ export default function AppraisalHRPage() {
                 </div>
                 <Link to={`/appraisal/hr/${c._id}`} className="btn-outline-premium text-xs px-3 py-2">Open</Link>
                 <button onClick={() => downloadAll(c)} disabled={!!busy} className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-50">
-                  {busy === `zip-${c._id}` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Download all
+                  {busy === `zip-${c._id}` ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} Download all (PDF)
                 </button>
                 <button onClick={() => remove(c)} title="Delete round" className="p-2 rounded-lg text-red-500 hover:bg-red-500/10"><Trash2 size={14} /></button>
               </div>
