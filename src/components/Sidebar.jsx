@@ -85,6 +85,18 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] }] : []),
   ];
 
+  // Appraisal: everyone on staff has their own form; HODs, HR and the
+  // Principal (by responsibility; an admin acts as HR and Principal) get
+  // their own pages too.
+  const hasResp = (name) => (user?.responsibilities || []).some((r) => String(r).trim().toLowerCase() === name);
+  const isAdminUser = (user?.roles?.length ? user.roles : [user?.role]).includes('admin');
+  const appraisalGroup = { category: 'Appraisal', links: [
+    { to: '/appraisal/my', icon: ClipboardCheck, label: 'My Appraisal' },
+    ...(hasResp('hod') ? [{ to: '/appraisal/review', icon: ClipboardCheck, label: 'Appraisal Review (HOD)' }] : []),
+    ...(isAdminUser || hasResp('hr') ? [{ to: '/appraisal/hr', icon: Users, label: 'Appraisal (HR)' }] : []),
+    ...(isAdminUser || hasResp('principal') ? [{ to: '/appraisal/principal', icon: ClipboardCheck, label: 'Appraisal (Principal)' }] : []),
+  ] };
+
   const teacherGroups = [
     { category: 'Overview', links: [
       { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -277,6 +289,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/ai-knowledge', icon: Sparkles, label: 'AI Knowledge' },
     ] },
   ];
+
+  teacherGroups.push(appraisalGroup);
+  guideGroups.push(appraisalGroup);
+  adminGroups.push(appraisalGroup);
 
   const super50AdminGroups = [
     { category: 'Overview', links: [

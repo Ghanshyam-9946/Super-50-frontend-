@@ -21,6 +21,19 @@ const TYPES = [
 const LABEL = Object.fromEntries(TYPES.map((t) => [t.key, t.label]));
 const DASH = '—';
 
+// What a row's date is. Marks given before the day was recorded show the
+// day they were scheduled for, or else the day they were entered.
+const BASIS = { held: 'Held on', met: 'Met on', scheduled: 'Scheduled date', entered: 'Marks entered on' };
+const DateCell = ({ date, basis }) => {
+  if (!date) return <td className="whitespace-nowrap"><span className="text-slate-400">not recorded</span></td>;
+  return (
+    <td className="whitespace-nowrap">
+      {formatDate(date)}
+      {basis && basis !== 'held' && basis !== 'met' && <div className="text-[10px] text-slate-400">{BASIS[basis]}</div>}
+    </td>
+  );
+};
+
 const Reports = () => {
   const [filters, setFilters] = useState({
     yearId: '', semester: '', projectId: '', teamId: '', from: '', to: '',
@@ -87,13 +100,14 @@ const Reports = () => {
       return downloadCSV(
         rows.map((r) => ({
           date: r.heldOn ? formatDate(r.heldOn) : '',
+          dateIs: BASIS[r.heldOnBasis] || '',
           group: r.groupNo, groupName: r.groupName, sem: r.semester, project: r.project,
           enrollment: r.enrollmentNo, student: r.student,
           presentation: r.presentation,
           marks: r.marks ?? '', outOf: r.outOf ?? '',
           panel: r.panelMember, guides: r.guides, feedback: r.feedback,
         })),
-        ['Date', 'Group', 'Group Name', 'Sem', 'Project', 'Enrollment', 'Student', 'Presentation', 'Marks', 'Out Of', 'Panel Member', 'Guides', 'Group remark'],
+        ['Date', 'Date is', 'Group', 'Group Name', 'Sem', 'Project', 'Enrollment', 'Student', 'Presentation', 'Marks', 'Out Of', 'Panel Member', 'Guides', 'Group remark'],
         'presentation_marks.csv',
       );
     }
@@ -101,13 +115,14 @@ const Reports = () => {
       return downloadCSV(
         rows.map((r) => ({
           date: r.metOn ? formatDate(r.metOn) : '',
+          dateIs: BASIS[r.metOnBasis] || '',
           group: r.groupNo, groupName: r.groupName, sem: r.semester, project: r.project,
           enrollment: r.enrollmentNo, student: r.student,
           meeting: r.meeting,
           marks: r.marks ?? '', outOf: r.outOf ?? '',
           guide: r.guide, remark: r.remark,
         })),
-        ['Date', 'Group', 'Group Name', 'Sem', 'Project', 'Enrollment', 'Student', 'Meeting', 'Marks', 'Out Of', 'Guide', 'Group remark'],
+        ['Date', 'Date is', 'Group', 'Group Name', 'Sem', 'Project', 'Enrollment', 'Student', 'Meeting', 'Marks', 'Out Of', 'Guide', 'Group remark'],
         'guide_meeting_marks.csv',
       );
     }
@@ -159,7 +174,7 @@ const Reports = () => {
             <tbody>
               {rows.map((r) => (
                 <tr key={r._id}>
-                  <td className="whitespace-nowrap">{r.heldOn ? formatDate(r.heldOn) : <span className="text-slate-400">not recorded</span>}</td>
+                  <DateCell date={r.heldOn} basis={r.heldOnBasis} />
                   <td>
                     <div className="font-semibold">{r.groupNo}</div>
                     <div className="text-xs text-slate-500">{r.groupName}</div>
@@ -192,7 +207,7 @@ const Reports = () => {
             <tbody>
               {rows.map((r) => (
                 <tr key={r._id}>
-                  <td className="whitespace-nowrap">{r.metOn ? formatDate(r.metOn) : <span className="text-slate-400">not recorded</span>}</td>
+                  <DateCell date={r.metOn} basis={r.metOnBasis} />
                   <td>
                     <div className="font-semibold">{r.groupNo}</div>
                     <div className="text-xs text-slate-500">{r.groupName}</div>
