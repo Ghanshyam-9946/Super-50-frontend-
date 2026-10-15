@@ -131,8 +131,8 @@ const DriveResultUpload = () => {
                 <Upload size={24} className="text-[var(--primary)]" /> Upload Excel Sheet
               </h3>
               <a
-                href="/upload/round%20result.xlsx"
-                download="round_result.xlsx"
+                href="/upload/Eligible%20Students.xlsx"
+                download="Eligible_Students.xlsx"
                 className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
               >
                 <FileSpreadsheet size={14} /> Download Template

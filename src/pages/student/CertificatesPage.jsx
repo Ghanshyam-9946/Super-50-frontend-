@@ -3,14 +3,22 @@ import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import { fetchMyCertificates, uploadCertificate, deleteCertificate } from '../../features/certificates/certificatesSlice';
-import { Award, Upload, Trash2, Eye, FileText, Image, Plus, X, Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Award, Upload, Trash2, Eye, FileText, Image, Plus, X, Loader2, ShieldCheck, ShieldAlert, AlertTriangle, Calendar, Clock, Trophy, Globe } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 function UploadModal({ onClose }) {
   const dispatch = useDispatch();
   const { uploading } = useSelector((s) => s.certificates);
   const [file, setFile] = useState(null);
-  const [form, setForm] = useState({ title: '', description: '', issuedBy: '' });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    issuedBy: '',
+    eventDate: '',
+    eventDuration: '',
+    participationType: 'Participant',
+    eventLevel: 'National'
+  });
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'application/pdf': ['.pdf'], 'image/*': ['.jpg', '.jpeg', '.png', '.webp'] },
@@ -27,69 +35,191 @@ function UploadModal({ onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file) { toast.error('Please select a file'); return; }
+    if (!file) { toast.error('Please select a certificate file (PDF or Image)'); return; }
+    if (!form.title.trim()) { toast.error('Certificate title is required'); return; }
+    if (!form.issuedBy.trim()) { toast.error('Issued By / Organization is required'); return; }
+    if (!form.eventDate) { toast.error('Date of the Event is required'); return; }
+    if (!form.eventDuration.trim()) { toast.error('Event Duration is required'); return; }
+    if (!form.participationType) { toast.error('Participation Type is required'); return; }
+    if (!form.eventLevel) { toast.error('Event Level is required'); return; }
+    if (!form.description.trim()) { toast.error('Description / details are required'); return; }
+
     const fd = new FormData();
     fd.append('certificate', file);
-    fd.append('title', form.title);
-    fd.append('description', form.description);
-    fd.append('issuedBy', form.issuedBy);
+    fd.append('title', form.title.trim());
+    fd.append('description', form.description.trim());
+    fd.append('issuedBy', form.issuedBy.trim());
+    fd.append('eventDate', form.eventDate);
+    fd.append('eventDuration', form.eventDuration.trim());
+    fd.append('participationType', form.participationType);
+    fd.append('eventLevel', form.eventLevel);
+
     const result = await dispatch(uploadCertificate(fd));
-    if (!result.error) { toast.success('Certificate uploaded!'); onClose(); }
+    if (!result.error) { toast.success('Certificate uploaded successfully!'); onClose(); }
     else toast.error(result.payload);
   };
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white border border-[var(--border-light)] shadow-xl rounded-[1.5rem] relative" style={{ width: '90%', maxWidth: 520, padding: 32 }}>
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 bg-slate-50 p-2 rounded-full transition-colors">
+        className="bg-white border border-[var(--border-light)] shadow-2xl rounded-[1.8rem] relative max-h-[90vh] overflow-y-auto custom-scrollbar" style={{ width: '90%', maxWidth: 580, padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-slate-800 bg-slate-50 p-2 rounded-full transition-colors cursor-pointer">
           <X size={20} />
         </button>
-        <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center border border-orange-100 mb-4 shadow-sm">
-          <Award size={24} />
+        
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center border border-orange-100 shadow-sm">
+            <Award size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-display font-black text-[var(--text-primary)]">Upload Certificate</h2>
+            <p className="text-xs text-slate-500 font-medium">Add verified external achievement or event certificate</p>
+          </div>
         </div>
-        <h2 className="text-2xl font-display font-black text-[var(--text-primary)] mb-6">Upload Certificate</h2>
+
+        {/* Mandatory Warning Message */}
+        <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-center gap-3 text-amber-800 text-xs font-bold shadow-sm my-4">
+          <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+          <span>⚠️ <strong>Notice:</strong> <em>*Only Outside SISTec Certifications are Allowed*</em></span>
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div {...getRootProps()} className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all cursor-pointer mb-6 ${
-            isDragActive ? 'border-[var(--primary)] bg-purple-50/50' : 'border-slate-200 hover:border-[var(--primary-light)] bg-slate-50/30'
+          <div {...getRootProps()} className={`border-2 border-dashed rounded-3xl p-6 text-center transition-all cursor-pointer ${
+            isDragActive ? 'border-[var(--primary)] bg-purple-50/50' : 'border-slate-200 hover:border-[var(--primary-light)] bg-slate-50/40'
           }`}>
             <input {...getInputProps()} />
             {file ? (
-              <div className="space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-2 border border-orange-100 shadow-sm">
-                  {file.type === 'application/pdf' ? <FileText size={32} className="text-orange-500 mx-auto" /> : <Image size={32} className="text-orange-500 mx-auto" />}
+              <div className="space-y-2">
+                <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto border border-orange-100 shadow-sm">
+                  {file.type === 'application/pdf' ? <FileText size={28} className="text-orange-500" /> : <Image size={28} className="text-orange-500" />}
                 </div>
-                <p className="font-display font-black text-lg text-[var(--text-primary)]">{file.name}</p>
+                <p className="font-display font-black text-base text-[var(--text-primary)]">{file.name}</p>
                 <p className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">{(file.size / 1024).toFixed(1)} KB • Click to change</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-2 border border-slate-200 shadow-sm">
-                  <Upload size={32} className="text-slate-400" />
+              <div className="space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto border border-slate-200 shadow-sm">
+                  <Upload size={24} className="text-slate-400" />
                 </div>
-                <p className="text-[var(--text-primary)] font-display font-black text-xl">{isDragActive ? 'Drop here!' : 'Drag & drop file here'}</p>
-                <p className="text-[11px] text-[var(--text-secondary)] uppercase tracking-widest font-black">PDF or Image (max 100KB)</p>
+                <p className="text-[var(--text-primary)] font-display font-black text-base">{isDragActive ? 'Drop here!' : 'Drag & drop certificate file here'}</p>
+                <p className="text-[10px] text-rose-500 uppercase tracking-widest font-black">PDF or Image (max 100KB) *Required</p>
               </div>
             )}
           </div>
           
-          {['title', 'issuedBy', 'description'].map((field) => (
-            <div key={field}>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
-                {field === 'title' ? 'Title *' : field === 'issuedBy' ? 'Issued By' : 'Description'}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Certificate Title <span className="text-rose-500 font-black">*</span>
               </label>
               <input 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-medium placeholder:text-slate-400" 
-                value={form[field]}
-                placeholder={field === 'title' ? 'e.g., AWS Cloud Practitioner' : ''}
-                onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-                required={field === 'title'} id={`cert-${field}`} 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-normal placeholder:text-slate-400" 
+                value={form.title}
+                placeholder="e.g. AWS Certified Cloud Practitioner / Hackathon Award"
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
+                id="cert-title" 
               />
             </div>
-          ))}
-          <button type="submit" className="btn-premium w-full py-3.5 mt-6 flex items-center justify-center gap-2" disabled={uploading} id="cert-upload-submit">
-            {uploading ? <><Loader2 size={18} className="animate-spin" /> Uploading...</> : <><Upload size={18} /> Upload Certificate</>}
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Issued By / Organization <span className="text-rose-500 font-black">*</span>
+              </label>
+              <input 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-normal placeholder:text-slate-400" 
+                value={form.issuedBy}
+                placeholder="e.g. NPTEL / Coursera / IIT Delhi"
+                onChange={(e) => setForm({ ...form, issuedBy: e.target.value })}
+                required
+                id="cert-issuedBy" 
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Date of the Event <span className="text-rose-500 font-black">*</span>
+              </label>
+              <input 
+                type="date"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm" 
+                value={form.eventDate}
+                onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
+                required
+                id="cert-eventDate" 
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Event Duration <span className="text-rose-500 font-black">*</span>
+              </label>
+              <input 
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-normal placeholder:text-slate-400" 
+                value={form.eventDuration}
+                placeholder="e.g. 1 Day / 3 Days / 1 Month"
+                onChange={(e) => setForm({ ...form, eventDuration: e.target.value })}
+                required
+                id="cert-eventDuration" 
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Participate / Winner <span className="text-rose-500 font-black">*</span>
+              </label>
+              <select
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm cursor-pointer"
+                value={form.participationType}
+                onChange={(e) => setForm({ ...form, participationType: e.target.value })}
+                required
+                id="cert-participationType"
+              >
+                <option value="Participant">Participant</option>
+                <option value="Winner">Winner 🏆</option>
+                <option value="Runner Up">Runner Up 🥈</option>
+                <option value="Merit / Special Recognition">Merit / Special Recognition 🎖️</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                State / National / International Level <span className="text-rose-500 font-black">*</span>
+              </label>
+              <select
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm cursor-pointer"
+                value={form.eventLevel}
+                onChange={(e) => setForm({ ...form, eventLevel: e.target.value })}
+                required
+                id="cert-eventLevel"
+              >
+                <option value="National">National Level</option>
+                <option value="International">International Level</option>
+                <option value="State">State Level</option>
+                <option value="College">College / Institutional Level</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                Description / Additional Notes <span className="text-rose-500 font-black">*</span>
+              </label>
+              <textarea 
+                rows="2"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3.5 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm placeholder:font-normal placeholder:text-slate-400 resize-none" 
+                value={form.description}
+                placeholder="Brief details about the certificate or event..."
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                required
+                id="cert-description" 
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn-premium w-full py-3.5 mt-4 flex items-center justify-center gap-2 cursor-pointer" disabled={uploading} id="cert-upload-submit">
+            {uploading ? <><Loader2 size={18} className="animate-spin" /> Uploading...</> : <><Upload size={18} /> Submit Certificate</>}
           </button>
         </form>
       </motion.div>
@@ -178,7 +308,35 @@ export default function CertificatesPage() {
                   </div>
                   <div className="flex-1 min-w-0 pt-1">
                     <div className="font-display font-black text-lg text-[var(--text-primary)] mb-1 leading-tight line-clamp-2">{cert.title}</div>
-                    {cert.issuedBy && <div className="text-[12px] font-bold text-slate-500 mb-2 truncate">{cert.issuedBy}</div>}
+                    {cert.issuedBy && <div className="text-[12px] font-bold text-slate-500 mb-1.5 truncate">{cert.issuedBy}</div>}
+                    
+                    {/* Event Metadata Badges */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      {cert.participationType && (
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                          cert.participationType.toLowerCase().includes('winner') ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
+                          cert.participationType.toLowerCase().includes('runner') ? 'bg-slate-500/10 text-slate-600 border-slate-500/20' :
+                          'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
+                        }`}>
+                          {cert.participationType === 'Winner' ? '🏆 Winner' : cert.participationType}
+                        </span>
+                      )}
+                      {cert.eventLevel && (
+                        <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                          {cert.eventLevel} Level
+                        </span>
+                      )}
+                      {cert.eventDuration && (
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 flex items-center gap-1">
+                          <Clock size={10} /> {cert.eventDuration}
+                        </span>
+                      )}
+                      {cert.eventDate && (
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 flex items-center gap-1">
+                          <Calendar size={10} /> {new Date(cert.eventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -193,6 +351,10 @@ export default function CertificatesPage() {
                      <><Loader2 size={12} className="animate-spin" /> Pending</>}
                   </span>
                 </div>
+
+                {cert.description && (
+                  <p className="text-xs text-slate-600 font-medium mb-3 line-clamp-2">{cert.description}</p>
+                )}
 
                 {cert.verified === 'rejected' && cert.rejectionReason && (
                   <div className="mb-5 p-3 bg-red-50 border border-red-100 rounded-xl text-[12px] font-medium text-red-800 shadow-inner-sm">

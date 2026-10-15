@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Award, Lock, ClipboardCheck, Inbox } from 'lucide-react';
+import { Award, Lock, ClipboardCheck, Inbox, CalendarClock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { studentAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
@@ -8,18 +8,25 @@ import { formatDate } from '../../../utils/pms/helpers';
 
 const StudentMarks = () => {
   const [marks, setMarks] = useState([]);
+  const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     studentAPI.getMarks()
-      .then((res) => setMarks(res.data.marks || []))
+      .then((res) => {
+        setMarks(res.data.marks || []);
+        setMeetings(res.data.meetings || []);
+      })
       .catch((err) => toast.error(handleError(err)))
       .finally(() => setLoading(false));
   }, []);
 
-  // Compute total awarded
-  const totalEarned = marks.reduce((sum, m) => sum + (m.marksObtained || 0), 0);
-  const totalPossible = marks.filter((m) => m.marksObtained != null).reduce((sum, m) => sum + (m.totalMarks || 0), 0);
+  // Panel marks (or the older per-team submission marks) + meeting marks
+  const scoreOf = (m) => (m.panelMarks ?? m.marksObtained);
+  const totalEarned = marks.reduce((sum, m) => sum + (scoreOf(m) || 0), 0)
+    + meetings.reduce((sum, m) => sum + (m.marks || 0), 0);
+  const totalPossible = marks.filter((m) => scoreOf(m) != null).reduce((sum, m) => sum + (m.totalMarks || 0), 0)
+    + meetings.filter((m) => m.marks != null).reduce((sum, m) => sum + (m.maxMarks || 0), 0);
 
   if (loading) return <div className="py-20 flex justify-center"><Spinner size="lg" /></div>;
 
@@ -45,6 +52,38 @@ const StudentMarks = () => {
         </Card>
       )}
 
+      {meetings.length > 0 && (
+        <Card title="Guide Meetings" icon={CalendarClock} noPadding>
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead><tr><th>Meeting</th><th>Window</th><th className="text-center">Marks</th><th>Remark</th></tr></thead>
+              <tbody>
+                {meetings.map((m) => (
+                  <tr key={m._id}>
+                    <td className="font-semibold">{m.label}</td>
+                    <td className="text-sm">{formatDate(m.startDate)} – {formatDate(m.endDate)}</td>
+                    <td className="text-center">
+                      {m.marks != null
+                        ? <span className="font-bold text-emerald-600">{m.marks} <span className="text-slate-400 font-normal">/ {m.maxMarks}</span></span>
+                        : <span className="text-slate-400">—</span>}
+                    </td>
+                    <td className="text-sm text-slate-500 italic max-w-[260px]">{m.remark || '—'}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className="font-bold">Total</td>
+                  <td />
+                  <td className="text-center font-bold">
+                    {meetings.reduce((s, m) => s + (m.marks || 0), 0)} / {meetings.reduce((s, m) => s + (m.maxMarks || 0), 0)}
+                  </td>
+                  <td className="text-xs text-slate-500">Spread across your rubric criteria</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
       <Card title="All Presentations" icon={ClipboardCheck} noPadding>
         {marks.length === 0 ? (
           <EmptyState icon={Inbox} title="No presentations yet" message="Your scheduled presentations will appear here." />
@@ -61,9 +100,9 @@ const StudentMarks = () => {
                     <td>{formatDate(m.presentationDate)}</td>
                     <td><StatusBadge status={m.status} /></td>
                     <td className="text-center">
-                      {m.marksObtained != null ? (
+                      {scoreOf(m) != null ? (
                         <span className="font-bold text-emerald-600">
-                          {m.marksObtained} <span className="text-slate-400 font-normal">/ {m.totalMarks}</span>
+                          {scoreOf(m)} <span className="text-slate-400 font-normal">/ {m.totalMarks}</span>
                         </span>
                       ) : (
                         <span className="text-slate-400">—</span>
@@ -72,8 +111,8 @@ const StudentMarks = () => {
                     <td>
                       {m.isLocked ? <span className="badge-secondary"><Lock className="w-3 h-3" /> Locked</span> : <span className="text-slate-400">—</span>}
                     </td>
-                    <td className="text-sm text-slate-500 italic max-w-[240px] truncate">
-                      {m.guideComment || '—'}
+                    <td className="text-sm text-slate-500 italic max-w-[240px]">
+                      {m.panelRemark || m.guideFeedback || m.guideComment || '—'}
                     </td>
                   </tr>
                 ))}

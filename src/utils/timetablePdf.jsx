@@ -37,7 +37,7 @@ export async function downloadTimetablePdf(timetableData) {
     });
 
     const canvas = await html2canvas(container, {
-      scale: 2,
+      scale: 4,
       useCORS: true,
       backgroundColor: '#ffffff',
     });
@@ -50,7 +50,7 @@ export async function downloadTimetablePdf(timetableData) {
     const imgWidth = canvas.width * ratio;
     const imgHeight = canvas.height * ratio;
 
-    pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', margin, margin, imgWidth, imgHeight);
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin, imgWidth, imgHeight);
 
     const sectionPart = (timetableData.className || '').replace(/\s+/g, '_');
     const filename = `Timetable_Sem${timetableData.semester ?? ''}${sectionPart ? `_${sectionPart}` : ''}.pdf`;

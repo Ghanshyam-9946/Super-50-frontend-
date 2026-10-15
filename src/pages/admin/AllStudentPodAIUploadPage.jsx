@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 const AllStudentPodAIUploadPage = () => {
   const [file, setFile] = useState(null);
+  const [semester, setSemester] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   
@@ -47,9 +48,11 @@ const AllStudentPodAIUploadPage = () => {
 
   const handleUpload = async () => {
     if (!file) return toast.error('Please select an Excel file');
+    if (!semester) return toast.error('Please select a semester');
     
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('semester', semester);
     formData.append('isGeneral', 'true'); // Flag to skip Super 50 students
     
     setLoading(true);
@@ -65,11 +68,11 @@ const AllStudentPodAIUploadPage = () => {
     }
   };
 
-  const handleDelete = async (testName, testDate) => {
-    if (!window.confirm(`Are you sure you want to delete the upload for "${testName}"?`)) return;
+  const handleDelete = async (testName, testDate, semester) => {
+    if (!window.confirm(`Are you sure you want to delete the upload for "${testName}"${semester ? ` (Semester ${semester})` : ''}?`)) return;
 
     try {
-      await api.delete('/podai/upload', { data: { testName, testDate } });
+      await api.delete('/podai/upload', { data: { testName, testDate, semester } });
       toast.success('Upload deleted successfully');
       fetchHistoryAndAnalytics();
       setSelectedUploads(selectedUploads.filter(u => !(u.testName === testName && u.testDate === testDate)));
@@ -131,6 +134,20 @@ const AllStudentPodAIUploadPage = () => {
               <Upload className="mx-auto text-slate-400 mb-4" size={32} />
               <p className="text-xs font-bold text-slate-700">Drag & drop Pod AI sheet here, or click to browse</p>
               <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black mt-2">XLSX, XLS files up to 10MB</p>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Semester</label>
+              <select
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+              >
+                <option value="">-- Select Semester --</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(s => (
+                  <option key={s} value={s}>Semester {s}</option>
+                ))}
+              </select>
             </div>
 
             {file && (
@@ -209,11 +226,14 @@ const AllStudentPodAIUploadPage = () => {
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {history.map((h, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-4 font-bold text-slate-900">{h._id.testName}</td>
+                        <td className="p-4 font-bold text-slate-900">
+                          {h._id.testName}
+                          {h._id.semester && <span className="ml-2 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Sem {h._id.semester}</span>}
+                        </td>
                         <td className="p-4 text-slate-500">{new Date(h._id.testDate).toLocaleString()}</td>
-                        <td className="p-4 text-center font-bold text-slate-800">{h.studentCount}</td>
+                        <td className="p-4 text-center font-bold text-slate-800">{h.totalStudents}</td>
                         <td className="p-4 text-right">
-                          <button onClick={() => handleDelete(h._id.testName, h._id.testDate)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-100 transition-all">
+                          <button onClick={() => handleDelete(h._id.testName, h._id.testDate, h._id.semester)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg border border-transparent hover:border-rose-100 transition-all">
                             <Trash2 size={14} />
                           </button>
                         </td>
