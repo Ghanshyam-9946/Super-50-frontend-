@@ -14,7 +14,9 @@ const PRESET_RESPONSIBILITIES = [
   'Project Coordinator', // full PMS admin access (see routes/pms/adminRoutes.js)
   'Placement Coordinator',
   'Exam Coordinator',
-  'Club Coordinator'
+  'Club Coordinator',
+  'HR', // releases appraisals
+  'Principal', // completes appraisals
 ];
 
 function FacultySetPasswordModal({ guide, onClose, onSuccess }) {
