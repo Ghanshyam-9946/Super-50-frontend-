@@ -159,12 +159,22 @@ export default function AppraisalFormPage() {
             <RowsTable columns={t.columns} rows={self[t.key] || []} onChange={editSelf ? (rows) => setKey(t.key, rows) : undefined} />
           </div>
         ))}
-        {tpl.SECTION_A_TEXTS.map((t) => (
-          <label key={t.key} className={labelCls}>{t.title}
+        {tpl.SECTION_A_TEXTS.filter((t) => !t.part).map((t) => (
+          <div key={t.key} className="space-y-1.5">
+            <div className="text-xs font-bold text-[var(--text-primary)]">{t.title}</div>
             <textarea rows={3} value={self[t.key] || ""} disabled={!editSelf} onChange={(e) => setKey(t.key, e.target.value)} className={inputCls} />
-          </label>
+          </div>
         ))}
       </div>
+
+      {/* PART-3 and any other part of its own */}
+      {tpl.SECTION_A_TEXTS.filter((t) => t.part).map((t) => (
+        <div key={t.key} className={card}>
+          <H3>{t.part}</H3>
+          <div className="text-xs text-[var(--text-secondary)]">{t.title}</div>
+          <textarea rows={4} value={self[t.key] || ""} disabled={!editSelf} onChange={(e) => setKey(t.key, e.target.value)} className={inputCls} />
+        </div>
+      ))}
 
       <div className={card}>
         <H3>PART-4: Please respond in brief</H3>
@@ -185,30 +195,82 @@ export default function AppraisalFormPage() {
         </label>
       </div>
 
+      {/* ───────────── SECTION B (appraisee's side) ─────────────
+          The same layout as the printed form: the appraisee writes the
+          supporting statements and lists the work under each item; the
+          points column belongs to the reviewer and is not shown here. */}
       {!review && (
       <div className={card}>
-        <H2 hint="A short supporting statement for each — the Principal marks these.">Teaching effectiveness</H2>
-        {tpl.TEACHING_ITEMS.map((t) => (
-          <div key={t.key} className="space-y-1">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="text-xs font-bold text-[var(--text-primary)] flex-1 min-w-[200px]">{t.key}) {t.label}</div>
-            </div>
-            <textarea rows={2} value={self.teaching?.[t.key] || ""} disabled={!editSelf}
-              onChange={(e) => setKey("teaching", { ...self.teaching, [t.key]: e.target.value })} className={inputCls} />
-          </div>
-        ))}
-      </div>
-      )}
-
-      {/* The details the reviewer marks against; filled by the appraisee.
-          Reviewers see each table under its item in Section B instead. */}
-      {!review && (
-      <div className={card}>
-        <H2 hint={editSelf ? "List your work under each — your HOD gives the points." : "Listed by the appraisee"}>Supporting details</H2>
-        {Object.entries(tpl.DETAIL_TABLES).map(([k, t]) => (
-          <div key={k} className="space-y-1.5">
-            <div className="text-xs font-bold text-[var(--text-primary)]">{t.title}</div>
-            <RowsTable columns={t.columns} rows={self.details?.[k] || []} onChange={editSelf ? (rows) => setDetail(k, rows) : undefined} />
+        <H2 hint={editSelf ? `Write your statements and list your work under each item — ${reviewer} gives the points.` : "Filled in by the appraisee"}>
+          SECTION-B: Appraisal rating by {data.formFor === "hod" ? "the Principal" : "concerned HOD"}
+        </H2>
+        {tpl.SECTION_B.map((g) => (
+          <div key={g.key} className="space-y-3 border-t border-[var(--border-light)] pt-3">
+            <H3>{g.title} (max. points {g.max})</H3>
+            {g.parts.map((p) => (
+              <div key={p.key} className="space-y-2 pl-1">
+                <div className="text-xs font-bold text-[var(--text-secondary)]">{p.title} ({p.max} max)</div>
+                {p.rows && (
+                  <div className="overflow-x-auto border border-[var(--border-light)] rounded-xl">
+                    <table className="w-full text-xs min-w-[420px]">
+                      <thead className="bg-[var(--bg-input)]/70">
+                        <tr className="text-left text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+                          <th className="px-2.5 py-2" /><th className="px-2.5 py-2">Subject Title</th><th className="px-2.5 py-2">{p.valueLabel}</th><th className="px-2.5 py-2 text-right">Max. Score</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tpl.RESULT_ROWS.map((label) => (
+                          <tr key={label} className="border-t border-[var(--border-light)] text-[var(--text-secondary)]">
+                            <td className="px-2.5 py-2 font-bold whitespace-nowrap">{label}</td>
+                            <td className="px-2.5 py-2 italic" colSpan={2}>Filled in by {reviewer}</td>
+                            <td className="px-2.5 py-2 text-right">100</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {p.principal && (
+                  <div className="space-y-2">
+                    <p className="text-[11px] italic text-[var(--text-secondary)]">
+                      Note — elaborate each point with supporting statements in the space given below. The Principal gives the marks.
+                    </p>
+                    {tpl.TEACHING_ITEMS.map((t) => (
+                      <div key={t.key} className="border border-[var(--border-light)] rounded-xl p-3 space-y-1.5">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <span className="text-xs font-bold text-[var(--text-primary)] flex-1 min-w-[200px]">{t.key}) {t.label}</span>
+                          <span className="text-[11px] text-[var(--text-secondary)]">Max. {t.max}</span>
+                        </div>
+                        <textarea rows={2} value={self.teaching?.[t.key] || ""} disabled={!editSelf}
+                          onChange={(e) => setKey("teaching", { ...self.teaching, [t.key]: e.target.value })} className={inputCls} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {p.items && p.items.map((it) => (
+                  <div key={it.key} className="space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs text-[var(--text-primary)] flex-1 min-w-[200px]">{it.label}</span>
+                      <span className="text-[11px] text-[var(--text-secondary)]">Max. {it.max}</span>
+                    </div>
+                    {it.details && (
+                      <div className="space-y-1 pl-3 border-l-2 border-[var(--border-light)]">
+                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">{tpl.DETAIL_TABLES[it.details].title}</div>
+                        <RowsTable columns={tpl.DETAIL_TABLES[it.details].columns} rows={self.details?.[it.details] || []}
+                          onChange={editSelf ? (rows) => setDetail(it.details, rows) : undefined} />
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {p.details && (
+                  <div className="space-y-1 pl-3 border-l-2 border-[var(--border-light)]">
+                    <div className="text-[11px] font-semibold text-[var(--text-secondary)]">{tpl.DETAIL_TABLES[p.details].title}</div>
+                    <RowsTable columns={tpl.DETAIL_TABLES[p.details].columns} rows={self.details?.[p.details] || []}
+                      onChange={editSelf ? (rows) => setDetail(p.details, rows) : undefined} />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ))}
       </div>
