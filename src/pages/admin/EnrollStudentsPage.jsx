@@ -3,8 +3,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, UserPlus, FileSpreadsheet, Users, ChevronDown, ChevronUp,
   Search, X, CheckCircle, Mail, Phone, BookOpen, GraduationCap, RefreshCw, Trash2,
-  Download, CheckCircle2, XCircle, Filter, AlertTriangle, FileText
+  Download, CheckCircle2, XCircle, Filter, AlertTriangle, FileText,
+  MessageSquare, Edit3
 } from 'lucide-react';
+
+const PRESET_NOT_WANT_REMARKS = [
+  'Higher Studies (GATE / CAT / GRE / MS / M.Tech / MBA)',
+  'Family Business / Entrepreneurship / Startup',
+  'Govt. Job / UPSC / State PCS / Defense Exams Preparation',
+  'Already Placed / Off-Campus Placement Offer Received',
+  'Not Interested in Corporate Placements',
+  'Location / Relocation Constraints',
+  'Personal / Health Reasons',
+];
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import toast from 'react-hot-toast';
@@ -29,6 +40,11 @@ const EnrollStudentsPage = () => {
   const [downloadFilter, setDownloadFilter] = useState('all'); // 'all', 'want', 'not_want'
   const [downloadBatch, setDownloadBatch] = useState('all');
   const [updatingStudentId, setUpdatingStudentId] = useState(null);
+
+  // Remark Modal State for 'Not Want' Placement
+  const [remarkModalStudent, setRemarkModalStudent] = useState(null);
+  const [remarkText, setRemarkText] = useState('');
+  const [savingRemark, setSavingRemark] = useState(false);
 
   const handleManualEnroll = async (e) => {
     e.preventDefault();
@@ -110,26 +126,38 @@ const EnrollStudentsPage = () => {
   const notWantCount = allStudents.filter(s => s.placementPreference === 'not_want').length;
   const notEligibleAcademicCount = allStudents.filter(s => s.placementPreference === 'not_eligible_academic').length;
 
-  const handleUpdatePreference = async (studentId, preference) => {
+  const handleUpdatePreference = async (studentId, preference, remark) => {
     const prevBatches = batches;
     // Optimistic UI update
     setBatches(current =>
       current.map(b => ({
         ...b,
         students: b.students.map(s =>
-          s._id === studentId ? { ...s, placementPreference: preference } : s
+          s._id === studentId
+            ? {
+                ...s,
+                placementPreference: preference,
+                ...(remark !== undefined
+                  ? { placementPreferenceRemark: remark }
+                  : (preference === 'want' ? { placementPreferenceRemark: '' } : {})),
+              }
+            : s
         ),
       }))
     );
 
     setUpdatingStudentId(studentId);
     try {
-      await api.patch(`/placement/enrolled-students/${studentId}/preference`, { preference });
+      const payload = { preference };
+      if (remark !== undefined) {
+        payload.remark = remark;
+      }
+      await api.patch(`/placement/enrolled-students/${studentId}/preference`, payload);
       toast.success(
         preference === 'want'
           ? 'Marked: Wants placement from institute'
           : preference === 'not_want'
-          ? 'Marked: Does not want placement from institute'
+          ? 'Marked: Does not want placement (remark saved)'
           : 'Marked: Not eligible due to academic criteria'
       );
     } catch (err) {
@@ -137,6 +165,30 @@ const EnrollStudentsPage = () => {
       toast.error(err.response?.data?.message || 'Failed to update preference');
     } finally {
       setUpdatingStudentId(null);
+    }
+  };
+
+  const handleOpenNotWantModal = (student) => {
+    setRemarkModalStudent(student);
+    setRemarkText(student.placementPreferenceRemark || '');
+  };
+
+  const handleCloseNotWantModal = () => {
+    if (savingRemark) return;
+    setRemarkModalStudent(null);
+    setRemarkText('');
+  };
+
+  const handleSaveNotWantRemark = async (e) => {
+    if (e) e.preventDefault();
+    if (!remarkModalStudent) return;
+    setSavingRemark(true);
+    try {
+      await handleUpdatePreference(remarkModalStudent._id, 'not_want', remarkText.trim());
+      setRemarkModalStudent(null);
+      setRemarkText('');
+    } finally {
+      setSavingRemark(false);
     }
   };
 
@@ -180,6 +232,7 @@ const EnrollStudentsPage = () => {
         : (s.placementPreference || 'want') === 'want'
         ? 'Want Placement from Institute'
         : 'Not Want Placement from Institute',
+      'Placement Reason / Remark': s.placementPreferenceRemark || '—',
       'Mentor': s.mentor?.name || (typeof s.mentor === 'string' ? s.mentor : 'Unassigned'),
       'Status': 'Enrolled'
     }));
@@ -370,7 +423,9 @@ const EnrollStudentsPage = () => {
           doc.text('Not Eligible (Academic Criteria)', curX + 2, currentY + 4.3);
         } else if (pref === 'not_want') {
           doc.setTextColor(190, 18, 60); // rose-700
-          doc.text('Not Want Placement', curX + 2, currentY + 4.3);
+          const remarkPart = s.placementPreferenceRemark ? ` (${s.placementPreferenceRemark})` : '';
+          const fullText = `Not Want Placement${remarkPart}`;
+          doc.text(doc.splitTextToSize(fullText, cols[6].width - 3)[0] || 'Not Want Placement', curX + 2, currentY + 4.3);
         } else {
           doc.setTextColor(4, 120, 87); // emerald-700
           doc.text('Want Placement', curX + 2, currentY + 4.3);
@@ -684,7 +739,8 @@ const EnrollStudentsPage = () => {
                 const matchesSearch = !searchQuery || (
                   s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   s.enrollmentNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  s.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                  s.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  s.placementPreferenceRemark?.toLowerCase().includes(searchQuery.toLowerCase())
                 );
                 const pref = s.placementPreference || 'want';
                 const matchesPref = preferenceFilter === 'all' || pref === preferenceFilter;
@@ -789,49 +845,76 @@ const EnrollStudentsPage = () => {
                                     ) : '—'}
                                   </td>
                                   <td className="px-6 py-4">
-                                    <div className="inline-flex items-center p-1 bg-[var(--bg-input)]/70 border border-[var(--border-light)] rounded-xl gap-1 shadow-sm">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdatePreference(student._id, 'want')}
-                                        disabled={updatingStudentId === student._id}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                          (student.placementPreference || 'want') === 'want'
-                                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 font-black'
-                                            : 'text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/10'
-                                        }`}
-                                        title="Student wants placement from institute"
-                                      >
-                                        <CheckCircle2 size={13} className={(student.placementPreference || 'want') === 'want' ? 'text-white' : 'text-emerald-500'} />
-                                        <span>Want Placement</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdatePreference(student._id, 'not_want')}
-                                        disabled={updatingStudentId === student._id}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                          student.placementPreference === 'not_want'
-                                            ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/30 font-black'
-                                            : 'text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/10'
-                                        }`}
-                                        title="Student does not want placement from institute"
-                                      >
-                                        <XCircle size={13} className={student.placementPreference === 'not_want' ? 'text-white' : 'text-rose-500'} />
-                                        <span>Not Want</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUpdatePreference(student._id, 'not_eligible_academic')}
-                                        disabled={updatingStudentId === student._id}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                          student.placementPreference === 'not_eligible_academic'
-                                            ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30 font-black'
-                                            : 'text-[var(--text-secondary)] hover:text-amber-500 hover:bg-amber-500/10'
-                                        }`}
-                                        title="Student not eligible due to academic criteria"
-                                      >
-                                        <AlertTriangle size={13} className={student.placementPreference === 'not_eligible_academic' ? 'text-white' : 'text-amber-500'} />
-                                        <span>Not Eligible (Academic Criteria)</span>
-                                      </button>
+                                    <div className="flex flex-col gap-1.5 items-start">
+                                      <div className="inline-flex items-center p-1 bg-[var(--bg-input)]/70 border border-[var(--border-light)] rounded-xl gap-1 shadow-sm">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdatePreference(student._id, 'want')}
+                                          disabled={updatingStudentId === student._id}
+                                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            (student.placementPreference || 'want') === 'want'
+                                              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 font-black'
+                                              : 'text-[var(--text-secondary)] hover:text-emerald-500 hover:bg-emerald-500/10'
+                                          }`}
+                                          title="Student wants placement from institute"
+                                        >
+                                          <CheckCircle2 size={13} className={(student.placementPreference || 'want') === 'want' ? 'text-white' : 'text-emerald-500'} />
+                                          <span>Want Placement</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenNotWantModal(student)}
+                                          disabled={updatingStudentId === student._id}
+                                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            student.placementPreference === 'not_want'
+                                              ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/30 font-black'
+                                              : 'text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/10'
+                                          }`}
+                                          title={student.placementPreference === 'not_want' ? 'Click to edit remark' : 'Mark as Not Want and add remark'}
+                                        >
+                                          <XCircle size={13} className={student.placementPreference === 'not_want' ? 'text-white' : 'text-rose-500'} />
+                                          <span>Not Want</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUpdatePreference(student._id, 'not_eligible_academic')}
+                                          disabled={updatingStudentId === student._id}
+                                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                            student.placementPreference === 'not_eligible_academic'
+                                              ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30 font-black'
+                                              : 'text-[var(--text-secondary)] hover:text-amber-500 hover:bg-amber-500/10'
+                                          }`}
+                                          title="Student not eligible due to academic criteria"
+                                        >
+                                          <AlertTriangle size={13} className={student.placementPreference === 'not_eligible_academic' ? 'text-white' : 'text-amber-500'} />
+                                          <span>Not Eligible (Academic Criteria)</span>
+                                        </button>
+                                      </div>
+
+                                      {/* Saved Remark indicator for Not Want */}
+                                      {student.placementPreference === 'not_want' && (
+                                        <div className="flex items-center gap-1.5 text-xs">
+                                          <span
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20 text-[11px] font-semibold max-w-sm truncate shadow-xs"
+                                            title={student.placementPreferenceRemark ? `Reason: ${student.placementPreferenceRemark}` : 'No remark specified'}
+                                          >
+                                            <MessageSquare size={12} className="shrink-0 text-rose-500" />
+                                            <span className="truncate">
+                                              <strong className="font-bold text-rose-600 dark:text-rose-400">Reason:</strong>{' '}
+                                              {student.placementPreferenceRemark || <span className="italic opacity-70">No remark entered</span>}
+                                            </span>
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenNotWantModal(student)}
+                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:underline cursor-pointer bg-rose-500/5 hover:bg-rose-500/15 px-2 py-0.5 rounded-md border border-rose-500/10 transition-colors"
+                                            title="Edit Remark"
+                                          >
+                                            <Edit3 size={11} />
+                                            <span>{student.placementPreferenceRemark ? 'Edit' : 'Add Remark'}</span>
+                                          </button>
+                                        </div>
+                                      )}
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 text-right">
@@ -1054,6 +1137,129 @@ const EnrollStudentsPage = () => {
                 <FileText size={16} /> Download PDF (.pdf)
               </button>
             </div>
+          </motion.div>
+        </div>
+      )}
+      {/* Modal for 'Not Want Placement' Remark */}
+      {remarkModalStudent && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-2xl rounded-3xl relative overflow-hidden"
+            style={{ width: '92%', maxWidth: 540, padding: 30 }}
+          >
+            <button
+              onClick={handleCloseNotWantModal}
+              disabled={savingRemark}
+              className="absolute top-5 right-5 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/60 hover:bg-[var(--bg-input)] p-2 rounded-full transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20 shadow-sm shrink-0">
+                <XCircle size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-display font-black text-[var(--text-primary)] leading-tight">
+                  Placement Opt-Out Remark
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] font-medium">
+                  Specify reason why student does not want placement
+                </p>
+              </div>
+            </div>
+
+            {/* Student Info Card */}
+            <div className="p-3.5 rounded-2xl bg-[var(--bg-input)]/40 border border-[var(--border-light)] mb-4 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center font-black">
+                  {remarkModalStudent.name?.[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <h4 className="font-bold text-[var(--text-primary)] text-sm">{remarkModalStudent.name}</h4>
+                  <p className="text-[11px] text-[var(--text-secondary)] font-medium">
+                    {remarkModalStudent.enrollmentNumber || 'No Enrollment No'} • {remarkModalStudent.department || 'Dept'}
+                  </p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-600 border border-rose-500/30">
+                Not Want Placement
+              </span>
+            </div>
+
+            <form onSubmit={handleSaveNotWantRemark} className="space-y-4">
+              {/* Preset Quick Tags */}
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                  Quick Select Reason
+                </label>
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {PRESET_NOT_WANT_REMARKS.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setRemarkText(tag)}
+                      className={`text-[11px] px-2.5 py-1.5 rounded-xl border font-bold transition-all text-left cursor-pointer ${
+                        remarkText === tag
+                          ? 'bg-rose-500 text-white border-rose-500 shadow-xs'
+                          : 'bg-[var(--bg-input)]/50 text-[var(--text-secondary)] border-[var(--border-light)] hover:border-rose-400/50 hover:text-rose-600'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Textarea */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Faculty Remark / Detailed Reason *
+                  </label>
+                  <span className="text-[10px] text-[var(--text-secondary)] font-mono">
+                    {remarkText.length} chars
+                  </span>
+                </div>
+                <textarea
+                  required
+                  rows={3}
+                  value={remarkText}
+                  onChange={(e) => setRemarkText(e.target.value)}
+                  placeholder="e.g. Preparing for GATE 2026, already secured off-campus job at TCS, family business..."
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-3.5 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none shadow-sm"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCloseNotWantModal}
+                  disabled={savingRemark}
+                  className="btn-outline-premium px-4 py-2.5 text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingRemark || !remarkText.trim()}
+                  className="btn-premium flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-md shadow-rose-600/20 disabled:opacity-50"
+                >
+                  {savingRemark ? (
+                    'Saving Remark...'
+                  ) : (
+                    <>
+                      <CheckCircle size={15} /> Save & Mark Not Want
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </motion.div>
         </div>
       )}

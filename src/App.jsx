@@ -499,7 +499,7 @@ function AppRoutes({ theme, toggleTheme }) {
           <RoleGuard allowed={['admin', 'teacher', 'tp_admin']}><FacultyPlacementDashboard /></RoleGuard>
         } />
         <Route path="/tp/enroll-students" element={
-          <RoleGuard allowed={['admin', 'tp_admin']}><EnrollStudentsPage /></RoleGuard>
+          <RoleGuard allowed={['admin', 'tp_admin', 'teacher']}><EnrollStudentsPage /></RoleGuard>
         } />
         <Route path="/tp/create-drive" element={
           <RoleGuard allowed={['admin', 'tp_admin']}><CreateDrivePage /></RoleGuard>
