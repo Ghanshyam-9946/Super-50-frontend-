@@ -88,13 +88,10 @@ const Sidebar = ({ theme, toggleTheme }) => {
   // Appraisal: everyone on staff has their own form; HODs, HR and the
   // Principal (by responsibility; an admin acts as HR and Principal) get
   // their own pages too.
-  const hasResp = (name) => (user?.responsibilities || []).some((r) => String(r).trim().toLowerCase() === name);
-  const isAdminUser = (user?.roles?.length ? user.roles : [user?.role]).includes('admin');
+  // The appraisal runs on its own site (appraisal.sistec.ac.in); this opens
+  // it already signed in.
   const appraisalGroup = { category: 'Appraisal', links: [
-    { to: '/appraisal/my', icon: ClipboardCheck, label: 'My Appraisal' },
-    ...(hasResp('hod') ? [{ to: '/appraisal/review', icon: ClipboardCheck, label: 'Appraisal Review (HOD)' }] : []),
-    ...(isAdminUser || hasResp('hr') ? [{ to: '/appraisal/hr', icon: Users, label: 'Appraisal (HR)' }] : []),
-    ...(isAdminUser || hasResp('principal') ? [{ to: '/appraisal/principal', icon: ClipboardCheck, label: 'Appraisal (Principal)' }] : []),
+    { to: '/appraisal', icon: ClipboardCheck, label: 'Appraisal Portal ↗' },
   ] };
 
   const teacherGroups = [

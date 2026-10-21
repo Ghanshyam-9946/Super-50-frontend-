@@ -1009,7 +1009,8 @@ export default function StudentsPage({ isSuper50 = false }) {
                                 {student.isSuper50 ? '- Super 50' : '+ Super 50'}
                               </button>
                             )}
-                            {(user?.role === 'admin' || user?.role === 'super50_admin') && (
+                            {/* Editing is for an admin, the student's TG or the Project / Academic Coordinator */}
+                            {(user?.role === 'admin' || user?.roles?.includes('admin')) && (
                               <button onClick={() => setEditingStudent(student)} className="p-2 text-indigo-500 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 rounded-lg transition-colors" title="Edit Student">
                                 <Edit size={16} />
                               </button>

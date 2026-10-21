@@ -7,7 +7,9 @@
     "dev": "node ./node_modules/vite/bin/vite.js",
     "build": "node ./node_modules/vite/bin/vite.js build",
     "lint": "eslint .",
-    "preview": "node ./node_modules/vite/bin/vite.js preview"
+    "preview": "node ./node_modules/vite/bin/vite.js preview",
+    "dev:appraisal": "node ./node_modules/vite/bin/vite.js --config vite.appraisal.config.js",
+    "build:appraisal": "node ./node_modules/vite/bin/vite.js build --config vite.appraisal.config.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -4,6 +4,105 @@ import { GraduationCap, Loader2, AlertCircle, Lock } from "lucide-react";
 import api from "../../services/api";
 import toast from "react-hot-toast";
 
+// Same names the faculty see when entering marks.
+const CATEGORY_LABELS = { Assignment: "Assignment", Tutorial: "Tutorial", Activity: "Activity", LabRecord: "Lab Record" };
+const activityName = (e) => (e.category === "Activity" && e.kind ? e.kind : CATEGORY_LABELS[e.category] || e.category);
+const num = (v) => (v === null || v === undefined || v === "" ? "—" : Math.round(Number(v) * 100) / 100);
+
+// Every mark the faculty entered for one subject: each activity (unit by
+// unit), the two MST tests and the lab components — the pieces that make up
+// the CA /10, MST /20 and lab totals above.
+function MarksBreakdown({ sheet }) {
+  const entries = [...(sheet.caEntries || [])].sort((a, b) =>
+    activityName(a).localeCompare(activityName(b)) || (a.unit || 0) - (b.unit || 0));
+  const unitWise = new Set(entries.filter((e) => (e.unit || 1) > 1).map(activityName));
+  const caObtained = entries.reduce((s, e) => s + (Number(e.obtained) || 0), 0);
+  const caMax = entries.reduce((s, e) => s + (Number(e.max) || 0), 0);
+  const tests = [["MST 1", sheet.mst?.test1], ["MST 2", sheet.mst?.test2]].filter(([, t]) => t && t.max != null);
+  const lab = sheet.lab || {};
+  const hasLab = ["attendance", "submission", "viva"].some((k) => lab[k] != null);
+
+  const th = "px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]";
+  const td = "px-3 py-2 text-sm text-[var(--text-primary)]";
+
+  return (
+    <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] border-t border-[var(--border-light)] pt-4">
+      <div className="min-w-0">
+        <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Continuous Assessment — activity-wise</div>
+        {entries.length === 0 ? (
+          <p className="text-xs text-[var(--text-secondary)]">No activity marks entered yet.</p>
+        ) : (
+          <div className="overflow-x-auto border border-[var(--border-light)] rounded-xl">
+            <table className="w-full min-w-[320px]">
+              <thead className="bg-[var(--bg-input)]/60 text-left">
+                <tr><th className={th}>Activity</th><th className={`${th} text-right`}>Marks</th></tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => (
+                  <tr key={e._id} className="border-t border-[var(--border-light)]">
+                    <td className={td}>
+                      {activityName(e)}
+                      {unitWise.has(activityName(e)) && <span className="text-[var(--text-secondary)]"> · Unit {e.unit}</span>}
+                    </td>
+                    <td className={`${td} text-right font-bold tabular-nums`}>{num(e.obtained)} / {num(e.max)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-[var(--border-light)] bg-[var(--bg-input)]/40">
+                  <td className={`${td} font-bold`}>Total → scaled to 10</td>
+                  <td className={`${td} text-right font-black tabular-nums`}>{num(caObtained)} / {num(caMax)} → {num(sheet.converted?.ca10)} / 10</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 space-y-3">
+        <div>
+          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">MST</div>
+          {tests.length === 0 ? (
+            <p className="text-xs text-[var(--text-secondary)]">MST marks not available yet.</p>
+          ) : (
+            <div className="border border-[var(--border-light)] rounded-xl divide-y divide-[var(--border-light)]">
+              {tests.map(([name, t]) => (
+                <div key={name} className="flex justify-between px-3 py-2 text-sm">
+                  <span className="text-[var(--text-primary)]">{t.testName || name}</span>
+                  <span className="font-bold tabular-nums">{num(t.obtained)} / {num(t.max)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between px-3 py-2 text-sm bg-[var(--bg-input)]/40">
+                <span className="font-bold">Scaled</span>
+                <span className="font-black tabular-nums">{num(sheet.converted?.mst20)} / 20</span>
+              </div>
+            </div>
+          )}
+        </div>
+        {hasLab && (
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Lab work</div>
+            <div className="border border-[var(--border-light)] rounded-xl divide-y divide-[var(--border-light)]">
+              {[["Attendance", lab.attendance], ["Submission", lab.submission], ["Viva", lab.viva]].map(([name, v]) => (
+                <div key={name} className="flex justify-between px-3 py-2 text-sm">
+                  <span className="text-[var(--text-primary)]">{name}</span>
+                  <span className="font-bold tabular-nums">{num(v)}</span>
+                </div>
+              ))}
+              {sheet.converted?.labMarks != null && (
+                <div className="flex justify-between px-3 py-2 text-sm bg-[var(--bg-input)]/40">
+                  <span className="font-bold">Lab marks</span>
+                  <span className="font-black tabular-nums">{num(sheet.converted.labMarks)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function StudentSessionalMarksPage() {
   const [sheets, setSheets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -66,8 +165,9 @@ export default function StudentSessionalMarksPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.03 }}
-            className="glass-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            className="glass-card p-5 space-y-4"
           >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h4 className="font-bold text-[var(--text-primary)]">{sheet.subjectName}</h4>
               <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
@@ -93,6 +193,8 @@ export default function StudentSessionalMarksPage() {
                 <div className="text-lg font-black text-indigo-600">{sheet.converted.final30}/30</div>
               </div>
             </div>
+            </div>
+            <MarksBreakdown sheet={sheet} />
           </motion.div>
         ))}
       </div>
