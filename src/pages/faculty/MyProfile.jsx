@@ -222,7 +222,7 @@ export default function MyProfile() {
     );
   }
 
-  // The menu follows the appraisal form's order, in groups.
+  // The menu, in groups.
   const tabs = [
     { key: "basic", title: "Basic Information", icon: UserRound },
     { key: "skills", title: "Skills", icon: Wrench, count: profile.skills.length },
@@ -319,7 +319,7 @@ export default function MyProfile() {
                 <textarea value={profile.bio} onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))} rows={4} className={inputCls} />
               </label>
               <div>
-                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2">For your appraisal</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-2">Joining &amp; experience</div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   {BASIC_PROFILE_FIELDS.map((f) => (
                     <label key={f.key} className={labelCls}>

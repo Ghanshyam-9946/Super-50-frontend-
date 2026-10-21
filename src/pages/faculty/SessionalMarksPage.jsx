@@ -679,7 +679,10 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
   const [kind, setKind] = useState(ACTIVITY_KINDS[0]);
   const [unit, setUnit] = useState(1);
   const [cells, setCells] = useState({});
-  const timers = useRef({});
+  // The saves run from a timer, so they read the latest cells (with the id
+  // of an entry saved a moment ago) from here, not from an older render.
+  const cellsRef = useRef(cells);
+  useEffect(() => { cellsRef.current = cells; }, [cells]);
   const inputRefs = useRef({});
 
   // Which activities are columns. Everything by default — the point of the
@@ -701,22 +704,30 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
 
   const cellKey = (sheetId, cat) => `${sheetId}::${cat}`;
 
-  // One cell per student per activity, rebuilt whenever the sheets change.
+  // One cell per student per activity, rebuilt whenever the sheets change —
+  // except boxes still waiting to be saved, which keep what was typed.
   useEffect(() => {
-    const next = {};
-    sheets.forEach((s) => {
-      categoryOptions.forEach((cat) => {
-        const entry = (s.caEntries || []).find(
-          (e) => e.category === cat && Number(e.unit) === Number(unit) && (cat !== "Activity" || e.kind === kind)
-        );
-        next[cellKey(s._id, cat)] = {
-          value: entry ? String(entry.obtained) : "",
-          entryId: entry?._id || null,
-          status: "idle",
-        };
+    setCells((prev) => {
+      const next = {};
+      sheets.forEach((s) => {
+        categoryOptions.forEach((cat) => {
+          const key = cellKey(s._id, cat);
+          const entry = (s.caEntries || []).find(
+            (e) => e.category === cat && Number(e.unit) === Number(unit) && (cat !== "Activity" || e.kind === kind)
+          );
+          const before = prev[key];
+          const sameSlot = before && before.unit === Number(unit) && before.kind === kind;
+          const waiting = sameSlot && ["pending", "saving"].includes(before.status);
+          const value = entry ? String(entry.obtained) : "";
+          // A box just saved (or that failed) keeps showing it.
+          const status = sameSlot && ["saved", "error"].includes(before.status) && (before.status === "error" || before.value === value) ? before.status : "idle";
+          next[key] = waiting
+            ? { ...before, entryId: before.entryId || entry?._id || null }
+            : { value: status === "error" ? before.value : value, entryId: entry?._id || null, status, error: before?.error, unit: Number(unit), kind };
+        });
       });
+      return next;
     });
-    setCells(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheets, categoryOptions.join("|"), kind, unit]);
 
@@ -731,65 +742,101 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
     return true;
   };
 
-  const saveCell = async (sheetId, cat, value) => {
-    const key = cellKey(sheetId, cat);
-    const max = maxes[cat];
-    // An emptied box takes the saved mark away. With nothing saved yet
-    // there is nothing to do.
-    if (String(value).trim() === "") {
-      const entryId = cells[key]?.entryId;
-      if (!entryId) return;
-      setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "saving" } }));
-      try {
-        const { data } = await api.delete(`/sessional-marks/sheets/${sheetId}/ca/${entryId}`);
-        if (data.success) {
-          onChange(data.data);
-          setCells((prev) => ({ ...prev, [key]: { value: "", entryId: null, status: "saved" } }));
-        }
-      } catch (err) {
-        toast.error(err.response?.data?.message || "Could not clear the marks");
-        setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "error" } }));
-      }
+  // Saving: what is typed waits a moment, then everything typed in that
+  // moment goes in one request (PATCH /ca/bulk) — a whole column in one go
+  // instead of one request per box. The timer and the save read the latest
+  // cells, maxes and sheets from these refs, not from an older render.
+  const pending = useRef(new Map()); // cell key → { sheetId, cat, kind, unit }
+  const flushTimer = useRef(null);
+  const inFlight = useRef(false);
+  const maxesRef = useRef(maxes);
+  const sheetsRef = useRef(sheets);
+  useEffect(() => { maxesRef.current = maxes; }, [maxes]);
+  useEffect(() => { sheetsRef.current = sheets; }, [sheets]);
+
+  const flush = async () => {
+    clearTimeout(flushTimer.current);
+    if (inFlight.current) {
+      flushTimer.current = setTimeout(flush, 250);
       return;
     }
-    if (max === "" || max === undefined) return;
-    setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "saving" } }));
-    try {
-      const { data } = await api.patch(`/sessional-marks/sheets/${sheetId}/ca`, {
-        entryId: cells[key]?.entryId || null,
-        category: cat,
-        kind,
-        unit: Number(unit),
-        obtained: Number(value),
-        max: Number(max),
+    const batch = [...pending.current.entries()];
+    pending.current.clear();
+    const items = [];
+    const idle = [];
+    for (const [key, p] of batch) {
+      const cell = cellsRef.current[key] || {};
+      const blank = String(cell.value ?? "").trim() === "";
+      const max = maxesRef.current[p.cat];
+      // An emptied box with nothing saved, or a column without a max: nothing to send.
+      if ((blank && !cell.entryId) || (!blank && (max === "" || max === undefined))) { idle.push(key); continue; }
+      items.push({
+        key,
+        sheetId: p.sheetId, entryId: cell.entryId || null, category: p.cat, kind: p.kind, unit: p.unit,
+        obtained: blank ? "" : Number(cell.value), max: Number(max),
       });
-      if (data.success) {
-        onChange(data.data);
-        const savedEntry = (data.data.caEntries || []).find(
-          (e) => e.category === cat && Number(e.unit) === Number(unit) && (cat !== "Activity" || e.kind === kind)
-        );
-        setCells((prev) => ({
-          ...prev,
-          [key]: { value: String(savedEntry?.obtained ?? value), entryId: savedEntry?._id || null, status: "saved" },
-        }));
-        // The box changes from 0 to 1 by itself; say why, or it looks like
-        // the page altered somebody's entry on a whim.
-        if (Number(value) === 0 && Number(savedEntry?.obtained) === 1) {
-          toast("0 is saved as 1 — the minimum mark is 1", { icon: "ℹ️" });
-        }
-      }
+    }
+    if (idle.length) setCells((prev) => Object.fromEntries(Object.entries(prev).map(([k, c]) => [k, idle.includes(k) && c.status === "pending" ? { ...c, status: "idle" } : c])));
+    if (!items.length) return;
+
+    const keys = new Set(items.map((x) => x.key));
+    setCells((prev) => Object.fromEntries(Object.entries(prev).map(([k, c]) => [k, keys.has(k) && c.status === "pending" ? { ...c, status: "saving" } : c])));
+    inFlight.current = true;
+    try {
+      const payload = items.map((x) => ({ sheetId: x.sheetId, entryId: x.entryId, category: x.category, kind: x.kind, unit: x.unit, obtained: x.obtained, max: x.max }));
+      const { data } = await api.patch("/sessional-marks/ca/bulk", { items: payload });
+      (data.sheets || []).forEach((x) => {
+        const sheet = sheetsRef.current.find((sh) => sh._id === x._id);
+        if (sheet) onChange({ ...sheet, caEntries: x.caEntries, converted: x.converted, updatedAt: x.updatedAt });
+      });
+      let raised = 0;
+      setCells((prev) => {
+        const next = { ...prev };
+        (data.results || []).forEach((r) => {
+          const item = items[r.index];
+          if (!item || !next[item.key]) return;
+          const cell = next[item.key];
+          // Typed again while this was saving: keep the new value; it is queued.
+          const retyped = pending.current.has(item.key);
+          if (r.ok) {
+            if (r.raised) raised += 1;
+            next[item.key] = retyped
+              ? { ...cell, entryId: r.entryId || null }
+              : { ...cell, value: r.obtained === "" ? "" : String(r.obtained), entryId: r.entryId || null, status: "saved" };
+          } else {
+            next[item.key] = { ...cell, status: retyped ? cell.status : "error", error: r.message };
+          }
+        });
+        return next;
+      });
+      if (raised) toast(`${raised === 1 ? "A 0 was" : `${raised} zeros were`} saved as 1 — the minimum mark is 1`, { icon: "ℹ️" });
+      if (data.failed) toast.error(`${data.failed} mark(s) not saved — ${(data.results || []).find((r) => !r.ok)?.message || "try again"}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to save");
-      setCells((prev) => ({ ...prev, [key]: { ...prev[key], status: "error" } }));
+      toast.error(err.response?.data?.message || "Could not save — check your connection; the red boxes will retry when you edit them");
+      setCells((prev) => Object.fromEntries(Object.entries(prev).map(([k, c]) => [k, keys.has(k) && c.status === "saving" ? { ...c, status: "error" } : c])));
+    } finally {
+      inFlight.current = false;
+      if (pending.current.size) flushTimer.current = setTimeout(flush, 250);
     }
   };
 
   const onCellChange = (sheetId, cat, rawValue) => {
     const key = cellKey(sheetId, cat);
-    setCells((prev) => ({ ...prev, [key]: { ...prev[key], value: rawValue, status: "idle" } }));
-    clearTimeout(timers.current[key]);
-    timers.current[key] = setTimeout(() => saveCell(sheetId, cat, rawValue), 600);
+    setCells((prev) => ({ ...prev, [key]: { ...prev[key], value: rawValue, status: "pending", unit: Number(unit), kind } }));
+    pending.current.set(key, { sheetId, cat, kind, unit: Number(unit) });
+    clearTimeout(flushTimer.current);
+    flushTimer.current = setTimeout(flush, 800);
   };
+
+  // Changing the unit or kind, or leaving the page, saves what is waiting first.
+  useEffect(() => () => { if (pending.current.size) flush(); }, [kind, unit]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const warn = (e) => {
+      if (pending.current.size || inFlight.current) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, []);
 
   // Enter and the arrows walk down a column; Tab moves across the row,
   // which is what the browser already does.
@@ -832,12 +879,12 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
             className="w-16 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2 py-1.5 text-sm" />
         </label>
         <span className="text-xs text-[var(--text-secondary)] ml-auto">
-          Fill any column — each value saves by itself.
+          Fill any column — marks save on their own, a whole column in one go.
         </span>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-sm" data-ca-grid>
           <thead>
             <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
               <th className="sticky left-0 bg-[var(--bg-card)] px-4 py-3 min-w-[220px]">Student</th>
@@ -877,7 +924,7 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
                     const colMax = maxes[c];
                     return (
                       <td key={c} className="px-3 py-2.5">
-                        <div className="relative">
+                        <div className="relative inline-block">
                           <input
                             ref={(el) => (inputRefs.current[key] = el)}
                             type="number"
@@ -887,12 +934,21 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
                             value={cc.value}
                             onChange={(e) => onCellChange(sheet._id, c, e.target.value)}
                             onKeyDown={(e) => onKeyDown(e, i, c)}
+                            onBlur={(e) => {
+                              // Leaving the grid saves at once; moving within it waits, so a column goes in one go.
+                              if (pending.current.size && !e.relatedTarget?.closest?.("[data-ca-grid]")) flush();
+                            }}
+                            title={cc.status === "error" ? cc.error || "Not saved" : undefined}
                             className={`w-20 bg-[var(--bg-input)] border rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40 ${
                               cc.status === "error" ? "border-red-500"
                                 : cc.status === "saved" ? "border-emerald-500/60"
+                                : cc.status === "pending" ? "border-amber-400"
                                 : "border-[var(--border-light)]"
                             }`}
                           />
+                          {cc.status === "pending" && (
+                            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-amber-400" aria-label="Waiting to save" />
+                          )}
                           {cc.status === "saving" && (
                             <Loader2 size={11} className="animate-spin absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
                           )}
