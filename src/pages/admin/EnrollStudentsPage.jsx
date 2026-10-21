@@ -29,7 +29,8 @@ const EnrollStudentsPage = () => {
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [expandedBatch, setExpandedBatch] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [preferenceFilter, setPreferenceFilter] = useState('all'); // 'all', 'want', 'not_want'
+  const [preferenceFilter, setPreferenceFilter] = useState('all'); // 'all', 'want', 'not_want', 'not_eligible_academic'
+  const [selectedBatchFilter, setSelectedBatchFilter] = useState('all'); // 'all' or specific batch (e.g. '2023-27')
 
   const [showManualAddModal, setShowManualAddModal] = useState(false);
   const [selectedBatchForManualAdd, setSelectedBatchForManualAdd] = useState('');
@@ -120,11 +121,41 @@ const EnrollStudentsPage = () => {
     }
   };
 
-  // Aggregate student preference counts
+  // Aggregate student preference counts (respects selectedBatchFilter)
   const allStudents = batches.flatMap(b => b.students || []);
-  const wantCount = allStudents.filter(s => (s.placementPreference || 'want') === 'want').length;
-  const notWantCount = allStudents.filter(s => s.placementPreference === 'not_want').length;
-  const notEligibleAcademicCount = allStudents.filter(s => s.placementPreference === 'not_eligible_academic').length;
+  const activeBatches = selectedBatchFilter === 'all'
+    ? batches
+    : batches.filter(b => b.batch === selectedBatchFilter);
+
+  const activeStudents = activeBatches.flatMap(b => b.students || []);
+  const activeTotal = activeStudents.length;
+  const wantCount = activeStudents.filter(s => (s.placementPreference || 'want') === 'want').length;
+  const notWantCount = activeStudents.filter(s => s.placementPreference === 'not_want').length;
+  const notEligibleAcademicCount = activeStudents.filter(s => s.placementPreference === 'not_eligible_academic').length;
+
+  const hasMatchingStudents = batches.some(b => {
+    if (selectedBatchFilter !== 'all' && b.batch !== selectedBatchFilter) return false;
+    return b.students.some(s => {
+      const matchesSearch = !searchQuery || (
+        s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.enrollmentNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.placementPreferenceRemark?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      const pref = s.placementPreference || 'want';
+      const matchesPref = preferenceFilter === 'all' || pref === preferenceFilter;
+      return matchesSearch && matchesPref;
+    });
+  });
+
+  // Modal export counts dynamic to downloadBatch
+  const modalTargetStudents = downloadBatch === 'all'
+    ? batches.flatMap(b => b.students || [])
+    : (batches.find(b => b.batch === downloadBatch)?.students || []);
+  const modalTotal = modalTargetStudents.length;
+  const modalWantCount = modalTargetStudents.filter(s => (s.placementPreference || 'want') === 'want').length;
+  const modalNotWantCount = modalTargetStudents.filter(s => s.placementPreference === 'not_want').length;
+  const modalNotEligibleAcademicCount = modalTargetStudents.filter(s => s.placementPreference === 'not_eligible_academic').length;
 
   const handleUpdatePreference = async (studentId, preference, remark) => {
     const prevBatches = batches;
@@ -637,14 +668,120 @@ const EnrollStudentsPage = () => {
 
       {/* Enrolled Students by Batch */}
       <div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-display font-black text-[var(--text-primary)]">Enrolled Students by Batch</h2>
-            <p className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">Filter by preference or export student lists to Excel</p>
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-xl font-display font-black text-[var(--text-primary)]">Enrolled Students by Batch</h2>
+              {selectedBatchFilter !== 'all' && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20">
+                  Batch {selectedBatchFilter}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] font-medium mt-0.5">Filter by batch & preference or export student lists to Excel</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Filter Tabs */}
-            <div className="inline-flex items-center p-1 bg-[var(--bg-input)]/50 border border-[var(--border-light)] rounded-xl text-xs font-bold gap-1">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setDownloadBatch(selectedBatchFilter);
+                setShowDownloadModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            >
+              <Download size={14} /> Download List
+            </button>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 text-[var(--text-secondary)] opacity-60" size={16} />
+              <input
+                type="text"
+                placeholder="Search students..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium w-48"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Filters: Batch Filter & Preference Tabs */}
+        <div className="mb-5 space-y-3 p-3.5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-light)] shadow-sm">
+          {/* 1. Batch Filter Row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
+              <GraduationCap size={15} className="text-[var(--primary)]" />
+              Batch:
+            </span>
+            <div className="inline-flex flex-wrap items-center p-1 bg-[var(--bg-input)]/50 border border-[var(--border-light)] rounded-xl text-xs font-bold gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedBatchFilter('all');
+                  setExpandedBatch(null);
+                }}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-black ${
+                  selectedBatchFilter === 'all'
+                    ? 'bg-[var(--primary)] text-white shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                All Batches ({total})
+              </button>
+              {batches.map((b) => {
+                const isSelected = selectedBatchFilter === b.batch;
+                return (
+                  <button
+                    key={b.batch}
+                    type="button"
+                    onClick={() => {
+                      setSelectedBatchFilter(b.batch);
+                      setExpandedBatch(b.batch);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
+                      isSelected
+                        ? 'bg-[var(--primary)] text-white shadow-sm font-black'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <span>Batch {b.batch}</span>
+                    <span className={`px-1.5 py-0.2 rounded-md text-[10px] ${
+                      isSelected ? 'bg-white/20 text-white font-black' : 'bg-[var(--bg-input)] text-[var(--text-secondary)] font-semibold'
+                    }`}>
+                      {b.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedBatchFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedBatchFilter('all');
+                  setExpandedBatch(null);
+                }}
+                className="text-xs text-[var(--text-secondary)] hover:text-[var(--primary)] font-bold ml-auto flex items-center gap-1 cursor-pointer"
+              >
+                <X size={12} /> Clear Batch Filter
+              </button>
+            )}
+          </div>
+
+          <div className="h-px bg-[var(--border-light)] opacity-60" />
+
+          {/* 2. Preference Filter Row */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-black text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5 shrink-0 mr-1">
+              <Filter size={14} className="text-emerald-500" />
+              Preference:
+            </span>
+            <div className="inline-flex flex-wrap items-center p-1 bg-[var(--bg-input)]/50 border border-[var(--border-light)] rounded-xl text-xs font-bold gap-1">
               <button
                 type="button"
                 onClick={() => setPreferenceFilter('all')}
@@ -654,7 +791,7 @@ const EnrollStudentsPage = () => {
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                All ({total})
+                All ({activeTotal})
               </button>
               <button
                 type="button"
@@ -691,28 +828,11 @@ const EnrollStudentsPage = () => {
               </button>
             </div>
 
-            <button
-              onClick={() => setShowDownloadModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
-            >
-              <Download size={14} /> Download List
-            </button>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 text-[var(--text-secondary)] opacity-60" size={16} />
-              <input
-                type="text"
-                placeholder="Search students..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium w-48"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                  <X size={14} />
-                </button>
-              )}
-            </div>
+            {selectedBatchFilter !== 'all' && (
+              <span className="text-[11px] text-[var(--text-secondary)] font-medium ml-auto hidden lg:inline">
+                Filtering for <strong className="text-[var(--text-primary)]">Batch {selectedBatchFilter}</strong>
+              </span>
+            )}
           </div>
         </div>
 
@@ -732,6 +852,10 @@ const EnrollStudentsPage = () => {
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4">
             {batches.map((batchData, idx) => {
+              if (selectedBatchFilter !== 'all' && batchData.batch !== selectedBatchFilter) {
+                return null;
+              }
+
               const color = batchColors[idx % batchColors.length];
               const isExpanded = expandedBatch === batchData.batch;
 
@@ -937,6 +1061,31 @@ const EnrollStudentsPage = () => {
                 </motion.div>
               );
             })}
+
+            {!hasMatchingStudents && (
+              <div className="glass-card p-12 text-center border-dashed">
+                <div className="w-14 h-14 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <GraduationCap className="text-[var(--text-secondary)] opacity-40" size={28} />
+                </div>
+                <h3 className="text-base font-display font-black text-[var(--text-primary)]">No Students Found</h3>
+                <p className="text-[var(--text-secondary)] text-xs font-medium mt-1 max-w-sm mx-auto">
+                  {selectedBatchFilter !== 'all'
+                    ? `No students found in Batch ${selectedBatchFilter} matching the selected status / search filters.`
+                    : 'No students found matching your filters.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBatchFilter('all');
+                    setPreferenceFilter('all');
+                    setSearchQuery('');
+                  }}
+                  className="mt-3 px-3.5 py-1.5 bg-[var(--primary)] text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all cursor-pointer shadow-sm"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </div>
@@ -1021,7 +1170,7 @@ const EnrollStudentsPage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-base font-black text-[var(--text-primary)]">{total}</span>
+                  <span className="text-base font-black text-[var(--text-primary)]">{modalTotal}</span>
                   <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
                 </div>
               </div>
@@ -1045,7 +1194,7 @@ const EnrollStudentsPage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-base font-black text-emerald-600">{wantCount}</span>
+                  <span className="text-base font-black text-emerald-600">{modalWantCount}</span>
                   <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
                 </div>
               </div>
@@ -1069,7 +1218,7 @@ const EnrollStudentsPage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-base font-black text-rose-600">{notWantCount}</span>
+                  <span className="text-base font-black text-rose-600">{modalNotWantCount}</span>
                   <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
                 </div>
               </div>
@@ -1093,7 +1242,7 @@ const EnrollStudentsPage = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <span className="text-base font-black text-amber-600">{notEligibleAcademicCount}</span>
+                  <span className="text-base font-black text-amber-600">{modalNotEligibleAcademicCount}</span>
                   <span className="text-[10px] block text-[var(--text-secondary)] uppercase font-bold">Students</span>
                 </div>
               </div>
