@@ -77,7 +77,7 @@ export default function AppraisalFormPage() {
 
   const saveSelf = () => act("save", () => api.put(`/appraisal/appraisals/${id}/self`, { self }), async () => {});
   const refill = () => {
-    if (!window.confirm("Fill the lists that come from your profile again? What you typed in those lists will be replaced; everything else stays.")) return;
+    if (!window.confirm("Fill your basic details (name, designation, department, qualification, joining date, experience) again from MILE? Everything else you typed stays.")) return;
     act("refill", async () => {
       await api.put(`/appraisal/appraisals/${id}/self`, { self });
       return api.post(`/appraisal/appraisals/${id}/refill`);
@@ -133,7 +133,7 @@ export default function AppraisalFormPage() {
         )}
         {editSelf && (
           <p className="text-xs text-[var(--text-secondary)]">
-            Much of this has been filled in from your profile for this period. Check it, add what is missing, then submit — it goes to {reviewer}.
+            Your basic details are filled in from MILE. Fill in the rest of the form yourself, save as you go, then submit — it goes to {reviewer}.
           </p>
         )}
       </header>
@@ -282,7 +282,7 @@ export default function AppraisalFormPage() {
             {busy === "save" ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />} Save draft
           </button>
           <button onClick={refill} disabled={!!busy} className="btn-outline-premium text-sm px-4 py-2.5 flex items-center gap-1.5 disabled:opacity-50">
-            {busy === "refill" ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />} Fill again from my profile
+            {busy === "refill" ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />} Fill basic details again
           </button>
           <button onClick={submitSelf} disabled={!!busy} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-50 ml-auto">
             {busy === "submit" ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Submit to {data.formFor === "hod" ? "Principal" : "HOD"}

@@ -140,9 +140,6 @@ function EntrySection({ section, items, onChange, saving }) {
           <div className="min-w-0">
             <h3 className="font-display font-bold text-base text-[var(--text-primary)]">{section.title}</h3>
             <p className="text-xs text-[var(--text-secondary)]">{section.hint}</p>
-            {section.appraisal && (
-              <p className="text-[11px] font-semibold text-[var(--primary)] mt-0.5">Appraisal form: {section.appraisal} — add the date so it lands in the right appraisal.</p>
-            )}
           </div>
         </div>
         {editing === null && (

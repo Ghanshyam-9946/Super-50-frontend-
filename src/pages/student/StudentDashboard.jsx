@@ -20,7 +20,6 @@ import { Link } from 'react-router-dom';
 import Super50Card from '../../components/Super50Card';
 import CertificateCard from '../../components/CertificateCard';
 import Super50AttendanceHistoryModal from '../../components/Super50AttendanceHistoryModal';
-import { DashboardNotifications } from "../../components/notifications/NotificationAlerts";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
@@ -125,7 +124,6 @@ export default function StudentDashboard() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Anything new, right where they land. */}
-      <DashboardNotifications />
 
       {/* Greeting */}
       <motion.header 

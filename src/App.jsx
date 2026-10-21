@@ -123,10 +123,7 @@ import AlumniPage from './pages/alumni/AlumniPage';
 // Meetings (video rooms) — the room itself is full-screen, outside the
 // app shell, so it gets its own route below the protected layout.
 import MeetingsPage from './pages/meetings/MeetingsPage';
-import AppraisalHRPage from './pages/appraisal/AppraisalHRPage';
-import AppraisalRoundPage from './pages/appraisal/AppraisalRoundPage';
-import AppraisalListPage from './pages/appraisal/AppraisalListPage';
-import AppraisalFormPage from './pages/appraisal/AppraisalFormPage';
+import OpenAppraisalPortal from './pages/appraisal/OpenAppraisalPortal';
 import MeetingRoom from './pages/meetings/MeetingRoom';
 
 // Leave applications
@@ -466,13 +463,10 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/course-file-index" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']} allowResponsibility="Academic Coordinator"><CourseFileIndexPage /></RoleGuard>
         } />
-        {/* Appraisal: HR releases, faculty fill, HOD reviews, Principal completes */}
-        <Route path="/appraisal/hr" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><AppraisalHRPage /></RoleGuard>} />
-        <Route path="/appraisal/hr/:id" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><AppraisalRoundPage /></RoleGuard>} />
-        <Route path="/appraisal/my" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><AppraisalListPage mode="my" /></RoleGuard>} />
-        <Route path="/appraisal/review" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><AppraisalListPage mode="review" /></RoleGuard>} />
-        <Route path="/appraisal/principal" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><AppraisalListPage mode="principal" /></RoleGuard>} />
-        <Route path="/appraisal/form/:id" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><AppraisalFormPage /></RoleGuard>} />
+        {/* Appraisal runs on its own site (appraisal.sistec.ac.in). Any
+            /appraisal address here — the menu link, bookmarks, notification
+            links — opens the same page there, signed in. */}
+        <Route path="/appraisal/*" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><OpenAppraisalPortal /></RoleGuard>} />
         <Route path="/admin/faculty-reports" element={
           <RoleGuard allowed={['admin']}><FacultyReportsPage /></RoleGuard>
         } />

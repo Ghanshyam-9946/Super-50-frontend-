@@ -53,6 +53,16 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
   const viewerIsStudent = isStudentAccount(user);
   const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState(null);
+  // Only an admin, this student's TG or the Project / Academic Coordinator may edit
+  // their details (the server checks the same).
+  const viewerRoles = [user?.role, ...(user?.roles || [])];
+  const canEditStudent = !viewerIsStudent && !!data?.student && (
+    viewerRoles.includes('admin')
+    || viewerRoles.includes('pms_admin')
+    || (user?.responsibilities || []).includes('Project Coordinator')
+    || (user?.responsibilities || []).includes('Academic Coordinator')
+    || String(data.student.mentor?._id || data.student.mentor || '') === String(user?._id || '-')
+  );
 
   // Attendance across the whole course, sent by the API as
   // `student.attendanceOverall`. `attendancePercentage` is only ever the
@@ -225,7 +235,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
   // Opening in edit mode has to wait for the student to load, since the
   // form is filled in from it.
   useEffect(() => {
-    if (isOpen && startInEditMode && data?.student && !isEditing) startEditing();
+    if (isOpen && startInEditMode && data?.student && !isEditing && canEditStudent) startEditing();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, startInEditMode, data?.student?._id]);
 
@@ -485,7 +495,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                 {/* Profile Overview Tab */}
                 {activeTab === 'profile' && (
                   <div className="space-y-6">
-                    {(!viewerIsStudent) && (
+                    {canEditStudent && (
                       <div className="flex justify-end">
                         {isEditing ? (
                           <div className="flex gap-2">

@@ -1,0 +1,5 @@
+/* MILE's own styles, so the appraisal pages look exactly as they do in MILE. */
+@import "../src/index.css";
+@source "../src/pages/appraisal";
+@source "../src/components";
+@source "./";

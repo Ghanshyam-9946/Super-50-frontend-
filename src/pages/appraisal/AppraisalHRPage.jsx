@@ -118,7 +118,7 @@ export default function AppraisalHRPage() {
           <PeoplePicker people={people} value={selected} onChange={setSelected} hodsOnly={form.formFor === "hod"} />
         </div>
         <p className="text-[11px] text-[var(--text-secondary)]">
-          Each form is filled in from the person&apos;s profile for this period; they add what is missing. A faculty form goes to the HOD of their department — set someone as HOD (or HR, or Principal) in Verify Faculty &amp; Admins → Responsibilities.
+          Each form starts with the person&apos;s basic details from MILE; they fill in everything else. A faculty form goes to the HOD of their department — set someone as HOD (or HR, or Principal) in Verify Faculty &amp; Admins → Responsibilities.
         </p>
         <button onClick={release} disabled={busy === "release"} className="btn-premium text-sm px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-50">
           {busy === "release" ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} Release
