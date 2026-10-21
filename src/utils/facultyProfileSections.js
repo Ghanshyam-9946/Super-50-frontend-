@@ -7,10 +7,7 @@ import {
 // the faculty's own editor (My Profile) and by the admin's read-only view,
 // so the two can never show different fields for the same section.
 //
-// Every section carries the columns the SISTec appraisal form asks for, so
-// an appraisal is filled from the profile exactly: what a faculty member
-// keeps here appears in their appraisal for the period it falls in.
-// `appraisal` says where.
+// Every section of a faculty member's profile, with its columns.
 //
 // `key` is the field on the FacultyProfile document. Some keys are older
 // than their titles (booksPublished is "Publications", conferencesAttended
@@ -30,14 +27,13 @@ export const PROFILE_GROUPS = [
 const DATE = (label = "Date") => ({ key: "date", label, type: "date" });
 
 export const PROFILE_SECTIONS = [
-  /* ───────────── Academic activities (appraisal Section A, Part 2) ───────────── */
+  /* ───────────── Academic activities  ───────────── */
   {
     key: "qualifications",
     title: "Qualifications",
     group: "academic",
     icon: GraduationCap,
     basic: true,
-    appraisal: "Basic details (qualification) and Qualification up-gradation",
     hint: "Your degrees, including one you are pursuing now.",
     fields: [
       { key: "degree", label: "Degree" },
@@ -57,7 +53,6 @@ export const PROFILE_SECTIONS = [
     title: "Skill Certifications",
     group: "academic",
     icon: Award,
-    appraisal: "Skill Based Certifications",
     hint: "NPTEL, Coursera, vendor and other skill certifications.",
     fields: [
       { key: "title", label: "Title" },
@@ -77,7 +72,6 @@ export const PROFILE_SECTIONS = [
     title: "STTP / Workshops / Conferences Attended",
     group: "academic",
     icon: CalendarCheck,
-    appraisal: "Participation in STTP, workshop, seminar, symposium, conference, training",
     hint: "FDPs, STTPs, workshops, seminars, symposiums, conferences and trainings you attended.",
     fields: [
       { key: "title", label: "Title of the programme" },
@@ -96,8 +90,7 @@ export const PROFILE_SECTIONS = [
     title: "Project Guidance (UG/PG/PhD)",
     group: "academic",
     icon: School,
-    appraisal: "Academic supervisory work",
-    hint: "Projects you guided. Project groups you guide on the PMS are added to the appraisal automatically.",
+    hint: "Projects you guided.",
     fields: [
       { key: "degree", label: "Degree", options: ["UG", "PG", "PhD"] },
       { key: "students", label: "Name(s) of student(s)" },
@@ -114,7 +107,6 @@ export const PROFILE_SECTIONS = [
     title: "Special Lectures Delivered",
     group: "academic",
     icon: Mic,
-    appraisal: "Special lectures delivered",
     hint: "Talks and sessions you delivered — as a guest, speaker, resource person or judge.",
     fields: [
       { key: "title", label: "Topic" },
@@ -134,7 +126,6 @@ export const PROFILE_SECTIONS = [
     title: "Professional Memberships",
     group: "academic",
     icon: IdCard,
-    appraisal: "Details of ACTIVE professional memberships",
     hint: "Societies you are an active member of (IEEE, CSI, ISTE…).",
     fields: [
       { key: "society", label: "Name of society" },
@@ -150,7 +141,6 @@ export const PROFILE_SECTIONS = [
     title: "Achievements & Awards",
     group: "academic",
     icon: Trophy,
-    appraisal: "Details of special achievements & awards",
     hint: "Awards and special achievements.",
     fields: [
       { key: "title", label: "Title of achievement / award" },
@@ -161,13 +151,12 @@ export const PROFILE_SECTIONS = [
     meta: (a) => [a.awardedBy, a.date],
   },
 
-  /* ───────────── Service to college (appraisal Section B details) ───────────── */
+  /* ───────────── Service to college (Section B details) ───────────── */
   {
     key: "labDevelopment",
     title: "Lab / Centre Development",
     group: "service",
     icon: FlaskConical,
-    appraisal: "Lab / Centre in charge — development of new lab / centre / experimental setup",
     hint: "Labs, centres or experimental setups you developed or are in charge of.",
     fields: [
       { key: "activity", label: "Details of activity" },
@@ -183,7 +172,6 @@ export const PROFILE_SECTIONS = [
     title: "Students Mentored for Outside Activities",
     group: "service",
     icon: Users,
-    appraisal: "Mentored and accompanied students for activities outside the college",
     hint: "Workshops, symposiums, seminars and competitions outside the college you took students to.",
     fields: [
       { key: "activity", label: "Activity", options: ["Workshop", "Symposium", "Seminar", "Competition", "Hackathon", "Paper Presentation", "Other"] },
@@ -202,7 +190,6 @@ export const PROFILE_SECTIONS = [
     title: "Faculty Advisor / Professional Body Activities",
     group: "service",
     icon: Handshake,
-    appraisal: "Association as faculty advisor / professional body activity",
     hint: "Activities as faculty advisor of a club or professional body chapter.",
     fields: [
       { key: "nature", label: "Nature of activity" },
@@ -218,8 +205,7 @@ export const PROFILE_SECTIONS = [
     title: "Administrative Work Assigned",
     group: "service",
     icon: ClipboardList,
-    appraisal: "Administrative work assigned by Principal / Management",
-    hint: "Administrative work assigned to you. Your responsibilities on the app are added to the appraisal too.",
+    hint: "Administrative work assigned to you.",
     fields: [
       { key: "work", label: "Administrative work assigned" },
       { key: "details", label: "Details of work", type: "textarea" },
@@ -235,7 +221,6 @@ export const PROFILE_SECTIONS = [
     title: "Advisor / Coordinator (NSS, NCC, NPTEL…)",
     group: "service",
     icon: BadgeCheck,
-    appraisal: "Extra-curricular — Advisor / Coordinator (NSS / NCC / NPTEL / IIC / UBA / MSME)",
     hint: "Coordinator or advisor roles such as NSS, NCC, NPTEL, IIC, UBA, MSME.",
     fields: [
       { key: "role", label: "Role / body", options: ["NSS", "NCC", "NPTEL", "IIC", "UBA", "MSME", "Other"] },
@@ -252,7 +237,6 @@ export const PROFILE_SECTIONS = [
     title: "Placement / Competitive Exam Support",
     group: "service",
     icon: Target,
-    appraisal: "Extra-curricular — Placement / competitive exam preparation support",
     hint: "Training or classes you took for placements or competitive exams (GATE, aptitude…).",
     fields: [
       { key: "activity", label: "Activity" },
@@ -269,7 +253,6 @@ export const PROFILE_SECTIONS = [
     title: "Contribution in Admissions",
     group: "service",
     icon: Megaphone,
-    appraisal: "Contribution in Admissions",
     hint: "What you did for admissions — counselling, outreach, visits.",
     fields: [
       { key: "details", label: "Details of contribution", type: "textarea" },
@@ -285,7 +268,6 @@ export const PROFILE_SECTIONS = [
     title: "Contribution in Placements",
     group: "service",
     icon: Briefcase,
-    appraisal: "Contribution in Placements",
     hint: "What you did for placements — company contacts, drives coordinated.",
     fields: [
       { key: "details", label: "Details of contribution", type: "textarea" },
@@ -301,7 +283,6 @@ export const PROFILE_SECTIONS = [
     title: "Industrial Training Imparted",
     group: "service",
     icon: Factory,
-    appraisal: "Outreach — Industrial training imparted",
     hint: "Training you gave to a company or industry.",
     fields: [
       { key: "company", label: "Nature of company / company" },
@@ -317,7 +298,6 @@ export const PROFILE_SECTIONS = [
     title: "Consultancy Work",
     group: "service",
     icon: Landmark,
-    appraisal: "Outreach — Consultancy work",
     hint: "Consultancy you did for a company or organization.",
     fields: [
       { key: "company", label: "Nature of company / company" },
@@ -335,7 +315,6 @@ export const PROFILE_SECTIONS = [
     title: "Research Papers",
     group: "research",
     icon: FileText,
-    appraisal: "Paper Publications (national / international)",
     hint: "Journal and conference papers. Papers fetched from Google Scholar are listed separately above.",
     fields: [
       { key: "title", label: "Title of the paper" },
@@ -357,7 +336,6 @@ export const PROFILE_SECTIONS = [
     title: "Funded Projects",
     group: "research",
     icon: FolderKanban,
-    appraisal: "Fund generation",
     hint: "Funded, research and grant projects — applied, sanctioned or ongoing.",
     fields: [
       { key: "title", label: "Nature of activity / project title" },
@@ -457,7 +435,7 @@ export const PROFILE_SECTIONS = [
   },
 ];
 
-// Basic details kept on the profile (the appraisal's Part-1 needs them).
+// Joining date and experience, kept on the profile.
 export const BASIC_PROFILE_FIELDS = [
   { key: "joiningDate", label: "Date of joining SGI", type: "date" },
   { key: "expTeaching", label: "Teaching experience (e.g. 8 years)" },

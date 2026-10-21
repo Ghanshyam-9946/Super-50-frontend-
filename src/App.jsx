@@ -123,7 +123,6 @@ import AlumniPage from './pages/alumni/AlumniPage';
 // Meetings (video rooms) — the room itself is full-screen, outside the
 // app shell, so it gets its own route below the protected layout.
 import MeetingsPage from './pages/meetings/MeetingsPage';
-import OpenAppraisalPortal from './pages/appraisal/OpenAppraisalPortal';
 import MeetingRoom from './pages/meetings/MeetingRoom';
 
 // Leave applications
@@ -463,10 +462,6 @@ function AppRoutes({ theme, toggleTheme }) {
         <Route path="/admin/course-file-index" element={
           <RoleGuard allowed={['teacher', 'admin', 'super50_admin', 'tp_admin', 'guide', 'pms_admin']} allowResponsibility="Academic Coordinator"><CourseFileIndexPage /></RoleGuard>
         } />
-        {/* Appraisal runs on its own site (appraisal.sistec.ac.in). Any
-            /appraisal address here — the menu link, bookmarks, notification
-            links — opens the same page there, signed in. */}
-        <Route path="/appraisal/*" element={<RoleGuard allowed={['teacher', 'admin', 'guide', 'pms_admin', 'super50_admin', 'tp_admin']}><OpenAppraisalPortal /></RoleGuard>} />
         <Route path="/admin/faculty-reports" element={
           <RoleGuard allowed={['admin']}><FacultyReportsPage /></RoleGuard>
         } />

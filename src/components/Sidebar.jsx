@@ -85,15 +85,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] }] : []),
   ];
 
-  // Appraisal: everyone on staff has their own form; HODs, HR and the
-  // Principal (by responsibility; an admin acts as HR and Principal) get
-  // their own pages too.
-  // The appraisal runs on its own site (appraisal.sistec.ac.in); this opens
-  // it already signed in.
-  const appraisalGroup = { category: 'Appraisal', links: [
-    { to: '/appraisal', icon: ClipboardCheck, label: 'Appraisal Portal ↗' },
-  ] };
-
   const teacherGroups = [
     { category: 'Overview', links: [
       { to: '/teacher/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -287,9 +278,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
   ];
 
-  teacherGroups.push(appraisalGroup);
-  guideGroups.push(appraisalGroup);
-  adminGroups.push(appraisalGroup);
 
   const super50AdminGroups = [
     { category: 'Overview', links: [

@@ -15,8 +15,6 @@ const PRESET_RESPONSIBILITIES = [
   'Placement Coordinator',
   'Exam Coordinator',
   'Club Coordinator',
-  'HR', // releases appraisals
-  'Principal', // completes appraisals
 ];
 
 function FacultySetPasswordModal({ guide, onClose, onSuccess }) {
