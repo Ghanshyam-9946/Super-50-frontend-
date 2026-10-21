@@ -607,10 +607,37 @@ const formatBatch = (batchStr) => {
   return `${start}-${String(start + 4).slice(-2)}`;
 };
 
+// The directory's search box. It holds what is typed; the page gets the text
+// 300 ms after typing stops — one search, not one per key, and no redraw of
+// the whole page on every key.
+function DirectorySearch({ onSearch, busy }) {
+  const [value, setValue] = useState('');
+  const [sent, setSent] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => { setSent(value.trim()); onSearch(value.trim()); }, 300);
+    return () => clearTimeout(t);
+  }, [value, onSearch]);
+  return (
+    <div className="relative flex-1 min-w-[200px]">
+      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+      <input
+        className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-10 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+        placeholder="Search students by name, enrollment, or mentor..."
+        value={value} onChange={(e) => setValue(e.target.value)} id="students-search"
+      />
+      {(busy || value.trim() !== sent) && (
+        <Loader2 size={15} className="animate-spin absolute right-4 top-1/2 -translate-y-1/2 text-[var(--primary)]" aria-label="Searching" />
+      )}
+    </div>
+  );
+}
+
 export default function StudentsPage({ isSuper50 = false }) {
   const dispatch = useDispatch();
-  const { allStudents, filters, loading, total } = useSelector((s) => s.students);
+  const { allStudents, filters, loading, total, listLoading } = useSelector((s) => s.students);
   const { user } = useSelector((s) => s.auth);
+  // The search box keeps what is typed itself (DirectorySearch) and hands
+  // the text over once typing pauses, so the page is not redrawn per key.
   const [search, setSearch] = useState('');
   const [dept, setDept] = useState('');
   const [batch, setBatch] = useState('');
@@ -701,14 +728,18 @@ export default function StudentsPage({ isSuper50 = false }) {
   };
 
   useEffect(() => {
-    dispatch(fetchAllStudents({
+    const request = dispatch(fetchAllStudents({
       department: dept || undefined,
       batch: batch || undefined,
       search: search || undefined,
       mentorId: mentorId || undefined,
       sort: `${sortDir === 'desc' ? '-' : ''}${sortField}`,
-      isSuper50: isSuper50 ? 'true' : undefined
+      isSuper50: isSuper50 ? 'true' : undefined,
+      // Only the fields this list shows — much less to download.
+      view: 'list',
     }));
+    // A newer search cancels this one if it is still on its way.
+    return () => request.abort();
   }, [dispatch, dept, batch, search, mentorId, sortField, sortDir, isSuper50]);
 
   // Reset pagination to page 1 whenever filters change
@@ -805,14 +836,7 @@ export default function StudentsPage({ isSuper50 = false }) {
         <>
           {/* Filters */}
           <div className="flex flex-wrap gap-4">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl py-3 pl-11 pr-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
-                placeholder="Search students by name, enrollment, or mentor..."
-                value={search} onChange={(e) => setSearch(e.target.value)} id="students-search"
-              />
-            </div>
+            <DirectorySearch onSearch={setSearch} busy={listLoading} />
             <div className="relative">
               <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <select

@@ -50,9 +50,12 @@ export const unlockAudio = () => {
 };
 
 if (typeof window !== 'undefined') {
+  // Starting audio can take a moment, so it runs just after the gesture —
+  // the click or key shows at once. The page keeps its "user interacted"
+  // permission, so the context still starts unlocked.
   const once = () => {
-    unlockAudio();
     ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.removeEventListener(e, once));
+    setTimeout(unlockAudio, 0);
   };
   ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.addEventListener(e, once, { passive: true }));
 }

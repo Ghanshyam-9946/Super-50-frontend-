@@ -69,7 +69,13 @@ export const unlockAudioOnFirstGesture = () => {
   if (unlockInstalled || typeof window === "undefined") return;
   unlockInstalled = true;
   const events = ["pointerdown", "keydown", "touchstart"];
+  // Runs just after the gesture so the first click or key is not held up
+  // while audio starts (the permission from the gesture stays).
   const unlock = () => {
+    events.forEach((e) => window.removeEventListener(e, unlock, true));
+    setTimeout(prime, 0);
+  };
+  const prime = () => {
     try {
       getAudioCtx();
       if (isSupported()) {
@@ -80,7 +86,6 @@ export const unlockAudioOnFirstGesture = () => {
     } catch {
       // Swallow — see file header.
     }
-    events.forEach((e) => window.removeEventListener(e, unlock, true));
   };
   events.forEach((e) => window.addEventListener(e, unlock, true));
 };
