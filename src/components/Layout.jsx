@@ -4,6 +4,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import { fetchMe } from '../features/auth/authSlice';
+import { ChatSocketProvider } from '../context/ChatSocketContext';
+import FloatingChatBubble from './chat/FloatingChatBubble';
+import ReminderAlarm from './reminders/ReminderAlarm';
+import AssistantBubble from './assistant/AssistantBubble';
+import NotificationAlerts from './notifications/NotificationAlerts';
 
 export default function Layout({ theme, toggleTheme }) {
   const { user, token } = useSelector((s) => s.auth);
@@ -16,7 +21,10 @@ export default function Layout({ theme, toggleTheme }) {
     }
   }, [dispatch, token]);
 
-  if (!token || !user) return <Navigate to="/" replace />;
+  // An open board, not the board list.
+  const onBoard = /^\/boards\/(?!$)/.test(location.pathname);
+
+  if (!token || !user) return <Navigate to="/login" replace />;
 
   // Force password change on first login for students
   if (!user.passwordChanged && user.role === 'student') {
@@ -24,22 +32,37 @@ export default function Layout({ theme, toggleTheme }) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] relative z-10 flex font-body">
-      <Sidebar theme={theme} toggleTheme={toggleTheme} />
-      <main className="flex-1 w-full min-h-screen overflow-x-hidden relative">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full h-full"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
-      </main>
-    </div>
+    // The ONE place the chat socket connects app-wide (not re-connected per
+    // page) — Sidebar's unread badge and ChatPage both read from the same
+    // connection via useChatSocket(); it no-ops for student accounts.
+    <ChatSocketProvider>
+      <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] relative z-10 flex font-body">
+        <Sidebar theme={theme} toggleTheme={toggleTheme} />
+        <main className="flex-1 w-full min-h-screen overflow-x-hidden relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full h-full"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        {/* A whiteboard takes the whole screen for teaching — floating
+            bubbles over the writing surface get in the way, and get drawn
+            on by accident. */}
+        {!onBoard && <FloatingChatBubble />}
+        {/* Bottom middle on every signed-in page, for every role. */}
+        {!onBoard && <AssistantBubble />}
+        {/* Anything new, for every role, with a sound. Hidden on a board so
+            it does not land on the writing surface mid-lesson. */}
+        {!onBoard && <NotificationAlerts />}
+        <ReminderAlarm />
+      </div>
+    </ChatSocketProvider>
   );
 }

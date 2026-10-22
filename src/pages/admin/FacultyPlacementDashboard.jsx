@@ -36,6 +36,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import FeedbackDetailModal from '../../components/FeedbackDetailModal';
+import { batchLabel } from '../../utils/batchLabel';
 
 function EnrollStudentsModal({ onClose, onRefresh }) {
   const [file, setFile] = useState(null);
@@ -240,6 +241,7 @@ function CreateDriveModal({ onClose, onRefresh }) {
                 <option value="internship">Internship</option>
                 <option value="internship+ppo">Internship + PPO</option>
                 <option value="placement drive">Placement Drive</option>
+                <option value="hackathon">Hackathon</option>
               </select>
             </div>
           </div>
@@ -369,13 +371,13 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
     }
 
     setUploading(true);
-    const toastId = toast.loading('Uploading round results & sending emails...');
+    const toastId = toast.loading('Uploading round results...');
     try {
       const response = await api.post('/placement/results/dynamic-upload', formData);
       const { updated, notFound } = response.data.data || {};
       toast.success(
-        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}. Emails sent!`,
-        { id: toastId, duration: 5000 }
+        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}.`,
+        { id: toastId, duration: 4000 }
       );
       onRefresh();
       onClose();
@@ -397,7 +399,7 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
           <Upload size={24} />
         </div>
         <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload Round Results</h2>
-        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Excel columns should match the round names. Emails will be sent automatically.</p>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Excel columns should match the round names.</p>
 
         <form onSubmit={handleUpload} className="space-y-5">
           <div>
@@ -445,7 +447,7 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
           </div>
 
           <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2" disabled={uploading || !file || !driveId}>
-            {uploading ? 'Uploading...' : 'Upload Results & Notify Students'}
+            {uploading ? 'Uploading...' : 'Upload Results'}
           </button>
         </form>
       </motion.div>
@@ -609,9 +611,11 @@ const FacultyPlacementDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('all');
 
-  // Available batches calculation (null-safe)
+  // Available batches calculation (null-safe) — built from actual drive/
+  // selection records rather than the current student roster, since this
+  // dashboard's history can include batches that have since graduated.
   const availableBatches = React.useMemo(() => {
-    const set = new Set(['2023', '2024', '2025', '2026']);
+    const set = new Set();
     (drives || []).forEach(d => {
       if (d?.batch) set.add(normalizeBatch(d.batch));
     });
@@ -643,6 +647,7 @@ const FacultyPlacementDashboard = () => {
   // Dynamic real-time stats calculation
   const activeDrivesCount = React.useMemo(() => {
     return filteredDrives.filter(d => {
+      if (d.isCompleted || d.isActive === false) return false;
       if (!d.deadline) return true;
       const deadlineDate = new Date(d.deadline);
       const today = new Date();
@@ -843,7 +848,7 @@ const FacultyPlacementDashboard = () => {
             >
               <option value="all">All Batches</option>
               {availableBatches.map(b => (
-                <option key={b} value={b}>Batch {b}</option>
+                <option key={b} value={b}>Batch {batchLabel(b)}</option>
               ))}
             </select>
           </div>
@@ -938,11 +943,18 @@ const FacultyPlacementDashboard = () => {
                 
                 <div className="flex items-center gap-8 mt-4 md:mt-0">
                   <div className="hidden lg:flex flex-col items-end pr-8 border-r border-[var(--border-light)]">
-                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Eligibility</p>
-                    <div className="flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded border border-emerald-200 shadow-sm">
-                      <CheckCircle size={12} />
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Active</span>
-                    </div>
+                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Status</p>
+                    {drive.isCompleted || drive.isActive === false ? (
+                      <div className="flex items-center gap-1.5 mt-1.5 bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded border border-blue-200 shadow-sm">
+                        <CheckCircle size={12} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Completed</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-0.5 rounded border border-emerald-200 shadow-sm">
+                        <CheckCircle size={12} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Active</span>
+                      </div>
+                    )}
                   </div>
                   <div className="hidden md:flex flex-col items-end">
                     <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Deadline</p>

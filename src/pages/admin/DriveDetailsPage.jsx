@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Briefcase, ArrowLeft, Users, CheckCircle, Clock, X, Upload,
   FileSpreadsheet, Mail, RefreshCw, ChevronRight, Layers, BarChart,
-  Trash2, GripVertical, Plus
+  Trash2, GripVertical, Plus, Filter
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -21,6 +21,7 @@ const DriveDetailsPage = () => {
   const [uploading, setUploading] = useState(false);
   const [roundsList, setRoundsList] = useState([]);
   const [draggedIdx, setDraggedIdx] = useState(null);
+  const [roundFilter, setRoundFilter] = useState('all');
   
   const [showAddRoundModal, setShowAddRoundModal] = useState(false);
   const [newRoundName, setNewRoundName] = useState('');
@@ -174,13 +175,13 @@ const DriveDetailsPage = () => {
     }
 
     setUploading(true);
-    const toastId = toast.loading('Uploading round results & sending emails...');
+    const toastId = toast.loading('Uploading round results...');
     try {
       const response = await api.post('/placement/results/dynamic-upload', formData);
       const { updated, notFound } = response.data.data || {};
       toast.success(
-        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}. Emails sent!`,
-        { id: toastId, duration: 5000 }
+        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}.`,
+        { id: toastId, duration: 4000 }
       );
       setFile(null);
       setShowUploadModal(false);
@@ -225,6 +226,34 @@ const DriveDetailsPage = () => {
 
   const roundNames = drive.rounds?.map(r => r.name) || [];
 
+  // Sort applications by Roll Number (Enrollment Number)
+  const sortedApplications = [...applications].sort((a, b) => {
+    const enA = String(a.student?.enrollmentNumber || a.student?.enrollmentNo || '').toUpperCase();
+    const enB = String(b.student?.enrollmentNumber || b.student?.enrollmentNo || '').toUpperCase();
+    return enA.localeCompare(enB, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  // Filter applications by selected round or outcome
+  const filteredApplications = sortedApplications.filter((app) => {
+    if (roundFilter === 'all') return true;
+    if (roundFilter === 'selected') return app.status === 'selected';
+    if (roundFilter === 'rejected') return app.status === 'rejected';
+
+    if (roundFilter.startsWith('cleared_')) {
+      const targetRoundName = roundFilter.replace('cleared_', '');
+      const prog = app.roundsProgress?.find((p) => p.roundName === targetRoundName);
+      return prog?.status === 'cleared';
+    }
+
+    if (roundFilter.startsWith('eliminated_')) {
+      const targetRoundName = roundFilter.replace('eliminated_', '');
+      const prog = app.roundsProgress?.find((p) => p.roundName === targetRoundName);
+      return prog?.status === 'eliminated';
+    }
+
+    return true;
+  });
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -244,6 +273,15 @@ const DriveDetailsPage = () => {
                 <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10 capitalize">{drive.driveType || 'Placement Drive'}</span>
                 {drive.campusType && (
                   <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 capitalize">{drive.campusType}</span>
+                )}
+                {drive.isCompleted || drive.isActive === false || (applications.length > 0 && (applications.some(a => a.status === 'selected' || a.finalResult === 'selected') || applications.every(a => a.status === 'rejected' || a.status === 'not-eligible' || a.finalResult === 'eliminated'))) ? (
+                  <span className="text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200 font-bold uppercase text-[11px] flex items-center gap-1">
+                    <CheckCircle size={12} /> Completed
+                  </span>
+                ) : (
+                  <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200 font-bold uppercase text-[11px] flex items-center gap-1">
+                    <CheckCircle size={12} /> Active
+                  </span>
                 )}
                 {drive.package && (
                   <>
@@ -296,8 +334,8 @@ const DriveDetailsPage = () => {
               <Plus size={14} /> Add Round
             </button>
             <a
-              href="/upload/round%20result.xlsx"
-              download="round_result.xlsx"
+              href="/upload/Eligible%20Students.xlsx"
+              download="Eligible_Students.xlsx"
               className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
             >
               <FileSpreadsheet size={14} /> Download Template
@@ -354,12 +392,35 @@ const DriveDetailsPage = () => {
 
       {/* Student List */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card overflow-hidden">
-        <div className="p-8 border-b border-[var(--border-light)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-8 border-b border-[var(--border-light)] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-display font-black text-[var(--text-primary)]">Student Applications ({applications.length})</h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium">Detailed tracking of all student progress in this hiring drive.</p>
+            <h2 className="text-lg font-display font-black text-[var(--text-primary)]">Student Applications ({filteredApplications.length} / {applications.length})</h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium">Sorted by Roll Number (Enrollment No) • Detailed round tracking.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border-light)] px-3.5 py-2 rounded-xl shadow-sm">
+              <Filter size={14} className="text-[var(--primary)]" />
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Round Filter:</span>
+              <select
+                value={roundFilter}
+                onChange={(e) => setRoundFilter(e.target.value)}
+                className="bg-transparent text-xs font-bold text-[var(--text-primary)] focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Students ({applications.length})</option>
+                {drive?.rounds?.map((round, idx) => (
+                  <React.Fragment key={idx}>
+                    <option value={`cleared_${round.name}`}>
+                      ✅ Cleared R{idx + 1}: {round.name}
+                    </option>
+                    <option value={`eliminated_${round.name}`}>
+                      ❌ Eliminated R{idx + 1}: {round.name}
+                    </option>
+                  </React.Fragment>
+                ))}
+                <option value="selected">🏆 Final Selected / Placed</option>
+                <option value="rejected">🛑 Overall Eliminated</option>
+              </select>
+            </div>
             <button
               onClick={() => setShowAddStudentModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-[var(--primary)] text-white rounded-xl hover:opacity-90 transition-all text-xs font-bold whitespace-nowrap shrink-0 shadow-md"
@@ -383,7 +444,7 @@ const DriveDetailsPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-light)]">
-              {applications.map((app) => {
+              {filteredApplications.map((app) => {
                 const currentRoundIdx = app.currentRound || 0;
                 const activeRoundName = currentRoundIdx > 0 && drive.rounds?.[currentRoundIdx - 1]?.name
                   ? drive.rounds[currentRoundIdx - 1].name
@@ -458,10 +519,10 @@ const DriveDetailsPage = () => {
                 );
               })}
 
-              {applications.length === 0 && (
+              {filteredApplications.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-[var(--text-secondary)] font-medium">
-                    No students configured or eligible for this batch/drive.
+                    No students match the selected round filter.
                   </td>
                 </tr>
               )}
@@ -482,14 +543,14 @@ const DriveDetailsPage = () => {
               <Upload size={24} />
             </div>
             <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload Result for {selectedRoundName}</h2>
-            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Select Excel to update candidate statuses for rounds and automatically notify them.</p>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Select Excel to update candidate statuses for rounds.</p>
 
             <form onSubmit={handleUploadResults} className="space-y-5">
               {selectedRoundName && (
                 <div className="bg-[var(--bg-input)]/30 border border-[var(--border-light)] rounded-xl p-3.5">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Excel File Format</p>
                   <p className="text-[11px] text-[var(--text-secondary)] mb-2 font-medium">
-                    Required Columns: <strong>Enrollment Number</strong>, <strong>Name</strong>, <strong>Department</strong>, <strong>Batch</strong>.
+                    Required Columns: <strong>Roll No</strong> (or Enrollment Number), <strong>Full Name</strong>, <strong>Branch</strong>, <strong>Campus</strong>.
                   </p>
                   <p className="text-[11px] text-slate-400">
                     Students present in the Excel sheet will be marked as <strong>Cleared</strong> for <strong>{selectedRoundName}</strong>; others will be marked as <strong>Eliminated</strong>.

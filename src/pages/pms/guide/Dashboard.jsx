@@ -58,13 +58,13 @@ const GuideDashboard = () => {
                     <td className="text-sm">{t.academicYear?.yearName}</td>
                     <td className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Link to={`/guide/review/${t._id}`} className="btn-outline btn-sm" title="Review submissions">
+                        <Link to={`/pms/guide/review/${t._id}`} className="btn-outline btn-sm" title="Review submissions">
                           <ArrowRight className="w-3 h-3" />
                         </Link>
-                        <Link to={`/guide/rubrics/${t._id}`} className="btn-secondary btn-sm" title="Rubric marks">
+                        <Link to={`/pms/guide/rubrics/${t._id}`} className="btn-secondary btn-sm" title="Rubric marks">
                           <Award className="w-3 h-3" />
                         </Link>
-                        <Link to={`/guide/attendance?teamId=${t._id}`} className="btn-secondary btn-sm" title="Attendance">
+                        <Link to={`/pms/guide/attendance?teamId=${t._id}`} className="btn-secondary btn-sm" title="Attendance">
                           <CheckSquare className="w-3 h-3" />
                         </Link>
                       </div>

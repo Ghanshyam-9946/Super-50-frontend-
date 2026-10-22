@@ -51,18 +51,31 @@ const GuideAttendance = () => {
       setMembers(res.data.members || []);
       setPresentations(res.data.presentations || []);
       setRecords(res.data.records || []);
-
-      // Initialize attendance state
-      const initialAtt = {};
-      (res.data.members || []).forEach((m) => {
-        initialAtt[m.student._id] = 'present';
-      });
-      setMarking((p) => ({ ...p, attendance: initialAtt }));
     } catch (err) { toast.error(handleError(err)); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAttendance(teamId); /* eslint-disable-next-line */ }, [teamId]);
+
+  // Re-derive the marking grid whenever the selected date (or the loaded
+  // records/members) changes — pulls in whatever was already recorded for
+  // that date so it can be reviewed and edited, instead of always
+  // resetting everyone to "present" and silently overwriting real values
+  // on save.
+  useEffect(() => {
+    const dateStr = marking.attendanceDate;
+    const attForDate = {};
+    members.forEach((m) => {
+      const existing = records.find(
+        (r) => r.student?._id === m.student._id && String(r.attendanceDate).slice(0, 10) === dateStr
+      );
+      attForDate[m.student._id] = existing ? existing.status : 'present';
+    });
+    setMarking((p) => ({ ...p, attendance: attForDate }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marking.attendanceDate, records, members]);
+
+  const recordedForDate = records.filter((r) => String(r.attendanceDate).slice(0, 10) === marking.attendanceDate).length;
 
   const handleTeamChange = (e) => {
     const id = e.target.value;
@@ -161,7 +174,7 @@ const GuideAttendance = () => {
                       <option value="">Select</option>
                       {presentations.map((p) => (
                         <option key={p._id} value={p._id}>
-                          {p.presentationTitle} ({formatDate(p.presentationDate)})
+                          {p.presentationTitle} ({formatDate(p.presentationDates?.[0])})
                         </option>
                       ))}
                     </select>
@@ -175,6 +188,11 @@ const GuideAttendance = () => {
                       onChange={(e) => setMarking({ ...marking, attendanceDate: e.target.value })}
                       required
                     />
+                    {recordedForDate > 0 && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        {recordedForDate} of {members.length} student(s) already marked for this date — editing will overwrite their status.
+                      </p>
+                    )}
                   </div>
                 </div>
 

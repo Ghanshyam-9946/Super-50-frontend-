@@ -29,9 +29,13 @@ export const PageLoader = () => (
 // Empty state
 export const EmptyState = ({ icon: Icon, title, message, action }) => (
   <div className="empty-state">
-    {Icon && <Icon className="empty-state-icon" strokeWidth={1.5} />}
-    {title && <h5 className="text-base font-medium text-slate-700 mb-1">{title}</h5>}
-    {message && <p className="text-sm">{message}</p>}
+    {Icon && (
+      <div className="empty-state-icon-wrap">
+        <Icon className="empty-state-icon" strokeWidth={1.5} />
+      </div>
+    )}
+    {title && <h5 className="text-base font-semibold text-slate-700 mb-1">{title}</h5>}
+    {message && <p className="text-sm max-w-sm mx-auto">{message}</p>}
     {action && <div className="mt-4">{action}</div>}
   </div>
 );
@@ -41,9 +45,13 @@ export const Card = ({ title, icon: Icon, action, children, className = '', noPa
   <div className={cn('card', className)}>
     {(title || action) && (
       <div className="card-header justify-between">
-        <span className="flex items-center gap-2">
-          {Icon && <Icon className="w-5 h-5 text-brand-600" />}
-          {title}
+        <span className="flex items-center gap-2.5 min-w-0">
+          {Icon && (
+            <span className="card-icon">
+              <Icon className="w-4 h-4" />
+            </span>
+          )}
+          <span className="truncate">{title}</span>
         </span>
         {action}
       </div>
@@ -53,26 +61,29 @@ export const Card = ({ title, icon: Icon, action, children, className = '', noPa
 );
 
 // Stat card for dashboards
+const STAT_COLORS = {
+  primary: { tile: 'from-indigo-500 to-violet-600 shadow-indigo-500/30', glow: 'bg-indigo-400/15' },
+  success: { tile: 'from-emerald-400 to-teal-600 shadow-emerald-500/30', glow: 'bg-emerald-400/15' },
+  warning: { tile: 'from-amber-400 to-orange-500 shadow-amber-500/30', glow: 'bg-amber-400/15' },
+  danger: { tile: 'from-rose-500 to-red-600 shadow-rose-500/30', glow: 'bg-rose-400/15' },
+  info: { tile: 'from-sky-400 to-cyan-600 shadow-sky-500/30', glow: 'bg-sky-400/15' },
+};
+
 export const StatCard = ({ label, value, icon: Icon, color = 'primary', meta }) => {
-  const colors = {
-    primary: 'bg-brand-100 text-brand-600',
-    success: 'bg-emerald-100 text-emerald-600',
-    warning: 'bg-amber-100 text-amber-700',
-    danger: 'bg-red-100 text-red-600',
-    info: 'bg-cyan-100 text-cyan-700',
-  };
+  const c = STAT_COLORS[color] || STAT_COLORS.primary;
   return (
-    <div className="card p-5 flex items-start justify-between gap-3 hover:shadow-card transition-shadow">
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+    <div className="card relative overflow-hidden p-4 sm:p-5 flex items-start justify-between gap-2 sm:gap-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card">
+      <div className={cn('pointer-events-none absolute -right-8 -top-10 w-32 h-32 rounded-full blur-2xl', c.glow)} />
+      <div className="relative min-w-0 flex-1">
+        <div className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-[0.08em] mb-2 leading-tight">
           {label}
         </div>
-        <p className="text-3xl font-bold text-slate-900 leading-none truncate">{value}</p>
-        {meta && <div className="text-xs text-slate-500 mt-2">{meta}</div>}
+        <p className="font-display text-xl sm:text-3xl font-extrabold text-slate-900 leading-tight sm:leading-none break-words" title={typeof value === 'string' ? value : undefined}>{value}</p>
+        {meta && <div className="text-xs text-slate-500 mt-2 truncate" title={typeof meta === 'string' ? meta : undefined}>{meta}</div>}
       </div>
       {Icon && (
-        <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0', colors[color])}>
-          <Icon className="w-6 h-6" />
+        <div className={cn('relative w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-white bg-gradient-to-br shadow-lg', c.tile)}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       )}
     </div>
@@ -102,21 +113,25 @@ export const Modal = ({ open, onClose, title, children, size = 'md', footer }) =
   const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' };
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
     >
       <div
-        className={cn('bg-white rounded-xl shadow-elevated w-full max-h-[90vh] overflow-y-auto', sizes[size])}
+        className={cn('pms-modal bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/5 w-full max-h-[90vh] overflow-y-auto', sizes[size])}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">
+        <div className="sticky top-0 z-10 px-5 py-4 border-b border-slate-100 bg-white/95 backdrop-blur flex items-center justify-between gap-3">
+          <h3 className="text-base font-bold text-slate-900">{title}</h3>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 text-xl leading-none transition-colors"
+          >
             &times;
           </button>
         </div>
         <div className="p-5">{children}</div>
-        {footer && <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">{footer}</div>}
+        {footer && <div className="sticky bottom-0 px-5 py-4 border-t border-slate-100 bg-slate-50/95 backdrop-blur flex justify-end gap-2">{footer}</div>}
       </div>
     </div>
   );
