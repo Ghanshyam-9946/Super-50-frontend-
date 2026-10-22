@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Briefcase, Plus, Trash2, CheckCircle, Building2,
   Calendar, DollarSign, Users, ArrowLeft, Layers, Upload, FileSpreadsheet,
-  FileText, UserCheck, Award
+  FileText, UserCheck, Award, Code
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -24,6 +24,7 @@ const CreateDrivePage = () => {
     package: '',
     driveType: 'placement drive',
     campusType: 'on campus',
+    profileType: 'tech',
     jobDescription: '',
     deadline: '',
     batch: '2023-27',
@@ -111,6 +112,7 @@ const CreateDrivePage = () => {
         formData.append('package', form.package);
         formData.append('driveType', form.driveType || 'placement drive');
         formData.append('campusType', 'self placed');
+        formData.append('profileType', form.profileType || 'tech');
         formData.append('batch', form.batch);
         formData.append('offerLetter', targetFile);
         formData.append('file', targetFile);
@@ -149,6 +151,7 @@ const CreateDrivePage = () => {
       formData.append('package', form.package);
       formData.append('driveType', form.driveType);
       formData.append('campusType', form.campusType);
+      formData.append('profileType', form.profileType || 'tech');
       formData.append('jobDescription', form.jobDescription);
       formData.append('deadline', form.deadline);
       formData.append('batch', form.batch);
@@ -220,7 +223,7 @@ const CreateDrivePage = () => {
 
           <div className="flex gap-3">
             <button
-              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'placement drive', campusType: 'on campus', jobDescription: '', deadline: '', batch: '2023-27', studentId: '', enrollmentNumber: '', studentName: '', studentDepartment: '', studentEmail: '' }); setIsCustomDriveType(false); setIsCustomCampusType(false); setTargetFile(null); setJdFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
+              onClick={() => { setSubmitted(false); setCreatedDrive(null); setForm({ companyName: '', package: '', driveType: 'placement drive', campusType: 'on campus', profileType: 'tech', jobDescription: '', deadline: '', batch: '2023-27', studentId: '', enrollmentNumber: '', studentName: '', studentDepartment: '', studentEmail: '' }); setIsCustomDriveType(false); setIsCustomCampusType(false); setTargetFile(null); setJdFile(null); setRounds([{ name: 'Aptitude', description: '' }, { name: 'Technical', description: '' }, { name: 'HR', description: '' }]); }}
               className="btn-outline-premium flex-1 py-3"
             >
               {isSelfPlaced ? 'Record Another Student' : 'Create Another Drive'}
@@ -331,10 +334,12 @@ const CreateDrivePage = () => {
                   }}
                   required
                 >
-                  <option value="placement drive">Placement Drive</option>
+                  <option value="placement drive">Placement Drive (Full-Time)</option>
                   <option value="internship">Internship</option>
                   <option value="internship+ppo">Internship + PPO</option>
-                  <option value="hackathon">Hackathon</option>
+                  <option value="apprenticeship">Apprenticeship</option>
+                  <option value="hackathon">Hackathon / Contest</option>
+                  <option value="off campus drive">Off-Campus Placement</option>
                   <option value="__custom__">+ Add Custom Drive Type...</option>
                 </select>
               )}
@@ -395,6 +400,44 @@ const CreateDrivePage = () => {
                   <option value="__custom__">+ Add Custom Campus Type...</option>
                 </select>
               )}
+            </div>
+
+            {/* Job Profile Type (Tech vs Non-Tech) */}
+            <div className="md:col-span-1">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                Job Profile Type *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, profileType: 'tech' })}
+                  className={`py-3 px-4 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    (form.profileType || 'tech') === 'tech'
+                      ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500 shadow-sm shadow-cyan-500/20'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <Code size={16} />
+                  Tech Role
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, profileType: 'non-tech' })}
+                  className={`py-3 px-4 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    form.profileType === 'non-tech'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500 shadow-sm shadow-amber-500/20'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <Briefcase size={16} />
+                  Non-Tech Role
+                </button>
+              </div>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-1.5 font-medium">
+                {(form.profileType || 'tech') === 'tech'
+                  ? '💻 Software, Full-Stack, Dev, Data, QA, Cloud, Core IT, etc.'
+                  : '💼 Management, Sales, Marketing, HR, Finance, Operations, etc.'}
+              </p>
             </div>
             
             <div className="md:col-span-1">

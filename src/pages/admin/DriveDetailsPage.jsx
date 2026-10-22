@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Briefcase, ArrowLeft, Users, CheckCircle, Clock, X, Upload,
   FileSpreadsheet, Mail, RefreshCw, ChevronRight, Layers, BarChart,
-  Trash2, GripVertical, Plus, Filter
+  Trash2, GripVertical, Plus, Filter, Code
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -269,8 +269,15 @@ const DriveDetailsPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-display font-black text-[var(--text-primary)] tracking-tight">{drive.companyName}</h1>
-              <div className="flex items-center gap-3 text-sm font-semibold text-[var(--text-secondary)] mt-1.5">
+              <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-[var(--text-secondary)] mt-1.5">
                 <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10 capitalize">{drive.driveType || 'Placement Drive'}</span>
+                <span className={`px-2.5 py-0.5 rounded-lg border font-bold capitalize text-[11px] inline-flex items-center gap-1 ${
+                  (drive.profileType || 'tech').toLowerCase() === 'tech'
+                    ? 'text-cyan-700 bg-cyan-50 border-cyan-200'
+                    : 'text-amber-700 bg-amber-50 border-amber-200'
+                }`}>
+                  <Code size={11} /> {(drive.profileType || 'tech').toLowerCase() === 'tech' ? 'Tech Role' : 'Non-Tech Role'}
+                </span>
                 {drive.campusType && (
                   <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 capitalize">{drive.campusType}</span>
                 )}

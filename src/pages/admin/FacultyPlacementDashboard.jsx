@@ -35,7 +35,8 @@ import {
   Building2,
   Award,
   UserCheck,
-  Eye
+  Eye,
+  Code
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -109,14 +110,15 @@ function EnrollStudentsModal({ onClose, onRefresh }) {
   );
 }
 
-function CreateDriveModal({ onClose, onRefresh }) {
+function CreateDriveModal({ onClose, onRefresh, initialCampusType = 'on campus' }) {
   const [loading, setLoading] = useState(false);
   const [targetFile, setTargetFile] = useState(null);
   const [form, setForm] = useState({
     companyName: '',
     package: '',
     driveType: 'placement drive',
-    campusType: 'on campus',
+    campusType: initialCampusType || 'on campus',
+    profileType: 'tech',
     jobDescription: '',
     deadline: '',
     batch: '2023-27',
@@ -180,6 +182,7 @@ function CreateDriveModal({ onClose, onRefresh }) {
         formData.append('package', form.package);
         formData.append('driveType', form.driveType || 'placement drive');
         formData.append('campusType', 'self placed');
+        formData.append('profileType', form.profileType || 'tech');
         formData.append('batch', form.batch);
         formData.append('offerLetter', targetFile);
         formData.append('file', targetFile);
@@ -219,6 +222,7 @@ function CreateDriveModal({ onClose, onRefresh }) {
       formData.append('package', form.package);
       formData.append('driveType', form.driveType);
       formData.append('campusType', form.campusType);
+      formData.append('profileType', form.profileType || 'tech');
       formData.append('jobDescription', form.jobDescription);
       formData.append('deadline', form.deadline);
       formData.append('batch', form.batch);
@@ -339,10 +343,12 @@ function CreateDriveModal({ onClose, onRefresh }) {
                   }}
                   required
                 >
-                  <option value="placement drive">Placement Drive</option>
+                  <option value="placement drive">Placement Drive (Full-Time)</option>
                   <option value="internship">Internship</option>
                   <option value="internship+ppo">Internship + PPO</option>
-                  <option value="hackathon">Hackathon</option>
+                  <option value="apprenticeship">Apprenticeship</option>
+                  <option value="hackathon">Hackathon / Contest</option>
+                  <option value="off campus drive">Off-Campus Placement</option>
                   <option value="__custom__">+ Add Custom Drive Type...</option>
                 </select>
               )}
@@ -418,6 +424,42 @@ function CreateDriveModal({ onClose, onRefresh }) {
                 />
               </div>
             )}
+          </div>
+
+          {/* Job Profile Type (Tech vs Non-Tech) */}
+          <div className="border-t border-[var(--border-light)] pt-3 mt-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Job Profile Type *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, profileType: 'tech' })}
+                className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  (form.profileType || 'tech') === 'tech'
+                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500 shadow-sm'
+                    : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <Code size={14} />
+                Tech Role
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, profileType: 'non-tech' })}
+                className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  form.profileType === 'non-tech'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500 shadow-sm'
+                    : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <Briefcase size={14} />
+                Non-Tech Role
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--text-secondary)] mt-1 font-medium">
+              {(form.profileType || 'tech') === 'tech'
+                ? '💻 Software, Dev, QA, Data, Core IT, Cloud, etc.'
+                : '💼 Sales, Marketing, HR, Finance, Operations, Business Dev, etc.'}
+            </p>
           </div>
 
           {/* Self Placed Student Information */}
@@ -828,6 +870,9 @@ const FacultyPlacementDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('all');
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
+  const [selfPlacedProfileTypeFilter, setSelfPlacedProfileTypeFilter] = useState('all');
+  const [selfPlacedDriveTypeFilter, setSelfPlacedDriveTypeFilter] = useState('all');
+  const [createDriveInitialType, setCreateDriveInitialType] = useState('on campus');
 
   const allSelfPlaced = React.useMemo(() => {
     if (selfPlaced && selfPlaced.length > 0) return selfPlaced;
@@ -837,7 +882,8 @@ const FacultyPlacementDashboard = () => {
     });
   }, [selfPlaced, selections]);
 
-  const filteredSelfPlaced = React.useMemo(() => {
+  // Self placed records within selected batch
+  const selfPlacedInBatch = React.useMemo(() => {
     let list = allSelfPlaced || [];
     if (selectedBatch !== 'all') {
       list = list.filter(s => {
@@ -846,17 +892,42 @@ const FacultyPlacementDashboard = () => {
         return studentB === selectedBatch || driveB === selectedBatch;
       });
     }
+    return list;
+  }, [allSelfPlaced, selectedBatch]);
+
+  const selfPlacedTechCount = selfPlacedInBatch.filter(s => (s.drive?.profileType || 'tech').toLowerCase() === 'tech').length;
+  const selfPlacedNonTechCount = selfPlacedInBatch.filter(s => (s.drive?.profileType || '').toLowerCase() === 'non-tech').length;
+
+  const availableSelfPlacedDriveTypes = React.useMemo(() => {
+    const set = new Set();
+    (selfPlacedInBatch || []).forEach(s => {
+      const dt = s.drive?.driveType;
+      if (dt && dt.trim()) set.add(dt.trim());
+    });
+    return Array.from(set);
+  }, [selfPlacedInBatch]);
+
+  const filteredSelfPlaced = React.useMemo(() => {
+    let list = selfPlacedInBatch;
+    if (selfPlacedProfileTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.profileType || 'tech').toLowerCase() === selfPlacedProfileTypeFilter);
+    }
+    if (selfPlacedDriveTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.driveType || '').toLowerCase() === selfPlacedDriveTypeFilter.toLowerCase());
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(s =>
         s.student?.name?.toLowerCase().includes(q) ||
         s.student?.enrollmentNumber?.toLowerCase().includes(q) ||
         s.drive?.companyName?.toLowerCase().includes(q) ||
-        s.student?.department?.toLowerCase().includes(q)
+        s.student?.department?.toLowerCase().includes(q) ||
+        s.drive?.driveType?.toLowerCase().includes(q) ||
+        s.drive?.profileType?.toLowerCase().includes(q)
       );
     }
     return list;
-  }, [allSelfPlaced, selectedBatch, searchQuery]);
+  }, [selfPlacedInBatch, searchQuery, selfPlacedProfileTypeFilter, selfPlacedDriveTypeFilter]);
 
   // Available batches calculation (null-safe) — built from actual drive/
   // selection records rather than the current student roster, since this
@@ -1203,6 +1274,15 @@ const FacultyPlacementDashboard = () => {
                       {drive.campusType && (
                         <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md capitalize">{drive.campusType}</span>
                       )}
+                      {(drive.profileType || 'tech').toLowerCase() === 'non-tech' ? (
+                        <span className="text-amber-700 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1 uppercase">
+                          <Briefcase size={11} /> Non-Tech
+                        </span>
+                      ) : (
+                        <span className="text-cyan-700 dark:text-cyan-400 font-bold bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1 uppercase">
+                          <Code size={11} /> Tech
+                        </span>
+                      )}
                       <span className="text-indigo-600 font-bold bg-indigo-50 border border-indigo-200/50 px-2 py-0.5 rounded-md text-[12px] flex items-center gap-1">
                         <GraduationCap size={13} /> Batch {normalizeBatch(drive.batch || '2023')}
                       </span>
@@ -1390,11 +1470,95 @@ const FacultyPlacementDashboard = () => {
                 />
               </div>
               <button 
-                onClick={() => setShowCreateDriveModal(true)}
-                className="btn-premium py-2.5 px-5 flex items-center gap-2 text-xs"
+                onClick={() => {
+                  setCreateDriveInitialType('self placed');
+                  setShowCreateDriveModal(true);
+                }}
+                className="btn-premium py-2.5 px-5 flex items-center gap-2 text-xs cursor-pointer shadow-sm"
               >
                 <Plus size={16} /> Add Self Placed Student
               </button>
+            </div>
+
+            {/* Filter Controls for Self Placed: Profile Type & Drive Type */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] mr-1">
+                  Profile:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelfPlacedProfileTypeFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    selfPlacedProfileTypeFilter === 'all'
+                      ? 'bg-[var(--primary)] text-white shadow-sm font-black'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-light)]'
+                  }`}
+                >
+                  All ({selfPlacedInBatch.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelfPlacedProfileTypeFilter('tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selfPlacedProfileTypeFilter === 'tech'
+                      ? 'bg-cyan-600 text-white shadow-sm font-black'
+                      : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20'
+                  }`}
+                >
+                  <Code size={13} />
+                  Tech ({selfPlacedTechCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelfPlacedProfileTypeFilter('non-tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selfPlacedProfileTypeFilter === 'non-tech'
+                      ? 'bg-amber-600 text-white shadow-sm font-black'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
+                  }`}
+                >
+                  <Briefcase size={13} />
+                  Non-Tech ({selfPlacedNonTechCount})
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] shrink-0">
+                  Drive Type:
+                </span>
+                <select
+                  value={selfPlacedDriveTypeFilter}
+                  onChange={(e) => setSelfPlacedDriveTypeFilter(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] capitalize cursor-pointer shadow-sm"
+                >
+                  <option value="all">All Drive Types</option>
+                  <option value="placement drive">Placement Drive</option>
+                  <option value="internship">Internship</option>
+                  <option value="internship+ppo">Internship + PPO</option>
+                  <option value="apprenticeship">Apprenticeship</option>
+                  <option value="hackathon">Hackathon</option>
+                  <option value="off campus drive">Off-Campus Placement</option>
+                  {availableSelfPlacedDriveTypes
+                    .filter(t => !['placement drive', 'internship', 'internship+ppo', 'apprenticeship', 'hackathon', 'off campus drive'].includes(t.toLowerCase()))
+                    .map(t => (
+                      <option key={t} value={t.toLowerCase()}>{t}</option>
+                    ))}
+                </select>
+
+                {(selfPlacedProfileTypeFilter !== 'all' || selfPlacedDriveTypeFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelfPlacedProfileTypeFilter('all');
+                      setSelfPlacedDriveTypeFilter('all');
+                    }}
+                    className="text-xs text-[var(--primary)] font-bold hover:underline ml-1 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
 
             <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1422,9 +1586,23 @@ const FacultyPlacementDashboard = () => {
                             </p>
                           </div>
                         </div>
-                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 whitespace-nowrap">
-                          Self Placed
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 whitespace-nowrap">
+                            Self Placed
+                          </span>
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold capitalize bg-purple-50 dark:bg-purple-950/40 text-[var(--primary)] border border-purple-200/50">
+                            {app.drive?.driveType || 'Placement Drive'}
+                          </span>
+                          {(app.drive?.profileType || 'tech').toLowerCase() === 'non-tech' ? (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                              <Briefcase size={10} /> Non-Tech
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 flex items-center gap-1">
+                              <Code size={10} /> Tech
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Company & Package Card */}
@@ -1434,6 +1612,18 @@ const FacultyPlacementDashboard = () => {
                           <span className="text-sm font-black text-[var(--text-primary)] flex items-center gap-1.5">
                             <Building2 size={14} className="text-purple-500 shrink-0" />
                             {app.drive?.companyName || 'Self Placed'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Drive Type</span>
+                          <span className="text-xs font-bold text-[var(--text-primary)] capitalize">
+                            {app.drive?.driveType || 'Placement Drive'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Profile Type</span>
+                          <span className={`text-xs font-black capitalize flex items-center gap-1 ${(app.drive?.profileType || 'tech').toLowerCase() === 'non-tech' ? 'text-amber-600 dark:text-amber-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
+                            {(app.drive?.profileType || 'tech').toLowerCase() === 'non-tech' ? '💼 Non-Tech' : '💻 Tech'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -1495,7 +1685,10 @@ const FacultyPlacementDashboard = () => {
                     Students who secure job offers independently or off-campus can be recorded here along with their offer letters.
                   </p>
                   <button
-                    onClick={() => setShowCreateDriveModal(true)}
+                    onClick={() => {
+                      setCreateDriveInitialType('self placed');
+                      setShowCreateDriveModal(true);
+                    }}
                     className="btn-premium py-2 px-4 text-xs mt-4 inline-flex items-center gap-1.5"
                   >
                     <Plus size={14} /> Record Self Placed Student
@@ -1650,7 +1843,11 @@ const FacultyPlacementDashboard = () => {
 
       {showCreateDriveModal && (
         <CreateDriveModal
-          onClose={() => setShowCreateDriveModal(false)}
+          initialCampusType={createDriveInitialType}
+          onClose={() => {
+            setShowCreateDriveModal(false);
+            setCreateDriveInitialType('on campus');
+          }}
           onRefresh={() => dispatch(fetchFacultyPlacementDashboard())}
         />
       )}
