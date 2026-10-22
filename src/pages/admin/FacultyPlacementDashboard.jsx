@@ -717,9 +717,26 @@ function ViewStudentsModal({ group, onClose, onViewStudentProfile }) {
             {group.students.length} {group.students.length === 1 ? 'Student' : 'Students'}
           </span>
         </div>
-        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6 shrink-0">
-          {group.drive.companyName} • {group.drive.package}
-        </p>
+        <div className="flex flex-wrap items-center gap-2 mb-6 shrink-0">
+          <span className="text-[13px] text-[var(--text-secondary)] font-medium">
+            {group.drive.companyName} • {group.drive.package}
+          </span>
+          <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md text-[11px] border border-purple-200 capitalize">
+            {group.drive?.driveType || 'Placement Drive'}
+          </span>
+          <span className={`px-2 py-0.5 rounded-md font-bold capitalize text-[10px] inline-flex items-center gap-1 border ${
+            (group.drive?.profileType || 'tech').toLowerCase() === 'tech'
+              ? 'text-cyan-700 bg-cyan-50 border-cyan-200'
+              : 'text-amber-700 bg-amber-50 border-amber-200'
+          }`}>
+            <Code size={11} /> {(group.drive?.profileType || 'tech').toLowerCase() === 'tech' ? 'Tech Role' : 'Non-Tech Role'}
+          </span>
+          {group.drive?.campusType && (
+            <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 capitalize">
+              {group.drive.campusType}
+            </span>
+          )}
+        </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
           {group.students.map((student, idx) => (
@@ -872,6 +889,8 @@ const FacultyPlacementDashboard = () => {
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [selfPlacedProfileTypeFilter, setSelfPlacedProfileTypeFilter] = useState('all');
   const [selfPlacedDriveTypeFilter, setSelfPlacedDriveTypeFilter] = useState('all');
+  const [selectionsProfileTypeFilter, setSelectionsProfileTypeFilter] = useState('all');
+  const [selectionsDriveTypeFilter, setSelectionsDriveTypeFilter] = useState('all');
   const [createDriveInitialType, setCreateDriveInitialType] = useState('on campus');
 
   const allSelfPlaced = React.useMemo(() => {
@@ -955,8 +974,8 @@ const FacultyPlacementDashboard = () => {
     return safeDrives.filter(d => normalizeBatch(d?.batch) === selectedBatch);
   }, [drives, selectedBatch]);
 
-  // Filtered selections by selected batch (null-safe)
-  const filteredSelections = React.useMemo(() => {
+  // Base selections in selected batch
+  const selectionsInBatch = React.useMemo(() => {
     const safeSelections = selections || [];
     if (selectedBatch === 'all') return safeSelections;
     return safeSelections.filter(s => {
@@ -965,6 +984,46 @@ const FacultyPlacementDashboard = () => {
       return studentB === selectedBatch || driveB === selectedBatch;
     });
   }, [selections, selectedBatch]);
+
+  const selectionsTechCount = React.useMemo(() => {
+    return selectionsInBatch.filter(s => (s.drive?.profileType || 'tech').toLowerCase() === 'tech').length;
+  }, [selectionsInBatch]);
+
+  const selectionsNonTechCount = React.useMemo(() => {
+    return selectionsInBatch.filter(s => (s.drive?.profileType || '').toLowerCase() === 'non-tech').length;
+  }, [selectionsInBatch]);
+
+  const availableSelectionsDriveTypes = React.useMemo(() => {
+    const set = new Set();
+    (selectionsInBatch || []).forEach(s => {
+      const dt = s.drive?.driveType;
+      if (dt && dt.trim()) set.add(dt.trim());
+    });
+    return Array.from(set);
+  }, [selectionsInBatch]);
+
+  // Filtered selections by selected batch, profile type, drive type, and search query
+  const filteredSelections = React.useMemo(() => {
+    let list = selectionsInBatch;
+    if (selectionsProfileTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.profileType || 'tech').toLowerCase() === selectionsProfileTypeFilter);
+    }
+    if (selectionsDriveTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.driveType || '').toLowerCase() === selectionsDriveTypeFilter.toLowerCase());
+    }
+    if (searchQuery.trim() && activeTab === 'selections') {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(s =>
+        s.student?.name?.toLowerCase().includes(q) ||
+        s.student?.enrollmentNumber?.toLowerCase().includes(q) ||
+        s.drive?.companyName?.toLowerCase().includes(q) ||
+        s.student?.department?.toLowerCase().includes(q) ||
+        s.drive?.driveType?.toLowerCase().includes(q) ||
+        s.drive?.profileType?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [selectionsInBatch, selectionsProfileTypeFilter, selectionsDriveTypeFilter, searchQuery, activeTab]);
 
   // Dynamic real-time stats calculation
   const activeDrivesCount = React.useMemo(() => {
@@ -979,8 +1038,8 @@ const FacultyPlacementDashboard = () => {
   }, [filteredDrives]);
 
   const totalPlacedCount = React.useMemo(() => {
-    return filteredSelections.length;
-  }, [filteredSelections]);
+    return selectionsInBatch.length;
+  }, [selectionsInBatch]);
 
   const avgPackageStr = React.useMemo(() => {
     const extractNumericPackage = (pkgStr) => {
@@ -989,7 +1048,7 @@ const FacultyPlacementDashboard = () => {
       return match ? parseFloat(match[1]) : 0;
     };
 
-    const selectedPackages = filteredSelections
+    const selectedPackages = selectionsInBatch
       .map(s => extractNumericPackage(s.drive?.package))
       .filter(p => p > 0);
 
@@ -1700,49 +1759,171 @@ const FacultyPlacementDashboard = () => {
         )}
 
         {activeTab === 'selections' && (
-          <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {groupedSelections.map((group, idx) => (
-              <motion.div
-                key={group.drive._id}
-                variants={itemVariants}
-                className="glass-card p-6 flex flex-col justify-between group hover:border-emerald-300 transition-all duration-300 relative overflow-hidden min-h-[160px]"
-              >
-                <div className="absolute -right-10 -top-10 w-32 h-32 blur-[40px] opacity-20 rounded-full bg-emerald-500 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
-                
-                <div className="flex items-start justify-between relative z-10 mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-[1rem] bg-emerald-50 flex items-center justify-center border border-emerald-200 shrink-0 shadow-sm">
-                      <Briefcase className="text-emerald-500" size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{group.drive?.companyName || 'Drive'}</h3>
-                      <p className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1 inline-block">{group.drive?.package || 'N/A'}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                     <span className="text-3xl font-black text-[var(--text-primary)]">{group.students.length}</span>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Selected</p>
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => setSelectedDriveGroup(group)}
-                  className="w-full py-2.5 mt-auto rounded-xl bg-[var(--bg-input)] hover:bg-[var(--primary)] hover:text-white text-[13px] font-bold text-[var(--text-primary)] border border-[var(--border-light)] transition-all flex items-center justify-center gap-2 relative z-10"
+          <div className="space-y-6 animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="relative max-w-md w-full">
+                <Search className="absolute left-4 top-3.5 text-[var(--text-secondary)] opacity-60" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Search student name, enrollment no, company..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                />
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider">
+                Showing {filteredSelections.length} selections across {groupedSelections.length} {groupedSelections.length === 1 ? 'drive' : 'drives'}
+              </p>
+            </div>
+
+            {/* Filter Controls for Selections: Profile Type & Drive Type */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] mr-1">
+                  Profile:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectionsProfileTypeFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    selectionsProfileTypeFilter === 'all'
+                      ? 'bg-[var(--primary)] text-white shadow-sm font-black'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-light)]'
+                  }`}
                 >
-                  <Users size={16} /> View Students
+                  All ({selectionsInBatch.length})
                 </button>
-              </motion.div>
-            ))}
-            {groupedSelections.length === 0 && (
-              <motion.div variants={itemVariants} className="col-span-full glass-card p-16 text-center border-dashed">
-                <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                  <Users className="text-emerald-300" size={36} />
-                </div>
-                <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">No Selections Yet</h3>
-                <p className="text-[var(--text-secondary)] font-medium mt-3 max-w-md mx-auto">Selected students will appear here once they pass all rounds.</p>
-              </motion.div>
-            )}
-          </motion.div>
+                <button
+                  type="button"
+                  onClick={() => setSelectionsProfileTypeFilter('tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectionsProfileTypeFilter === 'tech'
+                      ? 'bg-cyan-600 text-white shadow-sm font-black'
+                      : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20'
+                  }`}
+                >
+                  <Code size={13} />
+                  Tech ({selectionsTechCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectionsProfileTypeFilter('non-tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectionsProfileTypeFilter === 'non-tech'
+                      ? 'bg-amber-600 text-white shadow-sm font-black'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
+                  }`}
+                >
+                  <Briefcase size={13} />
+                  Non-Tech ({selectionsNonTechCount})
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] shrink-0">
+                  Drive Type:
+                </span>
+                <select
+                  value={selectionsDriveTypeFilter}
+                  onChange={(e) => setSelectionsDriveTypeFilter(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] capitalize cursor-pointer shadow-sm"
+                >
+                  <option value="all">All Drive Types</option>
+                  <option value="placement drive">Placement Drive</option>
+                  <option value="internship">Internship</option>
+                  <option value="internship+ppo">Internship + PPO</option>
+                  <option value="apprenticeship">Apprenticeship</option>
+                  <option value="hackathon">Hackathon</option>
+                  <option value="off campus drive">Off-Campus Placement</option>
+                  {availableSelectionsDriveTypes
+                    .filter(t => !['placement drive', 'internship', 'internship+ppo', 'apprenticeship', 'hackathon', 'off campus drive'].includes(t.toLowerCase()))
+                    .map(t => (
+                      <option key={t} value={t.toLowerCase()}>{t}</option>
+                    ))}
+                </select>
+
+                {(selectionsProfileTypeFilter !== 'all' || selectionsDriveTypeFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectionsProfileTypeFilter('all');
+                      setSelectionsDriveTypeFilter('all');
+                    }}
+                    className="text-xs text-[var(--primary)] font-bold hover:underline ml-1 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {groupedSelections.map((group, idx) => (
+                <motion.div
+                  key={group.drive._id}
+                  variants={itemVariants}
+                  className="glass-card p-6 flex flex-col justify-between group hover:border-emerald-300 transition-all duration-300 relative overflow-hidden min-h-[190px]"
+                >
+                  <div className="absolute -right-10 -top-10 w-32 h-32 blur-[40px] opacity-20 rounded-full bg-emerald-500 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
+                  
+                  <div className="flex items-start justify-between relative z-10 mb-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-12 h-12 rounded-[1rem] bg-emerald-50 flex items-center justify-center border border-emerald-200 shrink-0 shadow-sm">
+                        <Briefcase className="text-emerald-500" size={24} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-display font-black text-[var(--text-primary)] truncate">{group.drive?.companyName || 'Drive'}</h3>
+                        <p className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1 inline-block">{group.drive?.package || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                       <span className="text-3xl font-black text-[var(--text-primary)]">{group.students.length}</span>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Selected</p>
+                    </div>
+                  </div>
+
+                  {/* Drive Type & Profile Type Badges */}
+                  <div className="flex flex-wrap items-center gap-1.5 relative z-10 mb-4 pt-1 border-t border-[var(--border-light)]/60">
+                    <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md text-[10px] border border-purple-200 capitalize">
+                      {group.drive?.driveType || 'Placement Drive'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md font-bold capitalize text-[10px] inline-flex items-center gap-1 border ${
+                      (group.drive?.profileType || 'tech').toLowerCase() === 'tech'
+                        ? 'text-cyan-700 bg-cyan-50 border-cyan-200'
+                        : 'text-amber-700 bg-amber-50 border-amber-200'
+                    }`}>
+                      <Code size={10} /> {(group.drive?.profileType || 'tech').toLowerCase() === 'tech' ? 'Tech' : 'Non-Tech'}
+                    </span>
+                    {group.drive?.campusType && (
+                      <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 capitalize">
+                        {group.drive.campusType}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button 
+                    onClick={() => setSelectedDriveGroup(group)}
+                    className="w-full py-2.5 mt-auto rounded-xl bg-[var(--bg-input)] hover:bg-[var(--primary)] hover:text-white text-[13px] font-bold text-[var(--text-primary)] border border-[var(--border-light)] transition-all flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+                  >
+                    <Users size={16} /> View Students
+                  </button>
+                </motion.div>
+              ))}
+              {groupedSelections.length === 0 && (
+                <motion.div variants={itemVariants} className="col-span-full glass-card p-16 text-center border-dashed">
+                  <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <Users className="text-emerald-300" size={36} />
+                  </div>
+                  <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">No Selections Found</h3>
+                  <p className="text-[var(--text-secondary)] font-medium mt-3 max-w-md mx-auto">
+                    {(selectionsProfileTypeFilter !== 'all' || selectionsDriveTypeFilter !== 'all' || searchQuery.trim()) 
+                      ? 'No selections match the current filters or search query.'
+                      : 'Selected students will appear here once they pass all rounds.'}
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
         )}
 
         {activeTab === 'questions' && (
