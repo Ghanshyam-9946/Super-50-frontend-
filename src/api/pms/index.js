@@ -80,6 +80,7 @@ export const adminAPI = {
 
   // Reports
   reports: (params) => api.get('/pms/admin/reports', { params }),
+  reportDashboard: (params) => api.get('/pms/admin/report-dashboard', { params }),
 
   // Settings
   getSettings: () => api.get('/pms/admin/settings'),

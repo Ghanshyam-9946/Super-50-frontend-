@@ -49,6 +49,21 @@ const Presentations = () => {
   const [allTeams, setAllTeams] = useState([]);
 
   const selectedYear = years.find((y) => y._id === form.academicYear);
+
+  // The same round (e.g. Presentation 1) is scheduled several times, each
+  // with its own panel and groups. A group already in one of them is not
+  // offered again — the server refuses it anyway, since its marks would
+  // count twice. The presentation being edited does not count.
+  const sameRound = presentations.filter((p) => p._id !== editingId
+    && String(p.academicYear?._id || p.academicYear) === String(form.academicYear)
+    && String(p.semester) === String(form.semester)
+    && String(p.presentationNo) === String(form.presentationNo)
+    && (p.kind || 'presentation') === (form.kind || 'presentation'));
+  const roundCoversAll = sameRound.some((p) => !(p.teams || []).length);
+  const takenIn = new Map();
+  sameRound.forEach((p) => (p.teams || []).forEach((t) => takenIn.set(String(t._id || t), p.presentationTitle)));
+  const semesterTeams = form.semester ? allTeams.filter((t) => String(t.semester) === String(form.semester)) : allTeams;
+  const freeTeams = semesterTeams.filter((t) => !takenIn.has(String(t._id)) || form.teams.includes(t._id));
   const dateMin = selectedYear?.startDate ? selectedYear.startDate.slice(0, 10) : undefined;
   const dateMax = selectedYear?.endDate ? selectedYear.endDate.slice(0, 10) : undefined;
 
@@ -297,13 +312,20 @@ const Presentations = () => {
               <div>
                 <label className="form-label">Groups in this round ({form.teams.length})</label>
                 <PickList
-                  items={form.semester ? allTeams.filter((t) => String(t.semester) === String(form.semester)) : allTeams}
+                  items={roundCoversAll ? [] : freeTeams}
                   selected={form.teams}
                   onToggle={(id) => setForm((f) => ({ ...f, teams: f.teams.includes(id) ? f.teams.filter((x) => x !== id) : [...f.teams, id] }))}
-                  empty="No teams for this semester yet."
+                  empty={roundCoversAll
+                    ? 'This round is already scheduled for every group of the semester.'
+                    : semesterTeams.length ? 'Every group of this semester is already in this round.' : 'No teams for this semester yet.'}
                   render={(t) => <>{t.groupNo} <span className="text-xs text-slate-500">· {t.groupName}</span></>}
                 />
-                <p className="form-help">Leave empty to include every group of that semester.</p>
+                <p className="form-help">
+                  {takenIn.size > 0
+                    ? `${takenIn.size} group(s) already in this round elsewhere are hidden. `
+                    : ''}
+                  {sameRound.length > 0 ? 'Pick the groups for this panel.' : 'Leave empty to include every group of that semester.'}
+                </p>
               </div>
               <div>
                 <label className="form-label">Criteria</label>

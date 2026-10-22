@@ -8,6 +8,7 @@ import { updateUser } from '../features/auth/authSlice';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { isStudentAccount } from '../utils/roles';
+import TopTenBadges from './TopTenBadges';
 import {
   OverallPerformanceDashboard,
   ActivitiesGraph,
@@ -375,6 +376,7 @@ export default function StudentProfileModal({ isOpen, onClose, studentId, initia
                         Mentor: {data.student.mentor?.name}
                       </div>
                     )}
+                    <TopTenBadges studentId={data.student._id} title="" size="sm" className="mt-2" />
                   </div>
                 </>
               )}

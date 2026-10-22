@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardEdit, FileText, Info, Clock, AlertTriangle , BookMarked, BookOpen } from 'lucide-react';
+import { ClipboardEdit, FileText, Info, Clock, AlertTriangle, BookMarked, BookOpen, CheckCircle2, Hourglass, FlaskConical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { getImageUrl } from '../../utils/imageUrl';
@@ -13,6 +13,25 @@ const deadlineState = (deadline) => {
   if (diffMs < 0) return 'overdue';
   if (diffMs < 2 * 24 * 60 * 60 * 1000) return 'soon';
   return 'ok';
+};
+
+// What a card shows: marks given → submitted (green); no marks yet → marks
+// pending, red once it has a due date.
+const statusOf = (a) => {
+  if (a.submitted) return 'submitted';
+  const state = deadlineState(a.deadline);
+  if (state === 'overdue') return 'overdue';
+  if (state) return 'pending';
+  return 'open';
+};
+
+const fmtMarks = (n) => Math.round(Number(n) * 100) / 100;
+
+const TONE = {
+  submitted: { bar: 'bg-emerald-500', ring: 'hover:border-emerald-500/50', glow: 'from-emerald-500/10' },
+  pending: { bar: 'bg-rose-500', ring: 'hover:border-rose-500/50', glow: 'from-rose-500/10' },
+  overdue: { bar: 'bg-red-600', ring: 'hover:border-red-600/60', glow: 'from-red-600/15' },
+  open: { bar: 'bg-amber-400', ring: 'hover:border-amber-400/50', glow: 'from-amber-400/10' },
 };
 
 export default function StudentAssignmentsPage() {
@@ -130,9 +149,27 @@ export default function StudentAssignmentsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {assignments.map((a) => {
-            const state = deadlineState(a.deadline);
+        <div className="space-y-4">
+          {/* How things stand, at a glance */}
+          <div className="flex flex-wrap gap-2">
+            <span className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/25">
+              <CheckCircle2 size={13} /> {assignments.filter((a) => a.submitted).length} Submitted
+            </span>
+            <span className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full bg-rose-500/10 text-rose-600 border border-rose-500/25">
+              <Hourglass size={13} /> {assignments.filter((a) => !a.submitted).length} Marks pending
+            </span>
+            {assignments.some((a) => statusOf(a) === 'overdue') && (
+              <span className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full bg-red-600 text-white shadow-sm shadow-red-600/30">
+                <AlertTriangle size={13} /> {assignments.filter((a) => statusOf(a) === 'overdue').length} past due date
+              </span>
+            )}
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+          {/* Pending first (soonest due on top), submitted after */}
+          {[...assignments.filter((a) => !a.submitted), ...assignments.filter((a) => a.submitted)].map((a, i) => {
+            const status = statusOf(a);
+            const tone = TONE[status];
             return (
               <motion.a
                 key={a.activityId}
@@ -141,40 +178,68 @@ export default function StudentAssignmentsPage() {
                 rel="noreferrer"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="glass-card p-5 rounded-2xl flex flex-col gap-3 hover:border-[var(--primary)] border border-transparent transition-colors"
+                transition={{ duration: 0.3, delay: Math.min(i, 8) * 0.04 }}
+                className={`relative overflow-hidden glass-card rounded-2xl border border-[var(--border-light)] ${tone.ring} transition-all hover:-translate-y-0.5 hover:shadow-lg`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
-                      {a.subjectName}{a.subjectCode ? ` (${a.subjectCode})` : ''}
+                <span className={`absolute left-0 top-0 bottom-0 w-1.5 ${tone.bar}`} aria-hidden="true" />
+                <div className={`absolute inset-0 bg-gradient-to-br ${tone.glow} to-transparent pointer-events-none`} aria-hidden="true" />
+                <div className="relative p-5 pl-6 flex flex-col gap-3 h-full">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-secondary)] truncate">
+                        {a.subjectName}{a.subjectCode ? ` (${a.subjectCode})` : ''}
+                      </div>
+                      <div className="text-lg font-display font-black text-[var(--text-primary)] mt-0.5 flex items-center gap-2 flex-wrap">
+                        {a.label}
+                        {a.part === 'lab' && (
+                          <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/25">
+                            <FlaskConical size={10} /> Lab
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-lg font-display font-black text-[var(--text-primary)] mt-0.5">{a.label}</div>
-                  </div>
-                  <FileText className="text-[var(--primary)] flex-shrink-0" size={22} />
-                </div>
-                <div className="flex items-center justify-between mt-auto">
-                  {a.deadline ? (
-                    <span
-                      className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
-                        state === 'overdue'
-                          ? 'bg-red-500/15 text-red-500'
-                          : state === 'soon'
-                          ? 'bg-amber-500/15 text-amber-500'
-                          : 'bg-emerald-500/15 text-emerald-500'
-                      }`}
-                    >
-                      {state === 'overdue' ? <AlertTriangle size={12} /> : <Clock size={12} />}
-                      {state === 'overdue' ? 'Overdue — ' : 'Due '}{formatDeadline(a.deadline)}
+                    <span className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center shrink-0">
+                      <FileText size={20} />
                     </span>
-                  ) : (
-                    <span className="text-xs text-[var(--text-secondary)]">No deadline set</span>
-                  )}
-                  {a.faculty && <span className="text-[11px] text-[var(--text-secondary)]">{a.faculty.name}</span>}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 mt-auto flex-wrap">
+                    {status === 'submitted' ? (
+                      <span className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full bg-emerald-500 text-white shadow-sm shadow-emerald-500/30">
+                        <CheckCircle2 size={13} /> Submitted
+                        {a.marks && a.marks.max > 0 && (
+                          <span className="ml-1 pl-2 border-l border-white/40 tabular-nums">{fmtMarks(a.marks.obtained)}/{fmtMarks(a.marks.max)}</span>
+                        )}
+                      </span>
+                    ) : status === 'open' ? (
+                      <span className="flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-600 border border-amber-500/25">
+                        <Hourglass size={13} /> Marks Pending
+                      </span>
+                    ) : (
+                      <span className={`flex items-center gap-1.5 text-xs font-black px-3 py-1.5 rounded-full ${
+                        status === 'overdue'
+                          ? 'bg-red-600 text-white shadow-sm shadow-red-600/30'
+                          : 'bg-rose-500/12 text-rose-600 border border-rose-500/30'
+                      }`}>
+                        {status === 'overdue' ? (
+                          <span className="relative flex w-2 h-2">
+                            <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-75 animate-ping" />
+                            <span className="relative inline-flex w-2 h-2 rounded-full bg-white" />
+                          </span>
+                        ) : <Clock size={13} />}
+                        Marks Pending · {status === 'overdue' ? 'was due' : 'due'} {formatDeadline(a.deadline)}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-[var(--text-secondary)] text-right">
+                      {status === 'submitted' && a.deadline && <span className="block">Due {formatDeadline(a.deadline)}</span>}
+                      {a.faculty?.name}
+                    </span>
+                  </div>
                 </div>
               </motion.a>
             );
           })}
+          </div>
         </div>
       )}
     </div>

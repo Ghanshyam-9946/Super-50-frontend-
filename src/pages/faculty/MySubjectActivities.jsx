@@ -8,7 +8,7 @@ import { getImageUrl } from "../../utils/imageUrl";
 import CourseFilePanel from "../../components/CourseFilePanel";
 import SubjectCoverage from "../../components/SubjectCoverage";
 
-const emptyActivity = () => ({ label: "", type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null, pdfUrl: null, pdfFileName: null });
+const emptyActivity = (part = "theory") => ({ label: "", part, type: "tick", maxMarks: 0, unitWise: false, optional: false, deadline: null, pdfUrl: null, pdfFileName: null });
 const toDateInputValue = (d) => (d ? String(d).slice(0, 10) : "");
 const MAX_PDF_BYTES = 5 * 1024 * 1024;
 const MAX_QB_BYTES = 15 * 1024 * 1024;
@@ -155,7 +155,9 @@ export default function MySubjectActivities() {
 
   /* ----------------------------- draft edits ----------------------------- */
   const setActivities = (fn) => setDraft((d) => ({ ...d, activities: fn(d.activities) }));
-  const addActivity = () => setActivities((list) => [...list, emptyActivity()]);
+  const addActivity = (part = "theory") => setActivities((list) => [...list, emptyActivity(part)]);
+  // Activities saved before the Theory/Lab split have no part: they are theory.
+  const isLabAct = (a) => a.part === "lab";
   const updateActivity = (idx, patch) => setActivities((list) => list.map((a, i) => (i === idx ? { ...a, ...patch } : a)));
   const removeActivity = (idx) => setActivities((list) => list.filter((_, i) => i !== idx));
 
@@ -289,6 +291,114 @@ export default function MySubjectActivities() {
   /* -------------------------------- render ------------------------------- */
   // A "both" activity counts on both sides — it is one activity that the
   // faculty ticks on No Dues and also enters marks for in Sessional Marks.
+  const indexed = draft.activities.map((a, idx) => ({ a, idx }));
+  const theoryList = indexed.filter(({ a }) => !isLabAct(a));
+  const labList = indexed.filter(({ a }) => isLabAct(a));
+  // One activity's editor; `idx` is its place in the whole list, `shownNo`
+  // its number within its own (Theory or Lab) list.
+  const activityCard = (a, idx, shownNo) => (
+                        <div key={idx} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl p-4 space-y-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="w-6 h-6 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-black flex items-center justify-center shrink-0">{shownNo}</span>
+                            <input
+                              placeholder="Label (e.g. Presentation)"
+                              value={a.label}
+                              onChange={(e) => updateActivity(idx, { label: e.target.value })}
+                              className={`${inputCls} flex-1 min-w-[160px] bg-[var(--bg-card)]`}
+                            />
+                            {/* type as a segmented control — clearer than a dropdown */}
+                            <div className="flex rounded-xl border border-[var(--border-light)] overflow-hidden">
+                              {[
+                                ["tick", "Tick", "No Dues checklist item"],
+                                ["marks", "Marks", "Sessional Marks CA category"],
+                                ["both", "Both", "Goes to No Dues and Sessional Marks"],
+                              ].map(([value, label, hint]) => (
+                                <button
+                                  key={value}
+                                  title={hint}
+                                  onClick={() => updateActivity(idx, { type: value })}
+                                  className={`px-3 py-2 text-xs font-bold transition-colors ${
+                                    a.type === value ? "bg-[var(--primary)] text-white" : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
+                                  }`}
+                                >
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                            <button onClick={() => removeActivity(idx)} title="Remove activity" className="ml-auto text-[var(--text-secondary)] hover:text-red-500">
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+
+                          {isMarks(a) && (
+                            <div className="flex flex-wrap items-end gap-3 pl-8">
+                              <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">
+                                Max marks
+                                <input
+                                  type="number" min="0" value={a.maxMarks}
+                                  onChange={(e) => updateActivity(idx, { maxMarks: Number(e.target.value) })}
+                                  className={`${inputCls} w-24 bg-[var(--bg-card)]`}
+                                />
+                              </label>
+                              <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">
+                                Deadline
+                                <input
+                                  type="date" value={toDateInputValue(a.deadline)}
+                                  onChange={(e) => updateActivity(idx, { deadline: e.target.value || null })}
+                                  className={`${inputCls} bg-[var(--bg-card)]`}
+                                />
+                              </label>
+                              {!a._id ? (
+                                <span className="text-[11px] text-[var(--text-secondary)] italic pb-2">Save first to attach a PDF</span>
+                              ) : a.pdfUrl ? (
+                                <div className="flex items-center gap-1.5">
+                                  <a
+                                    href={getImageUrl(a.pdfUrl)} target="_blank" rel="noreferrer" title={a.pdfFileName}
+                                    className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--primary)] border border-[var(--primary)]/30 bg-[var(--primary)]/5 rounded-xl px-3 py-2"
+                                  >
+                                    <FileText size={12} /> {a.pdfFileName?.length > 18 ? `${a.pdfFileName.slice(0, 18)}…` : a.pdfFileName}
+                                  </a>
+                                  {/* the other half of attaching: swap it or take it off */}
+                                  <label className="text-[11px] font-bold px-2.5 py-2 rounded-xl border border-[var(--border-light)] cursor-pointer text-[var(--text-secondary)] hover:border-[var(--primary)]">
+                                    {uploadingIdx === idx ? <Loader2 size={12} className="animate-spin" /> : "Replace"}
+                                    <input type="file" accept="application/pdf" className="hidden" disabled={uploadingIdx === idx}
+                                      onChange={(e) => { uploadAttachment(idx, a._id, e.target.files[0]); e.target.value = ""; }} />
+                                  </label>
+                                  <button
+                                    onClick={() => removeAttachment(idx, a)}
+                                    title="Remove this file"
+                                    className="p-2 rounded-xl text-red-500 hover:bg-red-500/10"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl border border-dashed border-[var(--border-light)] cursor-pointer text-[var(--text-secondary)] hover:border-[var(--primary)]">
+                                  {uploadingIdx === idx ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />} Attach PDF (5MB)
+                                  <input type="file" accept="application/pdf" className="hidden" disabled={uploadingIdx === idx}
+                                    onChange={(e) => { uploadAttachment(idx, a._id, e.target.files[0]); e.target.value = ""; }} />
+                                </label>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap items-center gap-4 pl-8 text-xs text-[var(--text-secondary)]">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
+                              {isLabAct(a)
+                                ? (a.type === "both" ? "No Dues (Lab) + Lab marks" : a.type === "marks" ? "Lab marks only" : "No Dues (Lab) only")
+                                : (a.type === "both" ? "No Dues + Sessional" : a.type === "marks" ? "Sessional only" : "No Dues only")}
+                            </span>
+                            {!isLabAct(a) && (
+                              <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" checked={!!a.unitWise} onChange={(e) => updateActivity(idx, { unitWise: e.target.checked })} /> Unit-wise
+                              </label>
+                            )}
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                              <input type="checkbox" checked={!!a.optional} onChange={(e) => updateActivity(idx, { optional: e.target.checked })} /> Optional (never blocks No Dues)
+                            </label>
+                          </div>
+                        </div>
+  );
   const isTick = (a) => a.type === "tick" || a.type === "both";
   const isMarks = (a) => a.type === "marks" || a.type === "both";
   const tickCount = draft.activities.filter(isTick).length;
@@ -465,9 +575,9 @@ export default function MySubjectActivities() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
                       <SectionTitle icon={ListChecks} hint="Your own list — tick items feed No Dues, marks items feed Sessional Marks.">
-                        My Activities
+                        {subjectHasLab ? "Theory Activities" : "My Activities"}
                       </SectionTitle>
-                      <button onClick={addActivity} className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 hover:border-[var(--primary)]">
+                      <button onClick={() => addActivity("theory")} className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 hover:border-[var(--primary)]">
                         <Plus size={13} /> Add activity
                       </button>
                     </div>
@@ -496,112 +606,34 @@ export default function MySubjectActivities() {
                         </p>
                       )}
                     </div>
-                    {draft.activities.length === 0 && (
+                    {theoryList.length === 0 && (
                       <p className="text-xs text-[var(--text-secondary)] bg-[var(--bg-input)] border border-dashed border-[var(--border-light)] rounded-2xl p-6 text-center">
-                        No activities yet — add Assignment, Presentation, Lab Record, etc.
+                        No activities yet — add Assignment, Presentation, Quiz, etc.
                       </p>
                     )}
                     <div className="space-y-2.5">
-                      {draft.activities.map((a, idx) => (
-                        <div key={idx} className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl p-4 space-y-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="w-6 h-6 rounded-lg bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-black flex items-center justify-center shrink-0">{idx + 1}</span>
-                            <input
-                              placeholder="Label (e.g. Presentation)"
-                              value={a.label}
-                              onChange={(e) => updateActivity(idx, { label: e.target.value })}
-                              className={`${inputCls} flex-1 min-w-[160px] bg-[var(--bg-card)]`}
-                            />
-                            {/* type as a segmented control — clearer than a dropdown */}
-                            <div className="flex rounded-xl border border-[var(--border-light)] overflow-hidden">
-                              {[
-                                ["tick", "Tick", "No Dues checklist item"],
-                                ["marks", "Marks", "Sessional Marks CA category"],
-                                ["both", "Both", "Goes to No Dues and Sessional Marks"],
-                              ].map(([value, label, hint]) => (
-                                <button
-                                  key={value}
-                                  title={hint}
-                                  onClick={() => updateActivity(idx, { type: value })}
-                                  className={`px-3 py-2 text-xs font-bold transition-colors ${
-                                    a.type === value ? "bg-[var(--primary)] text-white" : "bg-[var(--bg-card)] text-[var(--text-secondary)]"
-                                  }`}
-                                >
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-                            <button onClick={() => removeActivity(idx)} title="Remove activity" className="ml-auto text-[var(--text-secondary)] hover:text-red-500">
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-
-                          {isMarks(a) && (
-                            <div className="flex flex-wrap items-end gap-3 pl-8">
-                              <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">
-                                Max marks
-                                <input
-                                  type="number" min="0" value={a.maxMarks}
-                                  onChange={(e) => updateActivity(idx, { maxMarks: Number(e.target.value) })}
-                                  className={`${inputCls} w-24 bg-[var(--bg-card)]`}
-                                />
-                              </label>
-                              <label className="flex flex-col gap-1 text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]">
-                                Deadline
-                                <input
-                                  type="date" value={toDateInputValue(a.deadline)}
-                                  onChange={(e) => updateActivity(idx, { deadline: e.target.value || null })}
-                                  className={`${inputCls} bg-[var(--bg-card)]`}
-                                />
-                              </label>
-                              {!a._id ? (
-                                <span className="text-[11px] text-[var(--text-secondary)] italic pb-2">Save first to attach a PDF</span>
-                              ) : a.pdfUrl ? (
-                                <div className="flex items-center gap-1.5">
-                                  <a
-                                    href={getImageUrl(a.pdfUrl)} target="_blank" rel="noreferrer" title={a.pdfFileName}
-                                    className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--primary)] border border-[var(--primary)]/30 bg-[var(--primary)]/5 rounded-xl px-3 py-2"
-                                  >
-                                    <FileText size={12} /> {a.pdfFileName?.length > 18 ? `${a.pdfFileName.slice(0, 18)}…` : a.pdfFileName}
-                                  </a>
-                                  {/* the other half of attaching: swap it or take it off */}
-                                  <label className="text-[11px] font-bold px-2.5 py-2 rounded-xl border border-[var(--border-light)] cursor-pointer text-[var(--text-secondary)] hover:border-[var(--primary)]">
-                                    {uploadingIdx === idx ? <Loader2 size={12} className="animate-spin" /> : "Replace"}
-                                    <input type="file" accept="application/pdf" className="hidden" disabled={uploadingIdx === idx}
-                                      onChange={(e) => { uploadAttachment(idx, a._id, e.target.files[0]); e.target.value = ""; }} />
-                                  </label>
-                                  <button
-                                    onClick={() => removeAttachment(idx, a)}
-                                    title="Remove this file"
-                                    className="p-2 rounded-xl text-red-500 hover:bg-red-500/10"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-2 rounded-xl border border-dashed border-[var(--border-light)] cursor-pointer text-[var(--text-secondary)] hover:border-[var(--primary)]">
-                                  {uploadingIdx === idx ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />} Attach PDF (5MB)
-                                  <input type="file" accept="application/pdf" className="hidden" disabled={uploadingIdx === idx}
-                                    onChange={(e) => { uploadAttachment(idx, a._id, e.target.files[0]); e.target.value = ""; }} />
-                                </label>
-                              )}
-                            </div>
-                          )}
-
-                          <div className="flex flex-wrap items-center gap-4 pl-8 text-xs text-[var(--text-secondary)]">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--primary)]">
-                              {a.type === "both" ? "No Dues + Sessional" : a.type === "marks" ? "Sessional only" : "No Dues only"}
-                            </span>
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                              <input type="checkbox" checked={!!a.unitWise} onChange={(e) => updateActivity(idx, { unitWise: e.target.checked })} /> Unit-wise
-                            </label>
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                              <input type="checkbox" checked={!!a.optional} onChange={(e) => updateActivity(idx, { optional: e.target.checked })} /> Optional (never blocks No Dues)
-                            </label>
-                          </div>
-                        </div>
-                      ))}
+                      {theoryList.map(({ a, idx }, n) => activityCard(a, idx, n + 1))}
                     </div>
+
+                    {subjectHasLab && (
+                      <div className="space-y-2.5 pt-4 border-t border-[var(--border-light)]">
+                        <div className="flex items-center justify-between gap-3">
+                          <SectionTitle icon={FlaskConical} hint="Marks activities make up the Lab score (/20) in Sessional Marks; tick activities go on No Dues as “Lab: …”.">
+                            Lab Activities
+                          </SectionTitle>
+                          <button onClick={() => addActivity("lab")} className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 hover:border-[var(--primary)]">
+                            <Plus size={13} /> Add lab activity
+                          </button>
+                        </div>
+                        {labList.length === 0 && (
+                          <p className="text-xs text-[var(--text-secondary)] bg-[var(--bg-input)] border border-dashed border-[var(--border-light)] rounded-2xl p-6 text-center">
+                            No lab activities yet — add Lab Record, Experiment, Viva, etc. Until you do, Sessional Marks keeps the
+                            standard Attendance / Submission / Viva boxes for the lab.
+                          </p>
+                        )}
+                        {labList.map(({ a, idx }, n) => activityCard(a, idx, n + 1))}
+                      </div>
+                    )}
                   </div>
                 )}
 

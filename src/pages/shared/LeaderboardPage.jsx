@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import { fetchLeaderboard } from '../../features/students/studentsSlice';
 import { Search, Filter } from 'lucide-react';
-import { MyLeaderboardCertificates } from '../admin/LeaderboardAwardsPage';
+import TopTenBadges from '../../components/TopTenBadges';
 
 const getInitials = (name) => {
   if (!name) return 'U';
@@ -57,7 +57,7 @@ export default function LeaderboardPage({ limit }) {
 
       {/* Months this student finished in the top ten, each with its
           certificate. Renders nothing when they have none. */}
-      {user?.role === 'student' && <MyLeaderboardCertificates />}
+      {user?.role === 'student' && <TopTenBadges title="Your Top 10 badges" className="glass-card p-5 rounded-3xl" />}
 
       {/* Header Section */}
       <div className="flex flex-col items-center text-center mt-8">

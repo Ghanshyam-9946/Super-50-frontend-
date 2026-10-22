@@ -21,16 +21,13 @@ const TECH_KEYS = [
   ['database', 'Database'],
 ];
 
-const ReviewForm = ({ submission, presentation, onReviewed }) => {
-  const [marks, setMarks] = useState(submission.marksObtained || '');
+const ReviewForm = ({ submission, onReviewed }) => {
+  // A review and a comment only — the marks are given by the panel at the
+  // presentation and by the guide at the meetings.
   const [comment, setComment] = useState(submission.guideComment || '');
   const [submitting, setSubmitting] = useState(false);
 
   const submitReview = async (status) => {
-    if (status === 'accepted' && (marks === '' || marks < 0)) {
-      toast.error('Enter valid marks');
-      return;
-    }
     if (status === 'rejected' && !comment.trim()) {
       toast.error('Please provide a reason for rejection');
       return;
@@ -40,7 +37,6 @@ const ReviewForm = ({ submission, presentation, onReviewed }) => {
       await guideAPI.reviewSubmission({
         submissionId: submission._id,
         status,
-        marks: Number(marks) || 0,
         comment,
       });
       toast.success(status === 'accepted' ? 'Accepted & locked' : 'Rejected — student can re-upload');
@@ -51,30 +47,17 @@ const ReviewForm = ({ submission, presentation, onReviewed }) => {
 
   return (
     <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-3">
-      <h6 className="font-semibold text-sm">Review &amp; Score</h6>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <label className="form-label">
-            Marks (out of {presentation.totalMarks})
-          </label>
-          <input
-            type="number"
-            min="0"
-            max={presentation.totalMarks}
-            className="form-input"
-            value={marks}
-            onChange={(e) => setMarks(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="form-label">Comment</label>
-          <input
-            className="form-input"
-            placeholder="Optional feedback"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-        </div>
+      <h6 className="font-semibold text-sm">Review &amp; Comment</h6>
+      <div>
+        <label className="form-label">Comment for the students</label>
+        <textarea
+          rows="2"
+          className="form-input"
+          placeholder="What is good, what to fix (required to reject)"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+        />
+        <p className="form-help">No marks here — the panel marks the presentation and you mark the meetings.</p>
       </div>
       <div className="flex gap-2 flex-wrap">
         <button
@@ -352,12 +335,12 @@ const GuideReview = () => {
                       <div className="alert-success text-sm mt-4">
                         <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                         <div>
-                          <strong>Accepted &amp; Locked — Marks: {submission.marksObtained} / {presentation.totalMarks}</strong>
+                          <strong>Reviewed — Accepted &amp; Locked</strong>
                           {submission.guideComment && <div className="text-xs mt-1">"{submission.guideComment}"</div>}
                         </div>
                       </div>
                     ) : (
-                      <ReviewForm submission={submission} presentation={presentation} onReviewed={fetchData} />
+                      <ReviewForm submission={submission} onReviewed={fetchData} />
                     )}
                   </>
                 )}
