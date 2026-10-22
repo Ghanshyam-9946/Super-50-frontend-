@@ -273,7 +273,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     { category: 'System', links: [
       { to: '/admin/activity-logs', icon: History, label: 'Activity Logs' },
       { to: '/admin/backup-settings', icon: DatabaseBackup, label: 'Backup Settings' },
-      { to: '/admin/leaderboard-awards', icon: Trophy, label: 'Top 10 Certificates' },
+      { to: '/admin/leaderboard-awards', icon: Trophy, label: 'Top 10 Badges' },
       { to: '/admin/ai-knowledge', icon: Sparkles, label: 'AI Knowledge' },
     ] },
   ];

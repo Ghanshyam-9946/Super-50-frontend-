@@ -7,6 +7,7 @@ import api from '../services/api';
 import { updateUser } from '../features/auth/authSlice';
 import { getImageUrl } from '../utils/imageUrl';
 import { isStudentAccount } from '../utils/roles';
+import TopTenBadges from './TopTenBadges';
 
 const ProfileEditModal = ({ isOpen, onClose }) => {
   const { user, token } = useSelector((state) => state.auth);
@@ -125,6 +126,9 @@ const ProfileEditModal = ({ isOpen, onClose }) => {
               <X size={20} />
             </button>
           </div>
+
+          {/* A student's monthly leaderboard Top 10 badges */}
+          {!isAdmin && <TopTenBadges className="px-6 pt-5" />}
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Image Upload Area */}

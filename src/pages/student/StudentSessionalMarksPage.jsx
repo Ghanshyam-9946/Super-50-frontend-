@@ -20,7 +20,13 @@ function MarksBreakdown({ sheet }) {
   const caMax = entries.reduce((s, e) => s + (Number(e.max) || 0), 0);
   const tests = [["MST 1", sheet.mst?.test1], ["MST 2", sheet.mst?.test2]].filter(([, t]) => t && t.max != null);
   const lab = sheet.lab || {};
-  const hasLab = ["attendance", "submission", "viva"].some((k) => lab[k] != null);
+  // Marks by lab activity when the faculty uses lab activities; otherwise
+  // the standard Attendance / Submission / Viva.
+  const labEntries = sheet.labEntries || [];
+  const labRows = labEntries.length
+    ? labEntries.map((e) => [e.category, `${num(e.obtained)} / ${num(e.max)}`])
+    : [["Attendance", num(lab.attendance)], ["Submission", num(lab.submission)], ["Viva", num(lab.viva)]];
+  const hasLab = labEntries.length > 0 || ["attendance", "submission", "viva"].some((k) => lab[k] != null);
 
   const th = "px-3 py-2 text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)]";
   const td = "px-3 py-2 text-sm text-[var(--text-primary)]";
@@ -83,15 +89,15 @@ function MarksBreakdown({ sheet }) {
           <div>
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Lab work</div>
             <div className="border border-[var(--border-light)] rounded-xl divide-y divide-[var(--border-light)]">
-              {[["Attendance", lab.attendance], ["Submission", lab.submission], ["Viva", lab.viva]].map(([name, v]) => (
+              {labRows.map(([name, v]) => (
                 <div key={name} className="flex justify-between px-3 py-2 text-sm">
                   <span className="text-[var(--text-primary)]">{name}</span>
-                  <span className="font-bold tabular-nums">{num(v)}</span>
+                  <span className="font-bold tabular-nums">{v}</span>
                 </div>
               ))}
               {sheet.converted?.labMarks != null && (
                 <div className="flex justify-between px-3 py-2 text-sm bg-[var(--bg-input)]/40">
-                  <span className="font-bold">Lab marks</span>
+                  <span className="font-bold">Lab marks /20</span>
                   <span className="font-black tabular-nums">{num(sheet.converted.labMarks)}</span>
                 </div>
               )}

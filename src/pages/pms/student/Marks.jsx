@@ -21,8 +21,8 @@ const StudentMarks = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Panel marks (or the older per-team submission marks) + meeting marks
-  const scoreOf = (m) => (m.panelMarks ?? m.marksObtained);
+  // Panel marks + meeting marks. A document review carries no marks.
+  const scoreOf = (m) => m.panelMarks;
   const totalEarned = marks.reduce((sum, m) => sum + (scoreOf(m) || 0), 0)
     + meetings.reduce((sum, m) => sum + (m.marks || 0), 0);
   const totalPossible = marks.filter((m) => scoreOf(m) != null).reduce((sum, m) => sum + (m.totalMarks || 0), 0)

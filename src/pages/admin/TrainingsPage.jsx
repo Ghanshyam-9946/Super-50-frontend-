@@ -92,7 +92,9 @@ export default function TrainingsPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-display font-black tracking-tight text-[var(--text-primary)]">Trainings</h1>
             <p className="text-[var(--text-secondary)] mt-1 font-medium text-sm">
-              Schedule a training, upload its attendance and assessment sheets, design the certificate, then launch it to the students.
+              {canManage
+                ? "Schedule a training, upload its attendance and assessment sheets, design the certificate, then launch it to the students."
+                : "The trainings and the students in each one."}
             </p>
           </div>
         </div>
@@ -311,7 +313,10 @@ const TrainingDetail = ({ id, onClose }) => {
       }
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (err) {
-      const message = err.response?.data instanceof Blob ? "Could not create the PDF" : err.response?.data?.message;
+      let message = err.response?.data?.message;
+      try {
+        if (err.response?.data instanceof Blob) message = JSON.parse(await err.response.data.text()).message;
+      } catch { /* not JSON — keep the default */ }
       toast.error(message || "Could not create the PDF");
     }
   };
@@ -417,7 +422,7 @@ const TrainingDetail = ({ id, onClose }) => {
             )}
 
             <div className="flex gap-1.5 border-b border-[var(--border-light)]">
-              {TABS.map(({ key, label, icon: Icon }) => (
+              {TABS.filter((t) => canManage || t.key === "students").map(({ key, label, icon: Icon }) => (
                 <button key={key} onClick={() => setTab(key)}
                   className={`px-3.5 py-2 text-xs font-bold flex items-center gap-1.5 rounded-t-xl border-b-2 ${
                     tab === key ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/5" : "border-transparent text-[var(--text-secondary)]"

@@ -11,7 +11,7 @@ import Guides from './admin/Guides';
 import GuideProfileView from './admin/GuideProfileView';
 import Teams from './admin/Teams';
 import AdminAttendance from './admin/Attendance';
-import Reports from './admin/Reports';
+import ReportsDashboard from './admin/ReportsDashboard';
 import Settings from './admin/Settings';
 import AdminForms from './admin/Forms';
 import AdminGuidelines from './admin/Guidelines';
@@ -108,7 +108,7 @@ export default function PMSRoutes() {
         <Route path="admin/attendance" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AdminAttendance /></RoleGuard>} />
         <Route path="admin/attendance-mark" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AttendanceMark /></RoleGuard>} />
         <Route path="admin/semester-attendance" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><SemesterAttendance /></RoleGuard>} />
-        <Route path="admin/reports" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><Reports /></RoleGuard>} />
+        <Route path="admin/reports" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><ReportsDashboard /></RoleGuard>} />
         <Route path="admin/forms" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AdminForms /></RoleGuard>} />
         <Route path="admin/guidelines" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AdminGuidelines /></RoleGuard>} />
         <Route path="admin/templates" element={<RoleGuard allowed={['admin', 'pms_admin']} allowResponsibility="Project Coordinator"><AdminTemplates /></RoleGuard>} />

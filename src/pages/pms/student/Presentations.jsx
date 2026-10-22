@@ -202,12 +202,12 @@ const StudentPresentations = () => {
                   </div>
                 )}
 
-                {/* Marks for locked/accepted */}
-                {sub?.status === 'accepted' && sub.marksObtained !== null && (
+                {/* Reviewed and accepted by the guide (no marks — those come from the panel) */}
+                {sub?.status === 'accepted' && (
                   <div className="alert-success text-sm">
                     <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                     <div>
-                      <strong>Awarded: {sub.marksObtained} / {p.totalMarks}</strong>
+                      <strong>Reviewed by your guide — accepted</strong>
                       {sub.guideComment && <div className="text-xs mt-1">"{sub.guideComment}"</div>}
                     </div>
                   </div>

@@ -595,7 +595,9 @@ function EntryTab({ user, coordinator }) {
             <div className="space-y-4">
               <CaMarksGrid sheets={sheets} onChange={handleChange} coordinator={coordinator} user={user} />
               {(sheets[0]?.subjectRef?.noOfPractical || 0) > 0 && (
-                <LabMarksGrid sheets={sheets} onChange={handleChange} coordinator={coordinator} user={user} />
+                sheets[0]?.myLabActivities?.length
+                  ? <LabActivityGrid sheets={sheets} activities={sheets[0].myLabActivities} onChange={handleChange} coordinator={coordinator} user={user} />
+                  : <LabMarksGrid sheets={sheets} onChange={handleChange} coordinator={coordinator} user={user} />
               )}
             </div>
           ) : (
@@ -966,6 +968,146 @@ function CaMarksGrid({ sheets, onChange, coordinator, user }) {
   );
 }
 
+// A lab activity's ceiling; one with no max set is out of 10.
+const labMaxOf = (a) => (Number(a?.maxMarks) > 0 ? Number(a.maxMarks) : 10);
+const labValuesOf = (sheet, activities) => Object.fromEntries(activities.map((a) => {
+  const entry = (sheet.labEntries || []).find((e) => e.category === a.label);
+  return [a.label, entry ? entry.obtained : ""];
+}));
+
+// The lab filled in by the faculty's own lab activities: a column per
+// activity, Lab /20 worked out from their total.
+function LabActivityGrid({ sheets, activities, onChange, coordinator, user }) {
+  const uid = user?._id;
+  const [rows, setRows] = useState({});
+  const timers = useRef({});
+  const fieldRefs = useRef({});
+
+  // New sheets from the server reset the boxes (worked out during render,
+  // not in an effect, so there is no extra render with stale values).
+  const [shownSheets, setShownSheets] = useState(null);
+  if (shownSheets !== sheets) {
+    setShownSheets(sheets);
+    // A row still being typed in (its save not sent yet) keeps what is
+    // typed; every row keeps its saved/failed status.
+    const next = {};
+    sheets.forEach((s) => {
+      const prev = rows[s._id];
+      next[s._id] = prev && (prev.status === "typing" || prev.status === "saving")
+        ? prev
+        : { values: labValuesOf(s, activities), status: prev?.status || "idle" };
+    });
+    setRows(next);
+  }
+
+  const canEditSheet = (sheet) => {
+    const assigned = sheet.faculty?._id === uid || sheet.faculty === uid;
+    return (assigned || coordinator) && !sheet.locked;
+  };
+
+  // `values` comes from the caller: the timer that runs this was set before
+  // the last re-render.
+  const saveRow = async (sheetId, values) => {
+    setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "saving" } }));
+    try {
+      const marks = {};
+      activities.forEach((a) => {
+        const v = values[a.label];
+        marks[a.label] = String(v ?? "").trim() === "" ? null : Number(v);
+      });
+      const { data } = await api.patch(`/sessional-marks/sheets/${sheetId}/lab-activities`, { marks });
+      if (data.success) {
+        onChange(data.data);
+        setRows((prev) => ({ ...prev, [sheetId]: { values: labValuesOf(data.data, activities), status: "saved" } }));
+        if (Object.values(marks).some((v) => v === 0)) toast("0 is saved as 1 — the minimum mark is 1", { icon: "ℹ️" });
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save lab marks");
+      setRows((prev) => ({ ...prev, [sheetId]: { ...prev[sheetId], status: "error" } }));
+    }
+  };
+
+  const onFieldChange = (sheetId, label, value) => {
+    const values = { ...(rows[sheetId]?.values || {}), [label]: value };
+    setRows((prev) => ({ ...prev, [sheetId]: { values, status: "typing" } }));
+    clearTimeout(timers.current[sheetId]);
+    timers.current[sheetId] = setTimeout(() => saveRow(sheetId, values), 600);
+  };
+
+  const onKeyDown = (e, index, label) => {
+    if (e.key === "Enter" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const next = sheets[index + 1];
+      if (next) fieldRefs.current[`${next._id}-${label}`]?.focus();
+    }
+  };
+
+  const total = activities.reduce((n, a) => n + labMaxOf(a), 0);
+
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-[var(--border-light)] text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+        Lab — your lab activities (total {total} → Lab Marks /20)
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[var(--border-light)] text-left text-[11px] uppercase tracking-widest text-[var(--text-secondary)]">
+              <th className="sticky left-0 bg-[var(--bg-card)] px-4 py-3 min-w-[220px]">Student</th>
+              {activities.map((a) => (
+                <th key={a._id || a.label} className="px-4 py-3 whitespace-nowrap">{a.label} /{labMaxOf(a)}</th>
+              ))}
+              <th className="px-4 py-3">Lab /20</th>
+              <th className="px-4 py-3">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sheets.map((sheet, i) => {
+              const row = rows[sheet._id] || { values: {}, status: "idle" };
+              const editable = canEditSheet(sheet);
+              return (
+                <tr key={sheet._id} className="border-b border-[var(--border-light)]">
+                  <td className="sticky left-0 bg-[var(--bg-card)] px-4 py-2.5">
+                    <div className="font-bold text-[var(--text-primary)]">{sheet.student?.name}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">{sheet.student?.enrollmentNumber}</div>
+                  </td>
+                  {activities.map((a) => (
+                    <td key={a._id || a.label} className="px-4 py-2.5">
+                      <input
+                        ref={(el) => (fieldRefs.current[`${sheet._id}-${a.label}`] = el)}
+                        type="number"
+                        min="0"
+                        max={labMaxOf(a)}
+                        disabled={!editable}
+                        aria-label={`${a.label} for ${sheet.student?.name || "student"}`}
+                        value={row.values?.[a.label] ?? ""}
+                        onChange={(e) => onFieldChange(sheet._id, a.label, e.target.value)}
+                        onKeyDown={(e) => onKeyDown(e, i, a.label)}
+                        className="w-20 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40"
+                      />
+                    </td>
+                  ))}
+                  <td className="px-4 py-2.5 font-bold text-[var(--text-primary)]">{sheet.converted?.labMarks ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-xs">
+                    {row.status === "saving" && (
+                      <span className="flex items-center gap-1 text-[var(--text-secondary)]">
+                        <Loader2 size={12} className="animate-spin" /> Saving…
+                      </span>
+                    )}
+                    {row.status === "saved" && <span className="text-emerald-500 font-bold">Saved ✓</span>}
+                    {row.status === "error" && <span className="text-red-500 font-bold">Failed — retry</span>}
+                    {sheet.locked && <span className="text-[var(--text-secondary)]">Locked</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function LabMarksGrid({ sheets, onChange, coordinator, user }) {
   const uid = user?._id;
   const [rows, setRows] = useState({});
@@ -1147,6 +1289,10 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
     viva: sheet.lab?.viva ?? "",
   });
   const [savingLab, setSavingLab] = useState(false);
+  // The faculty's lab activities; when there are any they replace the
+  // three fixed lab boxes.
+  const labActs = sheet.myLabActivities || [];
+  const [labActForm, setLabActForm] = useState(() => labValuesOf(sheet, labActs));
 
   const resetForm = () => setForm({ category: categoryOptions[0] || "Assignment", kind: ACTIVITY_KINDS[0], unit: 1, obtained: "", max: defaultMaxFor(categoryOptions[0]), entryId: null });
 
@@ -1161,6 +1307,27 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
       const { data } = await api.patch(`/sessional-marks/sheets/${sheet._id}/lab`, payload);
       if (data.success) {
         toast.success(data.message || "Lab marks saved");
+        onChange(data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save lab marks");
+    } finally {
+      setSavingLab(false);
+    }
+  };
+
+  const saveLabActivities = async () => {
+    setSavingLab(true);
+    try {
+      const marks = {};
+      labActs.forEach((a) => {
+        const v = labActForm[a.label];
+        marks[a.label] = String(v ?? "").trim() === "" ? null : Number(v);
+      });
+      const { data } = await api.patch(`/sessional-marks/sheets/${sheet._id}/lab-activities`, { marks });
+      if (data.success) {
+        toast.success(data.message || "Lab marks saved");
+        setLabActForm(labValuesOf(data.data, labActs));
         onChange(data.data);
       }
     } catch (err) {
@@ -1245,7 +1412,43 @@ function SheetEditor({ sheet, onChange, coordinator, user }) {
         </div>
       )}
 
-      {hasLab && (
+      {hasLab && labActs.length > 0 && (
+        <div className="bg-[var(--bg-input)] border border-dashed border-[var(--border-light)] rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
+              Lab — lab activities → Lab Marks /20
+            </span>
+            {sheet.converted?.labMarks != null && (
+              <span className="badge bg-purple-500/10 border-purple-500/20 text-[var(--primary)]">
+                Lab Marks: {sheet.converted.labMarks}/20
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            {labActs.map((a) => (
+              <label key={a._id || a.label} className="flex flex-col text-[10px] font-bold uppercase text-[var(--text-secondary)] gap-1">
+                {a.label} (/{labMaxOf(a)})
+                <input
+                  type="number"
+                  min="0"
+                  max={labMaxOf(a)}
+                  disabled={!canEdit}
+                  value={labActForm[a.label] ?? ""}
+                  onChange={(e) => setLabActForm((f) => ({ ...f, [a.label]: e.target.value }))}
+                  className="w-20 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-lg px-2 py-1.5 text-xs disabled:opacity-50"
+                />
+              </label>
+            ))}
+            {canEdit && (
+              <button onClick={saveLabActivities} disabled={savingLab} className="btn-premium text-xs px-3 py-2 flex items-center gap-1.5 disabled:opacity-40">
+                {savingLab ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Lab
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {hasLab && labActs.length === 0 && (
         <div className="bg-[var(--bg-input)] border border-dashed border-[var(--border-light)] rounded-xl p-3 space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">
