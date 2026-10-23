@@ -248,7 +248,11 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/verify', icon: ShieldCheck, label: 'Verify Certificates' },
       { to: '/admin/attendance', icon: ClipboardList, label: 'Attendance' },
       { to: '/admin/parent-alerts', icon: MessageSquareShare, label: 'Parent WhatsApp Alerts' },
-      { to: '/faculty/placement', icon: Briefcase, label: 'Placements' },
+    ] },
+    { category: 'Placements', links: [
+      { to: '/faculty/placement', icon: ClipboardList, label: 'Placements' },
+      { to: '/tp/enroll-students', icon: UserPlus, label: 'Enroll Students' },
+      { to: '/tp/create-drive', icon: Briefcase, label: 'Create Drive' },
     ] },
     { category: 'PMS', links: [
       { to: '/pms/admin', icon: Database, label: 'PMS Admin' },

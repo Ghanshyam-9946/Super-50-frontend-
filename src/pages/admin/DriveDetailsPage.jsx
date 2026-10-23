@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Briefcase, ArrowLeft, Users, CheckCircle, Clock, X, Upload,
   FileSpreadsheet, Mail, RefreshCw, ChevronRight, Layers, BarChart,
-  Trash2, GripVertical, Plus, Filter, Code
+  Trash2, GripVertical, Plus, Filter, Code, Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -26,6 +26,11 @@ const DriveDetailsPage = () => {
   const [showAddRoundModal, setShowAddRoundModal] = useState(false);
   const [newRoundName, setNewRoundName] = useState('');
   const [newRoundDesc, setNewRoundDesc] = useState('');
+
+  const [showEditRoundModal, setShowEditRoundModal] = useState(false);
+  const [editingRoundIndex, setEditingRoundIndex] = useState(null);
+  const [editRoundName, setEditRoundName] = useState('');
+  const [editRoundDesc, setEditRoundDesc] = useState('');
 
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [addingStudents, setAddingStudents] = useState(false);
@@ -121,12 +126,37 @@ const DriveDetailsPage = () => {
   const handleAddRound = async (e) => {
     e.preventDefault();
     if (!newRoundName.trim()) return toast.error('Round name is required');
-    const list = [...roundsList, { name: newRoundName, description: newRoundDesc }];
+    const list = [...roundsList, { name: newRoundName.trim(), description: newRoundDesc.trim() }];
     setRoundsList(list);
     await saveRounds(list);
     setShowAddRoundModal(false);
     setNewRoundName('');
     setNewRoundDesc('');
+  };
+
+  const handleOpenEditRound = (roundIdx) => {
+    const round = roundsList[roundIdx];
+    if (!round) return;
+    setEditingRoundIndex(roundIdx);
+    setEditRoundName(round.name || '');
+    setEditRoundDesc(round.description || '');
+    setShowEditRoundModal(true);
+  };
+
+  const handleSaveEditRound = async (e) => {
+    e.preventDefault();
+    if (!editRoundName.trim()) return toast.error('Round name is required');
+    if (editingRoundIndex === null) return;
+
+    const list = [...roundsList];
+    list[editingRoundIndex] = {
+      ...list[editingRoundIndex],
+      name: editRoundName.trim(),
+      description: editRoundDesc.trim(),
+    };
+    setRoundsList(list);
+    setShowEditRoundModal(false);
+    await saveRounds(list);
   };
 
   const saveRounds = async (updatedRounds) => {
@@ -366,13 +396,22 @@ const DriveDetailsPage = () => {
                     <GripVertical size={16} className="text-slate-400 cursor-grab" />
                     <span className="text-xs font-black text-slate-400 bg-[var(--primary)]/5 px-2 py-0.5 rounded border border-[var(--primary)]/10">R{idx + 1}</span>
                   </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleDeleteRound(idx); }}
-                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Round"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleOpenEditRound(idx); }}
+                      className="p-1 text-slate-400 hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-lg transition-colors"
+                      title="Edit Round"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDeleteRound(idx); }}
+                      className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete Round"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
                 <h3 className="font-black text-[var(--text-primary)] pr-8 text-base">{round.name}</h3>
                 <p className="text-[12px] text-[var(--text-secondary)] mt-2 mb-4 font-medium leading-relaxed">{round.description || 'No description provided.'}</p>
@@ -627,6 +666,49 @@ const DriveDetailsPage = () => {
               </div>
               <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2">
                 <Plus size={16} /> Create Round
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Round Modal */}
+      {showEditRoundModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 450, padding: 32 }}>
+            <button onClick={() => setShowEditRoundModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/50 p-2 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center border border-[var(--primary)]/20 mb-4 shadow-sm">
+              <Pencil size={22} />
+            </div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Edit Hiring Round</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Modify details for this round in the hiring pipeline.</p>
+
+            <form onSubmit={handleSaveEditRound} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Round Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editRoundName}
+                  onChange={(e) => setEditRoundName(e.target.value)}
+                  placeholder="e.g., Technical Interview"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Description (Optional)</label>
+                <textarea
+                  value={editRoundDesc}
+                  onChange={(e) => setEditRoundDesc(e.target.value)}
+                  placeholder="e.g., Coding test on HackerRank"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none h-24"
+                />
+              </div>
+              <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2">
+                <CheckCircle size={16} /> Save Changes
               </button>
             </form>
           </motion.div>

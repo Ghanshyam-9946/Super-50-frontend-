@@ -1221,7 +1221,19 @@ const FacultyPlacementDashboard = () => {
           <p className="text-[var(--text-secondary)] text-sm font-medium mt-1">Real-time drive tracking, hiring rounds & placement statistics.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => navigate('/tp/enroll-students')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+          >
+            <UserPlus size={15} /> Enroll Students
+          </button>
+          <button
+            onClick={() => navigate('/tp/create-drive')}
+            className="btn-premium flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold cursor-pointer shadow-md"
+          >
+            <Plus size={15} /> Create Drive
+          </button>
           <div className="flex items-center gap-2.5 bg-[var(--bg-input)] border border-[var(--border-light)] px-4 py-2.5 rounded-2xl shadow-sm">
             <Filter size={16} className="text-[var(--primary)] shrink-0" />
             <span className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider">Batch:</span>

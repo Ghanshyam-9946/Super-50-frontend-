@@ -188,8 +188,8 @@ const EnrollStudentsPage = () => {
         preference === 'want'
           ? 'Marked: Wants placement from institute'
           : preference === 'not_want'
-          ? 'Marked: Does not want placement (remark saved)'
-          : 'Marked: Not eligible due to academic criteria'
+          ? "Marked: Don't Want placement (remark saved)"
+          : 'Marked: Not eligible (Academic Criteria (Sem / Year Back) )'
       );
     } catch (err) {
       setBatches(prevBatches);
@@ -259,10 +259,10 @@ const EnrollStudentsPage = () => {
       'Department': s.department || '',
       'Batch': s.batch || '',
       'Placement Preference': s.placementPreference === 'not_eligible_academic'
-        ? 'Not Eligible due to Academic Criteria'
+        ? 'Not Eligible (Academic Criteria (Sem / Year Back) )'
         : (s.placementPreference || 'want') === 'want'
         ? 'Want Placement from Institute'
-        : 'Not Want Placement from Institute',
+        : "Don't Want Placement from Institute",
       'Placement Reason / Remark': s.placementPreferenceRemark || '—',
       'Mentor': s.mentor?.name || (typeof s.mentor === 'string' ? s.mentor : 'Unassigned'),
       'Status': 'Enrolled'
@@ -303,9 +303,9 @@ const EnrollStudentsPage = () => {
       const filterTitle = downloadFilter === 'want'
         ? 'WANT PLACEMENT FROM INSTITUTE'
         : downloadFilter === 'not_want'
-        ? 'NOT WANT PLACEMENT FROM INSTITUTE'
+        ? "DON'T WANT PLACEMENT FROM INSTITUTE"
         : downloadFilter === 'not_eligible_academic'
-        ? 'NOT ELIGIBLE DUE TO ACADEMIC CRITERIA'
+        ? 'NOT ELIGIBLE (ACADEMIC CRITERIA (SEM / YEAR BACK) )'
         : 'ALL ENROLLED STUDENTS';
 
       const batchTitle = downloadBatch === 'all' ? 'All Batches' : `Batch ${downloadBatch}`;
@@ -348,8 +348,8 @@ const EnrollStudentsPage = () => {
         const stats = [
           { label: `Total Enrolled: ${total}`, bg: [241, 245, 249], fg: [51, 65, 85] },
           { label: `Want Placement: ${wantCount}`, bg: [236, 253, 245], fg: [5, 150, 105] },
-          { label: `Not Want: ${notWantCount}`, bg: [255, 241, 242], fg: [225, 29, 72] },
-          { label: `Not Eligible (Academic): ${notEligibleAcademicCount}`, bg: [254, 243, 199], fg: [217, 119, 6] },
+          { label: `Don't Want: ${notWantCount}`, bg: [255, 241, 242], fg: [225, 29, 72] },
+          { label: `Not Eligible (Academic Criteria (Sem / Year Back) ): ${notEligibleAcademicCount}`, bg: [254, 243, 199], fg: [217, 119, 6] },
         ];
 
         let chipX = margin;
@@ -451,12 +451,12 @@ const EnrollStudentsPage = () => {
         doc.setFont('helvetica', 'bold');
         if (pref === 'not_eligible_academic') {
           doc.setTextColor(180, 83, 9); // amber-700
-          doc.text('Not Eligible (Academic Criteria)', curX + 2, currentY + 4.3);
+          doc.text('Not Eligible (Academic Criteria (Sem / Year Back) )', curX + 2, currentY + 4.3);
         } else if (pref === 'not_want') {
           doc.setTextColor(190, 18, 60); // rose-700
           const remarkPart = s.placementPreferenceRemark ? ` (${s.placementPreferenceRemark})` : '';
-          const fullText = `Not Want Placement${remarkPart}`;
-          doc.text(doc.splitTextToSize(fullText, cols[6].width - 3)[0] || 'Not Want Placement', curX + 2, currentY + 4.3);
+          const fullText = `Don't Want Placement${remarkPart}`;
+          doc.text(doc.splitTextToSize(fullText, cols[6].width - 3)[0] || "Don't Want Placement", curX + 2, currentY + 4.3);
         } else {
           doc.setTextColor(4, 120, 87); // emerald-700
           doc.text('Want Placement', curX + 2, currentY + 4.3);
@@ -554,7 +554,7 @@ const EnrollStudentsPage = () => {
             <div className="glass-card px-4 py-2.5 flex items-center gap-3 border-rose-500/20 bg-rose-500/5">
               <XCircle className="text-rose-500" size={18} />
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">Not Want</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">Don't Want</p>
                 <p className="text-xl font-display font-black text-rose-500">{notWantCount}</p>
               </div>
             </div>
@@ -562,7 +562,7 @@ const EnrollStudentsPage = () => {
             <div className="glass-card px-4 py-2.5 flex items-center gap-3 border-amber-500/20 bg-amber-500/5">
               <AlertTriangle className="text-amber-500" size={18} />
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">Not Eligible (Academic)</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">Not Eligible (Academic Criteria (Sem / Year Back) )</p>
                 <p className="text-xl font-display font-black text-amber-600">{notEligibleAcademicCount}</p>
               </div>
             </div>
@@ -813,7 +813,7 @@ const EnrollStudentsPage = () => {
                     : 'text-[var(--text-secondary)] hover:text-rose-500'
                 }`}
               >
-                Not Want ({notWantCount})
+                Don't Want ({notWantCount})
               </button>
               <button
                 type="button"
@@ -824,7 +824,7 @@ const EnrollStudentsPage = () => {
                     : 'text-[var(--text-secondary)] hover:text-amber-500'
                 }`}
               >
-                Not Eligible (Academic Criteria) ({notEligibleAcademicCount})
+                Not Eligible (Academic Criteria (Sem / Year Back) ) ({notEligibleAcademicCount})
               </button>
             </div>
 
@@ -994,10 +994,10 @@ const EnrollStudentsPage = () => {
                                               ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/30 font-black'
                                               : 'text-[var(--text-secondary)] hover:text-rose-500 hover:bg-rose-500/10'
                                           }`}
-                                          title={student.placementPreference === 'not_want' ? 'Click to edit remark' : 'Mark as Not Want and add remark'}
+                                          title={student.placementPreference === 'not_want' ? 'Click to edit remark' : "Mark as Don't Want and add remark"}
                                         >
                                           <XCircle size={13} className={student.placementPreference === 'not_want' ? 'text-white' : 'text-rose-500'} />
-                                          <span>Not Want</span>
+                                          <span>Don't Want</span>
                                         </button>
                                         <button
                                           type="button"
@@ -1008,10 +1008,10 @@ const EnrollStudentsPage = () => {
                                               ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/30 font-black'
                                               : 'text-[var(--text-secondary)] hover:text-amber-500 hover:bg-amber-500/10'
                                           }`}
-                                          title="Student not eligible due to academic criteria"
+                                          title="Student not eligible due to academic criteria (Sem / Year Back)"
                                         >
                                           <AlertTriangle size={13} className={student.placementPreference === 'not_eligible_academic' ? 'text-white' : 'text-amber-500'} />
-                                          <span>Not Eligible (Academic Criteria)</span>
+                                          <span>Not Eligible (Academic Criteria (Sem / Year Back) )</span>
                                         </button>
                                       </div>
 
@@ -1213,8 +1213,8 @@ const EnrollStudentsPage = () => {
                     <XCircle size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-[var(--text-primary)]">Not Want Placement from Institute</h4>
-                    <p className="text-xs text-[var(--text-secondary)] font-medium">Students opted out / not wanting placement</p>
+                    <h4 className="text-sm font-black text-[var(--text-primary)]">Don't Want Placement from Institute</h4>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium">Students opted out / don't want placement</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -1237,8 +1237,8 @@ const EnrollStudentsPage = () => {
                     <AlertTriangle size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-[var(--text-primary)]">Not Eligible due to Academic Criteria</h4>
-                    <p className="text-xs text-[var(--text-secondary)] font-medium">Students not meeting academic criteria for placement</p>
+                    <h4 className="text-sm font-black text-[var(--text-primary)]">Not Eligible (Academic Criteria (Sem / Year Back) )</h4>
+                    <p className="text-xs text-[var(--text-secondary)] font-medium">Students not meeting academic criteria (Sem / Year Back) for placement</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -1336,7 +1336,7 @@ const EnrollStudentsPage = () => {
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-600 border border-rose-500/30">
-                Not Want Placement
+                Don't Want Placement
               </span>
             </div>
 
@@ -1403,7 +1403,7 @@ const EnrollStudentsPage = () => {
                     'Saving Remark...'
                   ) : (
                     <>
-                      <CheckCircle size={15} /> Save & Mark Not Want
+                      <CheckCircle size={15} /> Save & Mark Don't Want
                     </>
                   )}
                 </button>
