@@ -32,6 +32,22 @@ const DriveDetailsPage = () => {
   const [editRoundName, setEditRoundName] = useState('');
   const [editRoundDesc, setEditRoundDesc] = useState('');
 
+  const [showEditDriveModal, setShowEditDriveModal] = useState(false);
+  const [editingDriveLoading, setEditingDriveLoading] = useState(false);
+  const [editDriveForm, setEditDriveForm] = useState({
+    companyName: '',
+    package: '',
+    batch: '',
+    driveType: 'placement drive',
+    campusType: 'on campus',
+    profileType: 'tech',
+    deadline: '',
+    jobDescription: '',
+    isActive: true,
+    isCompleted: false,
+  });
+  const [editJdFile, setEditJdFile] = useState(null);
+
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [addingStudents, setAddingStudents] = useState(false);
   const [addMode, setAddMode] = useState('manual'); // 'manual' or 'file'
@@ -223,6 +239,63 @@ const DriveDetailsPage = () => {
     }
   };
 
+  const handleOpenEditDrive = () => {
+    if (!drive) return;
+    const formattedDeadline = drive.deadline
+      ? new Date(drive.deadline).toISOString().split('T')[0]
+      : '';
+    setEditDriveForm({
+      companyName: drive.companyName || '',
+      package: drive.package || '',
+      batch: drive.batch || '',
+      driveType: drive.driveType || 'placement drive',
+      campusType: drive.campusType || 'on campus',
+      profileType: drive.profileType || 'tech',
+      deadline: formattedDeadline,
+      jobDescription: drive.jobDescription || '',
+      isActive: drive.isActive !== false,
+      isCompleted: Boolean(drive.isCompleted),
+    });
+    setEditJdFile(null);
+    setShowEditDriveModal(true);
+  };
+
+  const handleSaveEditDrive = async (e) => {
+    e.preventDefault();
+    if (!editDriveForm.companyName.trim()) return toast.error('Company Name is required');
+    if (!editDriveForm.deadline) return toast.error('Deadline date is required');
+
+    setEditingDriveLoading(true);
+    const toastId = toast.loading('Updating drive details...');
+    try {
+      const formData = new FormData();
+      formData.append('companyName', editDriveForm.companyName.trim());
+      formData.append('package', editDriveForm.package.trim());
+      formData.append('batch', editDriveForm.batch.trim());
+      formData.append('driveType', editDriveForm.driveType.trim());
+      formData.append('campusType', editDriveForm.campusType.trim());
+      formData.append('profileType', editDriveForm.profileType.trim());
+      formData.append('deadline', editDriveForm.deadline);
+      formData.append('jobDescription', editDriveForm.jobDescription.trim());
+      formData.append('isActive', editDriveForm.isActive);
+      formData.append('isCompleted', editDriveForm.isCompleted);
+      if (editJdFile) {
+        formData.append('jdFile', editJdFile);
+      }
+
+      await api.put(`/placement/drives/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      toast.success('Drive updated successfully!', { id: toastId });
+      setShowEditDriveModal(false);
+      fetchDriveDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update drive', { id: toastId });
+    } finally {
+      setEditingDriveLoading(false);
+    }
+  };
+
   const handleDeleteDrive = async () => {
     if (!window.confirm(`Are you sure you want to delete the drive "${drive.companyName}"? This action cannot be undone.`)) return;
     
@@ -342,16 +415,24 @@ const DriveDetailsPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button 
+              onClick={handleOpenEditDrive}
+              className="px-3.5 py-2.5 rounded-xl border border-[var(--primary)]/30 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)] hover:text-white transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title="Edit Drive Details"
+            >
+              <Pencil size={16} />
+              <span>Edit Drive</span>
+            </button>
             <button 
               onClick={handleDeleteDrive} 
-              className="p-3 rounded-xl border border-red-200 text-red-500 bg-red-50 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm"
+              className="p-2.5 rounded-xl border border-red-200 text-red-500 bg-red-50 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm cursor-pointer"
               title="Delete Drive"
             >
-              <Trash2 size={18} />
+              <Trash2 size={16} />
             </button>
-            <button onClick={fetchDriveDetails} className="btn-outline-premium p-3 rounded-xl">
-              <RefreshCw size={18} />
+            <button onClick={fetchDriveDetails} className="btn-outline-premium p-2.5 rounded-xl cursor-pointer" title="Refresh">
+              <RefreshCw size={16} />
             </button>
           </div>
         </div>
@@ -802,6 +883,236 @@ const DriveDetailsPage = () => {
                   </>
                 )}
               </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      {/* Edit Drive Modal */}
+      {showEditDriveModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-2xl rounded-3xl relative overflow-y-auto max-h-[90vh]"
+            style={{ width: '92%', maxWidth: 580, padding: 32 }}
+          >
+            <button
+              onClick={() => setShowEditDriveModal(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/60 p-2 rounded-full transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center border border-[var(--primary)]/20 mb-4 shadow-sm">
+              <Pencil size={22} />
+            </div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Edit Placement Drive</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
+              Update drive details, package, batch, deadline, and profile.
+            </p>
+
+            <form onSubmit={handleSaveEditDrive} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Company Name */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editDriveForm.companyName}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, companyName: e.target.value })}
+                    placeholder="e.g. Group Bayport"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Package / CTC */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Package / CTC (LPA)
+                  </label>
+                  <input
+                    type="text"
+                    value={editDriveForm.package}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, package: e.target.value })}
+                    placeholder="e.g. 2.4 LPA"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Batch */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Target Batch
+                  </label>
+                  <input
+                    type="text"
+                    value={editDriveForm.batch}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, batch: e.target.value })}
+                    placeholder="e.g. 2023-27"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Deadline */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Application Deadline *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={editDriveForm.deadline}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, deadline: e.target.value })}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Campus Type */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Campus Type
+                  </label>
+                  <select
+                    value={editDriveForm.campusType}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, campusType: e.target.value })}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  >
+                    <option value="on campus">On Campus</option>
+                    <option value="off campus">Off Campus</option>
+                    <option value="pool campus">Pool Campus</option>
+                    <option value="self placed">Self Placed</option>
+                  </select>
+                </div>
+
+                {/* Drive Type */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Drive Type
+                  </label>
+                  <select
+                    value={editDriveForm.driveType}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, driveType: e.target.value })}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  >
+                    <option value="placement drive">Placement Drive</option>
+                    <option value="internship">Internship</option>
+                    <option value="pool campus">Pool Campus</option>
+                    <option value="off campus">Off Campus</option>
+                    <option value="self placed">Self Placed</option>
+                  </select>
+                </div>
+
+                {/* Status (Active / Completed) */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Drive Status
+                  </label>
+                  <select
+                    value={editDriveForm.isCompleted ? 'completed' : 'active'}
+                    onChange={(e) => {
+                      const isComp = e.target.value === 'completed';
+                      setEditDriveForm({
+                        ...editDriveForm,
+                        isCompleted: isComp,
+                        isActive: !isComp,
+                      });
+                    }}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  >
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+
+                {/* Profile Type (Tech vs Non-Tech) */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Profile Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditDriveForm({ ...editDriveForm, profileType: 'tech' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        editDriveForm.profileType === 'tech'
+                          ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500 shadow-sm'
+                          : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)]'
+                      }`}
+                    >
+                      <Code size={14} /> Tech Role
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditDriveForm({ ...editDriveForm, profileType: 'non-tech' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        editDriveForm.profileType === 'non-tech'
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500 shadow-sm'
+                          : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)]'
+                      }`}
+                    >
+                      <Briefcase size={14} /> Non-Tech Role
+                    </button>
+                  </div>
+                </div>
+
+                {/* Job Description Text */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Job Description (Optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editDriveForm.jobDescription}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, jobDescription: e.target.value })}
+                    placeholder="Enter job roles, responsibilities, skills required, etc."
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none"
+                  />
+                </div>
+
+                {/* Upload New JD File */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Update Job Description File (Optional)
+                  </label>
+                  <div
+                    onClick={() => document.getElementById('edit-jd-file-input').click()}
+                    className="border border-dashed border-[var(--border-light)] rounded-xl p-3 text-center bg-[var(--bg-input)]/30 hover:bg-[var(--bg-input)]/50 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <input
+                      type="file"
+                      id="edit-jd-file-input"
+                      accept=".pdf, .doc, .docx"
+                      className="hidden"
+                      onChange={(e) => setEditJdFile(e.target.files[0])}
+                    />
+                    <Upload size={16} className="text-[var(--primary)]" />
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {editJdFile ? editJdFile.name : (drive.jobDescriptionFile ? 'Change existing JD file' : 'Upload JD (.pdf, .doc)')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditDriveModal(false)}
+                  className="btn-outline-premium flex-1 py-3 text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editingDriveLoading}
+                  className="btn-premium flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <CheckCircle size={16} />
+                  {editingDriveLoading ? 'Saving...' : 'Save Drive Changes'}
+                </button>
+              </div>
             </form>
           </motion.div>
         </div>
