@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
-  DoorOpen, Loader2, Inbox, History, Download, Shield, UserPlus, Trash2, Search, RefreshCw, Power, Trophy,
+  DoorOpen, Loader2, Inbox, History, Download, Shield, UserPlus, Trash2, Search, RefreshCw, Power, Trophy, SendHorizonal, Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -10,6 +10,7 @@ import GatePassLeaderboard from './GatePassLeaderboard';
 
 const TABS = [
   { key: 'pending', label: 'Approvals', icon: Inbox },
+  { key: 'issue', label: 'Issue Pass', icon: SendHorizonal },
   { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { key: 'history', label: 'History & Report', icon: History },
   { key: 'security', label: 'Security Accounts', icon: Shield },
@@ -21,6 +22,8 @@ const STATUS_OPTIONS = [
 ];
 
 const emptyGuard = { name: '', mobile: '', username: '', password: '', photo: null };
+
+const emptyIssue = { studentId: '', studentName: '', reason: '', exitTime: '', remark: '' };
 
 export default function AdminGatePassPage() {
   const [tab, setTab] = useState('pending');
@@ -34,6 +37,14 @@ export default function AdminGatePassPage() {
   const [filters, setFilters] = useState({ status: 'all', from: '', to: '', q: '' });
   const [guard, setGuard] = useState(emptyGuard);
   const [savingGuard, setSavingGuard] = useState(false);
+
+  // Issue pass directly
+  const [issue, setIssue] = useState(emptyIssue);
+  const [issuingPass, setIssuingPass] = useState(false);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentResults, setStudentResults] = useState([]);
+  const [searchingStudents, setSearchingStudents] = useState(false);
+  const searchTimer = useRef(null);
 
   const loadPending = async () => {
     const { data } = await api.get('/gate-pass/admin/pending');
@@ -56,6 +67,49 @@ export default function AdminGatePassPage() {
   const loadGuards = async () => {
     const { data } = await api.get('/gate-pass/admin/security');
     setGuards(data.data || []);
+  };
+
+  const searchStudents = (q) => {
+    setStudentSearch(q);
+    clearTimeout(searchTimer.current);
+    if (!q.trim()) { setStudentResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setSearchingStudents(true);
+      try {
+        const { data } = await api.get(`/admin/students?search=${encodeURIComponent(q)}&limit=10`);
+        setStudentResults(data.data || data.students || []);
+      } catch { setStudentResults([]); }
+      finally { setSearchingStudents(false); }
+    }, 350);
+  };
+
+  const selectStudent = (s) => {
+    setIssue({ ...issue, studentId: s._id, studentName: s.name + (s.enrollmentNumber || s.enrollmentNo ? ` (${s.enrollmentNumber || s.enrollmentNo})` : '') });
+    setStudentSearch(s.name);
+    setStudentResults([]);
+  };
+
+  const issuePass = async (e) => {
+    e.preventDefault();
+    if (!issue.studentId) return toast.error('Please select a student from the dropdown');
+    setIssuingPass(true);
+    try {
+      const { data } = await api.post('/gate-pass/admin/issue', {
+        studentId: issue.studentId,
+        reason: issue.reason,
+        exitTime: issue.exitTime,
+        remark: issue.remark,
+      });
+      toast.success(data.message);
+      setIssue(emptyIssue);
+      setStudentSearch('');
+      setStudentResults([]);
+      await Promise.all([loadPending(), loadHistory()]);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not issue the gate pass');
+    } finally {
+      setIssuingPass(false);
+    }
   };
 
   useEffect(() => {
@@ -206,6 +260,107 @@ export default function AdminGatePassPage() {
         <div className="glass-card p-10 rounded-3xl flex justify-center"><Loader2 className="animate-spin text-[var(--primary)]" /></div>
       ) : tab === 'leaderboard' ? (
         <GatePassLeaderboard />
+      ) : tab === 'issue' ? (
+        <div className="glass-card p-6 md:p-8 rounded-3xl max-w-xl space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center">
+              <SendHorizonal size={18} className="text-[var(--primary)]" />
+            </div>
+            <div>
+              <h2 className="font-display font-black text-lg text-[var(--text-primary)]">Issue Gate Pass Directly</h2>
+              <p className="text-xs text-[var(--text-secondary)]">Bypass TG/HOD workflow — student gets an approved pass immediately.</p>
+            </div>
+          </div>
+
+          <form onSubmit={issuePass} className="space-y-4">
+            {/* Student Search */}
+            <div className="relative">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-1.5">
+                Select Student
+              </label>
+              <div className="relative">
+                <Users size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+                <input
+                  type="text"
+                  value={studentSearch}
+                  onChange={(e) => { searchStudents(e.target.value); if (!e.target.value) setIssue({ ...issue, studentId: '', studentName: '' }); }}
+                  placeholder="Type student name or enrollment no."
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl pl-9 pr-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                  autoComplete="off"
+                />
+                {searchingStudents && <Loader2 size={13} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[var(--text-secondary)]" />}
+              </div>
+              {issue.studentId && (
+                <p className="text-xs text-emerald-500 mt-1 font-semibold">✓ {issue.studentName}</p>
+              )}
+              {studentResults.length > 0 && (
+                <div className="absolute z-20 top-full mt-1 w-full bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-xl overflow-hidden">
+                  {studentResults.map((s) => (
+                    <button
+                      key={s._id}
+                      type="button"
+                      onClick={() => selectStudent(s)}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--primary)]/8 text-left transition-colors"
+                    >
+                      <div>
+                        <div className="text-sm font-bold text-[var(--text-primary)]">{s.name}</div>
+                        <div className="text-xs text-[var(--text-secondary)]">
+                          {s.enrollmentNumber || s.enrollmentNo} · Sem {s.semester} {s.section} · {s.department}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Reason */}
+            <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+              Reason for Gate Pass
+              <textarea
+                value={issue.reason}
+                onChange={(e) => setIssue({ ...issue, reason: e.target.value })}
+                required
+                rows={3}
+                placeholder="e.g. Medical appointment, family emergency…"
+                className="mt-1.5 w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)] outline-none focus:border-[var(--primary)] resize-none"
+              />
+            </label>
+
+            {/* Exit Time */}
+            <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+              Exit Time
+              <input
+                type="datetime-local"
+                value={issue.exitTime}
+                onChange={(e) => setIssue({ ...issue, exitTime: e.target.value })}
+                required
+                className="mt-1.5 w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+              />
+            </label>
+
+            {/* Optional remark */}
+            <label className="block text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
+              Admin Remark (optional)
+              <input
+                type="text"
+                value={issue.remark}
+                onChange={(e) => setIssue({ ...issue, remark: e.target.value })}
+                placeholder="Internal note…"
+                className="mt-1.5 w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={issuingPass || !issue.studentId}
+              className="btn-premium w-full py-3 flex items-center justify-center gap-2 text-sm disabled:opacity-40"
+            >
+              {issuingPass ? <Loader2 size={15} className="animate-spin" /> : <SendHorizonal size={15} />}
+              Issue Approved Gate Pass
+            </button>
+          </form>
+        </div>
       ) : tab === 'pending' ? (
         <div className="glass-card p-6 rounded-3xl space-y-3">
           <div className="flex items-center justify-between gap-3">
