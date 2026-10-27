@@ -22,7 +22,8 @@ export function printStudentDossier(data, portalLabel = 'MILE Verified Official 
 
   const cgpa = student.cgpa || 0;
   const attPercent = student.attendancePercentage !== undefined ? student.attendancePercentage : 0;
-  const duesFees = noDuesForm?.accountsDuesAmount !== undefined ? noDuesForm.accountsDuesAmount : 0;
+  // The student's due fees (Student Fees Records / No Dues) — kept on the student.
+  const duesFees = Number(student.duesFees ?? noDuesForm?.accountsDuesAmount ?? 0) || 0;
   const remarks = student.remarks || [];
 
   // 100% Automatic College & Campus Detection from Student Records

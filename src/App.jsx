@@ -79,6 +79,10 @@ import StudentNoDuesPage from './pages/student/StudentNoDuesPage';
 import StudentAssignmentsPage from './pages/student/StudentAssignmentsPage';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import SessionalMarksAdminPage from './pages/admin/SessionalMarksAdminPage';
+import StudentFeesPage from './pages/admin/StudentFeesPage';
+import MSTExamPage from './pages/exam/MSTExamPage';
+import FacultyMSTPage from './pages/exam/FacultyMSTPage';
+import StudentMSTExamPage from './pages/student/StudentMSTExamPage';
 import MasterDataSections from './pages/admin/masterdata/Sections';
 import MasterDataMentors from './pages/admin/masterdata/Mentors';
 import MasterDataSubjects from './pages/admin/masterdata/Subjects';
@@ -142,16 +146,17 @@ import TgGatePassPage from './pages/gatepass/TgGatePassPage';
 import AdminGatePassPage from './pages/gatepass/AdminGatePassPage';
 import SecurityGatePassPage from './pages/gatepass/SecurityGatePassPage';
 
-// Role guard component. `allowResponsibility` additionally lets through any
-// user (regardless of role) who holds that responsibility tag — e.g. an
-// "Academic Coordinator" is usually a plain teacher/guide, not a distinct role.
+// Role guard component. `allowResponsibility` (one tag or a list) additionally
+// lets through any user (regardless of role) who holds that responsibility
+// tag — e.g. an "Academic Coordinator" is usually a plain teacher/guide, not a
+// distinct role.
 const RoleGuard = ({ children, allowed, allowResponsibility }) => {
   const { user, token } = useSelector((state) => state.auth);
   if (!token || !user) return <Navigate to="/login" replace />;
 
   const userRoles = user.roles && user.roles.length > 0 ? user.roles : [user.role];
   const hasRole = allowed.some(role => userRoles.includes(role));
-  const hasResponsibility = allowResponsibility && (user.responsibilities || []).includes(allowResponsibility);
+  const hasResponsibility = !!allowResponsibility && [].concat(allowResponsibility).some((r) => (user.responsibilities || []).includes(r));
 
   if (!hasRole && !hasResponsibility) {
     const fallback = userRoles.includes('parent') ? '/parent/dashboard' :
@@ -418,6 +423,19 @@ function AppRoutes({ theme, toggleTheme }) {
         } />
         <Route path="/admin/sessional-marks" element={
           <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><SessionalMarksAdminPage /></RoleGuard>
+        } />
+        <Route path="/admin/student-fees" element={
+          <RoleGuard allowed={['admin']} allowResponsibility="Academic Coordinator"><StudentFeesPage /></RoleGuard>
+        } />
+        {/* MST Exam — managed by the admin, Academic Coordinator and Exam Coordinator */}
+        <Route path="/exam/mst" element={
+          <RoleGuard allowed={['admin']} allowResponsibility={['Academic Coordinator', 'Exam Coordinator']}><MSTExamPage /></RoleGuard>
+        } />
+        <Route path="/faculty/mst" element={
+          <RoleGuard allowed={['teacher', 'admin', 'guide', 'super50_admin', 'tp_admin', 'pms_admin']}><FacultyMSTPage /></RoleGuard>
+        } />
+        <Route path="/student/mst-exam" element={
+          <RoleGuard allowed={['student']}><StudentMSTExamPage /></RoleGuard>
         } />
         <Route path="/admin/feedback" element={
           <RoleGuard allowed={['admin']}><FeedbackReleasePage /></RoleGuard>

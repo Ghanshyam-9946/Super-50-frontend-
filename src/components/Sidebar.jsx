@@ -6,7 +6,7 @@ import {
   ClipboardList, UserPlus, LogOut, Sun, Moon, GraduationCap, Menu, X, Upload,
   Briefcase, FileText, Layout, Star, FolderOpen, Database, ChevronLeft, ChevronRight, ListChecks, CalendarClock, FileCheck2, History, DatabaseBackup,
   Layers, UserCheck, BookOpen, ChevronDown, Grid3x3, Gauge, FileSpreadsheet, MessageCircle, MessageSquareText, ClipboardCheck, CalendarDays, IdCard, Search,
-  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles, PenLine
+  StickyNote, BellRing, ClipboardEdit, MessageSquareShare, DoorOpen, Video, Sparkles, PenLine, Wallet
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,6 +24,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   const [search, setSearch] = useState('');
 
   const isAcademicCoordinator = (user?.responsibilities || []).includes('Academic Coordinator');
+  const isExamCoordinator = (user?.responsibilities || []).includes('Exam Coordinator');
   const isSuper50Mentor = (user?.responsibilities || []).includes('Super 50 Mentor');
   // Grants full PMS admin access, same as a real admin/pms_admin — mirrors
   // isAcademicCoordinator above (see PMSRoutes.jsx's RoleGuard and
@@ -50,6 +51,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/student/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
       { to: '/student/assignments', icon: ClipboardEdit, label: 'Assignments' },
       { to: '/student/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+      { to: '/student/mst-exam', icon: ClipboardCheck, label: 'MST Exam' },
       { to: '/student/no-dues', icon: FileCheck2, label: 'No Dues' },
       { to: '/student/gate-pass', icon: DoorOpen, label: 'Gate Pass' },
       { to: '/student/trainings', icon: GraduationCap, label: 'My Trainings' },
@@ -94,6 +96,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     { category: 'Teaching', links: [
       { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+      { to: '/faculty/mst', icon: ClipboardCheck, label: 'MST Duty & TG Status' },
+      ...((isAcademicCoordinator || isExamCoordinator) ? [{ to: '/exam/mst', icon: ClipboardCheck, label: 'MST Exam (Manage)' }] : []),
       { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
       { to: '/faculty/choice-filling', icon: ListChecks, label: 'Subject Choice Filling' },
       { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
@@ -126,6 +130,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
+      { to: '/admin/student-fees', icon: Wallet, label: 'Student Fees Records' },
       { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
       { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
@@ -148,6 +153,8 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     { category: 'Teaching', links: [
       { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks' },
+      { to: '/faculty/mst', icon: ClipboardCheck, label: 'MST Duty & TG Status' },
+      ...((isAcademicCoordinator || isExamCoordinator) ? [{ to: '/exam/mst', icon: ClipboardCheck, label: 'MST Exam (Manage)' }] : []),
       { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
       { to: '/faculty/my-subjects', icon: BookOpen, label: 'My Subjects (Assessment)' },
       { to: '/faculty/my-load', icon: Gauge, label: 'My Teaching Load' },
@@ -169,6 +176,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     ...(isAcademicCoordinator ? [{ category: 'Coordinator Tools', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
+      { to: '/admin/student-fees', icon: Wallet, label: 'Student Fees Records' },
       { to: '/admin/class-engagement-report', icon: UserCheck, label: 'Class Engagement Report' },
       { to: '/admin/timetable', icon: CalendarClock, label: 'Manage Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Manage Academic Calendar' },
@@ -205,6 +213,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
       { to: '/admin/timetable', icon: CalendarClock, label: 'Time Table' },
       { to: '/admin/academic-calendar', icon: CalendarDays, label: 'Academic Calendar' },
       { to: '/admin/sessional-marks', icon: GraduationCap, label: 'Sessional Marks Report' },
+      { to: '/exam/mst', icon: ClipboardCheck, label: 'MST Exam' },
       { to: '/faculty/sessional-marks', icon: GraduationCap, label: 'Sessional Marks (Manage)' },
       { to: '/admin/class-observations', icon: ClipboardCheck, label: 'Class Observation Form' },
       { to: '/faculty/class-engagement', icon: UserCheck, label: 'Class Engagement' },
@@ -212,6 +221,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
     ] },
     { category: 'Compliance', links: [
       { to: '/admin/no-dues', icon: FileCheck2, label: 'No Dues Report' },
+      { to: '/admin/student-fees', icon: Wallet, label: 'Student Fees Records' },
       { to: '/admin/course-coverage', icon: ClipboardList, label: 'Course Coverage' },
       { to: '/admin/publications', icon: GraduationCap, label: 'Faculty Publications' },
       { to: '/faculty/no-dues', icon: FileCheck2, label: 'No Dues (Manage)' },
