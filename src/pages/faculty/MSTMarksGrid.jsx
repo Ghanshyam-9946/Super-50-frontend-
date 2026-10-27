@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Save, FileSpreadsheet } from "lucide-react";
+import { Loader2, Save, FileSpreadsheet, Download } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { exportMstSheet } from "./mstExport";
 
 // MST marks, question by question, for the whole section at once — the
 // printed MST-1 (28) / MST-2 (42) sheet: A MCQ, B Short Answer, C Brief, each
@@ -90,6 +91,21 @@ export default function MSTMarksGrid({ sheets, onPatch, coordinator, user }) {
     }
   };
 
+  // Exports what is saved; unsaved boxes are left out, so say so.
+  const doExport = async (tests) => {
+    if (!sheets.length) return toast("No students in this section");
+    if (dirty.length) toast(`${dirty.length} unsaved row(s) are not in the export — save first to include them`);
+    const s0 = sheets[0];
+    try {
+      await exportMstSheet(format, tests, sheets, {
+        subjectName: s0.subjectName, subjectCode: s0.subjectCode, batch: s0.batch, semester: s0.semester, section: s0.section,
+        faculty: s0.faculty?.name || (!coordinator ? user?.name : ""),
+      });
+    } catch {
+      toast.error("Could not build the Excel file");
+    }
+  };
+
   const move = (e, i, k) => {
     if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); refs.current[`${i + 1}-${k}`]?.focus(); }
     if (e.key === "ArrowUp") { e.preventDefault(); refs.current[`${i - 1}-${k}`]?.focus(); }
@@ -110,7 +126,15 @@ export default function MSTMarksGrid({ sheets, onPatch, coordinator, user }) {
           ))}
         </div>
         <span className="text-xs text-[var(--text-secondary)]">Enter or ↓ moves down a column. Leave a box blank if not attempted.</span>
-        <button id="mst-save" onClick={save} disabled={saving || !dirty.length} className="ml-auto btn-premium text-sm px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
+        <div className="ml-auto flex gap-1.5">
+          <button id="mst-export" onClick={() => doExport([test])} className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 hover:border-[var(--primary)]">
+            <Download size={13} /> Export {fmt.label}
+          </button>
+          <button id="mst-export-both" onClick={() => doExport(Object.keys(format))} className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 hover:border-[var(--primary)]">
+            <Download size={13} /> Export MST-1 + MST-2
+          </button>
+        </div>
+        <button id="mst-save" onClick={save} disabled={saving || !dirty.length} className="btn-premium text-sm px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save {dirty.length ? `${dirty.length} changed` : ""}
         </button>
       </div>
