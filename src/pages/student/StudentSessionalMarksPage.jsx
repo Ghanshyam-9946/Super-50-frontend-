@@ -18,7 +18,19 @@ function MarksBreakdown({ sheet }) {
   const unitWise = new Set(entries.filter((e) => (e.unit || 1) > 1).map(activityName));
   const caObtained = entries.reduce((s, e) => s + (Number(e.obtained) || 0), 0);
   const caMax = entries.reduce((s, e) => s + (Number(e.max) || 0), 0);
-  const tests = [["MST 1", sheet.mst?.test1], ["MST 2", sheet.mst?.test2]].filter(([, t]) => t && t.max != null);
+  const tests = [["MST 1", sheet.mst?.test1, 0], ["MST 2", sheet.mst?.test2, 2]].filter(([, t]) => t && t.max != null);
+  // Question-wise MST marks by Course Outcome: A1/B1/C1 are the first CO of
+  // the paper (CO1 in MST-1, CO3 in MST-2), and so on; A = 3, B = 4, C = 7 marks.
+  const byCO = (t, offset) => {
+    const out = {};
+    Object.entries(t.parts || {}).forEach(([k, v]) => {
+      const co = `CO${offset + Number(k.slice(1))}`;
+      out[co] = out[co] || { got: 0, max: 0 };
+      out[co].got += Number(v) || 0;
+      out[co].max += { A: 3, B: 4, C: 7 }[k[0]] || 0;
+    });
+    return Object.entries(out).sort(([a], [b]) => a.localeCompare(b));
+  };
   const lab = sheet.lab || {};
   // Marks by lab activity when the faculty uses lab activities; otherwise
   // the standard Attendance / Submission / Viva.
@@ -72,10 +84,17 @@ function MarksBreakdown({ sheet }) {
             <p className="text-xs text-[var(--text-secondary)]">MST marks not available yet.</p>
           ) : (
             <div className="border border-[var(--border-light)] rounded-xl divide-y divide-[var(--border-light)]">
-              {tests.map(([name, t]) => (
-                <div key={name} className="flex justify-between px-3 py-2 text-sm">
-                  <span className="text-[var(--text-primary)]">{t.testName || name}</span>
-                  <span className="font-bold tabular-nums">{num(t.obtained)} / {num(t.max)}</span>
+              {tests.map(([name, t, offset]) => (
+                <div key={name} className="px-3 py-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--text-primary)]">{t.testName || name}</span>
+                    <span className="font-bold tabular-nums">{t.absent ? "Absent" : `${num(t.obtained)} / ${num(t.max)}`}</span>
+                  </div>
+                  {!t.absent && byCO(t, offset).length > 0 && (
+                    <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+                      {byCO(t, offset).map(([co, v]) => `${co} ${num(v.got)}/${v.max}`).join(" · ")}
+                    </div>
+                  )}
                 </div>
               ))}
               <div className="flex justify-between px-3 py-2 text-sm bg-[var(--bg-input)]/40">
