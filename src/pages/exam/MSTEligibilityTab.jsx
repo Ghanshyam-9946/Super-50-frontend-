@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Download, Loader2, Search, ShieldAlert, Users, Wallet, CalendarX } from "lucide-react";
+import { CheckCircle2, Download, Loader2, RotateCcw, Search, ShieldAlert, ShieldCheck, Users, Wallet, CalendarX } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { SemesterPicker, Stat } from "./mstShared";
 import { download, errText, inputCls, labelCls, rupees } from "./mstUtils";
 
-// The allowed list: attendance at or above the minimum and no fees due.
-// A coordinator sees every student; a TG sees only their own (`mine`).
+// The allowed list: attendance at or above the minimum (the exam's, or the
+// semester's own) and no fees due. A coordinator sees every student and, with
+// an exam chosen, can allow or stop anyone by hand (with a reason); a TG sees
+// only their own students (`mine`).
 export default function MSTEligibilityTab({ exams = [], tgView = false }) {
   const [semesters, setSemesters] = useState([]);
   const [exam, setExam] = useState("");
@@ -17,6 +19,8 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
   const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [acting, setActing] = useState("");
+  const [tick, setTick] = useState(0);
 
   useEffect(() => { const t = setTimeout(() => setQuery(q.trim()), 300); return () => clearTimeout(t); }, [q]);
   const params = useCallback(() => ({
@@ -30,7 +34,28 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
       .then(({ data: d }) => { if (alive) setData(d); })
       .catch((err) => { if (alive) { toast.error(errText(err, "Could not load")); setData({ data: [], summary: {} }); } });
     return () => { alive = false; };
-  }, [params]);
+  }, [params, tick]);
+
+  // allowed: true (allow), false (stop) or null (let the rules decide again).
+  const decide = async (r, allowed) => {
+    let reason = "";
+    if (allowed !== null) {
+      reason = window.prompt(allowed ? `Allow ${r.name} — reason (kept in the record):` : `Not allow ${r.name} — reason (the student sees it):`) ?? null;
+      if (reason === null) return;
+      if (allowed !== r.autoAllowed && !reason.trim()) return toast.error("A reason is needed");
+    }
+    setActing(r._id);
+    try {
+      const { data: d } = await api.patch(`/mst-exam/exams/${exam}/students/${r._id}/allow`, { allowed, reason });
+      toast.success(d.message);
+      setTick((t) => t + 1);
+    } catch (err) {
+      toast.error(errText(err, "Could not save"));
+    } finally {
+      setActing("");
+    }
+  };
+  const canDecide = !tgView && !!exam;
 
   const exportXlsx = async () => {
     setBusy(true);
@@ -73,11 +98,19 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or enrollment no" aria-label="Search students" className={`${inputCls} w-full pl-9`} />
           </div>
-          {rules && <span className="text-xs text-[var(--text-secondary)]">Rule: attendance ≥ <b>{rules.minAttendance}%</b>{rules.requireFeesClear ? <> and <b>no fees due</b></> : ""}</span>}
+          {rules && (
+            <span className="text-xs text-[var(--text-secondary)]">
+              Rule: attendance ≥ <b>{rules.minAttendance}%</b>{rules.requireFeesClear ? <> and <b>no fees due</b></> : ""}
+              {(rules.bySemester || []).map((x) => <span key={x.semester}> · Sem {x.semester}: ≥ <b>{x.minAttendance}%</b>{x.requireFeesClear === false ? " (fees not checked)" : ""}</span>)}
+            </span>
+          )}
           <button onClick={exportXlsx} disabled={busy} className="btn-premium text-xs px-4 py-2.5 flex items-center gap-1.5 disabled:opacity-50">
             {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Download Excel
           </button>
         </div>
+        {!tgView && !exam && exams.length > 0 && (
+          <p className="text-[11px] text-[var(--text-secondary)]">To allow or stop a student by hand, choose the exam under &ldquo;Rules of&rdquo;.</p>
+        )}
       </div>
 
       <div className="glass-card rounded-2xl overflow-hidden">
@@ -88,7 +121,7 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
                 <thead>
                   <tr className="text-left text-[10px] uppercase tracking-widest text-[var(--text-secondary)] border-b border-[var(--border-light)]">
                     <th className="px-4 py-3">Student</th><th className="px-4 py-3">Sem / Batch</th><th className="px-4 py-3 text-right">Attendance</th>
-                    <th className="px-4 py-3 text-right">Fees due</th><th className="px-4 py-3">Status</th>{!tgView && <th className="px-4 py-3">TG</th>}
+                    <th className="px-4 py-3 text-right">Fees due</th><th className="px-4 py-3">Status</th>{!tgView && <th className="px-4 py-3">TG</th>}{canDecide && <th className="px-4 py-3">Allow by hand</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -96,20 +129,40 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
                     <tr key={r._id} className="border-b border-[var(--border-light)] last:border-0">
                       <td className="px-4 py-2.5"><div className="font-bold text-[var(--text-primary)]">{r.name}</div><div className="text-[11px] font-mono text-[var(--text-secondary)]">{r.enrollmentNumber}</div></td>
                       <td className="px-4 py-2.5 text-xs">Sem {r.semester ?? "—"} · {r.batch || "—"}{r.section ? ` · ${r.section}` : ""}</td>
-                      <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${r.reasons.some((x) => x.startsWith("Attendance")) ? "text-amber-600" : "text-[var(--text-primary)]"}`}>{r.attendance}%</td>
+                      <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${r.reasons.some((x) => x.startsWith("Attendance")) ? "text-amber-600" : "text-[var(--text-primary)]"}`}>
+                        {r.attendance}%<div className="text-[10px] font-normal text-[var(--text-secondary)]">needs {r.minAttendance}%</div>
+                      </td>
                       <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${r.duesFees > 0 ? "text-red-600" : "text-emerald-600"}`}>{r.duesFees > 0 ? rupees(r.duesFees) : "Clear"}</td>
                       <td className="px-4 py-2.5">
                         {r.allowed
-                          ? <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600"><CheckCircle2 size={12} /> Allowed{r.override === true ? " (by coordinator)" : ""}</span>
+                          ? (
+                            <div>
+                              <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600"><CheckCircle2 size={12} /> Allowed{r.override === true ? " (by coordinator)" : ""}</span>
+                              {r.override === true && r.overrideReason && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{r.overrideReason}</div>}
+                            </div>
+                          )
                           : (
                             <div>
-                              <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-red-500/10 text-red-600"><ShieldAlert size={12} /> Not allowed</span>
+                              <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-red-500/10 text-red-600"><ShieldAlert size={12} /> Not allowed{r.override === false ? " (by coordinator)" : ""}</span>
                               <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{r.override === false ? r.overrideReason : r.reasons.join(" · ")}</div>
                             </div>
                           )}
                         {r.seat && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{r.seat.room} · {r.seat.label}{r.seat.status === "reserved" ? " (reserved)" : ""}</div>}
                       </td>
                       {!tgView && <td className="px-4 py-2.5 text-xs text-[var(--text-secondary)]">{r.tg || "—"}</td>}
+                      {canDecide && (
+                        <td className="px-4 py-2.5">
+                          {r.inExam === false ? <span className="text-[11px] text-[var(--text-secondary)]">Semester not in this exam</span> : (
+                            <div className="flex flex-wrap gap-1.5">
+                              {acting === r._id ? <Loader2 size={14} className="animate-spin text-[var(--primary)]" /> : (<>
+                                {!r.allowed && <button onClick={() => decide(r, true)} aria-label={`Allow ${r.name}`} className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center gap-1"><ShieldCheck size={12} /> Allow</button>}
+                                {r.allowed && <button onClick={() => decide(r, false)} aria-label={`Not allow ${r.name}`} className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-600 flex items-center gap-1"><ShieldAlert size={12} /> Not allow</button>}
+                                {r.override !== null && <button onClick={() => decide(r, null)} aria-label={`Reset ${r.name}`} title="Let the rules decide again" className="text-[11px] font-bold px-2 py-1.5 rounded-lg border border-[var(--border-light)] text-[var(--text-secondary)] flex items-center gap-1"><RotateCcw size={12} /> By rules</button>}
+                              </>)}
+                            </div>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

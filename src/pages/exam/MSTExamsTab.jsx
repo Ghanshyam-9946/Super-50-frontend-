@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { CalendarDays, CalendarPlus, Loader2, Pencil, Plus, Save, Trash2 } from "lucide-react";
+import { CalendarDays, CalendarPlus, CalendarRange, Loader2, Pencil, Plus, Save, SlidersHorizontal, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { Modal, SemesterPicker } from "./mstShared";
 import { dateText, errText, inputCls, labelCls } from "./mstUtils";
 
-// The exams (MST-1 / MST-2), their allow rules and their date sheet.
+// The exams (MST-1 / MST-2): their dates (from – to), their allow rules —
+// one general rule, and any semester that needs its own — and the date sheet.
 
 const STATUS = {
   draft: ["Draft", "bg-slate-500/10 text-slate-600"],
@@ -15,30 +16,47 @@ const STATUS = {
 const blankPaper = (semester = "") => ({ date: "", startTime: "10:00", endTime: "11:30", semester, subjectName: "", subjectCode: "" });
 
 function ExamForm({ exam, onClose, onSaved }) {
-  const [f, setF] = useState(() => ({
-    name: exam?.name || "MST-1", session: exam?.session || "", semesters: exam?.semesters || [],
-    minAttendance: exam?.rules?.minAttendance ?? 60, requireFeesClear: exam?.rules?.requireFeesClear ?? true,
-    invigilatorsPerRoom: exam?.invigilatorsPerRoom ?? 1,
-    schedule: (exam?.schedule || []).map((p) => ({ ...p })),
-  }));
+  const [f, setF] = useState(() => {
+    const dates = (exam?.schedule || []).map((p) => p.date).sort();
+    return {
+      name: exam?.name || "MST-1", session: exam?.session || "", semesters: exam?.semesters || [],
+      // An exam made before dates were asked for starts from its date sheet.
+      startDate: exam?.startDate || dates[0] || "", endDate: exam?.endDate || dates[dates.length - 1] || "",
+      minAttendance: exam?.rules?.minAttendance ?? 60, requireFeesClear: exam?.rules?.requireFeesClear ?? true,
+      // semester → { minAttendance, requireFeesClear }; a semester not here follows the general rule.
+      bySemester: Object.fromEntries((exam?.rules?.bySemester || []).map((x) => [x.semester, { minAttendance: x.minAttendance, requireFeesClear: x.requireFeesClear !== false }])),
+      invigilatorsPerRoom: exam?.invigilatorsPerRoom ?? 1,
+      schedule: (exam?.schedule || []).map((p) => ({ ...p })),
+    };
+  });
   const [quick, setQuick] = useState({ date: "", startTime: "10:00", endTime: "11:30" });
   const [busy, setBusy] = useState(false);
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }));
   const setPaper = (i, patch) => set("schedule", f.schedule.map((p, n) => (n === i ? { ...p, ...patch } : p)));
+  const setSemRule = (sem, patch) => set("bySemester", { ...f.bySemester, [sem]: { minAttendance: f.minAttendance, requireFeesClear: f.requireFeesClear, ...f.bySemester[sem], ...patch } });
+  const clearSemRule = (sem) => { const next = { ...f.bySemester }; delete next[sem]; set("bySemester", next); };
+  const outside = (d) => d && f.startDate && f.endDate && (d < f.startDate || d > f.endDate);
   // One date and time for every chosen semester at once.
   const addSitting = () => {
     if (!quick.date) return toast.error("Choose the date");
+    if (outside(quick.date)) return toast.error(`The date must be between ${dateText(f.startDate)} and ${dateText(f.endDate)}`);
     if (!f.semesters.length) return toast.error("Choose the semesters first");
     set("schedule", [...f.schedule, ...f.semesters.map((s) => ({ ...blankPaper(s), ...quick }))]);
   };
 
   const save = async (e) => {
     e.preventDefault();
+    if (!f.startDate || !f.endDate) return toast.error("Give the exam dates — from and to");
+    if (f.schedule.some((p) => outside(p.date))) return toast.error("A paper is outside the exam dates — fix the red dates");
     setBusy(true);
     try {
       const body = {
         name: f.name, session: f.session, semesters: f.semesters, invigilatorsPerRoom: Number(f.invigilatorsPerRoom),
-        rules: { minAttendance: Number(f.minAttendance), requireFeesClear: f.requireFeesClear },
+        startDate: f.startDate, endDate: f.endDate,
+        rules: {
+          minAttendance: Number(f.minAttendance), requireFeesClear: f.requireFeesClear,
+          bySemester: f.semesters.filter((s) => f.bySemester[s]).map((s) => ({ semester: s, minAttendance: Number(f.bySemester[s].minAttendance), requireFeesClear: f.bySemester[s].requireFeesClear })),
+        },
         schedule: f.schedule.map((p) => ({ ...p, semester: Number(p.semester) })),
       };
       const { data } = exam ? await api.put(`/mst-exam/exams/${exam._id}`, body) : await api.post("/mst-exam/exams", body);
@@ -59,7 +77,11 @@ function ExamForm({ exam, onClose, onSaved }) {
             <select id="exam-name" value={f.name} onChange={(e) => set("name", e.target.value)} className={inputCls}><option>MST-1</option><option>MST-2</option></select>
           </label>
           <label className={labelCls}>Session<input id="exam-session" value={f.session} onChange={(e) => set("session", e.target.value)} placeholder="e.g. 2026-27 Odd" className={inputCls} /></label>
-          <label className={labelCls}>Minimum attendance %<input type="number" min="0" max="100" value={f.minAttendance} onChange={(e) => set("minAttendance", e.target.value)} className={inputCls} /></label>
+          <label className={labelCls}>Exam from<input id="exam-from" type="date" required value={f.startDate} onChange={(e) => set("startDate", e.target.value)} className={inputCls} /></label>
+          <label className={labelCls}>Exam to<input id="exam-to" type="date" required min={f.startDate || undefined} value={f.endDate} onChange={(e) => set("endDate", e.target.value)} className={inputCls} /></label>
+        </div>
+        <div className="grid sm:grid-cols-4 gap-3">
+          <label className={labelCls}>Minimum attendance % (all)<input id="exam-min-att" type="number" min="0" max="100" value={f.minAttendance} onChange={(e) => set("minAttendance", e.target.value)} className={inputCls} /></label>
           <label className={labelCls}>Invigilators per room<input type="number" min="1" max="5" value={f.invigilatorsPerRoom} onChange={(e) => set("invigilatorsPerRoom", e.target.value)} className={inputCls} /></label>
         </div>
         <div className="flex flex-wrap items-end gap-6">
@@ -69,10 +91,49 @@ function ExamForm({ exam, onClose, onSaved }) {
           </label>
         </div>
 
+        {f.semesters.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 font-display font-black text-[var(--text-primary)]"><SlidersHorizontal size={16} className="text-[var(--primary)]" /> Rules for each semester</div>
+            <p className="text-xs text-[var(--text-secondary)]">A semester on &ldquo;Same as all&rdquo; follows the rule above. Give a semester its own rule where it differs.</p>
+            <div className="overflow-x-auto border border-[var(--border-light)] rounded-2xl">
+              <table className="w-full text-xs min-w-[560px]">
+                <thead><tr className="text-left text-[10px] uppercase text-[var(--text-secondary)]">
+                  <th className="px-3 py-2">Semester</th><th className="px-3 py-2">Rule</th><th className="px-3 py-2">Minimum attendance %</th><th className="px-3 py-2">Fees must be clear</th>
+                </tr></thead>
+                <tbody>
+                  {f.semesters.map((sem) => {
+                    const own = f.bySemester[sem];
+                    return (
+                      <tr key={sem} className="border-t border-[var(--border-light)]">
+                        <td className="px-3 py-2 font-black text-[var(--text-primary)]">Sem {sem}</td>
+                        <td className="px-3 py-2">
+                          <select value={own ? "own" : "all"} onChange={(e) => (e.target.value === "own" ? setSemRule(sem, {}) : clearSemRule(sem))} className={inputCls} aria-label={`Semester ${sem} rule`}>
+                            <option value="all">Same as all</option><option value="own">Own rule</option>
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          {own
+                            ? <input type="number" min="0" max="100" value={own.minAttendance} onChange={(e) => setSemRule(sem, { minAttendance: e.target.value })} className={`${inputCls} w-24`} aria-label={`Semester ${sem} minimum attendance`} />
+                            : <span className="text-[var(--text-secondary)]">{f.minAttendance}%</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          {own
+                            ? <input type="checkbox" checked={own.requireFeesClear} onChange={(e) => setSemRule(sem, { requireFeesClear: e.target.checked })} aria-label={`Semester ${sem} fees must be clear`} />
+                            : <span className="text-[var(--text-secondary)]">{f.requireFeesClear ? "Yes" : "No"}</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="flex items-center gap-2 font-display font-black text-[var(--text-primary)]"><CalendarDays size={16} className="text-[var(--primary)]" /> Date sheet</div>
           <div className="flex flex-wrap items-end gap-2 rounded-2xl bg-[var(--bg-input)]/60 border border-[var(--border-light)] p-3">
-            <label className={labelCls}>Date<input id="sitting-date" type="date" value={quick.date} onChange={(e) => setQuick((q) => ({ ...q, date: e.target.value }))} className={inputCls} /></label>
+            <label className={labelCls}>Date<input id="sitting-date" type="date" min={f.startDate || undefined} max={f.endDate || undefined} value={quick.date} onChange={(e) => setQuick((q) => ({ ...q, date: e.target.value }))} className={inputCls} /></label>
             <label className={labelCls}>From<input type="time" value={quick.startTime} onChange={(e) => setQuick((q) => ({ ...q, startTime: e.target.value }))} className={inputCls} /></label>
             <label className={labelCls}>To<input type="time" value={quick.endTime} onChange={(e) => setQuick((q) => ({ ...q, endTime: e.target.value }))} className={inputCls} /></label>
             <button id="sitting-add" type="button" onClick={addSitting} className="btn-outline-premium text-xs px-3 py-2.5 flex items-center gap-1.5"><CalendarPlus size={14} /> Add this sitting for every semester</button>
@@ -87,7 +148,7 @@ function ExamForm({ exam, onClose, onSaved }) {
                 <tbody>
                   {f.schedule.map((p, i) => (
                     <tr key={i} className="border-t border-[var(--border-light)]">
-                      <td className="px-1.5 py-1.5"><input type="date" value={p.date} onChange={(e) => setPaper(i, { date: e.target.value })} className={inputCls} aria-label={`Paper ${i + 1} date`} /></td>
+                      <td className="px-1.5 py-1.5"><input type="date" min={f.startDate || undefined} max={f.endDate || undefined} value={p.date} onChange={(e) => setPaper(i, { date: e.target.value })} className={`${inputCls} ${outside(p.date) ? "!border-red-500 text-red-600" : ""}`} aria-label={`Paper ${i + 1} date`} /></td>
                       <td className="px-1.5 py-1.5"><input type="time" value={p.startTime} onChange={(e) => setPaper(i, { startTime: e.target.value })} className={inputCls} aria-label={`Paper ${i + 1} from`} /></td>
                       <td className="px-1.5 py-1.5"><input type="time" value={p.endTime} onChange={(e) => setPaper(i, { endTime: e.target.value })} className={inputCls} aria-label={`Paper ${i + 1} to`} /></td>
                       <td className="px-1.5 py-1.5">
@@ -134,7 +195,11 @@ export default function MSTExamsTab({ exams, reload, onOpen }) {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-display font-black text-xl text-[var(--text-primary)]">{e.title}</div>
+                    {e.startDate && <div className="text-xs font-bold text-[var(--primary)] flex items-center gap-1 mt-0.5"><CalendarRange size={12} /> {dateText(e.startDate)} – {dateText(e.endDate)}</div>}
                     <div className="text-xs text-[var(--text-secondary)]">Semesters {e.semesters.join(", ")} · attendance ≥ {e.rules.minAttendance}%{e.rules.requireFeesClear ? " · fees clear" : ""} · {e.invigilatorsPerRoom} invigilator/room</div>
+                    {(e.rules.bySemester || []).length > 0 && (
+                      <div className="text-[11px] text-[var(--text-secondary)]">Own rules: {e.rules.bySemester.map((x) => `Sem ${x.semester} ≥ ${x.minAttendance}%${x.requireFeesClear === false ? " (fees not checked)" : ""}`).join(" · ")}</div>
+                    )}
                   </div>
                   <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${tone}`}>{label}</span>
                 </div>
