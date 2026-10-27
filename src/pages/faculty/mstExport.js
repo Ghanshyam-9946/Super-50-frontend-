@@ -73,3 +73,59 @@ export async function exportMstSheet(format, tests, sheets, info) {
   const name = `${which}_${info.subjectName}_${info.batch}_Sem${info.semester}_${info.section}.xlsx`.replace(/[^A-Za-z0-9._-]+/g, "_");
   XLSX.writeFile(wb, name);
 }
+
+// Reads MST marks back from an Excel laid out as above — the exported sheet,
+// filled in. A worksheet named MST-1 / MST-2 goes to that test; a single
+// worksheet with another name goes to `fallbackTest`. Rows are matched by
+// Enrollment No.; a blank row is skipped (it never clears saved marks), "AB"
+// in a box or "Absent" in the status column marks the student absent.
+// Returns { [test]: { items: [{ sheetId, parts, absent }], unknown, errors } }.
+export async function readMstSheet(file, format, sheets, fallbackTest) {
+  const XLSX = await import("xlsx");
+  const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+  const byLabel = Object.fromEntries(Object.values(format).map((f) => [f.label.toUpperCase().replace(/\s+/g, ""), f.key]));
+  const picked = wb.SheetNames.map((n) => [n, byLabel[n.toUpperCase().replace(/\s+/g, "")]]).filter(([, k]) => k);
+  if (!picked.length) picked.push([wb.SheetNames[0], fallbackTest]);
+  const byEnrollment = new Map(sheets.map((s) => [String(s.student?.enrollmentNumber || "").trim().toUpperCase(), s]));
+
+  const out = {};
+  picked.forEach(([name, key]) => {
+    const fmt = format[key];
+    const items = fmt.sections.flatMap((s) => s.items);
+    const a = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, defval: "", raw: true });
+    const head = a.findIndex((r) => /^s\.?\s*no/i.test(String(r[0]).trim()));
+    if (head < 0) throw new Error(`Sheet "${name}": the header row (S.No., Enrollment No. …) was not found — use the exported sheet`);
+    const h = a[head].map((x) => String(x).trim());
+    const enrCol = h.findIndex((x) => /enrol/i.test(x));
+    const startCol = h.indexOf("A") >= 0 ? h.indexOf("A") : 3;
+    const statusCol = h.findIndex((x) => /^status$/i.test(x));
+    const res = { items: [], unknown: [], errors: [] };
+    // Data starts after the four header rows; extra blank/title rows are fine.
+    a.slice(head + 4).forEach((r, i) => {
+      const enr = String(r[enrCol < 0 ? 1 : enrCol] ?? "").trim();
+      if (!enr) return;
+      const cells = items.map((_, j) => r[startCol + j]);
+      const absent = cells.some((v) => /^ab(sent)?$/i.test(String(v).trim())) || (statusCol >= 0 && /^absent$/i.test(String(r[statusCol]).trim()));
+      const parts = {};
+      let bad = "";
+      items.forEach((it, j) => {
+        const v = String(cells[j] ?? "").trim();
+        if (v === "" || /^ab/i.test(v)) return;
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 0 || n > it.max) bad = bad || `${it.key} = "${v}" (0–${it.max})`;
+        else parts[it.key] = n;
+      });
+      if (!absent && !Object.keys(parts).length) return;
+      const sheet = byEnrollment.get(enr.toUpperCase());
+      if (!sheet) { res.unknown.push(enr); return; }
+      if (bad) { res.errors.push(`Row ${head + 5 + i} (${enr}): ${bad}`); return; }
+      // Rows that match what is saved (e.g. the rest of a re-imported export) are left alone.
+      const saved = sheet.mst?.[key] || {};
+      const same = (a1, b1) => Object.keys({ ...a1, ...b1 }).every((k) => Number(a1[k]) === Number(b1[k]));
+      if (saved.obtained != null && !!saved.absent === absent && (absent || same(saved.parts || {}, parts))) return;
+      res.items.push({ sheetId: sheet._id, parts: absent ? {} : parts, absent });
+    });
+    out[key] = res;
+  });
+  return out;
+}

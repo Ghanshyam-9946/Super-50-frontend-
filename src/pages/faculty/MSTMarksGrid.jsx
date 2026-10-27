@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Save, FileSpreadsheet, Download } from "lucide-react";
+import { Loader2, Save, FileSpreadsheet, Download, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
-import { exportMstSheet } from "./mstExport";
+import { exportMstSheet, readMstSheet } from "./mstExport";
 
 // MST marks, question by question, for the whole section at once — the
 // printed MST-1 (28) / MST-2 (42) sheet: A MCQ, B Short Answer, C Brief, each
@@ -27,6 +27,7 @@ export default function MSTMarksGrid({ sheets, onPatch, coordinator, user }) {
   const [test, setTest] = useState("test1");
   const [rows, setRows] = useState({});
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const refs = useRef({});
 
   useEffect(() => {
@@ -106,6 +107,46 @@ export default function MSTMarksGrid({ sheets, onPatch, coordinator, user }) {
     }
   };
 
+  // Import straight from Excel (the exported sheet, filled in): MST-1 and/or
+  // MST-2 worksheets, saved after one confirmation. Blank rows are skipped.
+  const doImport = async (file) => {
+    if (!file) return;
+    if (dirty.length && !window.confirm(`${dirty.length} unsaved row(s) on screen will be replaced by the import. Continue?`)) return;
+    setImporting(true);
+    try {
+      const found = await readMstSheet(file, format, sheets, test);
+      const tests = Object.keys(found);
+      const summary = tests.map((k) => {
+        const f = found[k];
+        return `${format[k].label}: ${f.items.length} student(s) to save`
+          + (f.errors.length ? `, ${f.errors.length} row(s) with wrong marks skipped` : "")
+          + (f.unknown.length ? `, ${f.unknown.length} enrollment no. not in this section` : "");
+      }).join("\n");
+      const problems = tests.flatMap((k) => [...found[k].errors, ...found[k].unknown.map((e) => `${e}: not in this section`)]);
+      if (!tests.some((k) => found[k].items.length)) {
+        toast.error(`Nothing to import.${problems.length ? ` ${problems.slice(0, 3).join("; ")}` : " Fill marks in the exported sheet first."}`, { duration: 7000 });
+        return;
+      }
+      if (!window.confirm(`${file.name}\n\n${summary}${problems.length ? `\n\n${problems.slice(0, 8).join("\n")}${problems.length > 8 ? "\n…" : ""}` : ""}\n\nSave these marks now?`)) return;
+      let saved = 0;
+      const failed = [];
+      for (const k of tests) {
+        if (!found[k].items.length) continue;
+        const { data } = await api.patch("/sessional-marks/mst/bulk", { test: k, items: found[k].items });
+        data.sheets.forEach((s) => onPatch(s));
+        saved += data.saved;
+        data.results.filter((r) => !r.ok).forEach((r) => failed.push(`${format[k].label}: ${r.message}`));
+      }
+      setRows((p) => Object.fromEntries(Object.entries(p).map(([k, r]) => [k, { ...r, dirty: false }])));
+      if (failed.length || problems.length) toast(`Imported ${saved} · ${failed.length + problems.length} skipped — ${[...failed, ...problems].slice(0, 2).join("; ")}`, { duration: 7000 });
+      else toast.success(`Imported marks for ${saved} student(s)`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || "Could not read the Excel file");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const move = (e, i, k) => {
     if (e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); refs.current[`${i + 1}-${k}`]?.focus(); }
     if (e.key === "ArrowUp") { e.preventDefault(); refs.current[`${i - 1}-${k}`]?.focus(); }
@@ -133,6 +174,11 @@ export default function MSTMarksGrid({ sheets, onPatch, coordinator, user }) {
           <button id="mst-export-both" onClick={() => doExport(Object.keys(format))} className="text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 hover:border-[var(--primary)]">
             <Download size={13} /> Export MST-1 + MST-2
           </button>
+          <label title="Fill marks in the exported sheet and import it — MST-1, MST-2 or both" className={`text-xs font-bold px-3 py-2 rounded-xl border border-[var(--border-light)] flex items-center gap-1.5 hover:border-[var(--primary)] ${importing ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
+            {importing ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />} Import Excel
+            <input id="mst-import" type="file" accept=".xlsx,.xls" className="hidden" disabled={importing}
+              onChange={(e) => { const f = e.target.files[0]; e.target.value = ""; doImport(f); }} />
+          </label>
         </div>
         <button id="mst-save" onClick={save} disabled={saving || !dirty.length} className="btn-premium text-sm px-4 py-2 flex items-center gap-1.5 disabled:opacity-50">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save {dirty.length ? `${dirty.length} changed` : ""}
