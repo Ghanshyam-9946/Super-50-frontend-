@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  GraduationCap, Plus, Trash2, ChevronRight, Loader2, Upload, RefreshCw, Lock, Unlock, Save, Search, ListChecks, Grid3x3, Download,
+  GraduationCap, Plus, Trash2, ChevronRight, Loader2, Upload, RefreshCw, Lock, Unlock, Save, Search, ListChecks, Grid3x3, Download, ClipboardPen,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import BatchSelect from "../../components/BatchSelect";
 import SectionSelect from "../../components/SectionSelect";
+import MSTMarksGrid from "./MSTMarksGrid";
 
 const isCoordinator = (user) =>
   user?.role === "admin" || (user?.responsibilities || []).includes("Academic Coordinator");
@@ -413,6 +414,8 @@ function EntryTab({ user, coordinator }) {
   };
 
   const handleChange = (updated) => setSheets((prev) => prev.map((s) => (s._id === updated._id ? updated : s)));
+  // Part of a sheet back from a bulk save (MST marks): merge it in.
+  const handlePatch = (part) => setSheets((prev) => prev.map((s) => (s._id === part._id ? { ...s, ...part } : s)));
 
   const runSync = async () => {
     if (!syncForm.test1Name || !syncForm.test1Max) return toast.error("Enter at least MST1's test name and max marks");
@@ -589,9 +592,18 @@ function EntryTab({ user, coordinator }) {
             >
               <ListChecks size={13} /> One-by-One
             </button>
+            <button
+              id="view-mst"
+              onClick={() => setView("mst")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${view === "mst" ? "bg-[var(--primary)] text-white" : "border border-[var(--border-light)] text-[var(--text-primary)]"}`}
+            >
+              <ClipboardPen size={13} /> MST Marks
+            </button>
           </div>
 
-          {view === "grid" ? (
+          {view === "mst" ? (
+            <MSTMarksGrid sheets={sheets} onPatch={handlePatch} coordinator={coordinator} user={user} />
+          ) : view === "grid" ? (
             <div className="space-y-4">
               <CaMarksGrid sheets={sheets} onChange={handleChange} coordinator={coordinator} user={user} />
               {(sheets[0]?.subjectRef?.noOfPractical || 0) > 0 && (

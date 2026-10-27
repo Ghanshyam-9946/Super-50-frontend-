@@ -90,6 +90,8 @@ export default function MySubjectActivities() {
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("overview");
+  // Inside Activities, a subject with a lab shows Theory and Lab as two tabs.
+  const [actPart, setActPart] = useState("theory");
 
   // One editable draft for the selected subject; `baseline` is what was
   // last loaded/saved, so the Save bar can tell you what's unsaved.
@@ -107,6 +109,7 @@ export default function MySubjectActivities() {
     setDraft(next);
     setBaseline(JSON.stringify(next));
     setTab("overview");
+    setActPart("theory");
   };
 
   const load = async (keepSelection = false) => {
@@ -573,6 +576,29 @@ export default function MySubjectActivities() {
                 {/* ---------- activities ---------- */}
                 {tab === "activities" && !isLabSupportOnly && (
                   <div className="space-y-3">
+                    {subjectHasLab && (
+                      <div className="flex gap-1.5 p-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-2xl w-fit" role="tablist" aria-label="Activity type">
+                        {[
+                          ["theory", "Theory Activities", ListChecks, theoryList.length],
+                          ["lab", "Lab Activities", FlaskConical, labList.length],
+                        ].map(([key, label, Icon, count]) => (
+                          <button
+                            key={key}
+                            id={`act-tab-${key}`}
+                            role="tab"
+                            aria-selected={actPart === key}
+                            onClick={() => setActPart(key)}
+                            className={`text-xs font-black px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors ${
+                              actPart === key ? "bg-[var(--primary)] text-white shadow" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                            }`}
+                          >
+                            <Icon size={13} /> {label}
+                            <span className={`text-[10px] px-1.5 rounded-md ${actPart === key ? "bg-white/20" : "bg-[var(--bg-card)]"}`}>{count}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {(!subjectHasLab || actPart === "theory") && (<>
                     <div className="flex items-center justify-between gap-3">
                       <SectionTitle icon={ListChecks} hint="Your own list — tick items feed No Dues, marks items feed Sessional Marks.">
                         {subjectHasLab ? "Theory Activities" : "My Activities"}
@@ -614,9 +640,10 @@ export default function MySubjectActivities() {
                     <div className="space-y-2.5">
                       {theoryList.map(({ a, idx }, n) => activityCard(a, idx, n + 1))}
                     </div>
+                    </>)}
 
-                    {subjectHasLab && (
-                      <div className="space-y-2.5 pt-4 border-t border-[var(--border-light)]">
+                    {subjectHasLab && actPart === "lab" && (
+                      <div className="space-y-2.5">
                         <div className="flex items-center justify-between gap-3">
                           <SectionTitle icon={FlaskConical} hint="Marks activities make up the Lab score (/20) in Sessional Marks; tick activities go on No Dues as “Lab: …”.">
                             Lab Activities
