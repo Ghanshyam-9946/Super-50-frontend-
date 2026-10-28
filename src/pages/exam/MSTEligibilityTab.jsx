@@ -2,8 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, CheckCircle2, Download, Loader2, Pencil, RotateCcw, Search, ShieldAlert, ShieldCheck, Users, Wallet, CalendarX, X } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
-import { SemesterPicker, Stat } from "./mstShared";
+import { DecisionModal, SemesterPicker, Stat } from "./mstShared";
 import { download, errText, inputCls, labelCls, rupees } from "./mstUtils";
+
+// The coordinator's comment, by whom and when.
+const DecisionNote = ({ r }) => (
+  <div className="mt-1 text-[11px] rounded-lg bg-[var(--bg-input)]/70 border-l-2 border-[var(--primary)] px-2 py-1 max-w-[280px]">
+    <span className="text-[var(--text-primary)]">&ldquo;{r.overrideReason}&rdquo;</span>
+    {r.overrideBy && <span className="text-[var(--text-secondary)]"> — {r.overrideBy}{r.overrideAt ? `, ${new Date(r.overrideAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}` : ""}</span>}
+  </div>
+);
 
 // The allowed list: attendance at or above the minimum (the exam's, or the
 // semester's own) and no fees due. A coordinator sees every student and, with
@@ -46,18 +54,15 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
     return () => { alive = false; };
   }, [params, tick]);
 
+  // Allow / Not allow opens the comment box; "By rules" clears at once.
+  const [deciding, setDeciding] = useState(null); // { r, allowed }
   // allowed: true (allow), false (stop) or null (let the rules decide again).
-  const decide = async (r, allowed) => {
-    let reason = "";
-    if (allowed !== null) {
-      reason = window.prompt(allowed ? `Allow ${r.name} — reason (kept in the record):` : `Not allow ${r.name} — reason (the student sees it):`) ?? null;
-      if (reason === null) return;
-      if (allowed !== r.autoAllowed && !reason.trim()) return toast.error("A reason is needed");
-    }
+  const decide = async (r, allowed, reason = "") => {
     setActing(r._id);
     try {
       const { data: d } = await api.patch(`/mst-exam/exams/${exam}/students/${r._id}/allow`, { allowed, reason });
       toast.success(d.message);
+      setDeciding(null);
       setTick((t) => t + 1);
     } catch (err) {
       toast.error(errText(err, "Could not save"));
@@ -186,13 +191,13 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
                           ? (
                             <div>
                               <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600"><CheckCircle2 size={12} /> Allowed{r.override === true ? " (by coordinator)" : ""}</span>
-                              {r.override === true && r.overrideReason && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{r.overrideReason}</div>}
+                              {r.override === true && <DecisionNote r={r} />}
                             </div>
                           )
                           : (
                             <div>
                               <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-red-500/10 text-red-600"><ShieldAlert size={12} /> Not allowed{r.override === false ? " (by coordinator)" : ""}</span>
-                              <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{r.override === false ? r.overrideReason : r.reasons.join(" · ")}</div>
+                              {r.override === false ? <DecisionNote r={r} /> : <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{r.reasons.join(" · ")}</div>}
                             </div>
                           )}
                         {r.seat && <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{r.seat.room} · {r.seat.label}{r.seat.status === "reserved" ? " (reserved)" : ""}</div>}
@@ -203,8 +208,8 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
                           {r.inExam === false ? <span className="text-[11px] text-[var(--text-secondary)]">Semester not in this exam</span> : (
                             <div className="flex flex-wrap gap-1.5">
                               {acting === r._id ? <Loader2 size={14} className="animate-spin text-[var(--primary)]" /> : (<>
-                                {!r.allowed && <button onClick={() => decide(r, true)} aria-label={`Allow ${r.name}`} className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center gap-1"><ShieldCheck size={12} /> Allow</button>}
-                                {r.allowed && <button onClick={() => decide(r, false)} aria-label={`Not allow ${r.name}`} className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-600 flex items-center gap-1"><ShieldAlert size={12} /> Not allow</button>}
+                                {!r.allowed && <button onClick={() => setDeciding({ r, allowed: true })} aria-label={`Allow ${r.name}`} className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center gap-1"><ShieldCheck size={12} /> Allow</button>}
+                                {r.allowed && <button onClick={() => setDeciding({ r, allowed: false })} aria-label={`Not allow ${r.name}`} className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-red-500/10 text-red-600 flex items-center gap-1"><ShieldAlert size={12} /> Not allow</button>}
                                 {r.override !== null && <button onClick={() => decide(r, null)} aria-label={`Reset ${r.name}`} title="Let the rules decide again" className="text-[11px] font-bold px-2 py-1.5 rounded-lg border border-[var(--border-light)] text-[var(--text-secondary)] flex items-center gap-1"><RotateCcw size={12} /> By rules</button>}
                               </>)}
                             </div>
@@ -218,6 +223,10 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
             </div>
           )}
       </div>
+      {deciding && (
+        <DecisionModal student={deciding.r} allowed={deciding.allowed} onClose={() => setDeciding(null)}
+          onSubmit={(comment) => decide(deciding.r, deciding.allowed, comment)} />
+      )}
     </div>
   );
 }

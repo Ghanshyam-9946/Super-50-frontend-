@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Download, Eye, EyeOff, FileText, LayoutGrid, List, Loader2, RefreshCw, Search, ShieldAlert, ShieldCheck, Sparkles, Undo2, Users, Armchair } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
-import { Stat } from "./mstShared";
+import { DecisionModal, Stat } from "./mstShared";
 import { dateText, download, errText, inputCls, rupees } from "./mstUtils";
 
 // The seating plan of one exam: make it, see each room as a grid (click a
@@ -92,13 +92,12 @@ export default function MSTSeatingTab({ exams, examId, setExamId, reload: reload
     if (data?.exam?.status !== "draft" && !window.confirm("Make the seating plan again? Every seat is worked out afresh (coordinator decisions are kept).")) return;
     act("gen", () => api.post(`/mst-exam/exams/${examId}/seating`, {}));
   };
-  const decide = (e, allowed) => {
-    let reason = "";
-    if (allowed !== null) {
-      reason = window.prompt(allowed ? `Allow ${e.name} — reason (kept in the record):` : `Stop ${e.name} — reason (the student sees it):`) || "";
-      if (allowed !== e.autoAllowed && !reason.trim()) return toast.error("A reason is needed");
-    }
-    act(`d-${e._id}`, () => api.patch(`/mst-exam/exams/${examId}/entries/${e._id}/allow`, { allowed, reason }));
+  // Allow / Not allow opens the comment box; clearing a decision does not.
+  const [deciding, setDeciding] = useState(null); // { e, allowed }
+  const decide = (e, allowed, reason = "") => {
+    if (allowed !== null && !reason) return setDeciding({ e, allowed });
+    setDeciding(null);
+    return act(`d-${e._id}`, () => api.patch(`/mst-exam/exams/${examId}/entries/${e._id}/allow`, { allowed, reason }));
   };
   const onSeat = (room, r, c, side, s) => {
     if (!selected) { if (s) setSelected(s); return; }
@@ -218,7 +217,7 @@ export default function MSTSeatingTab({ exams, examId, setExamId, reload: reload
                           <td className="px-4 py-2.5 text-right tabular-nums">{e.duesFees > 0 ? rupees(e.duesFees) : "—"}</td>
                           <td className="px-4 py-2.5">
                             <span className={`text-xs font-black px-2 py-0.5 rounded-full ${e.allowed ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"}`}>{e.allowed ? "Allowed" : "Not allowed"}</span>
-                            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{decided ? `Coordinator: ${e.override.reason} (${e.override.byName})` : e.reasons.join(" · ")}</div>
+                            <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{decided ? <>&ldquo;{e.override.reason}&rdquo; — {e.override.byName}{e.override.at ? `, ${new Date(e.override.at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}` : ""}</> : e.reasons.join(" · ")}</div>
                           </td>
                           <td className="px-4 py-2.5 text-xs">{e.seatStatus === "none" ? <span className="text-red-600 font-semibold">No seat</span> : <>{e.room} · {e.seatLabel}{e.seatStatus === "reserved" ? <span className="text-amber-600"> (reserved)</span> : ""}</>}</td>
                           <td className="px-4 py-2.5">
@@ -237,6 +236,10 @@ export default function MSTSeatingTab({ exams, examId, setExamId, reload: reload
             </div>
           )}
         </>
+      )}
+      {deciding && (
+        <DecisionModal student={deciding.e} allowed={deciding.allowed} onClose={() => setDeciding(null)}
+          onSubmit={(comment) => decide(deciding.e, deciding.allowed, comment)} />
       )}
     </div>
   );
