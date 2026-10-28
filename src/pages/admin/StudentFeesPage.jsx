@@ -12,7 +12,7 @@ import api from "../../services/api";
 const inputCls = "bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]";
 const rupees = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 const when = (d) => (d ? new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
-const SOURCE = { excel: "Excel upload", manual: "Edited here", "no-dues": "No Dues page" };
+const SOURCE = { excel: "Excel upload", manual: "Edited here", "no-dues": "No Dues page", "mst-tg": "MST Exam (TG)" };
 
 const saveBlob = (res, fallback) => {
   const name = /filename="([^"]+)"/.exec(res.headers["content-disposition"] || "")?.[1] || fallback;
