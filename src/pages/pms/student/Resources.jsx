@@ -3,6 +3,7 @@ import { Download, FileText, Inbox, FolderOpen, FileSpreadsheet, Presentation } 
 import toast from 'react-hot-toast';
 import { studentAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
+import { downloadFile } from '../../../utils/downloadFile';
 import { Card, Spinner, EmptyState } from '../../../components/pms/Common';
 import { formatDate } from '../../../utils/pms/helpers';
 
@@ -85,12 +86,12 @@ const StudentResources = () => {
                         <div className="font-mono truncate max-w-[140px]" title={t.originalName}>{t.originalName}</div>
                         <div>{formatBytes(t.size)} · {formatDate(t.createdAt)}</div>
                       </div>
-                      <a
-                        href={studentAPI.templateDownloadUrl(t._id)}
+                      <button
+                        onClick={() => downloadFile(studentAPI.templateDownloadUrl(t._id), t.originalName).catch((err) => toast.error(handleError(err)))}
                         className="btn-primary btn-sm"
                       >
                         <Download className="w-3 h-3" /> Download
-                      </a>
+                      </button>
                     </div>
                   </div>
                 ))}

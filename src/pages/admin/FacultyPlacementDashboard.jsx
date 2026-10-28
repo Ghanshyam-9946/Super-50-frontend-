@@ -31,11 +31,19 @@ import {
   Trash2,
   FileText,
   Download,
-  GraduationCap
+  GraduationCap,
+  Building2,
+  Award,
+  UserCheck,
+  Eye,
+  Code
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import FeedbackDetailModal from '../../components/FeedbackDetailModal';
+import StudentProfileModal from '../../components/StudentProfileModal';
+import { batchLabel } from '../../utils/batchLabel';
+import { getFileUrl, getImageUrl } from '../../utils/imageUrl';
 
 function EnrollStudentsModal({ onClose, onRefresh }) {
   const [file, setFile] = useState(null);
@@ -102,17 +110,22 @@ function EnrollStudentsModal({ onClose, onRefresh }) {
   );
 }
 
-function CreateDriveModal({ onClose, onRefresh }) {
+function CreateDriveModal({ onClose, onRefresh, initialCampusType = 'on campus' }) {
   const [loading, setLoading] = useState(false);
   const [targetFile, setTargetFile] = useState(null);
   const [form, setForm] = useState({
     companyName: '',
     package: '',
     driveType: 'placement drive',
-    campusType: 'on campus',
+    campusType: initialCampusType || 'on campus',
+    profileType: 'tech',
     jobDescription: '',
     deadline: '',
     batch: '2023-27',
+    enrollmentNumber: '',
+    studentName: '',
+    studentDepartment: '',
+    studentEmail: '',
     eligibilityCriteria: {
       minAttendance: 0,
       minPerformanceScore: 0,
@@ -120,6 +133,11 @@ function CreateDriveModal({ onClose, onRefresh }) {
     }
   });
   
+  const [isCustomDriveType, setIsCustomDriveType] = useState(false);
+  const [isCustomCampusType, setIsCustomCampusType] = useState(false);
+
+  const isSelfPlaced = (form.campusType || '').toLowerCase().replace(/[-_]/g, ' ').includes('self');
+
   // Rounds management
   const [rounds, setRounds] = useState([
     { name: 'Aptitude', description: 'Initial Aptitude Test' },
@@ -142,6 +160,53 @@ function CreateDriveModal({ onClose, onRefresh }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.driveType?.trim()) {
+      return toast.error('Please specify Drive Type');
+    }
+    if (!form.campusType?.trim()) {
+      return toast.error('Please specify Campus Type');
+    }
+
+    if (isSelfPlaced) {
+      if (!form.companyName?.trim()) return toast.error('Please enter Company Name');
+      if (!form.enrollmentNumber?.trim() && !form.studentName?.trim()) {
+        return toast.error('Please enter Student Enrollment Number or Name');
+      }
+      if (!targetFile) return toast.error('Please upload student offer letter (PDF, Word, or Image)');
+
+      setLoading(true);
+      const toastId = toast.loading('Recording self placed student...');
+      try {
+        const formData = new FormData();
+        formData.append('companyName', form.companyName);
+        formData.append('package', form.package);
+        formData.append('driveType', form.driveType || 'placement drive');
+        formData.append('campusType', 'self placed');
+        formData.append('profileType', form.profileType || 'tech');
+        formData.append('batch', form.batch);
+        formData.append('offerLetter', targetFile);
+        formData.append('file', targetFile);
+        if (form.enrollmentNumber) formData.append('enrollmentNumber', form.enrollmentNumber.trim());
+        if (form.studentName) formData.append('studentName', form.studentName.trim());
+        if (form.studentDepartment) formData.append('studentDepartment', form.studentDepartment.trim());
+        if (form.studentEmail) formData.append('studentEmail', form.studentEmail.trim());
+
+        await api.post('/placement/drives', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        toast.success('Self placed student recorded successfully!', { id: toastId });
+        onRefresh();
+        onClose();
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to record self placed student', { id: toastId });
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (rounds.some(r => !r.name.trim())) {
       return toast.error('Please enter names for all rounds');
     }
@@ -157,6 +222,7 @@ function CreateDriveModal({ onClose, onRefresh }) {
       formData.append('package', form.package);
       formData.append('driveType', form.driveType);
       formData.append('campusType', form.campusType);
+      formData.append('profileType', form.profileType || 'tech');
       formData.append('jobDescription', form.jobDescription);
       formData.append('deadline', form.deadline);
       formData.append('batch', form.batch);
@@ -230,61 +296,233 @@ function CreateDriveModal({ onClose, onRefresh }) {
               />
             </div>
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Drive Type *</label>
-              <select
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
-                value={form.driveType}
-                onChange={(e) => setForm({ ...form, driveType: e.target.value })}
-                required
-              >
-                <option value="internship">Internship</option>
-                <option value="internship+ppo">Internship + PPO</option>
-                <option value="placement drive">Placement Drive</option>
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Drive Type *</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomDriveType;
+                    setIsCustomDriveType(next);
+                    if (next) {
+                      setForm({ ...form, driveType: '' });
+                    } else {
+                      setForm({ ...form, driveType: 'placement drive' });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:opacity-80 transition-all bg-[var(--primary)]/10 px-2 py-0.5 rounded-lg border border-[var(--primary)]/20"
+                >
+                  <Plus size={11} />
+                  {isCustomDriveType ? 'Preset list' : '+ Add Custom'}
+                </button>
+              </div>
+
+              {isCustomDriveType ? (
+                <div className="space-y-1">
+                  <input
+                    className="w-full bg-[var(--bg-input)] border-2 border-[var(--primary)]/40 rounded-xl py-2 px-3 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                    type="text"
+                    placeholder="Enter custom drive type..."
+                    value={form.driveType}
+                    onChange={(e) => setForm({ ...form, driveType: e.target.value })}
+                    required
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-[var(--text-secondary)] font-medium">✍️ Custom drive type active</p>
+                </div>
+              ) : (
+                <select
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  value={form.driveType}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomDriveType(true);
+                      setForm({ ...form, driveType: '' });
+                    } else {
+                      setForm({ ...form, driveType: e.target.value });
+                    }
+                  }}
+                  required
+                >
+                  <option value="placement drive">Placement Drive (Full-Time)</option>
+                  <option value="internship">Internship</option>
+                  <option value="internship+ppo">Internship + PPO</option>
+                  <option value="apprenticeship">Apprenticeship</option>
+                  <option value="hackathon">Hackathon / Contest</option>
+                  <option value="off campus drive">Off-Campus Placement</option>
+                  <option value="__custom__">+ Add Custom Drive Type...</option>
+                </select>
+              )}
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Campus Type *</label>
-              <select
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
-                value={form.campusType}
-                onChange={(e) => setForm({ ...form, campusType: e.target.value })}
-                required
-              >
-                <option value="on campus">On Campus</option>
-                <option value="off campus">Off Campus</option>
-              </select>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Campus Type *</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !isCustomCampusType;
+                    setIsCustomCampusType(next);
+                    if (next) {
+                      setForm({ ...form, campusType: '' });
+                    } else {
+                      setForm({ ...form, campusType: 'on campus' });
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:opacity-80 transition-all bg-[var(--primary)]/10 px-2 py-0.5 rounded-lg border border-[var(--primary)]/20"
+                >
+                  <Plus size={11} />
+                  {isCustomCampusType ? 'Preset list' : '+ Add Custom'}
+                </button>
+              </div>
+
+              {isCustomCampusType ? (
+                <div className="space-y-1">
+                  <input
+                    className="w-full bg-[var(--bg-input)] border-2 border-[var(--primary)]/40 rounded-xl py-2 px-3 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                    type="text"
+                    placeholder="Enter custom campus type..."
+                    value={form.campusType}
+                    onChange={(e) => setForm({ ...form, campusType: e.target.value })}
+                    required
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-[var(--text-secondary)] font-medium">✍️ Custom campus type active</p>
+                </div>
+              ) : (
+                <select
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  value={form.campusType}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomCampusType(true);
+                      setForm({ ...form, campusType: '' });
+                    } else {
+                      setForm({ ...form, campusType: e.target.value });
+                    }
+                  }}
+                  required
+                >
+                  <option value="on campus">On Campus</option>
+                  <option value="off campus">Off Campus</option>
+                  <option value="pool campus">Pool Campus</option>
+                  <option value="self placed">Self Placed</option>
+                  <option value="__custom__">+ Add Custom Campus Type...</option>
+                </select>
+              )}
             </div>
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Application Deadline *</label>
-              <input 
-                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
-                type="date"
-                value={form.deadline}
-                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
-                required
+            {!isSelfPlaced && (
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Application Deadline *</label>
+                <input 
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  type="date"
+                  value={form.deadline}
+                  onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+                  required={!isSelfPlaced}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Job Profile Type (Tech vs Non-Tech) */}
+          <div className="border-t border-[var(--border-light)] pt-3 mt-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Job Profile Type *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, profileType: 'tech' })}
+                className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  (form.profileType || 'tech') === 'tech'
+                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500 shadow-sm'
+                    : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <Code size={14} />
+                Tech Role
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, profileType: 'non-tech' })}
+                className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  form.profileType === 'non-tech'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500 shadow-sm'
+                    : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <Briefcase size={14} />
+                Non-Tech Role
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--text-secondary)] mt-1 font-medium">
+              {(form.profileType || 'tech') === 'tech'
+                ? '💻 Software, Dev, QA, Data, Core IT, Cloud, etc.'
+                : '💼 Sales, Marketing, HR, Finance, Operations, Business Dev, etc.'}
+            </p>
+          </div>
+
+          {/* Self Placed Student Information */}
+          {isSelfPlaced && (
+            <div className="border-t border-[var(--border-light)] pt-4 mt-2 space-y-3">
+              <div className="flex items-center gap-2">
+                <UserCheck size={16} className="text-purple-500" />
+                <span className="text-xs font-black text-[var(--text-primary)] uppercase tracking-wider">Self Placed Student Details</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Enrollment Number *</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2 px-3 text-[12px] font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] uppercase"
+                    placeholder="e.g. 0187CS231084"
+                    value={form.enrollmentNumber}
+                    onChange={(e) => setForm({ ...form, enrollmentNumber: e.target.value })}
+                    required={isSelfPlaced}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Student Name *</label>
+                  <input
+                    type="text"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2 px-3 text-[12px] font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                    placeholder="Full Name"
+                    value={form.studentName}
+                    onChange={(e) => setForm({ ...form, studentName: e.target.value })}
+                    required={isSelfPlaced}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Job Description (JD) — only for standard drives */}
+          {!isSelfPlaced && (
+            <div className="border-t border-[var(--border-light)] pt-4 mt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Job Description (JD)</label>
+              <textarea 
+                className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm min-h-[80px]"
+                placeholder="Enter job roles, responsibilities, etc."
+                value={form.jobDescription}
+                onChange={(e) => setForm({ ...form, jobDescription: e.target.value })}
               />
             </div>
-          </div>
+          )}
 
-          {/* Job Description (JD) */}
+          {/* Upload Offer Letter (for Self Placed) OR Eligible Students List (for regular drives) */}
           <div className="border-t border-[var(--border-light)] pt-4 mt-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Job Description (JD)</label>
-            <textarea 
-              className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm min-h-[80px]"
-              placeholder="Enter job roles, responsibilities, etc."
-              value={form.jobDescription}
-              onChange={(e) => setForm({ ...form, jobDescription: e.target.value })}
-            />
-          </div>
-
-          {/* Target Enrollment File (Required) */}
-          <div className="border-t border-[var(--border-light)] pt-4 mt-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Eligible Students List (Excel/PDF) *</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+              {isSelfPlaced ? 'Upload Student Offer Letter (PDF / Word / Image) *' : 'Eligible Students List (Excel/PDF) *'}
+            </label>
             <div className="border-2 border-dashed border-[var(--border-light)] rounded-2xl p-6 text-center bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 transition-colors cursor-pointer" onClick={() => document.getElementById('target-excel-file').click()}>
-              <input type="file" id="target-excel-file" accept=".xlsx, .xls, .pdf" className="hidden" onChange={(e) => setTargetFile(e.target.files[0])} required />
+              <input
+                type="file"
+                id="target-excel-file"
+                accept={isSelfPlaced ? '.pdf, .jpg, .jpeg, .png, .webp, .doc, .docx' : '.xlsx, .xls, .pdf'}
+                className="hidden"
+                onChange={(e) => setTargetFile(e.target.files[0])}
+                required
+              />
               {targetFile ? (
                 <div className="space-y-1">
                   <FileSpreadsheet className="text-[var(--primary)] mx-auto animate-bounce" size={24} />
@@ -294,53 +532,60 @@ function CreateDriveModal({ onClose, onRefresh }) {
               ) : (
                 <div className="space-y-1">
                   <Upload className="text-slate-400 mx-auto" size={24} />
-                  <p className="text-xs font-bold text-[var(--text-primary)]">Select student list file</p>
-                  <p className="text-[10px] text-[var(--text-secondary)]">Only .xlsx, .xls, or .pdf</p>
+                  <p className="text-xs font-bold text-[var(--text-primary)]">
+                    {isSelfPlaced ? 'Select Offer Letter File' : 'Select student list file'}
+                  </p>
+                  <p className="text-[10px] text-[var(--text-secondary)]">
+                    {isSelfPlaced ? 'Only .pdf, .jpg, .png, or .doc files' : 'Only .xlsx, .xls, or .pdf'}
+                  </p>
                 </div>
               )}
             </div>
           </div>
           
-          <div className="border-t border-[var(--border-light)] pt-4 mt-2">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Hiring Rounds</span>
-              <button type="button" onClick={handleAddRound} className="text-xs text-[var(--primary)] font-black uppercase tracking-wider hover:opacity-80 flex items-center gap-1">
-                <Plus size={14} /> Add Round
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              {rounds.map((round, index) => (
-                <div key={index} className="flex gap-3 items-start bg-[var(--bg-input)]/20 p-3 rounded-2xl border border-[var(--border-light)]">
-                  <div className="flex-1 space-y-2">
-                    <input 
-                      className="w-full bg-white border border-[var(--border-light)] rounded-lg py-1.5 px-3 text-[12px] font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
-                      type="text"
-                      placeholder={`Round ${index + 1} Name`}
-                      value={round.name}
-                      onChange={(e) => handleRoundChange(index, 'name', e.target.value)}
-                      required
-                    />
-                    <input 
-                      className="w-full bg-white border border-[var(--border-light)] rounded-lg py-1.5 px-3 text-[12px] font-medium text-[var(--text-secondary)] focus:outline-none focus:border-[var(--primary)]"
-                      type="text"
-                      placeholder="Brief description (optional)"
-                      value={round.description}
-                      onChange={(e) => handleRoundChange(index, 'description', e.target.value)}
-                    />
+          {/* Hiring Rounds — only for standard drives */}
+          {!isSelfPlaced && (
+            <div className="border-t border-[var(--border-light)] pt-4 mt-2">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Hiring Rounds</span>
+                <button type="button" onClick={handleAddRound} className="text-xs text-[var(--primary)] font-black uppercase tracking-wider hover:opacity-80 flex items-center gap-1">
+                  <Plus size={14} /> Add Round
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {rounds.map((round, index) => (
+                  <div key={index} className="flex gap-3 items-start bg-[var(--bg-input)]/20 p-3 rounded-2xl border border-[var(--border-light)]">
+                    <div className="flex-1 space-y-2">
+                      <input 
+                        className="w-full bg-white border border-[var(--border-light)] rounded-lg py-1.5 px-3 text-[12px] font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)]"
+                        type="text"
+                        placeholder={`Round ${index + 1} Name`}
+                        value={round.name}
+                        onChange={(e) => handleRoundChange(index, 'name', e.target.value)}
+                        required={!isSelfPlaced}
+                      />
+                      <input 
+                        className="w-full bg-white border border-[var(--border-light)] rounded-lg py-1.5 px-3 text-[12px] font-medium text-[var(--text-secondary)] focus:outline-none focus:border-[var(--primary)]"
+                        type="text"
+                        placeholder="Brief description (optional)"
+                        value={round.description}
+                        onChange={(e) => handleRoundChange(index, 'description', e.target.value)}
+                      />
+                    </div>
+                    {rounds.length > 1 && (
+                      <button type="button" onClick={() => handleRemoveRound(index)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
-                  {rounds.length > 1 && (
-                    <button type="button" onClick={() => handleRemoveRound(index)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           
           <button type="submit" className="btn-premium w-full py-3.5 mt-6 flex items-center justify-center gap-2" disabled={loading}>
-            {loading ? 'Creating...' : 'Create Placement Drive'}
+            {loading ? (isSelfPlaced ? 'Recording Student...' : 'Creating...') : (isSelfPlaced ? 'Record Self Placed Student' : 'Create Placement Drive')}
           </button>
         </form>
       </motion.div>
@@ -369,13 +614,13 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
     }
 
     setUploading(true);
-    const toastId = toast.loading('Uploading round results & sending emails...');
+    const toastId = toast.loading('Uploading round results...');
     try {
       const response = await api.post('/placement/results/dynamic-upload', formData);
       const { updated, notFound } = response.data.data || {};
       toast.success(
-        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}. Emails sent!`,
-        { id: toastId, duration: 5000 }
+        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}.`,
+        { id: toastId, duration: 4000 }
       );
       onRefresh();
       onClose();
@@ -397,7 +642,7 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
           <Upload size={24} />
         </div>
         <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload Round Results</h2>
-        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Excel columns should match the round names. Emails will be sent automatically.</p>
+        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Excel columns should match the round names.</p>
 
         <form onSubmit={handleUpload} className="space-y-5">
           <div>
@@ -445,7 +690,7 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
           </div>
 
           <button type="submit" className="btn-premium w-full py-3.5 flex items-center justify-center gap-2" disabled={uploading || !file || !driveId}>
-            {uploading ? 'Uploading...' : 'Upload Results & Notify Students'}
+            {uploading ? 'Uploading...' : 'Upload Results'}
           </button>
         </form>
       </motion.div>
@@ -453,50 +698,83 @@ function UploadResultsModal({ drives, onClose, onRefresh }) {
   );
 }
 
-function ViewStudentsModal({ group, onClose }) {
+function ViewStudentsModal({ group, onClose, onViewStudentProfile }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative flex flex-col" style={{ width: '90%', maxWidth: 600, maxHeight: '85vh', padding: 32 }}>
-        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors">
+        className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-2xl rounded-3xl relative flex flex-col" style={{ width: '92%', maxWidth: 680, maxHeight: '85vh', padding: 32 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)] p-2 rounded-full transition-colors cursor-pointer">
           <X size={20} />
         </button>
         <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center border border-emerald-500/20 mb-4 shadow-sm shrink-0">
           <Users size={24} />
         </div>
-        <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1 shrink-0">
-          Selected Students
-        </h2>
-        <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6 shrink-0">
-          {group.drive.companyName} • {group.drive.package}
-        </p>
+        <div className="flex items-center justify-between mb-1 shrink-0 pr-8">
+          <h2 className="text-xl font-display font-black text-[var(--text-primary)]">
+            Selected Students
+          </h2>
+          <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-black border border-emerald-500/20">
+            {group.students.length} {group.students.length === 1 ? 'Student' : 'Students'}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mb-6 shrink-0">
+          <span className="text-[13px] text-[var(--text-secondary)] font-medium">
+            {group.drive.companyName} • {group.drive.package}
+          </span>
+          <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md text-[11px] border border-purple-200 capitalize">
+            {group.drive?.driveType || 'Placement Drive'}
+          </span>
+          <span className={`px-2 py-0.5 rounded-md font-bold capitalize text-[10px] inline-flex items-center gap-1 border ${
+            (group.drive?.profileType || 'tech').toLowerCase() === 'tech'
+              ? 'text-cyan-700 bg-cyan-50 border-cyan-200'
+              : 'text-amber-700 bg-amber-50 border-amber-200'
+          }`}>
+            <Code size={11} /> {(group.drive?.profileType || 'tech').toLowerCase() === 'tech' ? 'Tech Role' : 'Non-Tech Role'}
+          </span>
+          {group.drive?.campusType && (
+            <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 capitalize">
+              {group.drive.campusType}
+            </span>
+          )}
+        </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
           {group.students.map((student, idx) => (
-            <div key={student._id || idx} className="p-4 rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)]/20 flex items-center justify-between">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-bold">
+            <div key={student._id || idx} className="p-4 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-input)]/20 hover:bg-[var(--bg-input)]/40 hover:border-[var(--primary)]/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+               <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center font-display font-black text-base shrink-0 border border-[var(--primary)]/20">
                     {student.name ? student.name.charAt(0).toUpperCase() : 'S'}
                   </div>
-                  <div>
-                    <p className="font-bold text-[14px] text-[var(--text-primary)]">{student.name || 'Unknown Student'}</p>
-                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{student.email || 'N/A'} • {student.department || 'N/A'}</p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-[14px] text-[var(--text-primary)] truncate">{student.name || 'Unknown Student'}</p>
+                    <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 truncate font-medium">
+                      <span className="font-mono font-bold text-[var(--text-primary)]">{student.enrollmentNumber || 'N/A'}</span>
+                      {student.department ? ` • ${student.department}` : ''}
+                      {student.batch ? ` • Batch ${normalizeBatch(student.batch)}` : ''}
+                    </p>
+                    {student.mentor && (
+                      <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mt-0.5">
+                        Mentor: {student.mentor.name || student.mentor}
+                      </p>
+                    )}
                   </div>
                </div>
-               <div className="text-right flex flex-col items-end gap-1">
-                  <p className="text-[12px] font-bold text-[var(--text-primary)]">{student.enrollmentNumber || 'N/A'}</p>
-                  {student.mentor ? (
-                    <span className="text-[9px] bg-[var(--primary)]/10 text-[var(--primary)] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">
-                      Mentor: {student.mentor.name || student.mentor}
-                    </span>
-                  ) : (
-                    <span className="text-slate-400 text-[9px] italic">No Mentor</span>
-                  )}
+
+               <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[var(--border-light)]/60">
+                  <button
+                    type="button"
+                    onClick={() => onViewStudentProfile && onViewStudentProfile(student)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[var(--primary)] text-white hover:opacity-90 transition-all text-xs font-black shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
+                    title="View complete student data (Academics, Attendance, Placement, Activities)"
+                  >
+                    <Eye size={14} />
+                    <span>View Data</span>
+                  </button>
                </div>
             </div>
           ))}
           {group.students.length === 0 && (
-             <div className="text-center py-8 text-slate-400 text-sm font-medium">No students found</div>
+             <div className="text-center py-12 text-slate-400 text-sm font-medium">No students found for this drive.</div>
           )}
         </div>
       </motion.div>
@@ -604,14 +882,77 @@ const normalizeBatch = (rawBatch) => {
 const FacultyPlacementDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { drives, stats, selections, feedbacks, loading, error } = useSelector((state) => state.placement);
+  const { drives, stats, selections, selfPlaced, feedbacks, loading, error } = useSelector((state) => state.placement);
   const [activeTab, setActiveTab] = useState('drives');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBatch, setSelectedBatch] = useState('all');
+  const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
+  const [selfPlacedProfileTypeFilter, setSelfPlacedProfileTypeFilter] = useState('all');
+  const [selfPlacedDriveTypeFilter, setSelfPlacedDriveTypeFilter] = useState('all');
+  const [selectionsProfileTypeFilter, setSelectionsProfileTypeFilter] = useState('all');
+  const [selectionsDriveTypeFilter, setSelectionsDriveTypeFilter] = useState('all');
+  const [createDriveInitialType, setCreateDriveInitialType] = useState('on campus');
 
-  // Available batches calculation (null-safe)
+  const allSelfPlaced = React.useMemo(() => {
+    if (selfPlaced && selfPlaced.length > 0) return selfPlaced;
+    return (selections || []).filter(s => {
+      const cType = (s.drive?.campusType || '').toLowerCase().replace(/[-_]/g, ' ');
+      return cType.includes('self') || !!s.offerLetter || !!s.drive?.offerLetter;
+    });
+  }, [selfPlaced, selections]);
+
+  // Self placed records within selected batch
+  const selfPlacedInBatch = React.useMemo(() => {
+    let list = allSelfPlaced || [];
+    if (selectedBatch !== 'all') {
+      list = list.filter(s => {
+        const studentB = s?.student?.batch ? normalizeBatch(s.student.batch) : '';
+        const driveB = s?.drive?.batch ? normalizeBatch(s.drive.batch) : '';
+        return studentB === selectedBatch || driveB === selectedBatch;
+      });
+    }
+    return list;
+  }, [allSelfPlaced, selectedBatch]);
+
+  const selfPlacedTechCount = selfPlacedInBatch.filter(s => (s.drive?.profileType || 'tech').toLowerCase() === 'tech').length;
+  const selfPlacedNonTechCount = selfPlacedInBatch.filter(s => (s.drive?.profileType || '').toLowerCase() === 'non-tech').length;
+
+  const availableSelfPlacedDriveTypes = React.useMemo(() => {
+    const set = new Set();
+    (selfPlacedInBatch || []).forEach(s => {
+      const dt = s.drive?.driveType;
+      if (dt && dt.trim()) set.add(dt.trim());
+    });
+    return Array.from(set);
+  }, [selfPlacedInBatch]);
+
+  const filteredSelfPlaced = React.useMemo(() => {
+    let list = selfPlacedInBatch;
+    if (selfPlacedProfileTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.profileType || 'tech').toLowerCase() === selfPlacedProfileTypeFilter);
+    }
+    if (selfPlacedDriveTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.driveType || '').toLowerCase() === selfPlacedDriveTypeFilter.toLowerCase());
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(s =>
+        s.student?.name?.toLowerCase().includes(q) ||
+        s.student?.enrollmentNumber?.toLowerCase().includes(q) ||
+        s.drive?.companyName?.toLowerCase().includes(q) ||
+        s.student?.department?.toLowerCase().includes(q) ||
+        s.drive?.driveType?.toLowerCase().includes(q) ||
+        s.drive?.profileType?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [selfPlacedInBatch, searchQuery, selfPlacedProfileTypeFilter, selfPlacedDriveTypeFilter]);
+
+  // Available batches calculation (null-safe) — built from actual drive/
+  // selection records rather than the current student roster, since this
+  // dashboard's history can include batches that have since graduated.
   const availableBatches = React.useMemo(() => {
-    const set = new Set(['2023', '2024', '2025', '2026']);
+    const set = new Set();
     (drives || []).forEach(d => {
       if (d?.batch) set.add(normalizeBatch(d.batch));
     });
@@ -619,8 +960,12 @@ const FacultyPlacementDashboard = () => {
       if (s?.student?.batch) set.add(normalizeBatch(s.student.batch));
       if (s?.drive?.batch) set.add(normalizeBatch(s.drive.batch));
     });
+    (allSelfPlaced || []).forEach(s => {
+      if (s?.student?.batch) set.add(normalizeBatch(s.student.batch));
+      if (s?.drive?.batch) set.add(normalizeBatch(s.drive.batch));
+    });
     return Array.from(set).sort((a, b) => b.localeCompare(a));
-  }, [drives, selections]);
+  }, [drives, selections, allSelfPlaced]);
 
   // Filtered drives by selected batch (null-safe)
   const filteredDrives = React.useMemo(() => {
@@ -629,8 +974,8 @@ const FacultyPlacementDashboard = () => {
     return safeDrives.filter(d => normalizeBatch(d?.batch) === selectedBatch);
   }, [drives, selectedBatch]);
 
-  // Filtered selections by selected batch (null-safe)
-  const filteredSelections = React.useMemo(() => {
+  // Base selections in selected batch
+  const selectionsInBatch = React.useMemo(() => {
     const safeSelections = selections || [];
     if (selectedBatch === 'all') return safeSelections;
     return safeSelections.filter(s => {
@@ -640,9 +985,50 @@ const FacultyPlacementDashboard = () => {
     });
   }, [selections, selectedBatch]);
 
+  const selectionsTechCount = React.useMemo(() => {
+    return selectionsInBatch.filter(s => (s.drive?.profileType || 'tech').toLowerCase() === 'tech').length;
+  }, [selectionsInBatch]);
+
+  const selectionsNonTechCount = React.useMemo(() => {
+    return selectionsInBatch.filter(s => (s.drive?.profileType || '').toLowerCase() === 'non-tech').length;
+  }, [selectionsInBatch]);
+
+  const availableSelectionsDriveTypes = React.useMemo(() => {
+    const set = new Set();
+    (selectionsInBatch || []).forEach(s => {
+      const dt = s.drive?.driveType;
+      if (dt && dt.trim()) set.add(dt.trim());
+    });
+    return Array.from(set);
+  }, [selectionsInBatch]);
+
+  // Filtered selections by selected batch, profile type, drive type, and search query
+  const filteredSelections = React.useMemo(() => {
+    let list = selectionsInBatch;
+    if (selectionsProfileTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.profileType || 'tech').toLowerCase() === selectionsProfileTypeFilter);
+    }
+    if (selectionsDriveTypeFilter !== 'all') {
+      list = list.filter(s => (s?.drive?.driveType || '').toLowerCase() === selectionsDriveTypeFilter.toLowerCase());
+    }
+    if (searchQuery.trim() && activeTab === 'selections') {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(s =>
+        s.student?.name?.toLowerCase().includes(q) ||
+        s.student?.enrollmentNumber?.toLowerCase().includes(q) ||
+        s.drive?.companyName?.toLowerCase().includes(q) ||
+        s.student?.department?.toLowerCase().includes(q) ||
+        s.drive?.driveType?.toLowerCase().includes(q) ||
+        s.drive?.profileType?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [selectionsInBatch, selectionsProfileTypeFilter, selectionsDriveTypeFilter, searchQuery, activeTab]);
+
   // Dynamic real-time stats calculation
   const activeDrivesCount = React.useMemo(() => {
     return filteredDrives.filter(d => {
+      if (d.isCompleted || d.isActive === false) return false;
       if (!d.deadline) return true;
       const deadlineDate = new Date(d.deadline);
       const today = new Date();
@@ -652,8 +1038,8 @@ const FacultyPlacementDashboard = () => {
   }, [filteredDrives]);
 
   const totalPlacedCount = React.useMemo(() => {
-    return filteredSelections.length;
-  }, [filteredSelections]);
+    return selectionsInBatch.length;
+  }, [selectionsInBatch]);
 
   const avgPackageStr = React.useMemo(() => {
     const extractNumericPackage = (pkgStr) => {
@@ -662,7 +1048,7 @@ const FacultyPlacementDashboard = () => {
       return match ? parseFloat(match[1]) : 0;
     };
 
-    const selectedPackages = filteredSelections
+    const selectedPackages = selectionsInBatch
       .map(s => extractNumericPackage(s.drive?.package))
       .filter(p => p > 0);
 
@@ -742,11 +1128,15 @@ const FacultyPlacementDashboard = () => {
     dispatch(fetchFacultyPlacementDashboard());
   }, [dispatch]);
 
-  // Auto-open modal based on ?modal= query param
+  // Auto-open modal based on ?modal= query param or switch tab based on ?tab=
   const location = useLocation();
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const modal = params.get('modal');
+    const tabParam = params.get('tab');
+    if (tabParam === 'self_placed' || tabParam === 'self-placed') {
+      setActiveTab('self_placed');
+    }
     if (modal === 'enroll') {
       setShowEnrollModal(true);
     } else if (modal === 'create-drive') {
@@ -831,7 +1221,19 @@ const FacultyPlacementDashboard = () => {
           <p className="text-[var(--text-secondary)] text-sm font-medium mt-1">Real-time drive tracking, hiring rounds & placement statistics.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => navigate('/tp/enroll-students')}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+          >
+            <UserPlus size={15} /> Enroll Students
+          </button>
+          <button
+            onClick={() => navigate('/tp/create-drive')}
+            className="btn-premium flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold cursor-pointer shadow-md"
+          >
+            <Plus size={15} /> Create Drive
+          </button>
           <div className="flex items-center gap-2.5 bg-[var(--bg-input)] border border-[var(--border-light)] px-4 py-2.5 rounded-2xl shadow-sm">
             <Filter size={16} className="text-[var(--primary)] shrink-0" />
             <span className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-wider">Batch:</span>
@@ -843,7 +1245,7 @@ const FacultyPlacementDashboard = () => {
             >
               <option value="all">All Batches</option>
               {availableBatches.map(b => (
-                <option key={b} value={b}>Batch {b}</option>
+                <option key={b} value={b}>Batch {batchLabel(b)}</option>
               ))}
             </select>
           </div>
@@ -855,28 +1257,33 @@ const FacultyPlacementDashboard = () => {
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5"
       >
         {[
-          { label: 'Active Drives', value: activeDrivesCount, icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50' },
-          { label: 'Total Placed', value: totalPlacedCount, icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'Avg Package', value: avgPackageStr, icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-50' },
-          { label: 'Ongoing Rounds', value: ongoingRoundsCount, icon: Filter, color: 'text-amber-500', bg: 'bg-amber-50' },
+          { label: 'Active Drives', value: activeDrivesCount, icon: Briefcase, color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/30', tab: 'drives' },
+          { label: 'Total Placed', value: totalPlacedCount, icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/30', tab: 'selections' },
+          { label: 'Self Placed', value: filteredSelfPlaced.length, icon: Award, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/30', tab: 'self_placed' },
+          { label: 'Avg Package', value: avgPackageStr, icon: BarChart3, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/30' },
+          { label: 'Ongoing Rounds', value: ongoingRoundsCount, icon: Filter, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30', tab: 'drives' },
         ].map((stat, i) => (
           <motion.div
             key={i}
             variants={itemVariants}
-            className="glass-card p-6 flex flex-col justify-between hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+            onClick={() => stat.tab && setActiveTab(stat.tab)}
+            className={`glass-card p-5 md:p-6 flex flex-col justify-between hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
+              stat.tab ? 'cursor-pointer hover:border-[var(--primary)]/50' : ''
+            } ${activeTab === stat.tab ? 'ring-2 ring-[var(--primary)] shadow-md border-[var(--primary)]/40' : ''}`}
+            title={stat.tab ? `Click to view ${stat.label}` : undefined}
           >
             <div className="flex items-center justify-between">
-              <div className={`p-3 rounded-[1rem] ${stat.bg} ${stat.color} border border-[var(--border-light)]`}>
-                <stat.icon size={24} />
+              <div className={`p-2.5 md:p-3 rounded-[1rem] ${stat.bg} ${stat.color} border border-[var(--border-light)]`}>
+                <stat.icon size={22} />
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] opacity-60">Real-time</span>
             </div>
-            <div className="mt-6">
-              <span className="text-3xl font-display font-black text-[var(--text-primary)]">{stat.value}</span>
-              <p className="text-[var(--text-secondary)] text-[13px] font-bold mt-1 tracking-wide uppercase opacity-80">{stat.label}</p>
+            <div className="mt-5 md:mt-6">
+              <span className="text-2xl md:text-3xl font-display font-black text-[var(--text-primary)]">{stat.value}</span>
+              <p className="text-[var(--text-secondary)] text-[12px] md:text-[13px] font-bold mt-1 tracking-wide uppercase opacity-80">{stat.label}</p>
             </div>
           </motion.div>
         ))}
@@ -884,16 +1291,33 @@ const FacultyPlacementDashboard = () => {
 
       {/* Main Content */}
       <div className="space-y-8 mt-4">
-        <div className="flex items-center gap-8 border-b border-[var(--border-light)] px-2">
-          {['drives', 'feedback', 'selections', 'questions'].map((tab) => (
+        <div className="flex items-center gap-8 border-b border-[var(--border-light)] px-2 overflow-x-auto">
+          {['drives', 'self_placed', 'selections', 'feedback', 'questions'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-4 text-[13px] font-black uppercase tracking-[0.1em] transition-all relative ${
+              className={`pb-4 text-[13px] font-black uppercase tracking-[0.1em] transition-all relative flex items-center gap-2 whitespace-nowrap ${
                 activeTab === tab ? 'text-[var(--primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {tab === 'feedback' ? 'Experiences' : tab === 'questions' ? 'Past Questions' : tab}
+              <span>
+                {tab === 'self_placed'
+                  ? 'Self Placed'
+                  : tab === 'feedback'
+                  ? 'Experiences'
+                  : tab === 'questions'
+                  ? 'Past Questions'
+                  : tab === 'selections'
+                  ? 'Campus Selections'
+                  : 'Drives'}
+              </span>
+              {tab === 'self_placed' && (
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                  activeTab === tab ? 'bg-[var(--primary)]/15 text-[var(--primary)]' : 'bg-slate-200/60 dark:bg-slate-800 text-[var(--text-secondary)]'
+                }`}>
+                  {filteredSelfPlaced.length}
+                </span>
+              )}
               {activeTab === tab && (
                 <motion.div layoutId="activeTabDashboard" className="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--primary)] rounded-t-full" />
               )}
@@ -921,6 +1345,15 @@ const FacultyPlacementDashboard = () => {
                       {drive.campusType && (
                         <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md capitalize">{drive.campusType}</span>
                       )}
+                      {(drive.profileType || 'tech').toLowerCase() === 'non-tech' ? (
+                        <span className="text-amber-700 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1 uppercase">
+                          <Briefcase size={11} /> Non-Tech
+                        </span>
+                      ) : (
+                        <span className="text-cyan-700 dark:text-cyan-400 font-bold bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1 uppercase">
+                          <Code size={11} /> Tech
+                        </span>
+                      )}
                       <span className="text-indigo-600 font-bold bg-indigo-50 border border-indigo-200/50 px-2 py-0.5 rounded-md text-[12px] flex items-center gap-1">
                         <GraduationCap size={13} /> Batch {normalizeBatch(drive.batch || '2023')}
                       </span>
@@ -938,11 +1371,18 @@ const FacultyPlacementDashboard = () => {
                 
                 <div className="flex items-center gap-8 mt-4 md:mt-0">
                   <div className="hidden lg:flex flex-col items-end pr-8 border-r border-[var(--border-light)]">
-                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Eligibility</p>
-                    <div className="flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded border border-emerald-200 shadow-sm">
-                      <CheckCircle size={12} />
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Active</span>
-                    </div>
+                    <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Status</p>
+                    {drive.isCompleted || drive.isActive === false ? (
+                      <div className="flex items-center gap-1.5 mt-1.5 bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded border border-blue-200 shadow-sm">
+                        <CheckCircle size={12} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Completed</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 mt-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-0.5 rounded border border-emerald-200 shadow-sm">
+                        <CheckCircle size={12} />
+                        <span className="text-[11px] font-black uppercase tracking-wider">Active</span>
+                      </div>
+                    )}
                   </div>
                   <div className="hidden md:flex flex-col items-end">
                     <p className="text-[10px] text-[var(--text-secondary)] uppercase font-black tracking-widest opacity-80">Deadline</p>
@@ -1086,50 +1526,416 @@ const FacultyPlacementDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'selections' && (
-          <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {groupedSelections.map((group, idx) => (
-              <motion.div
-                key={group.drive._id}
-                variants={itemVariants}
-                className="glass-card p-6 flex flex-col justify-between group hover:border-emerald-300 transition-all duration-300 relative overflow-hidden min-h-[160px]"
+        {/* Self Placed Students Tab */}
+        {activeTab === 'self_placed' && (
+          <div className="space-y-6 animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="relative max-w-md w-full">
+                <Search className="absolute left-4 top-3.5 text-[var(--text-secondary)] opacity-60" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Search student name, enrollment no, company..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                />
+              </div>
+              <button 
+                onClick={() => {
+                  setCreateDriveInitialType('self placed');
+                  setShowCreateDriveModal(true);
+                }}
+                className="btn-premium py-2.5 px-5 flex items-center gap-2 text-xs cursor-pointer shadow-sm"
               >
-                <div className="absolute -right-10 -top-10 w-32 h-32 blur-[40px] opacity-20 rounded-full bg-emerald-500 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
-                
-                <div className="flex items-start justify-between relative z-10 mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-[1rem] bg-emerald-50 flex items-center justify-center border border-emerald-200 shrink-0 shadow-sm">
-                      <Briefcase className="text-emerald-500" size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{group.drive?.companyName || 'Drive'}</h3>
-                      <p className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1 inline-block">{group.drive?.package || 'N/A'}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                     <span className="text-3xl font-black text-[var(--text-primary)]">{group.students.length}</span>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Selected</p>
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => setSelectedDriveGroup(group)}
-                  className="w-full py-2.5 mt-auto rounded-xl bg-[var(--bg-input)] hover:bg-[var(--primary)] hover:text-white text-[13px] font-bold text-[var(--text-primary)] border border-[var(--border-light)] transition-all flex items-center justify-center gap-2 relative z-10"
+                <Plus size={16} /> Add Self Placed Student
+              </button>
+            </div>
+
+            {/* Filter Controls for Self Placed: Profile Type & Drive Type */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] mr-1">
+                  Profile:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelfPlacedProfileTypeFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    selfPlacedProfileTypeFilter === 'all'
+                      ? 'bg-[var(--primary)] text-white shadow-sm font-black'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-light)]'
+                  }`}
                 >
-                  <Users size={16} /> View Students
+                  All ({selfPlacedInBatch.length})
                 </button>
-              </motion.div>
-            ))}
-            {groupedSelections.length === 0 && (
-              <motion.div variants={itemVariants} className="col-span-full glass-card p-16 text-center border-dashed">
-                <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                  <Users className="text-emerald-300" size={36} />
+                <button
+                  type="button"
+                  onClick={() => setSelfPlacedProfileTypeFilter('tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selfPlacedProfileTypeFilter === 'tech'
+                      ? 'bg-cyan-600 text-white shadow-sm font-black'
+                      : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20'
+                  }`}
+                >
+                  <Code size={13} />
+                  Tech ({selfPlacedTechCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelfPlacedProfileTypeFilter('non-tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selfPlacedProfileTypeFilter === 'non-tech'
+                      ? 'bg-amber-600 text-white shadow-sm font-black'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
+                  }`}
+                >
+                  <Briefcase size={13} />
+                  Non-Tech ({selfPlacedNonTechCount})
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] shrink-0">
+                  Drive Type:
+                </span>
+                <select
+                  value={selfPlacedDriveTypeFilter}
+                  onChange={(e) => setSelfPlacedDriveTypeFilter(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] capitalize cursor-pointer shadow-sm"
+                >
+                  <option value="all">All Drive Types</option>
+                  <option value="placement drive">Placement Drive</option>
+                  <option value="internship">Internship</option>
+                  <option value="internship+ppo">Internship + PPO</option>
+                  <option value="apprenticeship">Apprenticeship</option>
+                  <option value="hackathon">Hackathon</option>
+                  <option value="off campus drive">Off-Campus Placement</option>
+                  {availableSelfPlacedDriveTypes
+                    .filter(t => !['placement drive', 'internship', 'internship+ppo', 'apprenticeship', 'hackathon', 'off campus drive'].includes(t.toLowerCase()))
+                    .map(t => (
+                      <option key={t} value={t.toLowerCase()}>{t}</option>
+                    ))}
+                </select>
+
+                {(selfPlacedProfileTypeFilter !== 'all' || selfPlacedDriveTypeFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelfPlacedProfileTypeFilter('all');
+                      setSelfPlacedDriveTypeFilter('all');
+                    }}
+                    className="text-xs text-[var(--primary)] font-bold hover:underline ml-1 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSelfPlaced.map((app) => {
+                const offerUrl = app.offerLetter || app.drive?.offerLetter;
+                return (
+                  <motion.div
+                    key={app._id}
+                    variants={itemVariants}
+                    className="glass-card p-6 flex flex-col justify-between group hover:border-purple-400/50 transition-all duration-300 relative overflow-hidden shadow-sm"
+                  >
+                    <div className="space-y-4">
+                      {/* Top: Student Details & Status badge */}
+                      <div className="flex items-start justify-between gap-2 pb-3 border-b border-[var(--border-light)]">
+                        <div className="flex items-center gap-3">
+                          <div className="w-11 h-11 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 font-display font-black text-sm flex items-center justify-center border border-purple-500/20">
+                            {app.student?.name?.[0]?.toUpperCase() || 'S'}
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black text-[var(--text-primary)]">
+                              {app.student?.name || app.enrollmentNumber}
+                            </h4>
+                            <p className="text-[11px] font-bold text-[var(--text-secondary)] font-mono">
+                              {app.student?.enrollmentNumber || app.enrollmentNumber || '—'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 whitespace-nowrap">
+                            Self Placed
+                          </span>
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-extrabold capitalize bg-purple-50 dark:bg-purple-950/40 text-[var(--primary)] border border-purple-200/50">
+                            {app.drive?.driveType || 'Placement Drive'}
+                          </span>
+                          {(app.drive?.profileType || 'tech').toLowerCase() === 'non-tech' ? (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                              <Briefcase size={10} /> Non-Tech
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 flex items-center gap-1">
+                              <Code size={10} /> Tech
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Company & Package Card */}
+                      <div className="bg-[var(--bg-app)] p-3.5 rounded-2xl border border-[var(--border-light)] space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Company</span>
+                          <span className="text-sm font-black text-[var(--text-primary)] flex items-center gap-1.5">
+                            <Building2 size={14} className="text-purple-500 shrink-0" />
+                            {app.drive?.companyName || 'Self Placed'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Drive Type</span>
+                          <span className="text-xs font-bold text-[var(--text-primary)] capitalize">
+                            {app.drive?.driveType || 'Placement Drive'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Profile Type</span>
+                          <span className={`text-xs font-black capitalize flex items-center gap-1 ${(app.drive?.profileType || 'tech').toLowerCase() === 'non-tech' ? 'text-amber-600 dark:text-amber-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
+                            {(app.drive?.profileType || 'tech').toLowerCase() === 'non-tech' ? '💼 Non-Tech' : '💻 Tech'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Package / CTC</span>
+                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                            {app.drive?.package || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Dept & Batch</span>
+                          <span className="text-[11px] font-bold text-[var(--text-secondary)]">
+                            {app.student?.department || '—'} • Batch {app.student?.batch || app.drive?.batch || '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Offer Letter & Student Data CTAs */}
+                    <div className="mt-4 pt-3 border-t border-[var(--border-light)] flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        {offerUrl ? (
+                          <a
+                            href={getImageUrl(offerUrl)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hover:underline bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-xl border border-purple-500/20 transition-all cursor-pointer"
+                          >
+                            <FileText size={14} /> View Offer Letter
+                          </a>
+                        ) : (
+                          <span className="text-[11px] text-[var(--text-secondary)] italic">
+                            No offer letter attached
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStudentForProfile(app.student?._id || app.student || app.enrollmentNumber)}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:underline bg-[var(--primary)]/10 hover:bg-[var(--primary)]/20 px-3 py-1.5 rounded-xl border border-[var(--primary)]/20 transition-all cursor-pointer active:scale-95"
+                          title="View complete student data"
+                        >
+                          <Eye size={14} /> View Data
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-[var(--text-secondary)] font-medium">
+                        {app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
+
+              {filteredSelfPlaced.length === 0 && (
+                <div className="col-span-full py-16 text-center bg-[var(--bg-card)] border border-dashed border-[var(--border-light)] rounded-3xl">
+                  <div className="w-16 h-16 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-purple-500">
+                    <Award size={32} />
+                  </div>
+                  <h4 className="text-lg font-black text-[var(--text-primary)]">No Self Placed Students Found</h4>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium mt-1 max-w-sm mx-auto">
+                    Students who secure job offers independently or off-campus can be recorded here along with their offer letters.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setCreateDriveInitialType('self placed');
+                      setShowCreateDriveModal(true);
+                    }}
+                    className="btn-premium py-2 px-4 text-xs mt-4 inline-flex items-center gap-1.5"
+                  >
+                    <Plus size={14} /> Record Self Placed Student
+                  </button>
                 </div>
-                <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">No Selections Yet</h3>
-                <p className="text-[var(--text-secondary)] font-medium mt-3 max-w-md mx-auto">Selected students will appear here once they pass all rounds.</p>
-              </motion.div>
-            )}
-          </motion.div>
+              )}
+            </motion.div>
+          </div>
+        )}
+
+        {activeTab === 'selections' && (
+          <div className="space-y-6 animate-fade-in-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="relative max-w-md w-full">
+                <Search className="absolute left-4 top-3.5 text-[var(--text-secondary)] opacity-60" size={18} />
+                <input 
+                  type="text" 
+                  placeholder="Search student name, enrollment no, company..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl text-sm focus:outline-none focus:border-[var(--primary)] transition-all font-medium shadow-sm"
+                />
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] font-bold uppercase tracking-wider">
+                Showing {filteredSelections.length} selections across {groupedSelections.length} {groupedSelections.length === 1 ? 'drive' : 'drives'}
+              </p>
+            </div>
+
+            {/* Filter Controls for Selections: Profile Type & Drive Type */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] mr-1">
+                  Profile:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectionsProfileTypeFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    selectionsProfileTypeFilter === 'all'
+                      ? 'bg-[var(--primary)] text-white shadow-sm font-black'
+                      : 'bg-[var(--bg-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-light)]'
+                  }`}
+                >
+                  All ({selectionsInBatch.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectionsProfileTypeFilter('tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectionsProfileTypeFilter === 'tech'
+                      ? 'bg-cyan-600 text-white shadow-sm font-black'
+                      : 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20'
+                  }`}
+                >
+                  <Code size={13} />
+                  Tech ({selectionsTechCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectionsProfileTypeFilter('non-tech')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    selectionsProfileTypeFilter === 'non-tech'
+                      ? 'bg-amber-600 text-white shadow-sm font-black'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20'
+                  }`}
+                >
+                  <Briefcase size={13} />
+                  Non-Tech ({selectionsNonTechCount})
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-secondary)] shrink-0">
+                  Drive Type:
+                </span>
+                <select
+                  value={selectionsDriveTypeFilter}
+                  onChange={(e) => setSelectionsDriveTypeFilter(e.target.value)}
+                  className="bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-1.5 px-3 text-xs font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--primary)] capitalize cursor-pointer shadow-sm"
+                >
+                  <option value="all">All Drive Types</option>
+                  <option value="placement drive">Placement Drive</option>
+                  <option value="internship">Internship</option>
+                  <option value="internship+ppo">Internship + PPO</option>
+                  <option value="apprenticeship">Apprenticeship</option>
+                  <option value="hackathon">Hackathon</option>
+                  <option value="off campus drive">Off-Campus Placement</option>
+                  {availableSelectionsDriveTypes
+                    .filter(t => !['placement drive', 'internship', 'internship+ppo', 'apprenticeship', 'hackathon', 'off campus drive'].includes(t.toLowerCase()))
+                    .map(t => (
+                      <option key={t} value={t.toLowerCase()}>{t}</option>
+                    ))}
+                </select>
+
+                {(selectionsProfileTypeFilter !== 'all' || selectionsDriveTypeFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectionsProfileTypeFilter('all');
+                      setSelectionsDriveTypeFilter('all');
+                    }}
+                    className="text-xs text-[var(--primary)] font-bold hover:underline ml-1 cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {groupedSelections.map((group, idx) => (
+                <motion.div
+                  key={group.drive._id}
+                  variants={itemVariants}
+                  className="glass-card p-6 flex flex-col justify-between group hover:border-emerald-300 transition-all duration-300 relative overflow-hidden min-h-[190px]"
+                >
+                  <div className="absolute -right-10 -top-10 w-32 h-32 blur-[40px] opacity-20 rounded-full bg-emerald-500 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
+                  
+                  <div className="flex items-start justify-between relative z-10 mb-3">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="w-12 h-12 rounded-[1rem] bg-emerald-50 flex items-center justify-center border border-emerald-200 shrink-0 shadow-sm">
+                        <Briefcase className="text-emerald-500" size={24} />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-display font-black text-[var(--text-primary)] truncate">{group.drive?.companyName || 'Drive'}</h3>
+                        <p className="text-[13px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mt-1 inline-block">{group.drive?.package || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                       <span className="text-3xl font-black text-[var(--text-primary)]">{group.students.length}</span>
+                       <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Selected</p>
+                    </div>
+                  </div>
+
+                  {/* Drive Type & Profile Type Badges */}
+                  <div className="flex flex-wrap items-center gap-1.5 relative z-10 mb-4 pt-1 border-t border-[var(--border-light)]/60">
+                    <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md text-[10px] border border-purple-200 capitalize">
+                      {group.drive?.driveType || 'Placement Drive'}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-md font-bold capitalize text-[10px] inline-flex items-center gap-1 border ${
+                      (group.drive?.profileType || 'tech').toLowerCase() === 'tech'
+                        ? 'text-cyan-700 bg-cyan-50 border-cyan-200'
+                        : 'text-amber-700 bg-amber-50 border-amber-200'
+                    }`}>
+                      <Code size={10} /> {(group.drive?.profileType || 'tech').toLowerCase() === 'tech' ? 'Tech' : 'Non-Tech'}
+                    </span>
+                    {group.drive?.campusType && (
+                      <span className="text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200 capitalize">
+                        {group.drive.campusType}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <button 
+                    onClick={() => setSelectedDriveGroup(group)}
+                    className="w-full py-2.5 mt-auto rounded-xl bg-[var(--bg-input)] hover:bg-[var(--primary)] hover:text-white text-[13px] font-bold text-[var(--text-primary)] border border-[var(--border-light)] transition-all flex items-center justify-center gap-2 relative z-10 cursor-pointer"
+                  >
+                    <Users size={16} /> View Students
+                  </button>
+                </motion.div>
+              ))}
+              {groupedSelections.length === 0 && (
+                <motion.div variants={itemVariants} className="col-span-full glass-card p-16 text-center border-dashed">
+                  <div className="w-20 h-20 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <Users className="text-emerald-300" size={36} />
+                  </div>
+                  <h3 className="text-2xl font-display font-black text-[var(--text-primary)]">No Selections Found</h3>
+                  <p className="text-[var(--text-secondary)] font-medium mt-3 max-w-md mx-auto">
+                    {(selectionsProfileTypeFilter !== 'all' || selectionsDriveTypeFilter !== 'all' || searchQuery.trim()) 
+                      ? 'No selections match the current filters or search query.'
+                      : 'Selected students will appear here once they pass all rounds.'}
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
         )}
 
         {activeTab === 'questions' && (
@@ -1230,7 +2036,11 @@ const FacultyPlacementDashboard = () => {
 
       {showCreateDriveModal && (
         <CreateDriveModal
-          onClose={() => setShowCreateDriveModal(false)}
+          initialCampusType={createDriveInitialType}
+          onClose={() => {
+            setShowCreateDriveModal(false);
+            setCreateDriveInitialType('on campus');
+          }}
           onRefresh={() => dispatch(fetchFacultyPlacementDashboard())}
         />
       )}
@@ -1247,6 +2057,16 @@ const FacultyPlacementDashboard = () => {
         <ViewStudentsModal
           group={selectedDriveGroup}
           onClose={() => setSelectedDriveGroup(null)}
+          onViewStudentProfile={(student) => setSelectedStudentForProfile(student)}
+        />
+      )}
+
+      {selectedStudentForProfile && (
+        <StudentProfileModal
+          isOpen={true}
+          studentId={selectedStudentForProfile?._id || selectedStudentForProfile}
+          initialTab="profile"
+          onClose={() => setSelectedStudentForProfile(null)}
         />
       )}
 

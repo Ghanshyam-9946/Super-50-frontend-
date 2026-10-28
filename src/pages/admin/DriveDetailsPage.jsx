@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import {
   Briefcase, ArrowLeft, Users, CheckCircle, Clock, X, Upload,
   FileSpreadsheet, Mail, RefreshCw, ChevronRight, Layers, BarChart,
-  Trash2, GripVertical, Plus
+  Trash2, GripVertical, Plus, Filter, Code, Pencil
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -21,10 +21,32 @@ const DriveDetailsPage = () => {
   const [uploading, setUploading] = useState(false);
   const [roundsList, setRoundsList] = useState([]);
   const [draggedIdx, setDraggedIdx] = useState(null);
+  const [roundFilter, setRoundFilter] = useState('all');
   
   const [showAddRoundModal, setShowAddRoundModal] = useState(false);
   const [newRoundName, setNewRoundName] = useState('');
   const [newRoundDesc, setNewRoundDesc] = useState('');
+
+  const [showEditRoundModal, setShowEditRoundModal] = useState(false);
+  const [editingRoundIndex, setEditingRoundIndex] = useState(null);
+  const [editRoundName, setEditRoundName] = useState('');
+  const [editRoundDesc, setEditRoundDesc] = useState('');
+
+  const [showEditDriveModal, setShowEditDriveModal] = useState(false);
+  const [editingDriveLoading, setEditingDriveLoading] = useState(false);
+  const [editDriveForm, setEditDriveForm] = useState({
+    companyName: '',
+    package: '',
+    batch: '',
+    driveType: 'placement drive',
+    campusType: 'on campus',
+    profileType: 'tech',
+    deadline: '',
+    jobDescription: '',
+    isActive: true,
+    isCompleted: false,
+  });
+  const [editJdFile, setEditJdFile] = useState(null);
 
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [addingStudents, setAddingStudents] = useState(false);
@@ -120,12 +142,37 @@ const DriveDetailsPage = () => {
   const handleAddRound = async (e) => {
     e.preventDefault();
     if (!newRoundName.trim()) return toast.error('Round name is required');
-    const list = [...roundsList, { name: newRoundName, description: newRoundDesc }];
+    const list = [...roundsList, { name: newRoundName.trim(), description: newRoundDesc.trim() }];
     setRoundsList(list);
     await saveRounds(list);
     setShowAddRoundModal(false);
     setNewRoundName('');
     setNewRoundDesc('');
+  };
+
+  const handleOpenEditRound = (roundIdx) => {
+    const round = roundsList[roundIdx];
+    if (!round) return;
+    setEditingRoundIndex(roundIdx);
+    setEditRoundName(round.name || '');
+    setEditRoundDesc(round.description || '');
+    setShowEditRoundModal(true);
+  };
+
+  const handleSaveEditRound = async (e) => {
+    e.preventDefault();
+    if (!editRoundName.trim()) return toast.error('Round name is required');
+    if (editingRoundIndex === null) return;
+
+    const list = [...roundsList];
+    list[editingRoundIndex] = {
+      ...list[editingRoundIndex],
+      name: editRoundName.trim(),
+      description: editRoundDesc.trim(),
+    };
+    setRoundsList(list);
+    setShowEditRoundModal(false);
+    await saveRounds(list);
   };
 
   const saveRounds = async (updatedRounds) => {
@@ -174,13 +221,13 @@ const DriveDetailsPage = () => {
     }
 
     setUploading(true);
-    const toastId = toast.loading('Uploading round results & sending emails...');
+    const toastId = toast.loading('Uploading round results...');
     try {
       const response = await api.post('/placement/results/dynamic-upload', formData);
       const { updated, notFound } = response.data.data || {};
       toast.success(
-        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}. Emails sent!`,
-        { id: toastId, duration: 5000 }
+        `Done! ${updated} students updated${notFound > 0 ? `, ${notFound} not found` : ''}.`,
+        { id: toastId, duration: 4000 }
       );
       setFile(null);
       setShowUploadModal(false);
@@ -189,6 +236,63 @@ const DriveDetailsPage = () => {
       toast.error(err.response?.data?.message || 'Upload failed', { id: toastId });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleOpenEditDrive = () => {
+    if (!drive) return;
+    const formattedDeadline = drive.deadline
+      ? new Date(drive.deadline).toISOString().split('T')[0]
+      : '';
+    setEditDriveForm({
+      companyName: drive.companyName || '',
+      package: drive.package || '',
+      batch: drive.batch || '',
+      driveType: drive.driveType || 'placement drive',
+      campusType: drive.campusType || 'on campus',
+      profileType: drive.profileType || 'tech',
+      deadline: formattedDeadline,
+      jobDescription: drive.jobDescription || '',
+      isActive: drive.isActive !== false,
+      isCompleted: Boolean(drive.isCompleted),
+    });
+    setEditJdFile(null);
+    setShowEditDriveModal(true);
+  };
+
+  const handleSaveEditDrive = async (e) => {
+    e.preventDefault();
+    if (!editDriveForm.companyName.trim()) return toast.error('Company Name is required');
+    if (!editDriveForm.deadline) return toast.error('Deadline date is required');
+
+    setEditingDriveLoading(true);
+    const toastId = toast.loading('Updating drive details...');
+    try {
+      const formData = new FormData();
+      formData.append('companyName', editDriveForm.companyName.trim());
+      formData.append('package', editDriveForm.package.trim());
+      formData.append('batch', editDriveForm.batch.trim());
+      formData.append('driveType', editDriveForm.driveType.trim());
+      formData.append('campusType', editDriveForm.campusType.trim());
+      formData.append('profileType', editDriveForm.profileType.trim());
+      formData.append('deadline', editDriveForm.deadline);
+      formData.append('jobDescription', editDriveForm.jobDescription.trim());
+      formData.append('isActive', editDriveForm.isActive);
+      formData.append('isCompleted', editDriveForm.isCompleted);
+      if (editJdFile) {
+        formData.append('jdFile', editJdFile);
+      }
+
+      await api.put(`/placement/drives/${id}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      toast.success('Drive updated successfully!', { id: toastId });
+      setShowEditDriveModal(false);
+      fetchDriveDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update drive', { id: toastId });
+    } finally {
+      setEditingDriveLoading(false);
     }
   };
 
@@ -225,6 +329,34 @@ const DriveDetailsPage = () => {
 
   const roundNames = drive.rounds?.map(r => r.name) || [];
 
+  // Sort applications by Roll Number (Enrollment Number)
+  const sortedApplications = [...applications].sort((a, b) => {
+    const enA = String(a.student?.enrollmentNumber || a.student?.enrollmentNo || '').toUpperCase();
+    const enB = String(b.student?.enrollmentNumber || b.student?.enrollmentNo || '').toUpperCase();
+    return enA.localeCompare(enB, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  // Filter applications by selected round or outcome
+  const filteredApplications = sortedApplications.filter((app) => {
+    if (roundFilter === 'all') return true;
+    if (roundFilter === 'selected') return app.status === 'selected';
+    if (roundFilter === 'rejected') return app.status === 'rejected';
+
+    if (roundFilter.startsWith('cleared_')) {
+      const targetRoundName = roundFilter.replace('cleared_', '');
+      const prog = app.roundsProgress?.find((p) => p.roundName === targetRoundName);
+      return prog?.status === 'cleared';
+    }
+
+    if (roundFilter.startsWith('eliminated_')) {
+      const targetRoundName = roundFilter.replace('eliminated_', '');
+      const prog = app.roundsProgress?.find((p) => p.roundName === targetRoundName);
+      return prog?.status === 'eliminated';
+    }
+
+    return true;
+  });
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Header */}
@@ -240,10 +372,26 @@ const DriveDetailsPage = () => {
             </div>
             <div>
               <h1 className="text-3xl font-display font-black text-[var(--text-primary)] tracking-tight">{drive.companyName}</h1>
-              <div className="flex items-center gap-3 text-sm font-semibold text-[var(--text-secondary)] mt-1.5">
+              <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-[var(--text-secondary)] mt-1.5">
                 <span className="text-[var(--primary-dark)] bg-[var(--primary)]/5 px-2.5 py-0.5 rounded-lg border border-[var(--primary)]/10 capitalize">{drive.driveType || 'Placement Drive'}</span>
+                <span className={`px-2.5 py-0.5 rounded-lg border font-bold capitalize text-[11px] inline-flex items-center gap-1 ${
+                  (drive.profileType || 'tech').toLowerCase() === 'tech'
+                    ? 'text-cyan-700 bg-cyan-50 border-cyan-200'
+                    : 'text-amber-700 bg-amber-50 border-amber-200'
+                }`}>
+                  <Code size={11} /> {(drive.profileType || 'tech').toLowerCase() === 'tech' ? 'Tech Role' : 'Non-Tech Role'}
+                </span>
                 {drive.campusType && (
                   <span className="text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 capitalize">{drive.campusType}</span>
+                )}
+                {drive.isCompleted || drive.isActive === false || (applications.length > 0 && (applications.some(a => a.status === 'selected' || a.finalResult === 'selected') || applications.every(a => a.status === 'rejected' || a.status === 'not-eligible' || a.finalResult === 'eliminated'))) ? (
+                  <span className="text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200 font-bold uppercase text-[11px] flex items-center gap-1">
+                    <CheckCircle size={12} /> Completed
+                  </span>
+                ) : (
+                  <span className="text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200 font-bold uppercase text-[11px] flex items-center gap-1">
+                    <CheckCircle size={12} /> Active
+                  </span>
                 )}
                 {drive.package && (
                   <>
@@ -267,16 +415,24 @@ const DriveDetailsPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button 
+              onClick={handleOpenEditDrive}
+              className="px-3.5 py-2.5 rounded-xl border border-[var(--primary)]/30 text-[var(--primary)] bg-[var(--primary)]/10 hover:bg-[var(--primary)] hover:text-white transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+              title="Edit Drive Details"
+            >
+              <Pencil size={16} />
+              <span>Edit Drive</span>
+            </button>
             <button 
               onClick={handleDeleteDrive} 
-              className="p-3 rounded-xl border border-red-200 text-red-500 bg-red-50 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm"
+              className="p-2.5 rounded-xl border border-red-200 text-red-500 bg-red-50 hover:bg-red-100 hover:text-red-600 transition-colors shadow-sm cursor-pointer"
               title="Delete Drive"
             >
-              <Trash2 size={18} />
+              <Trash2 size={16} />
             </button>
-            <button onClick={fetchDriveDetails} className="btn-outline-premium p-3 rounded-xl">
-              <RefreshCw size={18} />
+            <button onClick={fetchDriveDetails} className="btn-outline-premium p-2.5 rounded-xl cursor-pointer" title="Refresh">
+              <RefreshCw size={16} />
             </button>
           </div>
         </div>
@@ -296,8 +452,8 @@ const DriveDetailsPage = () => {
               <Plus size={14} /> Add Round
             </button>
             <a
-              href="/upload/round%20result.xlsx"
-              download="round_result.xlsx"
+              href="/upload/Eligible%20Students.xlsx"
+              download="Eligible_Students.xlsx"
               className="flex items-center gap-2 px-3 py-1.5 bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/30 rounded-lg hover:bg-[var(--primary)]/20 transition-all text-xs font-bold whitespace-nowrap shrink-0"
             >
               <FileSpreadsheet size={14} /> Download Template
@@ -321,13 +477,22 @@ const DriveDetailsPage = () => {
                     <GripVertical size={16} className="text-slate-400 cursor-grab" />
                     <span className="text-xs font-black text-slate-400 bg-[var(--primary)]/5 px-2 py-0.5 rounded border border-[var(--primary)]/10">R{idx + 1}</span>
                   </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleDeleteRound(idx); }}
-                    className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete Round"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleOpenEditRound(idx); }}
+                      className="p-1 text-slate-400 hover:text-[var(--primary)] hover:bg-[var(--primary)]/10 rounded-lg transition-colors"
+                      title="Edit Round"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDeleteRound(idx); }}
+                      className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete Round"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
                 <h3 className="font-black text-[var(--text-primary)] pr-8 text-base">{round.name}</h3>
                 <p className="text-[12px] text-[var(--text-secondary)] mt-2 mb-4 font-medium leading-relaxed">{round.description || 'No description provided.'}</p>
@@ -354,12 +519,35 @@ const DriveDetailsPage = () => {
 
       {/* Student List */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card overflow-hidden">
-        <div className="p-8 border-b border-[var(--border-light)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-8 border-b border-[var(--border-light)] flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-display font-black text-[var(--text-primary)]">Student Applications ({applications.length})</h2>
-            <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium">Detailed tracking of all student progress in this hiring drive.</p>
+            <h2 className="text-lg font-display font-black text-[var(--text-primary)]">Student Applications ({filteredApplications.length} / {applications.length})</h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium">Sorted by Roll Number (Enrollment No) • Detailed round tracking.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 bg-[var(--bg-input)] border border-[var(--border-light)] px-3.5 py-2 rounded-xl shadow-sm">
+              <Filter size={14} className="text-[var(--primary)]" />
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Round Filter:</span>
+              <select
+                value={roundFilter}
+                onChange={(e) => setRoundFilter(e.target.value)}
+                className="bg-transparent text-xs font-bold text-[var(--text-primary)] focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Students ({applications.length})</option>
+                {drive?.rounds?.map((round, idx) => (
+                  <React.Fragment key={idx}>
+                    <option value={`cleared_${round.name}`}>
+                      ✅ Cleared R{idx + 1}: {round.name}
+                    </option>
+                    <option value={`eliminated_${round.name}`}>
+                      ❌ Eliminated R{idx + 1}: {round.name}
+                    </option>
+                  </React.Fragment>
+                ))}
+                <option value="selected">🏆 Final Selected / Placed</option>
+                <option value="rejected">🛑 Overall Eliminated</option>
+              </select>
+            </div>
             <button
               onClick={() => setShowAddStudentModal(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-[var(--primary)] text-white rounded-xl hover:opacity-90 transition-all text-xs font-bold whitespace-nowrap shrink-0 shadow-md"
@@ -383,7 +571,7 @@ const DriveDetailsPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-light)]">
-              {applications.map((app) => {
+              {filteredApplications.map((app) => {
                 const currentRoundIdx = app.currentRound || 0;
                 const activeRoundName = currentRoundIdx > 0 && drive.rounds?.[currentRoundIdx - 1]?.name
                   ? drive.rounds[currentRoundIdx - 1].name
@@ -458,10 +646,10 @@ const DriveDetailsPage = () => {
                 );
               })}
 
-              {applications.length === 0 && (
+              {filteredApplications.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-[var(--text-secondary)] font-medium">
-                    No students configured or eligible for this batch/drive.
+                    No students match the selected round filter.
                   </td>
                 </tr>
               )}
@@ -482,14 +670,14 @@ const DriveDetailsPage = () => {
               <Upload size={24} />
             </div>
             <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Upload Result for {selectedRoundName}</h2>
-            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Select Excel to update candidate statuses for rounds and automatically notify them.</p>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Select Excel to update candidate statuses for rounds.</p>
 
             <form onSubmit={handleUploadResults} className="space-y-5">
               {selectedRoundName && (
                 <div className="bg-[var(--bg-input)]/30 border border-[var(--border-light)] rounded-xl p-3.5">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Excel File Format</p>
                   <p className="text-[11px] text-[var(--text-secondary)] mb-2 font-medium">
-                    Required Columns: <strong>Enrollment Number</strong>, <strong>Name</strong>, <strong>Department</strong>, <strong>Batch</strong>.
+                    Required Columns: <strong>Roll No</strong> (or Enrollment Number), <strong>Full Name</strong>, <strong>Branch</strong>, <strong>Campus</strong>.
                   </p>
                   <p className="text-[11px] text-slate-400">
                     Students present in the Excel sheet will be marked as <strong>Cleared</strong> for <strong>{selectedRoundName}</strong>; others will be marked as <strong>Eliminated</strong>.
@@ -559,6 +747,49 @@ const DriveDetailsPage = () => {
               </div>
               <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2">
                 <Plus size={16} /> Create Round
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Round Modal */}
+      {showEditRoundModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-xl rounded-3xl relative" style={{ width: '90%', maxWidth: 450, padding: 32 }}>
+            <button onClick={() => setShowEditRoundModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/50 p-2 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center border border-[var(--primary)]/20 mb-4 shadow-sm">
+              <Pencil size={22} />
+            </div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Edit Hiring Round</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">Modify details for this round in the hiring pipeline.</p>
+
+            <form onSubmit={handleSaveEditRound} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Round Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editRoundName}
+                  onChange={(e) => setEditRoundName(e.target.value)}
+                  placeholder="e.g., Technical Interview"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Description (Optional)</label>
+                <textarea
+                  value={editRoundDesc}
+                  onChange={(e) => setEditRoundDesc(e.target.value)}
+                  placeholder="e.g., Coding test on HackerRank"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none h-24"
+                />
+              </div>
+              <button type="submit" className="btn-premium w-full py-3 mt-6 flex items-center justify-center gap-2">
+                <CheckCircle size={16} /> Save Changes
               </button>
             </form>
           </motion.div>
@@ -652,6 +883,236 @@ const DriveDetailsPage = () => {
                   </>
                 )}
               </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      {/* Edit Drive Modal */}
+      {showEditDriveModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0, y: 15 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            className="bg-[var(--bg-modal)] border border-[var(--border-light)] shadow-2xl rounded-3xl relative overflow-y-auto max-h-[90vh]"
+            style={{ width: '92%', maxWidth: 580, padding: 32 }}
+          >
+            <button
+              onClick={() => setShowEditDriveModal(false)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-[var(--text-primary)] bg-[var(--bg-input)]/60 p-2 rounded-full transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="w-12 h-12 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center border border-[var(--primary)]/20 mb-4 shadow-sm">
+              <Pencil size={22} />
+            </div>
+            <h2 className="text-xl font-display font-black text-[var(--text-primary)] mb-1">Edit Placement Drive</h2>
+            <p className="text-[13px] text-[var(--text-secondary)] font-medium mb-6">
+              Update drive details, package, batch, deadline, and profile.
+            </p>
+
+            <form onSubmit={handleSaveEditDrive} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Company Name */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editDriveForm.companyName}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, companyName: e.target.value })}
+                    placeholder="e.g. Group Bayport"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Package / CTC */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Package / CTC (LPA)
+                  </label>
+                  <input
+                    type="text"
+                    value={editDriveForm.package}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, package: e.target.value })}
+                    placeholder="e.g. 2.4 LPA"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Batch */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Target Batch
+                  </label>
+                  <input
+                    type="text"
+                    value={editDriveForm.batch}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, batch: e.target.value })}
+                    placeholder="e.g. 2023-27"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Deadline */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Application Deadline *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={editDriveForm.deadline}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, deadline: e.target.value })}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Campus Type */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Campus Type
+                  </label>
+                  <select
+                    value={editDriveForm.campusType}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, campusType: e.target.value })}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  >
+                    <option value="on campus">On Campus</option>
+                    <option value="off campus">Off Campus</option>
+                    <option value="pool campus">Pool Campus</option>
+                    <option value="self placed">Self Placed</option>
+                  </select>
+                </div>
+
+                {/* Drive Type */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Drive Type
+                  </label>
+                  <select
+                    value={editDriveForm.driveType}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, driveType: e.target.value })}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  >
+                    <option value="placement drive">Placement Drive</option>
+                    <option value="internship">Internship</option>
+                    <option value="pool campus">Pool Campus</option>
+                    <option value="off campus">Off Campus</option>
+                    <option value="self placed">Self Placed</option>
+                  </select>
+                </div>
+
+                {/* Status (Active / Completed) */}
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Drive Status
+                  </label>
+                  <select
+                    value={editDriveForm.isCompleted ? 'completed' : 'active'}
+                    onChange={(e) => {
+                      const isComp = e.target.value === 'completed';
+                      setEditDriveForm({
+                        ...editDriveForm,
+                        isCompleted: isComp,
+                        isActive: !isComp,
+                      });
+                    }}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm"
+                  >
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+
+                {/* Profile Type (Tech vs Non-Tech) */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Profile Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditDriveForm({ ...editDriveForm, profileType: 'tech' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        editDriveForm.profileType === 'tech'
+                          ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500 shadow-sm'
+                          : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)]'
+                      }`}
+                    >
+                      <Code size={14} /> Tech Role
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditDriveForm({ ...editDriveForm, profileType: 'non-tech' })}
+                      className={`py-2 px-3 rounded-xl border text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        editDriveForm.profileType === 'non-tech'
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500 shadow-sm'
+                          : 'bg-[var(--bg-input)] text-[var(--text-secondary)] border-[var(--border-light)]'
+                      }`}
+                    >
+                      <Briefcase size={14} /> Non-Tech Role
+                    </button>
+                  </div>
+                </div>
+
+                {/* Job Description Text */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Job Description (Optional)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editDriveForm.jobDescription}
+                    onChange={(e) => setEditDriveForm({ ...editDriveForm, jobDescription: e.target.value })}
+                    placeholder="Enter job roles, responsibilities, skills required, etc."
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl py-2.5 px-4 text-[13px] font-medium text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all shadow-sm resize-none"
+                  />
+                </div>
+
+                {/* Upload New JD File */}
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">
+                    Update Job Description File (Optional)
+                  </label>
+                  <div
+                    onClick={() => document.getElementById('edit-jd-file-input').click()}
+                    className="border border-dashed border-[var(--border-light)] rounded-xl p-3 text-center bg-[var(--bg-input)]/30 hover:bg-[var(--bg-input)]/50 transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <input
+                      type="file"
+                      id="edit-jd-file-input"
+                      accept=".pdf, .doc, .docx"
+                      className="hidden"
+                      onChange={(e) => setEditJdFile(e.target.files[0])}
+                    />
+                    <Upload size={16} className="text-[var(--primary)]" />
+                    <span className="text-xs font-bold text-[var(--text-primary)]">
+                      {editJdFile ? editJdFile.name : (drive.jobDescriptionFile ? 'Change existing JD file' : 'Upload JD (.pdf, .doc)')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowEditDriveModal(false)}
+                  className="btn-outline-premium flex-1 py-3 text-xs font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={editingDriveLoading}
+                  className="btn-premium flex-1 py-3 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <CheckCircle size={16} />
+                  {editingDriveLoading ? 'Saving...' : 'Save Drive Changes'}
+                </button>
+              </div>
             </form>
           </motion.div>
         </div>

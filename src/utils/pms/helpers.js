@@ -74,3 +74,10 @@ export const semesterToProject = (sem) => {
 
 // Class joiner
 export const cn = (...classes) => classes.filter(Boolean).join(' ');
+
+// Where a PMS notification should open. Older notifications may point at a
+// bare "/pms" (no page) or nothing at all — send those to the list instead.
+export const notificationHref = (n) => {
+  const link = (n?.link || '').trim();
+  return link && link.startsWith('/pms/') ? link : '/pms/notifications';
+};

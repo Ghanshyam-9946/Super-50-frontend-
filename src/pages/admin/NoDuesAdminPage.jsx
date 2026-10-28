@@ -1,10 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  FileCheck2, ChevronRight, PartyPopper, Circle,
-  Wallet, Percent, ArrowRightCircle, Download, Loader2, RefreshCw, CheckCircle2, Check,
-} from 'lucide-react';
+import { FileCheck2, ChevronRight, PartyPopper, Circle, Wallet, Percent, ArrowRightCircle, Download, Loader2, RefreshCw, CheckCircle2, Check, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -58,6 +55,10 @@ function OverviewTab({ user }) {
   // forms (across whichever filter is active) and forward them all in one
   // request instead of opening each one individually.
   const [selectMode, setSelectMode] = useState(false);
+  // 'forward' or 'delete'. One selection mechanism, two things to do with
+  // it — which also keeps the two buttons from fighting over selectedIds.
+  const [selectPurpose, setSelectPurpose] = useState('forward');
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkRemark, setBulkRemark] = useState('');
   const [bulkForwarding, setBulkForwarding] = useState(false);
@@ -81,23 +82,58 @@ function OverviewTab({ user }) {
     }
   };
 
+  // A page at a time. Every form carries its subjects and four populated
+  // references, so asking for all of them made the page wait on a payload
+  // that grows with the college.
+  const PAGE = 50;
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchPage = useCallback(async (which) => {
+    const params = { page: which, limit: PAGE };
+    // "Forwarded" is now a filter the server understands, so it is no
+    // longer narrowed down here after fetching everything.
+    if (filter === 'true' || filter === 'false') params.completed = filter;
+    if (filter === 'forwarded') params.forwarded = 'true';
+    const { data } = await api.get('/no-dues', { params });
+    return data;
+  }, [filter]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
-      // "Forwarded" isn't a param the backend understands (it filters on
-      // isCompleted only) — fetch everything and narrow it down here.
-      if (filter === 'true' || filter === 'false') params.completed = filter;
-      const { data } = await api.get('/no-dues', { params });
+      const data = await fetchPage(1);
       if (data.success) {
-        setForms(filter === 'forwarded' ? data.data.filter((f) => f.forwarded) : data.data);
+        setForms(data.data);
+        setTotal(data.total || data.data.length);
+        setHasMore(!!data.hasMore);
+        setPage(1);
       }
     } catch {
       toast.error('Failed to load No Dues forms');
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [fetchPage]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const next = page + 1;
+      const data = await fetchPage(next);
+      if (data.success) {
+        setForms((prev) => [...prev, ...data.data]);
+        setHasMore(!!data.hasMore);
+        setPage(next);
+      }
+    } catch {
+      toast.error('Could not load more');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -125,10 +161,59 @@ function OverviewTab({ user }) {
 
   const handleChange = (updated) => setForms((prev) => prev.map((f) => (f._id === updated._id ? updated : f)));
 
-  // Only fully-completed, not-yet-forwarded forms can be bulk-selected.
+  const deleteForm = async (id) => {
+    const form = forms.find((f) => f._id === id);
+    if (!window.confirm(`Delete ${form?.student?.name || 'this student'}'s No Dues form? Every tick on it goes too.`)) return;
+    try {
+      const { data } = await api.delete(`/no-dues/${id}`);
+      toast.success(data.message || 'Form deleted');
+      setForms((prev) => prev.filter((f) => f._id !== id));
+      setOpenFormId(null);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not delete the form');
+    }
+  };
+
+  const submitBulkDelete = async () => {
+    if (selectedIds.length === 0) return toast.error('Select at least one form');
+
+    const all = selectedIds.length === forms.length;
+    const first = all
+      ? `Delete ALL ${selectedIds.length} No Dues form(s) shown here?`
+      : `Delete ${selectedIds.length} No Dues form(s)?`;
+    if (!window.confirm(`${first}\n\nEvery tick, remark and approval on them goes too. This cannot be undone.`)) return;
+
+    // A wipe deserves more than one reflexive click, so a large batch asks
+    // for the word as well.
+    if (selectedIds.length >= 10) {
+      const typed = window.prompt(`This removes ${selectedIds.length} forms for good.\n\nType DELETE to confirm.`);
+      if ((typed || '').trim().toUpperCase() !== 'DELETE') return toast('Nothing was deleted');
+    }
+
+    setBulkDeleting(true);
+    try {
+      const { data } = await api.post('/no-dues/bulk-delete', { formIds: selectedIds });
+      toast.success(data.message || 'Forms deleted');
+      const gone = new Set(data.deletedIds || selectedIds);
+      setForms((prev) => prev.filter((f) => !gone.has(f._id)));
+      setSelectedIds([]);
+      setOpenFormId(null);
+      setSelectMode(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not delete the forms');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  // Forwarding only makes sense for a finished, not-yet-sent form. Deleting
+  // applies to any of them — an unfinished form is the likeliest one to
+  // want gone.
   const eligibleIds = useMemo(
-    () => forms.filter((f) => f.isCompleted && !f.forwarded).map((f) => f._id),
-    [forms]
+    () => (selectPurpose === 'delete'
+      ? forms.map((f) => f._id)
+      : forms.filter((f) => f.isCompleted && !f.forwarded).map((f) => f._id)),
+    [forms, selectPurpose]
   );
 
   const toggleSelected = (id) =>
@@ -272,16 +357,31 @@ function OverviewTab({ user }) {
         </select>
         <button
           onClick={() => {
-            setSelectMode((v) => !v);
+            setSelectMode((v) => !(v && selectPurpose === 'forward'));
+            setSelectPurpose('forward');
             setSelectedIds([]);
           }}
           className={`text-xs font-bold px-4 py-2.5 rounded-xl border flex items-center gap-1.5 ${
-            selectMode
+            selectMode && selectPurpose === 'forward'
               ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
               : 'border-[var(--border-light)] text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
-          <CheckCircle2 size={14} /> {selectMode ? 'Cancel' : 'Select to Forward'}
+          <CheckCircle2 size={14} /> {selectMode && selectPurpose === 'forward' ? 'Cancel' : 'Select to Forward'}
+        </button>
+        <button
+          onClick={() => {
+            setSelectMode((v) => !(v && selectPurpose === 'delete'));
+            setSelectPurpose('delete');
+            setSelectedIds([]);
+          }}
+          className={`text-xs font-bold px-4 py-2.5 rounded-xl border flex items-center gap-1.5 ${
+            selectMode && selectPurpose === 'delete'
+              ? 'bg-red-500 text-white border-red-500'
+              : 'border-red-500/40 text-red-500 hover:bg-red-500/10'
+          }`}
+        >
+          <Trash2 size={14} /> {selectMode && selectPurpose === 'delete' ? 'Cancel' : 'Select to Delete'}
         </button>
         {user?.role === 'admin' && (
           <button
@@ -317,17 +417,29 @@ function OverviewTab({ user }) {
           <input
             value={bulkRemark}
             onChange={(e) => setBulkRemark(e.target.value)}
+            hidden={selectPurpose === 'delete'}
             placeholder="Remark (only needed for students with dues fees pending)"
             className="flex-1 bg-[var(--bg-input)] border border-[var(--border-light)] rounded-xl px-3.5 py-2 text-sm text-[var(--text-primary)] outline-none"
           />
-          <button
-            onClick={submitBulkForward}
-            disabled={bulkForwarding || selectedIds.length === 0}
-            className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 shrink-0 disabled:opacity-40"
-          >
-            {bulkForwarding ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightCircle size={15} />}
-            Forward Selected ({selectedIds.length})
-          </button>
+          {selectPurpose === 'delete' ? (
+            <button
+              onClick={submitBulkDelete}
+              disabled={bulkDeleting || selectedIds.length === 0}
+              className="text-sm font-bold px-4 py-2.5 rounded-xl bg-red-500 text-white flex items-center gap-2 shrink-0 disabled:opacity-40 hover:bg-red-600 transition-colors"
+            >
+              {bulkDeleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+              Delete Selected ({selectedIds.length})
+            </button>
+          ) : (
+            <button
+              onClick={submitBulkForward}
+              disabled={bulkForwarding || selectedIds.length === 0}
+              className="btn-premium text-sm px-4 py-2.5 flex items-center gap-2 shrink-0 disabled:opacity-40"
+            >
+              {bulkForwarding ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightCircle size={15} />}
+              Forward Selected ({selectedIds.length})
+            </button>
+          )}
         </div>
       )}
 
@@ -344,19 +456,21 @@ function OverviewTab({ user }) {
         <div className="space-y-3">
           {forms.map((form) => {
             const open = openFormId === form._id;
-            const selectable = form.isCompleted && !form.forwarded;
+            const selectable = selectPurpose === 'delete' || (form.isCompleted && !form.forwarded);
             const isSelected = selectedIds.includes(form._id);
             return (
-              <div key={form._id} className={`glass-card rounded-2xl overflow-hidden ${form.isCompleted ? 'ring-1 ring-emerald-500/30' : ''} ${isSelected ? 'ring-2 ring-[var(--primary)]' : ''}`}>
+              <div key={form._id} className={`glass-card rounded-2xl overflow-hidden ${form.isCompleted ? 'ring-1 ring-emerald-500/30' : ''} ${isSelected ? (selectPurpose === 'delete' ? 'ring-2 ring-red-500' : 'ring-2 ring-[var(--primary)]') : ''}`}>
                 <div className="flex items-stretch">
                   {selectMode && (
                     <button
                       onClick={() => (selectable ? toggleSelected(form._id) : null)}
                       disabled={!selectable}
-                      title={selectable ? 'Select for bulk forward' : 'Only completed, not-yet-forwarded forms can be selected'}
+                      title={selectPurpose === 'delete'
+                        ? 'Select for deletion'
+                        : (selectable ? 'Select for bulk forward' : 'Only completed, not-yet-forwarded forms can be selected')}
                       className="flex items-center justify-center px-4 shrink-0 disabled:opacity-30"
                     >
-                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center ${isSelected ? 'bg-[var(--primary)] border-[var(--primary)]' : 'border-[var(--border-light)]'}`}>
+                      <span className={`w-5 h-5 rounded-md border flex items-center justify-center ${isSelected ? (selectPurpose === 'delete' ? 'bg-red-500 border-red-500' : 'bg-[var(--primary)] border-[var(--primary)]') : 'border-[var(--border-light)]'}`}>
                         {isSelected && <Check size={13} className="text-white" />}
                       </span>
                     </button>
@@ -393,7 +507,15 @@ function OverviewTab({ user }) {
                   {open && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
                       <div className="px-5 pb-5 pt-1 border-t border-[var(--border-light)]">
-                        <NoDuesFormDetail form={form} currentUser={user} onChange={handleChange} showDeleteButton={false} />
+                        {/* An admin can remove a form that was released by
+                            mistake — to the wrong student, or twice. */}
+                        <NoDuesFormDetail
+                          form={form}
+                          currentUser={user}
+                          onChange={handleChange}
+                          showDeleteButton
+                          onDelete={deleteForm}
+                        />
                       </div>
                     </motion.div>
                   )}
@@ -402,6 +524,23 @@ function OverviewTab({ user }) {
             );
           })}
         </div>
+      )}
+      {!loading && hasMore && (
+        <div className="flex flex-col items-center gap-2 py-2">
+          <button onClick={loadMore} disabled={loadingMore}
+            className="btn-outline-premium text-xs px-5 py-2.5 flex items-center gap-1.5 disabled:opacity-40">
+            {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
+            Load more
+          </button>
+          <span className="text-[11px] text-[var(--text-secondary)]">
+            Showing {forms.length} of {total}
+          </span>
+        </div>
+      )}
+      {!loading && !hasMore && total > 0 && (
+        <p className="text-center text-[11px] text-[var(--text-secondary)] py-1">
+          All {total} form(s) shown
+        </p>
       )}
     </div>
   );

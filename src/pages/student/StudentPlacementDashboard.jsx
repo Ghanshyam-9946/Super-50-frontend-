@@ -22,7 +22,8 @@ import {
   HelpCircle,
   ArrowRight,
   FileText,
-  Download
+  Download,
+  Code
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -203,8 +204,15 @@ const StudentPlacementDashboard = ({ showOnlyResults = false }) => {
                   </div>
                   <div>
                     <h3 className="text-xl font-display font-black text-[var(--text-primary)]">{app.drive?.companyName || 'Unknown Company'}</h3>
-                    <div className="flex items-center gap-3 mt-1.5 text-[13px] font-medium">
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[13px] font-medium">
                       <span className="text-[var(--primary-dark)] font-bold bg-purple-50 px-2 py-0.5 rounded-md capitalize">{app.drive?.driveType || 'Placement Drive'}</span>
+                      <span className={`px-2 py-0.5 rounded-md font-bold capitalize text-[11px] inline-flex items-center gap-1 ${
+                        (app.drive?.profileType || 'tech').toLowerCase() === 'tech'
+                          ? 'text-cyan-700 bg-cyan-50 border border-cyan-200'
+                          : 'text-amber-700 bg-amber-50 border border-amber-200'
+                      }`}>
+                        <Code size={11} /> {(app.drive?.profileType || 'tech').toLowerCase() === 'tech' ? 'Tech' : 'Non-Tech'}
+                      </span>
                       {app.drive?.campusType && (
                         <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-md capitalize">{app.drive.campusType}</span>
                       )}

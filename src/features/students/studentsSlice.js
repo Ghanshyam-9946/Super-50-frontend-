@@ -3,16 +3,30 @@ import api from '../../services/api';
 
 export const fetchLeaderboard = createAsyncThunk('students/fetchLeaderboard', async (params = {}, { rejectWithValue }) => {
   try {
-    const { data } = await api.get('/students/leaderboard', { params });
+    const userStr = localStorage.getItem('super50_user');
+    let userCampus;
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        userCampus = u?.campus;
+      } catch (e) {}
+    }
+    const finalParams = { ...params };
+    if (!finalParams.campus && userCampus) {
+      finalParams.campus = userCampus;
+    }
+    const { data } = await api.get('/students/leaderboard', { params: finalParams });
     return data.data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Failed to fetch leaderboard');
   }
 });
 
-export const fetchAllStudents = createAsyncThunk('students/fetchAll', async (params = {}, { rejectWithValue }) => {
+// A newer search cancels the one still on its way (`signal`), so an older
+// answer can never replace a newer one.
+export const fetchAllStudents = createAsyncThunk('students/fetchAll', async (params = {}, { rejectWithValue, signal }) => {
   try {
-    const { data } = await api.get('/admin/students', { params });
+    const { data } = await api.get('/admin/students', { params, signal });
     return data;
   } catch (err) {
     return rejectWithValue(err.response?.data?.message || 'Failed to fetch students');
@@ -98,7 +112,12 @@ const studentsSlice = createSlice({
       .addCase(fetchLeaderboard.rejected, (state, action) => {
         state.loading = false; state.error = action.payload;
       })
+      .addCase(fetchAllStudents.pending, (state) => { state.listLoading = true; })
+      .addCase(fetchAllStudents.rejected, (state, action) => {
+        if (!action.meta.aborted) state.listLoading = false;
+      })
       .addCase(fetchAllStudents.fulfilled, (state, action) => {
+        state.listLoading = false;
         state.allStudents = action.payload.data;
         state.total = action.payload.total;
         state.filters = action.payload.filters || { departments: [], batches: [] };

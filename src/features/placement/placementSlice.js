@@ -68,6 +68,7 @@ const placementSlice = createSlice({
     studentApplications: [],
     stats: null,
     selections: [],
+    selfPlaced: [],
     feedbacks: [],
     driveFeedbacks: {},
     loading: false,
@@ -103,6 +104,7 @@ const placementSlice = createSlice({
         state.drives = action.payload.drives;
         state.stats = action.payload.stats;
         state.selections = action.payload.selections || [];
+        state.selfPlaced = action.payload.selfPlaced || [];
       })
       .addCase(fetchFacultyPlacementDashboard.rejected, (state, action) => {
         state.loading = false;

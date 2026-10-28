@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Plus, FolderOpen, Trash2, Folder } from 'lucide-react';
+import { Plus, FolderOpen, Trash2, Folder, Pencil, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { adminAPI } from '../../../api/pms';
 import { handleError } from '../../../api/pms/client';
 import { Card, Spinner, EmptyState, confirmAction } from '../../../components/pms/Common';
 
+const emptyForm = { projectName: '', semester: '', description: '' };
+
 const Projects = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ projectName: '', semester: '', description: '' });
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchProjects = async () => {
@@ -25,13 +28,29 @@ const Projects = () => {
 
   useEffect(() => { fetchProjects(); }, []);
 
+  const startEdit = (p) => {
+    setEditingId(p._id);
+    setForm({ projectName: p.projectName, semester: String(p.semester), description: p.description || '' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await adminAPI.createProject(form);
-      toast.success('Project created');
-      setForm({ projectName: '', semester: '', description: '' });
+      if (editingId) {
+        await adminAPI.updateProject(editingId, form);
+        toast.success('Project updated');
+      } else {
+        await adminAPI.createProject(form);
+        toast.success('Project created');
+      }
+      setForm(emptyForm);
+      setEditingId(null);
       fetchProjects();
     } catch (err) {
       toast.error(handleError(err));
@@ -64,7 +83,7 @@ const Projects = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <div className="lg:col-span-4">
-          <Card title="Add / Update Project" icon={Plus}>
+          <Card title={editingId ? 'Edit Project' : 'Add Project'} icon={editingId ? Pencil : Plus}>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="form-label">Project Name</label>
@@ -90,9 +109,16 @@ const Projects = () => {
                 <label className="form-label">Description</label>
                 <textarea className="form-input" rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
-              <button type="submit" disabled={submitting} className="btn-primary w-full">
-                {submitting ? <Spinner size="sm" className="text-white" /> : 'Save Project'}
-              </button>
+              <div className="flex gap-2">
+                <button type="submit" disabled={submitting} className="btn-primary w-full">
+                  {submitting ? <Spinner size="sm" className="text-white" /> : editingId ? 'Update Project' : 'Save Project'}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={cancelEdit} className="btn-secondary">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </form>
           </Card>
         </div>
@@ -114,9 +140,14 @@ const Projects = () => {
                           <td className="font-semibold">{p.semester}th Semester</td>
                           <td className="text-slate-500">{p.description || '—'}</td>
                           <td className="text-right">
-                            <button onClick={() => handleDelete(p._id)} className="btn-secondary btn-sm">
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            <div className="flex justify-end gap-1">
+                              <button onClick={() => startEdit(p)} className="btn-outline btn-sm">
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                              <button onClick={() => handleDelete(p._id)} className="btn-secondary btn-sm">
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

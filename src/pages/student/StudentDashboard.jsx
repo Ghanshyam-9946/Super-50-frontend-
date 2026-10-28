@@ -18,6 +18,7 @@ import {
 import { Award, Zap, Calendar, TrendingUp, Link as RouterLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Super50Card from '../../components/Super50Card';
+import TopTenBadges from '../../components/TopTenBadges';
 import CertificateCard from '../../components/CertificateCard';
 import Super50AttendanceHistoryModal from '../../components/Super50AttendanceHistoryModal';
 
@@ -123,6 +124,8 @@ export default function StudentDashboard() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
+      {/* Anything new, right where they land. */}
+
       {/* Greeting */}
       <motion.header 
         initial={{ opacity: 0, y: -20 }} 
@@ -137,6 +140,8 @@ export default function StudentDashboard() {
           <p className="text-[var(--text-secondary)] font-bold text-[11px] uppercase tracking-[0.15em] mt-2 opacity-80">
             {student?.department} • Batch {student?.batch} • {student?.enrollmentNumber} {student?.cgpa !== undefined && student.cgpa > 0 ? `• CGPA: ${Number(student.cgpa).toFixed(2)}` : ''}
           </p>
+          {/* Monthly leaderboard Top 10 badges */}
+          <TopTenBadges className="mt-4" />
         </div>
       </motion.header>
 
