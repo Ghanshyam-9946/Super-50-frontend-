@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Download, Loader2, RotateCcw, Search, ShieldAlert, ShieldCheck, Users, Wallet, CalendarX } from "lucide-react";
+import { Check, CheckCircle2, Download, Loader2, Pencil, RotateCcw, Search, ShieldAlert, ShieldCheck, Users, Wallet, CalendarX, X } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 import { SemesterPicker, Stat } from "./mstShared";
@@ -7,8 +7,9 @@ import { download, errText, inputCls, labelCls, rupees } from "./mstUtils";
 
 // The allowed list: attendance at or above the minimum (the exam's, or the
 // semester's own) and no fees due. A coordinator sees every student and, with
-// an exam chosen, can allow or stop anyone by hand (with a reason); a TG sees
-// only their own students (`mine`).
+// an exam chosen (the latest one, to start with), can allow or stop anyone by
+// hand (with a reason); a TG sees only their own students (`mine`). Both can
+// correct a student's due fees here — it goes into the fees history.
 export default function MSTEligibilityTab({ exams = [], tgView = false }) {
   const [semesters, setSemesters] = useState([]);
   const [exam, setExam] = useState("");
@@ -21,6 +22,15 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
   const [busy, setBusy] = useState(false);
   const [acting, setActing] = useState("");
   const [tick, setTick] = useState(0);
+  const [feeEdit, setFeeEdit] = useState(null); // { id, amount, note }
+
+  // A coordinator starts on the latest exam, so Allow / Not allow are there
+  // at once; choosing "Default" afterwards is kept.
+  const [examPicked, setExamPicked] = useState(false);
+  if (!tgView && !examPicked && exams.length) {
+    setExamPicked(true);
+    setExam(exams[0]._id);
+  }
 
   useEffect(() => { const t = setTimeout(() => setQuery(q.trim()), 300); return () => clearTimeout(t); }, [q]);
   const params = useCallback(() => ({
@@ -57,6 +67,23 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
   };
   const canDecide = !tgView && !!exam;
 
+  const saveFees = async () => {
+    const amount = String(feeEdit.amount).trim();
+    if (amount === "" || Number.isNaN(Number(amount)) || Number(amount) < 0) return toast.error("Enter the due fees (₹0 or more)");
+    if (!feeEdit.note.trim()) return toast.error("Write a note — e.g. receipt no.");
+    setActing(`fee-${feeEdit.id}`);
+    try {
+      const { data: d } = await api.patch(`/mst-exam/students/${feeEdit.id}/fees`, { duesFees: Number(amount), note: feeEdit.note.trim() });
+      toast.success(d.message);
+      setFeeEdit(null);
+      setTick((t) => t + 1);
+    } catch (err) {
+      toast.error(errText(err, "Could not save the fees"));
+    } finally {
+      setActing("");
+    }
+  };
+
   const exportXlsx = async () => {
     setBusy(true);
     try { await download("/mst-exam/eligibility/export", "MST_Allowed_Students.xlsx", params()); } catch { toast.error("Could not download"); } finally { setBusy(false); }
@@ -80,7 +107,7 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
           {exams.length > 0 && (
             <label className={labelCls}>Rules of
               <select value={exam} onChange={(e) => setExam(e.target.value)} className={inputCls} aria-label="Exam">
-                <option value="">Default (60%, fees clear)</option>
+                <option value="">Default (60%, fees clear) — no exam</option>
                 {exams.map((x) => <option key={x._id} value={x._id}>{x.title}</option>)}
               </select>
             </label>
@@ -132,7 +159,28 @@ export default function MSTEligibilityTab({ exams = [], tgView = false }) {
                       <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${r.reasons.some((x) => x.startsWith("Attendance")) ? "text-amber-600" : "text-[var(--text-primary)]"}`}>
                         {r.attendance}%<div className="text-[10px] font-normal text-[var(--text-secondary)]">needs {r.minAttendance}%</div>
                       </td>
-                      <td className={`px-4 py-2.5 text-right font-bold tabular-nums ${r.duesFees > 0 ? "text-red-600" : "text-emerald-600"}`}>{r.duesFees > 0 ? rupees(r.duesFees) : "Clear"}</td>
+                      <td className="px-4 py-2.5 text-right">
+                        {feeEdit?.id === r._id ? (
+                          <div className="flex flex-col items-end gap-1.5 min-w-[170px]">
+                            <input type="number" min="0" autoFocus value={feeEdit.amount} onChange={(e) => setFeeEdit((f) => ({ ...f, amount: e.target.value }))}
+                              aria-label={`Due fees for ${r.name}`} className={`${inputCls} w-32 text-right`} />
+                            <input value={feeEdit.note} onChange={(e) => setFeeEdit((f) => ({ ...f, note: e.target.value }))} placeholder="Note / receipt no."
+                              aria-label={`Fees note for ${r.name}`} onKeyDown={(e) => { if (e.key === "Enter") saveFees(); if (e.key === "Escape") setFeeEdit(null); }} className={`${inputCls} w-full text-xs`} />
+                            <div className="flex gap-1">
+                              <button onClick={saveFees} disabled={acting === `fee-${r._id}`} aria-label={`Save fees for ${r.name}`} className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-700 disabled:opacity-50">
+                                {acting === `fee-${r._id}` ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+                              </button>
+                              <button onClick={() => setFeeEdit(null)} aria-label="Cancel" className="p-1.5 rounded-lg border border-[var(--border-light)] text-[var(--text-secondary)]"><X size={13} /></button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className={`font-bold tabular-nums ${r.duesFees > 0 ? "text-red-600" : "text-emerald-600"}`}>{r.duesFees > 0 ? rupees(r.duesFees) : "Clear"}</span>
+                            <button onClick={() => setFeeEdit({ id: r._id, amount: String(r.duesFees || 0), note: "" })} aria-label={`Edit fees of ${r.name}`} title="Edit due fees"
+                              className="p-1 rounded-md text-[var(--text-secondary)] hover:text-[var(--primary)] hover:bg-[var(--primary)]/10"><Pencil size={12} /></button>
+                          </div>
+                        )}
+                      </td>
                       <td className="px-4 py-2.5">
                         {r.allowed
                           ? (
